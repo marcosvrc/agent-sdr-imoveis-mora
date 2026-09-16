@@ -6,7 +6,7 @@ description: Todas as variáveis SDR_ do Mora, com exemplos seguros e valores pa
 # Configuração e variáveis de ambiente
 
 Todas as variáveis usam o prefixo `SDR_`. Os arquivos de referência são
-[`.env.example`](https://github.com/exemplo/agent-sdr-morai/blob/main/.env.example) (execução manual /
+[`.env.example`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/.env.example) (execução manual /
 deploy) e `local/.env.example` (perfil local).
 
 !!! danger "Nunca use segredos reais no repositório"

@@ -24,12 +24,12 @@ catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
 
 <div class="mora-actions" markdown>
 [Começar agora](overview/quick-start.md){ .md-button .md-button--primary }
-[Ver no GitHub](https://github.com/exemplo/agent-sdr-morai){ .md-button }
+[Ver no GitHub](https://github.com/marcosvrc/agent-sdr-imoveis-mora){ .md-button }
 </div>
 
 </div>
 
-Este portal é a **documentação detalhada** do projeto. O [`README.md`](https://github.com/exemplo/agent-sdr-morai#readme)
+Este portal é a **documentação detalhada** do projeto. O [`README.md`](https://github.com/marcosvrc/agent-sdr-imoveis-mora#readme)
 do repositório continua sendo o guia rápido. Aqui você encontra arquitetura, manuais de uso, referência
 da API, segurança, performance e operação.
 

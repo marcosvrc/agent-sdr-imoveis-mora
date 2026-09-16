@@ -1,17 +1,15 @@
 # mkdocs.yml — Portal de documentação do Mora (Agente SDR Imobiliário)
 # Publicado no GitHub Pages via .github/workflows/docs.yml
 #
-# ATENÇÃO (base URL de project pages): ajuste `site_url` e `repo_url` para o
-# usuário/organização reais quando o repositório tiver um remote configurado.
-# Formato esperado: https://<usuario-ou-organizacao>.github.io/agent-sdr-morai/
+# Project pages: o site vive sob /agent-sdr-imoveis-mora/, e é `site_url` quem informa essa
+# base ao MkDocs. Apontar para a raiz do domínio quebraria CSS, JS e busca no site publicado.
 
 site_name: Mora — Documentação
 site_description: >-
   Documentação técnica do Mora, uma POC de SDR imobiliário com IA generativa:
   arquitetura, manuais do agente, site e painel, referência da API, segurança e operação.
 site_author: Marcos Ramos
-# A confirmar: troque <usuario-ou-organizacao> pelo dono real do repositório.
-site_url: https://exemplo.github.io/agent-sdr-morai/
+site_url: https://marcosvrc.github.io/agent-sdr-imoveis-mora/
 docs_dir: docs
 site_dir: site
 
@@ -23,9 +21,9 @@ exclude_docs: |
 not_in_nav: |
   /arquitetura.html
 
-repo_name: agent-sdr-morai
-repo_url: https://github.com/exemplo/agent-sdr-morai
-edit_uri: edit/main/docs/
+repo_name: marcosvrc/agent-sdr-imoveis-mora
+repo_url: https://github.com/marcosvrc/agent-sdr-imoveis-mora
+edit_uri: edit/master/docs/
 
 copyright: >-
   Documentação do projeto Mora — POC acadêmica de Marcos Ramos. Código sob licença MIT.
@@ -79,7 +77,7 @@ extra:
   generator: false
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/exemplo/agent-sdr-morai
+      link: https://github.com/marcosvrc/agent-sdr-imoveis-mora
       name: Repositório no GitHub
   status:
     new: Recém-adicionado

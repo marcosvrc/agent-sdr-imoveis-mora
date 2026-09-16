@@ -25,7 +25,7 @@ itens dependentes de serviços AWS estão escritos mas não testados (ver [Funci
 > [`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
 
 **Documentação complementar:**
-[Portal (GitHub Pages)](https://exemplo.github.io/agent-sdr-morai/) · [Arquitetura](docs/ARCHITECTURE.md) · [ADRs](docs/adr) · [Perfil local](local/README.md) · [Observabilidade](docs/observabilidade.md) · [Como contribuir](docs/project/contribuir.md)
+[Portal (GitHub Pages)](https://marcosvrc.github.io/agent-sdr-imoveis-mora/) · [Arquitetura](docs/ARCHITECTURE.md) · [ADRs](docs/adr) · [Perfil local](local/README.md) · [Observabilidade](docs/observabilidade.md) · [Como contribuir](docs/project/contribuir.md)
 
 ---
 

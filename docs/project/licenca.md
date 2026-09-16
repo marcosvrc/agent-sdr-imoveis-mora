@@ -6,7 +6,7 @@ description: Termos de uso do código do Mora e o que se aplica aos dados de dem
 # Licença
 
 O código deste repositório está sob a **licença MIT** — veja o arquivo
-[`LICENSE`](https://github.com/exemplo/agent-sdr-morai/blob/main/LICENSE) na raiz.
+[`LICENSE`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/LICENSE) na raiz.
 
 Na prática: qualquer pessoa pode usar, copiar, modificar e redistribuir, inclusive
 comercialmente, desde que mantenha o aviso de copyright. O software é fornecido "como está",

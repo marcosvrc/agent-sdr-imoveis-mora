@@ -65,7 +65,7 @@ make eval-fake       # valida o harness sem gastar token
 
 ## Integração contínua
 
-O workflow [`.github/workflows/ci.yml`](https://github.com/exemplo/agent-sdr-morai/blob/main/.github/workflows/ci.yml)
+O workflow [`.github/workflows/ci.yml`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/.github/workflows/ci.yml)
 roda três jobs a cada push / pull request:
 
 | Job | Passos |

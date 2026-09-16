@@ -41,7 +41,7 @@ mkdocs serve                     # pré-visualização em http://127.0.0.1:8000
 
 Cada página tem um link **"Editar"** no topo (aponta para o GitHub). A publicação é automática ao
 mesclar na branch principal — veja o workflow em
-[`.github/workflows/docs.yml`](https://github.com/exemplo/agent-sdr-morai/blob/main/.github/workflows/docs.yml).
+[`.github/workflows/docs.yml`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/.github/workflows/docs.yml).
 
 
 !!! info "A confirmar"

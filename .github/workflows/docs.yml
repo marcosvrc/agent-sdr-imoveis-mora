@@ -7,7 +7,7 @@ name: docs
 
 on:
   push:
-    branches: [main]
+    branches: [master]
     paths:
       - "docs/**"
       - "mkdocs.yml"
@@ -51,7 +51,7 @@ jobs:
 
   deploy:
     # Publica só fora de pull requests e apenas na branch principal.
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
     needs: build
     runs-on: ubuntu-latest
     environment:

@@ -14,7 +14,7 @@ cima dela.
       aproximação.
     - **Onde** aponta o arquivo que decide. Se o código e este documento discordarem, **o código
       está certo e este documento está velho** — corrija-o.
-    - A seção final, [Divergências conhecidas](#divergencias-conhecidas), lista pontos onde o
+    - A seção final, [Divergências conhecidas](#17-divergencias-conhecidas), lista pontos onde o
       comportamento surpreende. São candidatos naturais a teste.
 
 ---
