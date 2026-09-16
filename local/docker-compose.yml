@@ -1,0 +1,127 @@
+# Perfil LOCAL — tudo roda no docker compose. Cloud só onde é inevitável ou pago por uso:
+#   • LLM: Bedrock / Anthropic API (pay-per-use, centavos) OU Ollama 100% local (qualidade menor)
+#   • Telegram: bot criado na hora com o @BotFather, sem aprovação — long polling, sem túnel (ADR-0007)
+# Uso: cd local && cp .env.example .env && docker compose --profile ollama up --build   (ou sem --profile ollama)
+name: sdr-local
+
+x-py: &py
+  build: { context: .., dockerfile: local/Dockerfile.python }
+  env_file: .env
+  environment:
+    SDR_PROFILE: local
+    SDR_DATABASE_DSN: postgresql://sdr:sdr@db:5432/sdr
+    SDR_REDIS_URL: redis://redis:6379/0
+    SDR_OLLAMA_URL: http://ollama:11434
+  volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts" ]
+  depends_on: { db: { condition: service_healthy }, redis: { condition: service_started } }
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment: { POSTGRES_USER: sdr, POSTGRES_PASSWORD: sdr, POSTGRES_DB: sdr }
+    ports: ["${DB_HOST_PORT:-5433}:5432"]      # host: 5433 (5432 costuma estar ocupado por um Postgres nativo)
+    volumes:
+      - ./00-langfuse.sql:/docker-entrypoint-initdb.d/00-langfuse.sql
+      - ../shared/sdr_shared/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U sdr"], interval: 3s, retries: 20 }
+
+  redis:                       # substitui SQS + EventBridge (Streams + locks)
+    image: redis:7-alpine
+    ports: ["${REDIS_HOST_PORT:-6380}:6379"]   # host: 6380 (6379 costuma estar ocupado por um Redis nativo)
+
+  ollama:                      # opcional: LLM e embeddings 100% locais
+    image: ollama/ollama
+    profiles: [ollama]
+    ports: ["${OLLAMA_HOST_PORT:-11435}:11434"]   # host: 11435 (11434 costuma estar ocupado pelo Ollama nativo)
+    volumes: [ "ollama:/root/.ollama" ]
+
+  agent:                       # substitui Lambda do agente
+    <<: *py
+    command: python -c "from agent.handler import local_worker; local_worker()"
+    working_dir: /app/services/agent/src
+
+  resumidor:                   # substitui Lambda do Resumidor (consome tópico `resumir`)
+    <<: *py
+    command: python -c "from agent.eventos import local_worker; local_worker()"
+    working_dir: /app/services/agent/src
+
+  reativador:                  # substitui Lambda do Reativador (consome tópico `imovel-novo`)
+    <<: *py
+    command: python -c "from agent.reativador import local_worker; local_worker()"
+    working_dir: /app/services/agent/src
+
+  channels:                    # substitui API Gateway HTTP + WebSocket + Lambdas de canal
+    <<: *py
+    command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+    working_dir: /app/services/channels/local
+    ports: ["8001:8001"]
+    # /health devolve 503 se o Redis cair — `docker compose ps` passa a mostrar (unhealthy) em vez
+    # de "Up" com o chat mudo. start_period cobre a instalação/reload do uvicorn.
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health', timeout=3).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  telegram-in:                 # long polling — sem tunnel, sem conta de negócio na Meta (ADR-0007)
+    <<: *py
+    command: python -c "from canal_telegram.inbound import local_worker; local_worker()"
+    working_dir: /app/services/channels/telegram
+
+  telegram-out:                # substitui Lambda outbound do Telegram
+    <<: *py
+    command: python -c "from canal_telegram.outbound import local_worker; local_worker()"
+    working_dir: /app/services/channels/telegram
+
+  scheduler:                   # substitui EventBridge Scheduler
+    <<: *py
+    command: python -m sdr_scheduler.local_worker
+    working_dir: /app/services/scheduler
+
+  api:                         # substitui API Gateway + Lambda FastAPI + Cognito (auth: token estático em dev)
+    <<: *py
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+    working_dir: /app/services/api/src
+    ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  web:                         # substitui S3 + CloudFront
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, VITE_CANAL_URL: http://localhost:8001, VITE_TELEGRAM_BOT_USERNAME: "${SDR_TELEGRAM_BOT_USERNAME}", CHOKIDAR_USEPOLLING: "true" }
+    volumes: [ "../apps/web:/app", "/app/node_modules" ]
+    ports: ["5173:5173"]
+
+  dashboard:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host --port 5174"
+    environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, CHOKIDAR_USEPOLLING: "true" }
+    volumes: [ "../apps/dashboard:/app", "/app/node_modules" ]
+    ports: ["5174:5174"]
+
+  # tunnel:                    # só necessário para o WhatsApp (webhook precisa de URL pública).
+  #   image: cloudflare/cloudflared:latest      O Telegram usa long polling (telegram-in acima) e
+  #   command: tunnel --no-autoupdate --url http://channels:8001   não precisa disto. Ver ADR-0007.
+  #   depends_on: [channels]
+
+  langfuse:                    # opcional: observabilidade de LLM local (substitui CloudWatch/X-Ray para prompts)
+    image: langfuse/langfuse:2
+    profiles: [observability]
+    environment:
+      DATABASE_URL: postgresql://sdr:sdr@db:5432/langfuse
+      NEXTAUTH_SECRET: dev
+      SALT: dev
+      NEXTAUTH_URL: http://localhost:3000
+    ports: ["3000:3000"]
+    depends_on: [db]
+
+volumes: { pgdata: {}, ollama: {} }

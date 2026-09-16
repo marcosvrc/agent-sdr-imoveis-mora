@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+
+    <title>Vértice Imóveis — apartamentos e casas em São Paulo</title>
+    <meta name="description" content="Compra e aluguel de imóveis em São Paulo com atendimento imediato: converse com a Mora, receba sugestões do catálogo e agende a visita sem espera." />
+    <link rel="canonical" href="https://www.verticeimoveis.exemplo.br/" />
+
+    <!-- Ícones: sem eles a aba mostra o globo genérico do navegador, que é a primeira coisa
+         que faz um site parecer improvisado. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon-32.png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Open Graph padrão. Cada rota reescreve estas tags (lib/seo.ts) e o build grava as versões
+         corretas no HTML de cada página (scripts/gerar-paginas.mjs) para quem não executa JS. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Vértice Imóveis" />
+    <meta property="og:locale" content="pt_BR" />
+    <meta property="og:title" content="Vértice Imóveis — apartamentos e casas em São Paulo" />
+    <meta property="og:description" content="Converse com a Mora, receba sugestões do catálogo e agende a visita sem espera." />
+    <meta property="og:url" content="https://www.verticeimoveis.exemplo.br/" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-ground text-ink antialiased">
+    <div id="root"></div>
+    <noscript>
+      <div style="max-width:40rem;margin:4rem auto;padding:0 1rem;font-family:system-ui,sans-serif;color:#0f172a">
+        <h1 style="font-size:1.5rem">Vértice Imóveis</h1>
+        <p>Este site precisa de JavaScript para mostrar o catálogo de imóveis e a conversa com a Mora.
+           Ative o JavaScript no navegador ou fale com a gente pelo Telegram.</p>
+      </div>
+    </noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

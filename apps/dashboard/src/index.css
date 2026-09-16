@@ -1,0 +1,93 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tema do painel — ADR-0014.
+ *
+ * Regra que mantém isto de pé: NENHUM componente escreve cor literal. Todos usam os tokens
+ * semânticos abaixo (`bg-surface`, `text-ink-muted`, `bg-warn-soft`…), e trocar de tema é só
+ * redefinir estas variáveis. No dia em que um `bg-slate-100` voltar para um componente, ele vira um
+ * retângulo branco no tema escuro — e ninguém percebe até alguém abrir aquela tela.
+ *
+ * Os nomes dizem o PAPEL, não a cor: `surface` é onde o conteúdo se apoia, `surface-2` é o realce
+ * sutil (hover, chip), `line` separa, `ink` escreve. Os tons semânticos vêm em trio — `-soft` é o
+ * fundo, `-strong` é o texto que vai sobre ele, `-line` é a borda; sozinho é a cor cheia (bolinha,
+ * botão). Trio, e não uma cor só, porque no escuro o fundo e o texto de um aviso não se invertem
+ * juntos: o fundo escurece e o texto CLAREIA.
+ *
+ * Só existe UM bloco de tema escuro, e ele responde a `data-tema-efetivo`. A opção "sistema" é
+ * resolvida no JavaScript (lib/tema.ts) e carimbada aqui — assim não há uma segunda cópia da paleta
+ * dentro de um `@media (prefers-color-scheme)` para alguém esquecer de atualizar.
+ */
+:root {
+  --canvas: #f6f6f4;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --line: #e6e6e2;
+
+  --ink: #121212;
+  --ink-soft: #3f3f3b;      /* corpo secundário: explicação, ajuda, texto longo */
+  --ink-muted: #5c5c57;
+  --ink-faint: #6f6f6a;      /* carimbo de hora, texto de apoio — nunca informação essencial */
+
+  --brand: #0f172a;
+  --brand-ink: #ffffff;      /* o que se escreve sobre o brand cheio */
+  --brand-accent: #2563eb;
+  --anel-foco: rgba(37, 99, 235, 0.45);   /* alfa embutido: Tailwind não aplica opacidade sobre var() */
+
+  --good: #008300;    --good-soft: #e8f5e9;    --good-strong: #056608;    --good-line: #b6dfb8;
+  --warn: #c98500;    --warn-soft: #fdf6e3;    --warn-strong: #8a5a00;    --warn-line: #f0dca8;
+  --bad:  #e34948;    --bad-soft:  #fdecec;    --bad-strong:  #a52322;    --bad-line:  #f4c3c2;
+  --info: #2a78d6;    --info-soft: #eff5fe;    --info-strong: #12539f;    --info-line: #bcd7f7;
+  --violeta: #6d4aca; --violeta-soft: #f1ecfd; --violeta-strong: #533ba3; --violeta-line: #d6c9f5;
+
+  /* Séries (paleta de referência validada — dataviz) */
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a; --series-4: #eda100; --series-5: #e87ba4; --series-6: #4a3aa7;
+  /* Rampa azul ordinal (funil/estágios) — passos 250..650 */
+  --ord-1: #86b6ef; --ord-2: #5598e7; --ord-3: #2a78d6; --ord-4: #1c5cab; --ord-5: #104281;
+  --status-good: var(--good); --status-warn: var(--warn); --status-bad: var(--bad);
+  --grid: #e8e8e5;
+  --sombra-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.03);
+  --scroll: #d4d4d0;
+  color-scheme: light;
+}
+
+/* Escuro não é o claro invertido: o fundo não é preto puro (cansa a vista e faz o texto "vibrar"),
+ * e as cores de status precisam CLAREAR — vermelho escuro sobre fundo escuro não se lê. */
+:root[data-tema-efetivo="escuro"] {
+  --canvas: #0e1116;
+  --surface: #161b22;
+  --surface-2: #1f2630;
+  --line: #2b333f;
+
+  --ink: #e9edf3;
+  --ink-soft: #c8d0dc;
+  --ink-muted: #a7b0bd;
+  --ink-faint: #8992a0;
+
+  --brand: #e6eaf1;          /* o realce se inverte: pastilha clara sobre o menu escuro */
+  --brand-ink: #0d1117;
+  --brand-accent: #7fa9ff;
+  --anel-foco: rgba(127, 169, 255, 0.55);
+
+  --good: #46b95c;    --good-soft: #10241a;    --good-strong: #7ee094;    --good-line: #1d3d2a;
+  --warn: #d8a33a;    --warn-soft: #241d0f;    --warn-strong: #f0c674;    --warn-line: #3d3218;
+  --bad:  #f0625c;    --bad-soft:  #26151a;    --bad-strong:  #ff9f99;    --bad-line:  #40232a;
+  --info: #5a9df0;    --info-soft: #101d2e;    --info-strong: #93c0ff;    --info-line: #1d3350;
+  --violeta: #9d86ee; --violeta-soft: #1b1730; --violeta-strong: #c0aefc; --violeta-line: #322a55;
+
+  /* Um passo mais claras: as do tema claro foram calibradas contra fundo branco. */
+  --series-1: #5a9df0; --series-2: #f38b5e; --series-3: #46c894; --series-4: #e8b93f; --series-5: #f09ec0; --series-6: #8c7ce0;
+  --ord-1: #1c3f6b; --ord-2: #22548f; --ord-3: #2f6cb5; --ord-4: #5a9df0; --ord-5: #93c0ff;
+  --grid: #263040;
+  --sombra-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 1px rgba(0, 0, 0, 0.3);
+  --scroll: #39424f;
+  color-scheme: dark;
+}
+
+html { -webkit-font-smoothing: antialiased; }
+body { @apply bg-canvas text-ink; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+.recharts-cartesian-axis-tick text { fill: var(--ink-muted); font-size: 11px; }
+.recharts-tooltip-wrapper { outline: none; }

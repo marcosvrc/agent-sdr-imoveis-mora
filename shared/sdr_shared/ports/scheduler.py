@@ -1,0 +1,6 @@
+from typing import Protocol
+
+
+class FollowupScheduler(Protocol):
+    def schedule(self, lead_id: str, delay_min: int, payload: str) -> None: ...
+    def cancel(self, lead_id: str) -> None: ...

@@ -1,0 +1,3545 @@
+{
+  "components": {
+    "schemas": {
+      "AssumirIn": {
+        "properties": {
+          "corretor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corretor Id"
+          }
+        },
+        "title": "AssumirIn",
+        "type": "object"
+      },
+      "Busca": {
+        "description": "Resposta da busca do site. Tem `total` porque a lista sozinha não diz quantos existem — e sem\nisso a página é obrigada a baixar o catálogo inteiro para contar.",
+        "properties": {
+          "bairros": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Bairros",
+            "type": "array"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/ImovelPublico"
+            },
+            "title": "Itens",
+            "type": "array"
+          },
+          "limite": {
+            "title": "Limite",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "itens",
+          "total",
+          "bairros",
+          "limite",
+          "offset"
+        ],
+        "title": "Busca",
+        "type": "object"
+      },
+      "EventoNavegacao": {
+        "properties": {
+          "dados": {
+            "additionalProperties": true,
+            "title": "Dados",
+            "type": "object"
+          },
+          "session_id": {
+            "maxLength": 64,
+            "minLength": 6,
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "tipo": {
+            "maxLength": 32,
+            "title": "Tipo",
+            "type": "string"
+          },
+          "token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Token"
+          }
+        },
+        "required": [
+          "session_id",
+          "tipo"
+        ],
+        "title": "EventoNavegacao",
+        "type": "object"
+      },
+      "FotoIn": {
+        "properties": {
+          "imagem": {
+            "title": "Imagem",
+            "type": "string"
+          }
+        },
+        "required": [
+          "imagem"
+        ],
+        "title": "FotoIn",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Imovel": {
+        "properties": {
+          "area_m2": {
+            "title": "Area M2",
+            "type": "number"
+          },
+          "bairro": {
+            "title": "Bairro",
+            "type": "string"
+          },
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "condominio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condominio"
+          },
+          "descricao": {
+            "title": "Descricao",
+            "type": "string"
+          },
+          "destaque_investimento": {
+            "default": false,
+            "title": "Destaque Investimento",
+            "type": "boolean"
+          },
+          "fotos": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Fotos",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "operacao": {
+            "title": "Operacao",
+            "type": "string"
+          },
+          "preco": {
+            "title": "Preco",
+            "type": "number"
+          },
+          "quartos": {
+            "title": "Quartos",
+            "type": "integer"
+          },
+          "regiao": {
+            "title": "Regiao",
+            "type": "string"
+          },
+          "suites": {
+            "default": 0,
+            "title": "Suites",
+            "type": "integer"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          },
+          "vagas": {
+            "default": 0,
+            "title": "Vagas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "operacao",
+          "cidade",
+          "regiao",
+          "bairro",
+          "quartos",
+          "area_m2",
+          "preco",
+          "descricao"
+        ],
+        "title": "Imovel",
+        "type": "object"
+      },
+      "ImovelPublico": {
+        "description": "Resposta pública: mesmo imóvel + pontos de referência do bairro (dado que já existe em\n`sdr_shared.geo` para o agente entender \"perto da Faria Lima\" — o site só expõe o que já existia).",
+        "properties": {
+          "area_m2": {
+            "title": "Area M2",
+            "type": "number"
+          },
+          "bairro": {
+            "title": "Bairro",
+            "type": "string"
+          },
+          "cidade": {
+            "title": "Cidade",
+            "type": "string"
+          },
+          "condominio": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Condominio"
+          },
+          "descricao": {
+            "title": "Descricao",
+            "type": "string"
+          },
+          "destaque_investimento": {
+            "default": false,
+            "title": "Destaque Investimento",
+            "type": "boolean"
+          },
+          "fotos": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Fotos",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "operacao": {
+            "title": "Operacao",
+            "type": "string"
+          },
+          "pontos_referencia": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Pontos Referencia",
+            "type": "array"
+          },
+          "preco": {
+            "title": "Preco",
+            "type": "number"
+          },
+          "quartos": {
+            "title": "Quartos",
+            "type": "integer"
+          },
+          "regiao": {
+            "title": "Regiao",
+            "type": "string"
+          },
+          "suites": {
+            "default": 0,
+            "title": "Suites",
+            "type": "integer"
+          },
+          "tipo": {
+            "title": "Tipo",
+            "type": "string"
+          },
+          "vagas": {
+            "default": 0,
+            "title": "Vagas",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tipo",
+          "operacao",
+          "cidade",
+          "regiao",
+          "bairro",
+          "quartos",
+          "area_m2",
+          "preco",
+          "descricao"
+        ],
+        "title": "ImovelPublico",
+        "type": "object"
+      },
+      "LimitesIn": {
+        "properties": {
+          "acao_ao_estourar": {
+            "pattern": "^(degradar|alertar|bloquear)$",
+            "title": "Acao Ao Estourar",
+            "type": "string"
+          },
+          "alerta_pct": {
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Alerta Pct",
+            "type": "integer"
+          },
+          "cotacao_brl": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Cotacao Brl",
+            "type": "number"
+          },
+          "orcamento_mensal_usd": {
+            "minimum": 0.0,
+            "title": "Orcamento Mensal Usd",
+            "type": "number"
+          },
+          "teto_tokens_dia": {
+            "minimum": 0.0,
+            "title": "Teto Tokens Dia",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "orcamento_mensal_usd",
+          "teto_tokens_dia",
+          "alerta_pct",
+          "acao_ao_estourar",
+          "cotacao_brl"
+        ],
+        "title": "LimitesIn",
+        "type": "object"
+      },
+      "OrdemIn": {
+        "properties": {
+          "fotos": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fotos",
+            "type": "array"
+          }
+        },
+        "required": [
+          "fotos"
+        ],
+        "title": "OrdemIn",
+        "type": "object"
+      },
+      "PrecoIn": {
+        "properties": {
+          "cache_escrita": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Cache Escrita",
+            "type": "number"
+          },
+          "cache_leitura": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Cache Leitura",
+            "type": "number"
+          },
+          "entrada": {
+            "minimum": 0.0,
+            "title": "Entrada",
+            "type": "number"
+          },
+          "saida": {
+            "minimum": 0.0,
+            "title": "Saida",
+            "type": "number"
+          }
+        },
+        "required": [
+          "entrada",
+          "saida"
+        ],
+        "title": "PrecoIn",
+        "type": "object"
+      },
+      "ReativacaoIn": {
+        "properties": {
+          "aceita": {
+            "title": "Aceita",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "aceita"
+        ],
+        "title": "ReativacaoIn",
+        "type": "object"
+      },
+      "SituacaoIn": {
+        "properties": {
+          "situacao": {
+            "title": "Situacao",
+            "type": "string"
+          }
+        },
+        "required": [
+          "situacao"
+        ],
+        "title": "SituacaoIn",
+        "type": "object"
+      },
+      "Texto": {
+        "properties": {
+          "texto": {
+            "title": "Texto",
+            "type": "string"
+          }
+        },
+        "required": [
+          "texto"
+        ],
+        "title": "Texto",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "api__routers__corretores__CorretorIn": {
+        "properties": {
+          "ativo": {
+            "default": true,
+            "title": "Ativo",
+            "type": "boolean"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "foto": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foto"
+          },
+          "nome": {
+            "minLength": 2,
+            "title": "Nome",
+            "type": "string"
+          },
+          "regioes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Regioes",
+            "type": "array"
+          },
+          "telefone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefone"
+          }
+        },
+        "required": [
+          "nome"
+        ],
+        "title": "CorretorIn",
+        "type": "object"
+      },
+      "api__routers__leads__CorretorIn": {
+        "properties": {
+          "corretor_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corretor Id"
+          }
+        },
+        "title": "CorretorIn",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "Token do painel": {
+        "description": "Perfil local: o valor de `SDR_PAINEL_TOKEN` (em desenvolvimento, `dev-token`). Perfil AWS: o JWT emitido pelo Cognito.",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "contact": {
+      "name": "Projeto Mora — Vértice Imóveis (POC acadêmica)"
+    },
+    "description": "\nAPI do **Mora**, o agente SDR imobiliário da Vértice Imóveis.\n\nA etiqueta de cada rota diz quem a usa e o que ela exige:\n\n| Etiqueta | Quem usa | Autenticação |\n|---|---|---|\n| `público` | site vitrine e chat | nenhuma |\n| `corretor` | painel do corretor | `Authorization: Bearer …` |\n| `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |\n| `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |\n\n**Como autenticar no perfil local:** clique em **Authorize** e informe o valor de\n`SDR_PAINEL_TOKEN` (no ambiente de desenvolvimento, `dev-token`). No perfil AWS o token é o\nJWT do Cognito, validado pelo authorizer do API Gateway antes de chegar aqui.\n\nToda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).\n",
+    "license": {
+      "name": "Uso acadêmico — licença a confirmar"
+    },
+    "title": "Mora — SDR Imobiliário API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/auditoria": {
+      "get": {
+        "operationId": "listar_auditoria_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ator",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ator"
+            }
+          },
+          {
+            "in": "query",
+            "name": "acao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Acao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entidade",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entidade"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entidade_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entidade Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "busca",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Busca"
+            }
+          },
+          {
+            "in": "query",
+            "name": "so_sensiveis",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "So Sensiveis",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 300,
+              "maximum": 1000,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/auditoria/exportar": {
+      "get": {
+        "description": "CSV do período — para enviar a quem pediu a prestação de contas.",
+        "operationId": "exportar_auditoria_exportar_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "acao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Acao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "entidade",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Entidade"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Exportar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/calendario/callback": {
+      "get": {
+        "description": "Volta do Google. Endpoint público por definição — quem chama é o navegador, sem o nosso token.\nO `state` é assinado por nós (ver seguranca/oauth.py): sem isso, bastava adivinhar o id de um\ncorretor para plantar a credencial da PRÓPRIA conta Google na agenda dele.",
+        "operationId": "callback_calendario_callback_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "in": "query",
+            "name": "state",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "in": "query",
+            "name": "error",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Callback",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/calendario/conectar/{corretor_id}": {
+      "post": {
+        "description": "Devolve a URL de consentimento. Quem abre é o navegador do corretor, não a API.",
+        "operationId": "conectar_calendario_conectar__corretor_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corretor_id",
+            "required": true,
+            "schema": {
+              "title": "Corretor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Conectar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/calendario/status": {
+      "get": {
+        "description": "O painel usa isto para saber quem já conectou. Nenhum token sai daqui.",
+        "operationId": "status_calendario_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Status",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/calendario/{corretor_id}": {
+      "delete": {
+        "operationId": "desconectar_calendario__corretor_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corretor_id",
+            "required": true,
+            "schema": {
+              "title": "Corretor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Desconectar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/clientes": {
+      "get": {
+        "operationId": "listar_clientes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "busca",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Busca"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 200,
+              "maximum": 500,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "operacao"
+        ]
+      }
+    },
+    "/clientes/{cliente_id}": {
+      "get": {
+        "operationId": "ficha_clientes__cliente_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "cliente_id",
+            "required": true,
+            "schema": {
+              "title": "Cliente Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Ficha",
+        "tags": [
+          "operacao"
+        ]
+      }
+    },
+    "/config": {
+      "get": {
+        "operationId": "obter_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Obter",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/config/followup/previa": {
+      "get": {
+        "description": "Quando cada tentativa cairia, com a configuração salva — o painel mostra antes de o corretor confiar.",
+        "operationId": "previa_followup_config_followup_previa_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "temperatura",
+            "required": false,
+            "schema": {
+              "default": "morno",
+              "title": "Temperatura",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Previa Followup",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/config/modelos/testar": {
+      "post": {
+        "description": "Faz UMA chamada real e curta ao modelo pedido, antes de salvar.\n\nLista fixa de modelos envelhece e campo livre derruba o agente no turno seguinte; um teste de\nverdade responde as duas dúvidas que a lista não responde — o ID existe neste provedor e nesta\nregião? e quanto ele demora? Também avisa se falta preço, porque salvar sem preço desliga o\nteto de orçamento em dólar (ver _validar_modelos).",
+        "operationId": "testar_modelo_config_modelos_testar_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Testar Modelo",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/config/{chave}": {
+      "delete": {
+        "description": "Volta a chave para os defaults.",
+        "operationId": "restaurar_config__chave__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chave",
+            "required": true,
+            "schema": {
+              "title": "Chave",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Restaurar",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "salvar_config__chave__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "chave",
+            "required": true,
+            "schema": {
+              "title": "Chave",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "title": "Body",
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Salvar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/corretores": {
+      "get": {
+        "operationId": "listar_corretores_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "criar_corretores_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api__routers__corretores__CorretorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Criar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/corretores/{corretor_id}": {
+      "delete": {
+        "description": "Desliga o corretor: `ativo = false` e a carteira vai para quem você indicar.\n\nNão apaga o cadastro. Antes, o DELETE removia a linha e os leads ficavam apontando para um id\ninexistente — em handoff, atribuídos a ninguém e fora da lista de todo mundo. Desativar mantém\no histórico (quem atendeu quem) e tira o corretor do roteamento de novos leads.",
+        "operationId": "desativar_corretores__corretor_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corretor_id",
+            "required": true,
+            "schema": {
+              "title": "Corretor Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Para onde vai a carteira: id de outro corretor, `equipe` (fila sem dono) ou `auto` (distribui pelo roteamento por região e carga). Obrigatório quando a carteira não está vazia.",
+            "in": "query",
+            "name": "destino",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Para onde vai a carteira: id de outro corretor, `equipe` (fila sem dono) ou `auto` (distribui pelo roteamento por região e carga). Obrigatório quando a carteira não está vazia.",
+              "title": "Destino"
+            }
+          },
+          {
+            "description": "Apaga o cadastro em vez de desativar. Só permitido com a carteira vazia — existe para o cadastro criado por engano, não para desligar quem já atendeu.",
+            "in": "query",
+            "name": "remover_cadastro",
+            "required": false,
+            "schema": {
+              "default": false,
+              "description": "Apaga o cadastro em vez de desativar. Só permitido com a carteira vazia — existe para o cadastro criado por engano, não para desligar quem já atendeu.",
+              "title": "Remover Cadastro",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Desativar",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "atualizar_corretores__corretor_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corretor_id",
+            "required": true,
+            "schema": {
+              "title": "Corretor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api__routers__corretores__CorretorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Atualizar",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/corretores/{corretor_id}/carteira": {
+      "get": {
+        "description": "Quantos leads abertos e visitas futuras estão no nome deste corretor.\n\nA tela chama isto antes de desligar alguém, para perguntar para onde vai a carteira.",
+        "operationId": "carteira_corretores__corretor_id__carteira_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "corretor_id",
+            "required": true,
+            "schema": {
+              "title": "Corretor Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Carteira",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/dashboard/atividade": {
+      "get": {
+        "operationId": "atividade_dashboard_atividade_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Atividade",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/dashboard/funil": {
+      "get": {
+        "operationId": "funil_dashboard_funil_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Funil",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/dashboard/metricas": {
+      "get": {
+        "description": "KPIs do período com variação vs. período anterior, série diária, pipeline em R$ e distribuições.",
+        "operationId": "metricas_dashboard_metricas_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 7,
+              "maximum": 90,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Metricas",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/dashboard/reativacao": {
+      "get": {
+        "description": "Fase 4 do ADR-0013: o que o aviso de imóvel novo produziu.\n\nJanela padrão de 30 dias porque reativação é lenta por natureza — o lead sumiu semanas atrás e o\nimóvel certo aparece quando aparece; sete dias mostrariam quase sempre zero.",
+        "operationId": "reativacao_dashboard_reativacao_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 180,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Reativacao",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/dashboard/saude": {
+      "get": {
+        "description": "Observabilidade leve (ADR-0011): o que o corretor precisa ver sem abrir um Grafana.\n\nTrês leituras baratas do Postgres — espera do cliente por turno, última amostra de filas e\nquem está batendo ponto. Sem coletor, sem série temporal de métricas, sem agente extra.",
+        "operationId": "saude_dashboard_saude_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "horas",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 168,
+              "minimum": 1,
+              "title": "Horas",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Saude",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/dashboard/visitas": {
+      "get": {
+        "operationId": "visitas_dashboard_visitas_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Visitas",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/eventos": {
+      "post": {
+        "operationId": "registrar_eventos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventoNavegacao"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Registrar",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/governanca/limites": {
+      "get": {
+        "operationId": "limites_governanca_limites_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Limites",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "salvar_limites_governanca_limites_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LimitesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Salvar Limites",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/governanca/precos": {
+      "get": {
+        "description": "Preços por 1M de tokens: (entrada, saída, escrita de cache, leitura de cache) em USD.",
+        "operationId": "precos_governanca_precos_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Precos",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/governanca/precos/{modelo}": {
+      "delete": {
+        "operationId": "restaurar_preco_governanca_precos__modelo__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "modelo",
+            "required": true,
+            "schema": {
+              "title": "Modelo",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Restaurar Preco",
+        "tags": [
+          "admin"
+        ]
+      },
+      "put": {
+        "operationId": "salvar_preco_governanca_precos__modelo__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "modelo",
+            "required": true,
+            "schema": {
+              "title": "Modelo",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrecoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Salvar Preco",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/governanca/uso": {
+      "get": {
+        "description": "Consumo do período com variação, série diária, quebra por modelo/nó/papel e chamadas recentes.",
+        "operationId": "uso_governanca_uso_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 180,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Uso",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/handoff/{lead_id}/assumir": {
+      "post": {
+        "description": "Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento\npor região → ninguém (fila da equipe).\n\nO último caso já foi \"o usuário logado\", e isso gravava no lead um id que não existe no cadastro\nde corretores: no perfil local, o literal `corretor-dev`; na AWS, o `sub` do Cognito. Quem está\nlogado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead\nficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é\ndeixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).",
+        "operationId": "assumir_handoff__lead_id__assumir_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/AssumirIn"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Assumir",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/handoff/{lead_id}/devolver": {
+      "post": {
+        "operationId": "devolver_handoff__lead_id__devolver_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Devolver",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/handoff/{lead_id}/responder": {
+      "post": {
+        "description": "Envia a mensagem do corretor por TODOS os canais do lead (WhatsApp e/ou web), sem passar pelo agente.",
+        "operationId": "responder_handoff__lead_id__responder_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Texto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Responder",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Saúde de verdade: banco alcançável e nenhum worker calado (ADR-0011).\n\nDevolve 503 quando algo está degradado — é o que o `healthcheck` do compose e o target group\nda AWS leem. Um /health que devolve 200 sempre não é monitoramento, é decoração.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Saúde do sistema",
+        "tags": [
+          "infraestrutura"
+        ]
+      }
+    },
+    "/imoveis": {
+      "get": {
+        "operationId": "listar_imoveis_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "operacao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operacao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "regiao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Regiao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preco_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Preco Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quartos",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quartos"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 60,
+              "maximum": 200,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ImovelPublico"
+                  },
+                  "title": "Response Listar Imoveis Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/imoveis/busca": {
+      "get": {
+        "description": "Catálogo paginado com filtros — a rota que a vitrine usa.\n\nFica separada de `GET /imoveis` (que continua igual, sem paginação, e é o que o chat e os testes\nantigos consomem) para não quebrar contrato de ninguém ao introduzir a forma nova.",
+        "operationId": "busca_imoveis_busca_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "operacao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Operacao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "regiao",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Regiao"
+            }
+          },
+          {
+            "in": "query",
+            "name": "bairro",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Bairro"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tipo",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tipo"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preco_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Preco Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preco_max",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Preco Max"
+            }
+          },
+          {
+            "in": "query",
+            "name": "quartos",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quartos"
+            }
+          },
+          {
+            "in": "query",
+            "name": "suites",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Suites"
+            }
+          },
+          {
+            "in": "query",
+            "name": "vagas",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 10,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vagas"
+            }
+          },
+          {
+            "in": "query",
+            "name": "area_min",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Area Min"
+            }
+          },
+          {
+            "in": "query",
+            "name": "texto",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 80,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Texto"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ordenar",
+            "required": false,
+            "schema": {
+              "default": "relevancia",
+              "title": "Ordenar",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 24,
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Limite",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Busca"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Busca",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/imoveis/{imovel_id}": {
+      "get": {
+        "operationId": "detalhe_imoveis__imovel_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImovelPublico"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhe",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/imoveis/{imovel_id}/fotos": {
+      "post": {
+        "operationId": "enviar_foto_imoveis__imovel_id__fotos_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FotoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Imovel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Enviar Foto",
+        "tags": [
+          "público"
+        ]
+      },
+      "put": {
+        "operationId": "reordenar_fotos_imoveis__imovel_id__fotos_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrdemIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Imovel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Reordenar Fotos",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/imoveis/{imovel_id}/fotos/{nome}": {
+      "delete": {
+        "operationId": "remover_foto_imoveis__imovel_id__fotos__nome__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "nome",
+            "required": true,
+            "schema": {
+              "title": "Nome",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Imovel"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Remover Foto",
+        "tags": [
+          "público"
+        ]
+      }
+    },
+    "/interesses/imovel/{imovel_id}": {
+      "get": {
+        "description": "Quem está de olho neste imóvel, do lead mais quente para o mais frio.\n\nDescartados ficam de fora — a pergunta é com quem falar, não quem já disse não.",
+        "operationId": "do_imovel_interesses_imovel__imovel_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Do Imovel",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/interesses/lead/{lead_id}": {
+      "get": {
+        "description": "Imóveis que passaram pela conversa deste lead, do mais recente para o mais antigo.",
+        "operationId": "do_lead_interesses_lead__lead_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Do Lead",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/interesses/{lead_id}/{imovel_id}": {
+      "put": {
+        "description": "Corrige a situação do interesse — tipicamente marcar `descartado` depois de falar com o cliente.\n\n`sugerido` é recusado de propósito: rebaixar um interesse declarado para \"só mostrei\" apagaria\ninformação. Para desfazer um descarte, marque `interessado`.",
+        "operationId": "atualizar_interesses__lead_id___imovel_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SituacaoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Atualizar",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads": {
+      "get": {
+        "operationId": "listar_leads_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "estagio",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estagio"
+            }
+          },
+          {
+            "in": "query",
+            "name": "temperatura",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Temperatura"
+            }
+          },
+          {
+            "in": "query",
+            "name": "corretor_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Corretor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/crm/sync": {
+      "post": {
+        "description": "Simula integração com CRM externo (diferencial): exporta leads qualificados/agendados.",
+        "operationId": "crm_sync_leads_crm_sync_post",
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Crm Sync",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/{lead_id}": {
+      "get": {
+        "operationId": "detalhe_leads__lead_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Detalhe",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/{lead_id}/analisar": {
+      "post": {
+        "description": "Pede ao agente (worker Resumidor) um novo briefing + análise de sentimento/perfil. Assíncrono: o painel recarrega.",
+        "operationId": "analisar_leads__lead_id__analisar_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Analisar",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/{lead_id}/corretor": {
+      "put": {
+        "description": "Atribui (ou troca/remove) o corretor responsável pelo lead; visitas futuras acompanham.",
+        "operationId": "atribuir_leads__lead_id__corretor_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/api__routers__leads__CorretorIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Atribuir",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/{lead_id}/mensagens": {
+      "get": {
+        "operationId": "mensagens_leads__lead_id__mensagens_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Mensagens",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/leads/{lead_id}/reativacao": {
+      "put": {
+        "description": "Liga/desliga o aviso de imóvel novo para este lead.\n\nO cliente pode desligar sozinho pela conversa (\"não quero mais avisos\"), mas o pedido também\nchega por telefone, por e-mail e no meio de uma visita — e aí quem registra é o corretor. Sem\nesta rota, honrar um opt-out exigiria UPDATE no banco, que é o mesmo que não honrar.",
+        "operationId": "preferencia_de_reativacao_leads__lead_id__reativacao_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "lead_id",
+            "required": true,
+            "schema": {
+              "title": "Lead Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReativacaoIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Preferencia De Reativacao",
+        "tags": [
+          "corretor"
+        ]
+      }
+    },
+    "/notificacoes": {
+      "get": {
+        "operationId": "listar_notificacoes_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "apenas_nao_lidas",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Apenas Nao Lidas",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Listar",
+        "tags": [
+          "operacao"
+        ]
+      }
+    },
+    "/notificacoes/lidas": {
+      "post": {
+        "operationId": "marcar_todas_notificacoes_lidas_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Marcar Todas",
+        "tags": [
+          "operacao"
+        ]
+      }
+    },
+    "/notificacoes/{notificacao_id}/lida": {
+      "post": {
+        "operationId": "marcar_lida_notificacoes__notificacao_id__lida_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notificacao_id",
+            "required": true,
+            "schema": {
+              "title": "Notificacao Id",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Marcar Lida",
+        "tags": [
+          "operacao"
+        ]
+      }
+    },
+    "/reativacao/imovel/{imovel_id}": {
+      "get": {
+        "description": "Quem seria avisado sobre este imóvel, ordenado por aderência.\n\nCada candidato vem com os motivos em português — são eles que viram a primeira frase da\nmensagem. Os excluídos vêm com o motivo da exclusão, que é o que permite calibrar a régua.",
+        "operationId": "simular_reativacao_imovel__imovel_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "imovel_id",
+            "required": true,
+            "schema": {
+              "title": "Imovel Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Limite",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Simular",
+        "tags": [
+          "corretor"
+        ]
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "Perfil local (docker compose)",
+      "url": "http://localhost:8000"
+    },
+    {
+      "description": "Perfil AWS — a confirmar no deploy",
+      "url": "https://api.exemplo.com.br"
+    }
+  ],
+  "tags": [
+    {
+      "description": "Catálogo de imóveis e eventos de navegação. Sem autenticação — é o que a vitrine consome e o que o CloudFront pode cachear.",
+      "name": "público"
+    },
+    {
+      "description": "Leads, conversas, agenda e KPIs do painel. Exige credencial de corretor.",
+      "name": "corretor"
+    },
+    {
+      "description": "Rotinas do dia a dia do atendimento: clientes e notificações.",
+      "name": "operacao"
+    },
+    {
+      "description": "Configuração do sistema, modelos de LLM, orçamento, integração de calendário e auditoria.",
+      "name": "admin"
+    },
+    {
+      "description": "Sinais operacionais consumidos por health check de container e target group.",
+      "name": "infraestrutura"
+    }
+  ]
+}

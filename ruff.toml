@@ -1,0 +1,52 @@
+# Análise estática do Python (ruff). A régua foi escolhida para pegar ERRO, não para impor um estilo:
+# o objetivo é que uma falha aqui signifique "isto está quebrado ou vai quebrar", e não "isto está
+# escrito diferente do que eu escreveria". Regra que só reorganiza código legível fica de fora, para
+# o passo continuar valendo alguma coisa quando alguém o vir vermelho.
+line-length = 160
+target-version = "py312"
+extend-exclude = ["**/__pycache__", "apps", "site", ".venv-docs"]
+
+[lint]
+select = [
+  "F",      # pyflakes: nome indefinido, import não usado, f-string sem placeholder
+  "E4",     # imports mal formados
+  "E7",     # comparações e construções suspeitas (== None, except nu, type(x) == y)
+  "E9",     # erro de sintaxe / IO
+  "W",      # espaço em branco à toa
+  "B",      # bugbear: armadilhas reais (mutável como default, except sem from, zip sem strict)
+  "C4",     # comprehensions desnecessárias
+  "UP",     # sintaxe obsoleta para o Python que rodamos (3.12)
+  "PIE",    # sobras: passe inútil, dict duplicado
+  "RUF",    # regras próprias do ruff (mutável em ClassVar, aspas unicode enganosas)
+]
+ignore = [
+  # Estilo deliberado da casa, documentado no README: uma linha por ideia curta.
+  "E701", "E702", "E731",
+  # `l` de lead aparece em todo repositório; renomear em massa não deixaria nada mais claro.
+  "E741",
+  # `Depends(...)`, `Query(...)` e `Field(...)` no default são a assinatura idiomática do FastAPI.
+  "B008",
+  # Import tardio é usado de propósito (evita ciclo, adia dependência pesada) e vem comentado.
+  "E402",
+  # Cadeia de exceção dentro de except: o handler já loga o traceback original.
+  "B904",
+  # `for ... in list(...)` e afins onde a cópia é intencional.
+  "B007",
+  # `except Exception: pass` best-effort já está comentado caso a caso.
+  "RUF100",
+  # O código é escrito em português: travessão, aspas curvas e acento aparecem em texto e comentário.
+  # Estas regras existem para código em inglês onde um caractere unicode parecido esconde um bug.
+  "RUF001", "RUF002", "RUF003",
+  # `datetime.UTC` em vez de `timezone.utc` é cosmético; trocar em 15 arquivos não corrige nada.
+  "UP017",
+  # `dict(Name=..., GroupName=...)` com chaves nomeadas é mais legível que o literal, e é assim que
+  # os SDKs da AWS documentam os parâmetros.
+  "C408",
+]
+
+[lint.per-file-ignores]
+# `__init__.py` é a superfície pública do pacote: o import "não usado" É o export.
+"**/__init__.py" = ["F401"]
+# Testes falam por asserção; import só para efeito colateral e nomes longos são normais.
+# `msgs = []` de classe nos dublês é compartilhado de propósito: o teste inspeciona o que saiu.
+"**/tests/*.py" = ["B011", "E501", "RUF012"]

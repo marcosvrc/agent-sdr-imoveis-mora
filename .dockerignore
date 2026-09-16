@@ -1,0 +1,22 @@
+# O contexto de build das imagens é a raiz do repo (shared/ + services/). Fora isso, nada entra.
+.git
+.github
+node_modules
+**/node_modules
+**/dist
+**/build
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.venv
+**/cdk.out
+apps
+infra
+local
+docs
+data
+scripts
+**/tests
+*.md
+.env
+**/.env

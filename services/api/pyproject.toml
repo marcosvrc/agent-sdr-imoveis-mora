@@ -1,0 +1,18 @@
+[project]
+name = "sdr-api"
+version = "0.1.0"
+description = "API REST: imóveis públicos, leads, dashboard, handoff, eventos de navegação"
+requires-python = ">=3.12"
+dependencies = ["sdr-shared", "fastapi>=0.115"]
+[project.optional-dependencies]
+aws = ["mangum>=0.17", "boto3>=1.35"]
+dev = ["uvicorn", "pytest", "httpx"]
+[tool.uv.sources]
+sdr-shared = { path = "../../shared", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/api"]

@@ -1,0 +1,16 @@
+[project]
+name = "sdr-channel-whatsapp"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["sdr-shared", "httpx>=0.27"]
+[project.optional-dependencies]
+aws = ["boto3>=1.35"]
+[tool.uv.sources]
+sdr-shared = { path = "../../../shared", editable = true }
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["canal_whatsapp"]

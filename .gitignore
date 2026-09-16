@@ -1,0 +1,44 @@
+.env
+.venv/
+__pycache__/
+node_modules/
+dist/
+cdk.out/
+*.egg-info/
+_to_delete/
+data/fotos/
+# MkDocs — saída de build do portal de documentação
+site/
+
+# Ambientes virtuais fora do padrão .venv/ (o portal de docs cria .venv-docs/)
+.venv-docs/
+
+# Pacotes temporários usados para mover arquivos entre máquinas
+*.tgz
+
+# Saídas de sessões de assistente — não fazem parte do projeto
+Claude outputs/
+.DS_Store
+
+# Cobertura e cache de ferramentas (gerados por `make cobertura` e `make lint`)
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.ruff_cache/
+.pytest_cache/
+
+# ---- Segredos: rede de segurança do primeiro commit ----
+# `.env` (linha 1) já pega local/.env em qualquer nível. Aqui ficam as variações que aparecem
+# sozinhas com o tempo — e as chaves/credenciais que nunca devem sair da máquina.
+.env.*
+!.env.example
+!*.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+credentials
+credentials.json
+.aws/
+secrets/

@@ -1,0 +1,63 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: pgvector/pgvector:pg16
+        env: { POSTGRES_USER: sdr, POSTGRES_PASSWORD: sdr, POSTGRES_DB: sdr }
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U sdr" --health-interval 5s --health-retries 10
+    env:
+      # As suítes APAGAM tabelas: a trava em guarda_teste.py exige um banco com "test" no nome.
+      # PREPARO_DB=psql porque aqui o Postgres é service container do runner, não docker compose.
+      TEST_DSN: postgresql://sdr:sdr@localhost:5432/sdr_test
+      PREPARO_DB: psql
+      SDR_PROFILE: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e services/channels/whatsapp -e services/channels/web -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
+      # Estático antes do teste: erro de nome ou import quebrado aparece em segundos, sem esperar
+      # o banco subir e as sete suítes rodarem.
+      - name: Análise estática (ruff)
+        run: make lint
+      # `make cobertura` roda as MESMAS suítes que `make test` (mesmo alvo test-db, mesmo pytest),
+      # medindo cobertura e falhando abaixo do piso de .coveragerc. Rodar os dois seria pagar duas
+      # vezes pelo mesmo trabalho.
+      - name: Testes com cobertura
+        run: make cobertura
+      - name: Guardar o relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with: { name: cobertura, path: coverage.xml, if-no-files-found: warn }
+      # A especificação versionada alimenta o Swagger do portal; se ela envelhecer,
+      # a documentação publicada passa a mentir sobre a API.
+      - run: python scripts/gerar_openapi.py --verificar
+  frontend:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [web, dashboard]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: cd apps/${{ matrix.app }} && npm ci && npm run build
+      # Fora do package.json de propósito (ver eslint.config.js): o container `web` do compose roda
+      # `npm install` a cada subida da demo e não deve carregar ferramenta de CI junto.
+      - name: Lint do front (eslint)
+        run: |
+          cd apps/${{ matrix.app }}
+          npm i --no-save --legacy-peer-deps eslint@9 typescript-eslint@8 @eslint/js eslint-plugin-react-hooks@5 globals
+          npm run lint
+  infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r infra/requirements.txt && npm i -g aws-cdk
+      - run: cd infra && cdk synth --context env=ci

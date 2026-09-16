@@ -1,0 +1,188 @@
+# mkdocs.yml — Portal de documentação do Mora (Agente SDR Imobiliário)
+# Publicado no GitHub Pages via .github/workflows/docs.yml
+#
+# ATENÇÃO (base URL de project pages): ajuste `site_url` e `repo_url` para o
+# usuário/organização reais quando o repositório tiver um remote configurado.
+# Formato esperado: https://<usuario-ou-organizacao>.github.io/agent-sdr-morai/
+
+site_name: Mora — Documentação
+site_description: >-
+  Documentação técnica do Mora, uma POC de SDR imobiliário com IA generativa:
+  arquitetura, manuais do agente, site e painel, referência da API, segurança e operação.
+site_author: Marcos Ramos
+# A confirmar: troque <usuario-ou-organizacao> pelo dono real do repositório.
+site_url: https://exemplo.github.io/agent-sdr-morai/
+docs_dir: docs
+site_dir: site
+
+# O .txt é uma cópia do briefing em .md (agente-sdr-imobiliario.md) — não construir.
+# O arquivo arquitetura.html é o dossiê visual C4: copiado como asset estático (acessível
+# por link direto), sem virar página de navegação.
+exclude_docs: |
+  Agente SDR Imobiliário com Inteligência Artificial.txt
+not_in_nav: |
+  /arquitetura.html
+
+repo_name: agent-sdr-morai
+repo_url: https://github.com/exemplo/agent-sdr-morai
+edit_uri: edit/main/docs/
+
+copyright: >-
+  Documentação do projeto Mora — POC acadêmica de Marcos Ramos. Código sob licença MIT.
+
+theme:
+  name: material
+  language: pt-BR
+  custom_dir: docs/overrides
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-night
+        name: Alternar para o tema escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: blue
+      toggle:
+        icon: material/weather-sunny
+        name: Alternar para o tema claro
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.action.edit
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/exemplo/agent-sdr-morai
+      name: Repositório no GitHub
+  status:
+    new: Recém-adicionado
+    experimental: Experimental
+
+extra_css:
+  - assets/extra.css
+
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      permalink_title: Link permanente para esta seção
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+plugins:
+  - search:
+      lang: pt
+  - tags
+
+nav:
+  - Início:
+      - Visão geral: index.md
+      - Contexto do projeto: overview/contexto.md
+      - Funcionalidades: overview/funcionalidades.md
+      - Quick Start: overview/quick-start.md
+  - Primeiros passos:
+      - Pré-requisitos: getting-started/pre-requisitos.md
+      - Configuração e variáveis de ambiente: getting-started/configuracao.md
+      - Executando com Docker: getting-started/docker.md
+      - Executando manualmente: getting-started/manual.md
+      - Validando a instalação: getting-started/validacao.md
+  - Arquitetura:
+      - Visão geral: architecture/index.md
+      - Componentes: architecture/componentes.md
+      - Fluxo do agente e LLM: architecture/fluxo-agente.md
+      - Dados e persistência: architecture/dados.md
+      - Diagramas: architecture/diagramas.md
+      - Referência completa (ARCHITECTURE.md): ARCHITECTURE.md
+      - Decisões arquiteturais (ADRs):
+          - Índice: architecture/decisoes.md
+          - ADR-0001 — RAG com Knowledge Base + Aurora pgvector: adr/0001-rag-knowledge-base-com-aurora-pgvector.md
+          - ADR-0002 — Agente em Lambda container: adr/0002-agente-em-lambda-container.md
+          - ADR-0003 — Canais como adaptadores: adr/0003-canais-como-adaptadores.md
+          - ADR-0004 — Aurora em vez de DynamoDB: adr/0004-aurora-em-vez-de-dynamodb.md
+          - ADR-0005 — Observabilidade com OpenTelemetry + Grafana (revogado): adr/0005-observabilidade-com-opentelemetry-e-grafana.md
+          - ADR-0006 — Site vitrine com agente embutido: adr/0006-site-vitrine-com-agente-embutido.md
+          - ADR-0007 — Telegram em vez de WhatsApp: adr/0007-telegram-em-vez-de-whatsapp.md
+          - ADR-0008 — Portões de autenticação fora do API Gateway: adr/0008-portoes-de-autenticacao-fora-do-api-gateway.md
+          - ADR-0009 — Gateway de LLM (LiteLLM/OpenRouter/nada): adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md
+          - ADR-0010 — Modelo por nível e troca pelo painel: adr/0010-modelo-por-nivel-e-troca-pelo-painel.md
+          - ADR-0011 — Observabilidade leve no Postgres: adr/0011-observabilidade-leve-no-postgres.md
+          - ADR-0012 — Vitrine encontrável e acessível: adr/0012-vitrine-encontravel-e-acessivel.md
+          - ADR-0013 — Reativação proativa de leads adormecidos: adr/0013-reativacao-proativa-de-leads-adormecidos.md
+          - ADR-0014 — Tema claro e escuro no painel: adr/0014-tema-claro-e-escuro-no-painel.md
+  - Manual de uso:
+      - Agente (Mora): user-guide/agente.md
+      - Site: user-guide/site.md
+      - Painel administrativo: user-guide/painel.md
+      - Perguntas frequentes: user-guide/faq.md
+  - Referência técnica:
+      - Regras de negócio: technical-reference/regras-de-negocio.md
+      - Tecnologias: technical-reference/tecnologias.md
+      - API: technical-reference/api.md
+      - Swagger (OpenAPI): technical-reference/openapi.md
+      - Banco de dados: technical-reference/banco-de-dados.md
+      - Integrações: technical-reference/integracoes.md
+      - Estrutura do repositório: technical-reference/estrutura.md
+  - Qualidade:
+      - Performance: quality/performance.md
+      - Segurança e privacidade: quality/seguranca.md
+      - Testes: quality/testes.md
+      - Observabilidade: quality/observabilidade.md
+      - Observabilidade de sistema (referência): observabilidade.md
+      - Troubleshooting: quality/troubleshooting.md
+  - Projeto:
+      - Roadmap e limitações: project/roadmap.md
+      - Como contribuir: project/contribuir.md
+      - Desafio original (briefing): agente-sdr-imobiliario.md
+      - Pendências de documentação: project/pendencias.md
+      - Licença: project/licenca.md

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "SP-0001", "tipo": "apartamento", "operacao": "venda", "cidade": "São Paulo", "regiao": "zona_sul",
+    "bairro": "Brooklin", "quartos": 2, "suites": 1, "vagas": 1, "area_m2": 68, "preco": 780000, "condominio": 900,
+    "descricao": "Andar alto, varanda gourmet, condomínio com piscina e academia, a 5 minutos da estação Brooklin.",
+    "fotos": ["https://picsum.photos/seed/sp0001/800/600"], "destaque_investimento": true
+  },
+  {
+    "id": "SP-0002", "tipo": "apartamento", "operacao": "aluguel", "cidade": "São Paulo", "regiao": "zona_oeste",
+    "bairro": "Pinheiros", "quartos": 1, "suites": 0, "vagas": 0, "area_m2": 42, "preco": 3800, "condominio": 650,
+    "descricao": "Studio mobiliado, prédio novo com coworking e lavanderia, ideal para quem trabalha na Faria Lima.",
+    "fotos": ["https://picsum.photos/seed/sp0002/800/600"], "destaque_investimento": false
+  },
+  {
+    "id": "SP-0003", "tipo": "casa", "operacao": "venda", "cidade": "São Paulo", "regiao": "zona_sul",
+    "bairro": "Campo Belo", "quartos": 3, "suites": 2, "vagas": 2, "area_m2": 180, "preco": 1650000, "condominio": null,
+    "descricao": "Casa em rua tranquila, quintal com churrasqueira, próxima a escolas e ao Parque do Chuvisco.",
+    "fotos": ["https://picsum.photos/seed/sp0003/800/600"], "destaque_investimento": false
+  }
+]

@@ -1,0 +1,4 @@
+# Dependências do portal de documentação (MkDocs Material).
+# Usado pelo workflow .github/workflows/docs.yml e para pré-visualização local:
+#   pip install -r docs-requirements.txt && mkdocs serve
+mkdocs-material==9.5.44

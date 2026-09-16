@@ -1,0 +1,19 @@
+// Extração: mensagem do cliente → campos do CartaoQualificacao.
+// `esperado` = precisa sair assim. `nao_esperado` = precisa continuar vazio (mede alucinação:
+// inventar um orçamento que o cliente não deu é pior que deixar em branco).
+// Português de WhatsApp de verdade: minúscula, abreviação, erro de digitação, áudio transcrito.
+{"id": "ext-01-pedido-completo", "mensagem": "oi, to procurando um ap de 2 quartos na zona sul ate 800 mil, preciso pra esse mes", "esperado": {"intencao": "compra", "quartos": 2, "regiao": "zona_sul", "preco_max": 800000, "urgencia": {"qualquer": ["imediata", "imediato", "este mes", "esse mes", "urgente"]}}, "nao_esperado": ["ticket", "perfil_investidor", "preco_min"]}
+{"id": "ext-02-aluguel-simples", "mensagem": "quero alugar alguma coisa no brooklin", "esperado": {"intencao": "aluguel", "regiao": "zona_sul"}, "nao_esperado": ["preco_max", "quartos", "urgencia"]}
+{"id": "ext-03-investidor", "mensagem": "sou investidor, tenho 500 mil pra aplicar e busco uns 0,6% ao mes de retorno. perfil moderado", "esperado": {"intencao": "investimento", "ticket": 500000, "perfil_investidor": "moderado", "retorno_esperado": {"qualquer": ["0,6", "0.6", "0,6% a.m.", "0,6% ao mes"]}}, "nao_esperado": ["quartos"]}
+{"id": "ext-04-so-saudacao", "mensagem": "bom dia!", "esperado": {}, "nao_esperado": ["intencao", "regiao", "preco_max", "quartos", "urgencia", "tipo_imovel", "ticket"]}
+{"id": "ext-05-nao-inventar-orcamento", "mensagem": "queria uma casa com quintal, tenho dois cachorros", "esperado": {"intencao": "compra", "tipo_imovel": {"qualquer": ["casa"]}}, "nao_esperado": ["preco_max", "ticket", "quartos", "urgencia"]}
+{"id": "ext-06-faixa-de-preco", "mensagem": "procuro entre 400 e 600 mil, 3 dormitorios", "esperado": {"preco_min": 400000, "preco_max": 600000, "quartos": 3}, "nao_esperado": ["ticket", "perfil_investidor"]}
+{"id": "ext-07-contato-progressivo", "mensagem": "meu nome e Vinicio, meu zap e 11978654432", "esperado": {"nome_informado": "vinicio", "telefone_informado": {"qualquer": ["11978654432", "(11) 97865-4432", "11 97865-4432"]}}, "nao_esperado": ["email_informado", "preco_max"]}
+{"id": "ext-08-email", "mensagem": "pode me mandar por email? vinicio@hotmail.com", "esperado": {"email_informado": "vinicio@hotmail.com"}, "nao_esperado": ["telefone_informado", "intencao"]}
+{"id": "ext-09-audio-transcrito", "mensagem": "entao eh o seguinte eu tava procurando um apartamento ali pela vila mariana sabe pra alugar mesmo umas dois quartos se possivel", "esperado": {"intencao": "aluguel", "quartos": 2, "regiao": "zona_sul"}, "nao_esperado": ["preco_max", "ticket"]}
+{"id": "ext-10-mudou-de-ideia", "mensagem": "na verdade desisti de comprar, quero alugar mesmo", "cartao_inicial": {"intencao": "compra", "quartos": 2}, "esperado": {"intencao": "aluguel"}, "nao_esperado": []}
+{"id": "ext-11-preco-abreviado", "mensagem": "ate 1,2mi na vila olimpia", "esperado": {"preco_max": 1200000, "regiao": "zona_sul"}, "nao_esperado": ["quartos", "ticket"]}
+{"id": "ext-12-visita", "mensagem": "gostei do 3o, da pra visitar sabado?", "esperado": {"pediu_visita": true}, "nao_esperado": ["preco_max", "intencao"]}
+{"id": "ext-13-sem-pressa", "mensagem": "to so pesquisando, sem pressa nenhuma, talvez ano que vem", "esperado": {"urgencia": {"qualquer": ["sem prazo", "sem pressa", "longo prazo", "ano que vem", "baixa"]}}, "nao_esperado": ["preco_max", "quartos"]}
+{"id": "ext-14-fora-de-cobertura", "mensagem": "queria uma casa em campinas ate 500 mil", "esperado": {"intencao": "compra", "preco_max": 500000}, "nao_esperado": ["regiao"]}
+{"id": "ext-15-negacao", "mensagem": "nao quero apartamento, nem em zona norte", "esperado": {}, "nao_esperado": ["regiao", "preco_max", "quartos"]}

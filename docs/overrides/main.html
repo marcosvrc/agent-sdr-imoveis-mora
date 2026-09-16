@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{#- SEO e compartilhamento: Open Graph + Twitter Card por página.
+    A imagem social e a canonical usam o site_url configurado no mkdocs.yml. -#}
+{% block extrahead %}
+  {% set title = (page.title if page else none) | default(config.site_name) %}
+  {% set desc = (page.meta.description if page and page.meta else none) | default(config.site_description) %}
+  {% if page and page.canonical_url %}{% set url = page.canonical_url %}{% else %}{% set url = config.site_url %}{% endif %}
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ title }}">
+  <meta property="og:description" content="{{ desc }}">
+  <meta property="og:url" content="{{ url }}">
+  <meta property="og:site_name" content="{{ config.site_name }}">
+  <meta property="og:image" content="{{ config.site_url }}assets/og-image.svg">
+  <meta property="og:locale" content="pt_BR">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ title }}">
+  <meta name="twitter:description" content="{{ desc }}">
+  <meta name="twitter:image" content="{{ config.site_url }}assets/og-image.svg">
+{% endblock %}

@@ -1,0 +1,111 @@
+---
+title: Visão geral
+description: Mora é uma POC de SDR imobiliário com IA generativa — atende, qualifica, recomenda imóveis, agenda visitas e faz handoff ao corretor.
+hide:
+  - navigation
+---
+
+<div class="mora-hero" markdown>
+
+<span class="mora-hero__title" markdown>**Mora** — Agente SDR Imobiliário</span>
+
+<p class="mora-hero__sub" markdown>
+Prova de conceito de um SDR (Sales Development Representative) imobiliário com IA generativa.
+A agente virtual **Mora** atende o cliente, entende o que ele procura, recomenda imóveis do
+catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
+</p>
+
+<div class="mora-badges" markdown>
+<span class="mora-badge">Status: POC</span>
+<span class="mora-badge">PT-BR</span>
+<span class="mora-badge">Perfis: local &amp; AWS</span>
+<span class="mora-badge">Licença: a confirmar</span>
+</div>
+
+<div class="mora-actions" markdown>
+[Começar agora](overview/quick-start.md){ .md-button .md-button--primary }
+[Ver no GitHub](https://github.com/exemplo/agent-sdr-morai){ .md-button }
+</div>
+
+</div>
+
+Este portal é a **documentação detalhada** do projeto. O [`README.md`](https://github.com/exemplo/agent-sdr-morai#readme)
+do repositório continua sendo o guia rápido. Aqui você encontra arquitetura, manuais de uso, referência
+da API, segurança, performance e operação.
+
+## Destaques
+
+<div class="mora-cards" markdown>
+
+<div class="mora-card" markdown>
+### :material-robot: Atendimento com IA
+Grafo multiagente (LangGraph) com supervisor, qualificador, consultor, agendador, follow-up, handoff e
+resumidor e reativador. [Ver arquitetura](architecture/fluxo-agente.md)
+</div>
+
+<div class="mora-card" markdown>
+### :material-magnify: Busca inteligente (RAG)
+Recomendação por busca semântica com cascata por localidade (bairro → vizinhos → região → cidade),
+sobre pgvector. [Ver dados](architecture/dados.md)
+</div>
+
+<div class="mora-card" markdown>
+### :material-calendar-check: Agendamento e handoff
+Oferta de horários em dois turnos e encaminhamento do lead qualificado ao corretor, com briefing
+automático. [Ver manual do agente](user-guide/agente.md)
+</div>
+
+<div class="mora-card" markdown>
+### :material-view-dashboard: Painel do corretor
+Funil, conversas ao vivo, agenda, imóveis, corretores, configuração do agente e auditoria.
+[Ver manual do painel](user-guide/painel.md)
+</div>
+
+<div class="mora-card" markdown>
+### :material-shield-check: Segurança determinística
+Guardrails de escopo, blindagem de prompt, saneamento de saída e rate limiting por lead.
+[Ver segurança](quality/seguranca.md)
+</div>
+
+<div class="mora-card" markdown>
+### :material-chart-line: Governança de IA
+Registro por chamada, custo por modelo e orçamento com degradação automática.
+[Ver observabilidade](quality/observabilidade.md)
+</div>
+
+</div>
+
+## Como o sistema funciona
+
+O sistema separa o **cérebro** (o agente) dos **canais** (site e Telegram). O agente não sabe por qual
+canal a mensagem chegou: cada canal traduz o evento do provedor para um formato neutro e vice-versa.
+
+```mermaid
+flowchart LR
+    U[Usuário] --> SITE[Site ou Telegram]
+    SITE --> CH[Canais]
+    CH --> Q[[Fila]]
+    Q --> AGENT[Agente de IA]
+    AGENT --> LLM[LLM]
+    AGENT --> DATA[(Postgres + pgvector)]
+    AGENT -->|resposta neutra| CH
+    DASH[Painel do corretor] --> API[API REST]
+    API --> DATA
+```
+
+O mesmo código roda em dois perfis, escolhidos por `SDR_PROFILE`: **local** (Docker Compose) e **aws**
+(serverless). A troca acontece apenas nos adaptadores. Detalhes em [Arquitetura](architecture/index.md).
+
+## Links rápidos
+
+- :material-rocket-launch: [Executar localmente](getting-started/docker.md)
+- :material-sitemap: [Conhecer a arquitetura](architecture/index.md)
+- :material-robot: [Usar o agente](user-guide/agente.md)
+- :material-view-dashboard: [Acessar o painel administrativo](user-guide/painel.md)
+- :material-api: [Consultar a API](technical-reference/api.md)
+- :material-source-pull: [Contribuir](project/contribuir.md)
+
+!!! note "Sobre esta POC"
+    O Mora é uma prova de conceito. O núcleo está implementado e testado nos perfis local e AWS, mas
+    alguns itens dependentes de serviços AWS estão escritos e não testados. Veja o estado real em
+    [Funcionalidades](overview/funcionalidades.md).

@@ -1,0 +1,3802 @@
+[
+  {
+    "id": "SP-0001",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 68,
+    "preco": 780000,
+    "condominio": 900,
+    "descricao": "Andar alto, varanda gourmet, condomínio com piscina e academia, a 5 minutos da estação Brooklin.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0001/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0002",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 42,
+    "preco": 3800,
+    "condominio": 650,
+    "descricao": "Studio mobiliado, prédio novo com coworking e lavanderia, ideal para quem trabalha na Faria Lima.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0002/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0003",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 180,
+    "preco": 1650000,
+    "condominio": null,
+    "descricao": "Casa em rua tranquila, quintal com churrasqueira, próxima a escolas e ao Parque do Chuvisco.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0003/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0100",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 107.0,
+    "preco": 5360.0,
+    "condominio": 1280.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0100/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0101",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 34.0,
+    "preco": 2630.0,
+    "condominio": 410.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0101/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0102",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 153.0,
+    "preco": 14210.0,
+    "condominio": 1780.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0102/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0103",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 194.0,
+    "preco": 2260000.0,
+    "condominio": 2590.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0103/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0104",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 122.0,
+    "preco": 1828000.0,
+    "condominio": 1490.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0104/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0105",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 158.0,
+    "preco": 1501000.0,
+    "condominio": 2230.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0105/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0106",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 68.0,
+    "preco": 981000.0,
+    "condominio": 1000.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0106/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0107",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 53.0,
+    "preco": 3430.0,
+    "condominio": 580.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0107/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0108",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 219.0,
+    "preco": 12260.0,
+    "condominio": 3130.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0108/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0109",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 53.0,
+    "preco": 3630.0,
+    "condominio": null,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0109/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0110",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 57.0,
+    "preco": 630000.0,
+    "condominio": 510.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0110/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0111",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 44.0,
+    "preco": 589000.0,
+    "condominio": 580.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0111/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0112",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 68.0,
+    "preco": 4720.0,
+    "condominio": 1030.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0112/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0113",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Perdizes",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 42.0,
+    "preco": 398000.0,
+    "condominio": 570.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0113/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0114",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 77.0,
+    "preco": 1100000.0,
+    "condominio": 1080.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0114/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0115",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 131.0,
+    "preco": 8110.0,
+    "condominio": null,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0115/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0116",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 53.0,
+    "preco": 565000.0,
+    "condominio": 680.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0116/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0117",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 46.0,
+    "preco": 545000.0,
+    "condominio": 630.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0117/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0118",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Tatuapé",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 48.0,
+    "preco": 4080.0,
+    "condominio": 500.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0118/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0119",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 162.0,
+    "preco": 1961000.0,
+    "condominio": 2200.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0119/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0120",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 170.0,
+    "preco": 2007000.0,
+    "condominio": 1530.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0120/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0121",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 136.0,
+    "preco": 2146000.0,
+    "condominio": 1520.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0121/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0122",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 42.0,
+    "preco": 628000.0,
+    "condominio": 400.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0122/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0123",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 45.0,
+    "preco": 431000.0,
+    "condominio": 570.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0123/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0124",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 142.0,
+    "preco": 1732000.0,
+    "condominio": 1900.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0124/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0125",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 45.0,
+    "preco": 515000.0,
+    "condominio": 520.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0125/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0126",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 60.0,
+    "preco": 5500.0,
+    "condominio": 650.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0126/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0127",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 100.0,
+    "preco": 1344000.0,
+    "condominio": 1530.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0127/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0128",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Tatuapé",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 40.0,
+    "preco": 634000.0,
+    "condominio": 480.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0128/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0129",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 106.0,
+    "preco": 1386000.0,
+    "condominio": 990.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0129/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0130",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 101.0,
+    "preco": 1305000.0,
+    "condominio": 1520.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0130/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0131",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 158.0,
+    "preco": 2163000.0,
+    "condominio": 1600.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0131/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0132",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 112.0,
+    "preco": 1247000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0132/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0133",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 125.0,
+    "preco": 1720000.0,
+    "condominio": 1230.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0133/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0134",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 169.0,
+    "preco": 2037000.0,
+    "condominio": 2590.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0134/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0135",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 77.0,
+    "preco": 6020.0,
+    "condominio": 1150.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0135/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0136",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 165.0,
+    "preco": 12000.0,
+    "condominio": 2570.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0136/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0137",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 50.0,
+    "preco": 2250.0,
+    "condominio": 600.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0137/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0138",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 198.0,
+    "preco": 2882000.0,
+    "condominio": null,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0138/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0139",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 98.0,
+    "preco": 1019000.0,
+    "condominio": 1560.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0139/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0140",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 104.0,
+    "preco": 1227000.0,
+    "condominio": null,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0140/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0141",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 36.0,
+    "preco": 538000.0,
+    "condominio": 530.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0141/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0142",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 76.0,
+    "preco": 1010000.0,
+    "condominio": 910.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0142/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0143",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 166.0,
+    "preco": 1816000.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0143/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0144",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 123.0,
+    "preco": 1226000.0,
+    "condominio": 1240.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0144/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0145",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 162.0,
+    "preco": 10690.0,
+    "condominio": 1890.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0145/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0146",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 89.0,
+    "preco": 1104000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0146/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0147",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 67.0,
+    "preco": 914000.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0147/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0148",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 120.0,
+    "preco": 1355000.0,
+    "condominio": 1290.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0148/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0149",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 111.0,
+    "preco": 1505000.0,
+    "condominio": 1650.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0149/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0150",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 49.0,
+    "preco": 3920.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0150/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0151",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 67.0,
+    "preco": 873000.0,
+    "condominio": 1040.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0151/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0152",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 168.0,
+    "preco": 8580.0,
+    "condominio": 2020.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0152/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0153",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 147.0,
+    "preco": 1977000.0,
+    "condominio": 1500.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0153/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0154",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 61.0,
+    "preco": 5260.0,
+    "condominio": 690.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0154/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0155",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 111.0,
+    "preco": 1518000.0,
+    "condominio": 1660.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0155/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0156",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 173.0,
+    "preco": 1892000.0,
+    "condominio": 1850.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0156/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0157",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 161.0,
+    "preco": 9610.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0157/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0158",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 62.0,
+    "preco": 4500.0,
+    "condominio": 750.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0158/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0159",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 72.0,
+    "preco": 996000.0,
+    "condominio": 1020.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0159/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0160",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 75.0,
+    "preco": 831000.0,
+    "condominio": 830.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0160/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0161",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 144.0,
+    "preco": 2171000.0,
+    "condominio": 1870.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0161/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0162",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 172.0,
+    "preco": 2538000.0,
+    "condominio": 2240.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0162/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0163",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 37.0,
+    "preco": 478000.0,
+    "condominio": 490.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0163/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0164",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 159.0,
+    "preco": 1908000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0164/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0165",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 37.0,
+    "preco": 352000.0,
+    "condominio": 450.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0165/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0166",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 152.0,
+    "preco": 2099000.0,
+    "condominio": 1490.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0166/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0167",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 40.0,
+    "preco": 570000.0,
+    "condominio": 480.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0167/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0168",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 174.0,
+    "preco": 15570.0,
+    "condominio": 1870.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0168/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0169",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 72.0,
+    "preco": 784000.0,
+    "condominio": 890.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0169/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0170",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 193.0,
+    "preco": 9570.0,
+    "condominio": 2170.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0170/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0171",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 167.0,
+    "preco": 14310.0,
+    "condominio": null,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0171/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0172",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 59.0,
+    "preco": 702000.0,
+    "condominio": 680.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0172/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0173",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 152.0,
+    "preco": 1834000.0,
+    "condominio": 1400.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0173/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0174",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 45.0,
+    "preco": 718000.0,
+    "condominio": 700.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0174/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0175",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 130.0,
+    "preco": 8920.0,
+    "condominio": 1340.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0175/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0176",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 168.0,
+    "preco": 1826000.0,
+    "condominio": 1860.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0176/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0177",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 163.0,
+    "preco": 2087000.0,
+    "condominio": 2590.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0177/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0178",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 162.0,
+    "preco": 2378000.0,
+    "condominio": null,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0178/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0179",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 146.0,
+    "preco": 1330000.0,
+    "condominio": 2310.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0179/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0180",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 203.0,
+    "preco": 17790.0,
+    "condominio": 2720.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0180/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0181",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 51.0,
+    "preco": 3030.0,
+    "condominio": 490.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0181/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0182",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 158.0,
+    "preco": 2303000.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0182/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0183",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 67.0,
+    "preco": 5930.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0183/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0184",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 160.0,
+    "preco": 1961000.0,
+    "condominio": 1930.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0184/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0185",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 129.0,
+    "preco": 12250.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0185/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0186",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 107.0,
+    "preco": 6930.0,
+    "condominio": 1520.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0186/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0187",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 106.0,
+    "preco": 6100.0,
+    "condominio": 1030.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0187/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0188",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 146.0,
+    "preco": 1616000.0,
+    "condominio": null,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0188/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0189",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 158.0,
+    "preco": 13630.0,
+    "condominio": 2380.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0189/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0190",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 237.0,
+    "preco": 2740000.0,
+    "condominio": 3020.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0190/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0191",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 74.0,
+    "preco": 722000.0,
+    "condominio": 680.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0191/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0192",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 57.0,
+    "preco": 4560.0,
+    "condominio": 560.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0192/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0193",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 48.0,
+    "preco": 563000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0193/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0194",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 120.0,
+    "preco": 10400.0,
+    "condominio": null,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0194/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0195",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 105.0,
+    "preco": 1449000.0,
+    "condominio": null,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0195/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0196",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 106.0,
+    "preco": 970000.0,
+    "condominio": null,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0196/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0197",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 64.0,
+    "preco": 680000.0,
+    "condominio": 580.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0197/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0198",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Perdizes",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 52.0,
+    "preco": 783000.0,
+    "condominio": 600.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0198/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0199",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 107.0,
+    "preco": 1357000.0,
+    "condominio": 1300.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0199/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0200",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 108.0,
+    "preco": 9090.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0200/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0201",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 198.0,
+    "preco": 3043000.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0201/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0202",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 130.0,
+    "preco": 7770.0,
+    "condominio": 1270.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0202/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0203",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 218.0,
+    "preco": 3225000.0,
+    "condominio": 2110.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0203/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0204",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 140.0,
+    "preco": 1351000.0,
+    "condominio": 1810.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0204/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0205",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 61.0,
+    "preco": 5620.0,
+    "condominio": 570.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0205/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0206",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 76.0,
+    "preco": 6640.0,
+    "condominio": 1090.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0206/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0207",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 61.0,
+    "preco": 2830.0,
+    "condominio": 660.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0207/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0208",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 36.0,
+    "preco": 490000.0,
+    "condominio": 510.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0208/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0209",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 165.0,
+    "preco": 1845000.0,
+    "condominio": 1660.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0209/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0210",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 176.0,
+    "preco": 1921000.0,
+    "condominio": 2110.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0210/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0211",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 98.0,
+    "preco": 7350.0,
+    "condominio": null,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0211/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0212",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 47.0,
+    "preco": 481000.0,
+    "condominio": 650.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0212/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0213",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 51.0,
+    "preco": 487000.0,
+    "condominio": 610.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0213/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0214",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 122.0,
+    "preco": 1782000.0,
+    "condominio": 1880.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0214/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0215",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 178.0,
+    "preco": 1989000.0,
+    "condominio": 2570.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0215/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0216",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 53.0,
+    "preco": 3320.0,
+    "condominio": 520.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0216/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0217",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 52.0,
+    "preco": 3620.0,
+    "condominio": 630.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0217/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0218",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 98.0,
+    "preco": 6580.0,
+    "condominio": 920.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0218/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0219",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Tatuapé",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 45.0,
+    "preco": 608000.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0219/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0220",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 72.0,
+    "preco": 3390.0,
+    "condominio": 740.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0220/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0221",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 71.0,
+    "preco": 1127000.0,
+    "condominio": 960.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0221/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0222",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 99.0,
+    "preco": 6370.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0222/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0223",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 161.0,
+    "preco": 12530.0,
+    "condominio": 1540.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0223/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0224",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 144.0,
+    "preco": 7090.0,
+    "condominio": 2090.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0224/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0225",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 167.0,
+    "preco": 10090.0,
+    "condominio": 1730.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0225/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0226",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 68.0,
+    "preco": 5160.0,
+    "condominio": 690.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0226/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0227",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 126.0,
+    "preco": 10200.0,
+    "condominio": 1830.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0227/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0228",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 153.0,
+    "preco": 1849000.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0228/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0229",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 104.0,
+    "preco": 7180.0,
+    "condominio": 1550.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0229/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0230",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 213.0,
+    "preco": 2569000.0,
+    "condominio": 3300.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0230/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0231",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 229.0,
+    "preco": 2106000.0,
+    "condominio": 2280.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0231/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0232",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 161.0,
+    "preco": 7880.0,
+    "condominio": 2070.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0232/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0233",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 73.0,
+    "preco": 872000.0,
+    "condominio": 710.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0233/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0234",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 38.0,
+    "preco": 2530.0,
+    "condominio": 410.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0234/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0235",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 43.0,
+    "preco": 540000.0,
+    "condominio": 390.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0235/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0236",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 39.0,
+    "preco": 417000.0,
+    "condominio": 380.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0236/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0237",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 149.0,
+    "preco": 1524000.0,
+    "condominio": 1840.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0237/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0238",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 120.0,
+    "preco": 1824000.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0238/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0239",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 53.0,
+    "preco": 609000.0,
+    "condominio": null,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0239/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0240",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 218.0,
+    "preco": 3448000.0,
+    "condominio": null,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0240/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0241",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 198.0,
+    "preco": 2538000.0,
+    "condominio": null,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0241/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0242",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 141.0,
+    "preco": 9500.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0242/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0243",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 171.0,
+    "preco": 13500.0,
+    "condominio": 2350.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0243/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0244",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 137.0,
+    "preco": 6390.0,
+    "condominio": 1590.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0244/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0245",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 55.0,
+    "preco": 591000.0,
+    "condominio": 780.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0245/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0246",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 146.0,
+    "preco": 1939000.0,
+    "condominio": 1440.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0246/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0247",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 156.0,
+    "preco": 2005000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0247/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0248",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 68.0,
+    "preco": 3530.0,
+    "condominio": 880.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0248/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0249",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 40.0,
+    "preco": 3230.0,
+    "condominio": 480.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0249/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0250",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 57.0,
+    "preco": 650000.0,
+    "condominio": 750.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0250/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0251",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Tatuapé",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 63.0,
+    "preco": 701000.0,
+    "condominio": 980.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0251/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0252",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 124.0,
+    "preco": 1354000.0,
+    "condominio": 1580.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0252/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0253",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 48.0,
+    "preco": 735000.0,
+    "condominio": 450.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0253/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0254",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 65.0,
+    "preco": 775000.0,
+    "condominio": 990.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0254/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0255",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 146.0,
+    "preco": 1375000.0,
+    "condominio": null,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0255/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0256",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 165.0,
+    "preco": 2612000.0,
+    "condominio": 2130.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0256/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0257",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 65.0,
+    "preco": 1015000.0,
+    "condominio": 1020.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0257/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0258",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 96.0,
+    "preco": 1199000.0,
+    "condominio": 920.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0258/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0259",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 95.0,
+    "preco": 7110.0,
+    "condominio": 860.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0259/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0260",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 89.0,
+    "preco": 1151000.0,
+    "condominio": 1040.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0260/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0261",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 48.0,
+    "preco": 2390.0,
+    "condominio": 620.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0261/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0262",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 40.0,
+    "preco": 1880.0,
+    "condominio": 510.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0262/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0263",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 122.0,
+    "preco": 1729000.0,
+    "condominio": 1810.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0263/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0264",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 55.0,
+    "preco": 872000.0,
+    "condominio": 800.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0264/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0265",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 52.0,
+    "preco": 822000.0,
+    "condominio": 550.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0265/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0266",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Perdizes",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 67.0,
+    "preco": 4290.0,
+    "condominio": 870.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0266/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0267",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 146.0,
+    "preco": 1733000.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0267/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0268",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 68.0,
+    "preco": 840000.0,
+    "condominio": 1070.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0268/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0269",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 68.0,
+    "preco": 936000.0,
+    "condominio": 900.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0269/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0270",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 58.0,
+    "preco": 643000.0,
+    "condominio": 610.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0270/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0271",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 122.0,
+    "preco": 8800.0,
+    "condominio": 1350.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0271/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0272",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Campo Belo",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 150.0,
+    "preco": 2219000.0,
+    "condominio": 1460.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0272/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0273",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 92.0,
+    "preco": 6040.0,
+    "condominio": 1320.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0273/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0274",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 169.0,
+    "preco": 15750.0,
+    "condominio": null,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0274/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0275",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 61.0,
+    "preco": 949000.0,
+    "condominio": 930.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0275/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0276",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 131.0,
+    "preco": 2028000.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0276/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0277",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 0,
+    "area_m2": 211.0,
+    "preco": 2644000.0,
+    "condominio": 2390.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0277/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0278",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 162.0,
+    "preco": 2317000.0,
+    "condominio": 2040.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0278/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0279",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Moema",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 1,
+    "area_m2": 153.0,
+    "preco": 1656000.0,
+    "condominio": 2400.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0279/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0280",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 142.0,
+    "preco": 1396000.0,
+    "condominio": 1960.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0280/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0281",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 71.0,
+    "preco": 715000.0,
+    "condominio": 990.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0281/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0282",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 55.0,
+    "preco": 3470.0,
+    "condominio": 810.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0282/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0283",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 3,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 164.0,
+    "preco": 2257000.0,
+    "condominio": 2510.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0283/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0284",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 163.0,
+    "preco": 11100.0,
+    "condominio": 1760.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0284/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0285",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 151.0,
+    "preco": 2410000.0,
+    "condominio": 1660.0,
+    "descricao": "Reformado, pronto para morar, armários planejados.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0285/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0286",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 4,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 229.0,
+    "preco": 2663000.0,
+    "condominio": 3440.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0286/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0287",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 2,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 101.0,
+    "preco": 4560.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0287/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0288",
+    "tipo": "studio",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 56.0,
+    "preco": 640000.0,
+    "condominio": 870.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0288/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0289",
+    "tipo": "casa",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 36.0,
+    "preco": 2690.0,
+    "condominio": null,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0289/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0290",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 45.0,
+    "preco": 2510.0,
+    "condominio": 560.0,
+    "descricao": "A poucos minutos do metrô, cercado de comércio e serviços.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0290/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0291",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 1,
+    "area_m2": 125.0,
+    "preco": 11790.0,
+    "condominio": 1390.0,
+    "descricao": "Andar alto com vista livre e sol da manhã.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0291/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0292",
+    "tipo": "apartamento",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 2,
+    "area_m2": 173.0,
+    "preco": 10760.0,
+    "condominio": 1940.0,
+    "descricao": "Condomínio com lazer completo: piscina, academia e salão de festas.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0292/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0293",
+    "tipo": "casa",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 4,
+    "suites": 2,
+    "vagas": 0,
+    "area_m2": 144.0,
+    "preco": 2160000.0,
+    "condominio": null,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0293/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0294",
+    "tipo": "studio",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 38.0,
+    "preco": 2100.0,
+    "condominio": 590.0,
+    "descricao": "Prédio novo com coworking, lavanderia e bicicletário.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0294/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "SP-0295",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 3,
+    "suites": 1,
+    "vagas": 2,
+    "area_m2": 130.0,
+    "preco": 1206000.0,
+    "condominio": 1830.0,
+    "descricao": "Rua tranquila e arborizada, ótima para quem tem crianças.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0295/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "SP-0296",
+    "tipo": "apartamento",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 1,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 38.0,
+    "preco": 539000.0,
+    "condominio": 530.0,
+    "descricao": "Planta inteligente, sala ampla integrada à varanda.",
+    "fotos": [
+      "https://picsum.photos/seed/sp0296/800/600"
+    ],
+    "destaque_investimento": true
+  }
+]

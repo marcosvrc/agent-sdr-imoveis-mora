@@ -1,0 +1,62 @@
+# Publica o portal de documentação (MkDocs Material) no GitHub Pages.
+#
+# Ativar o Pages: Settings → Pages → Build and deployment → Source = "GitHub Actions".
+# Em pull requests o site é apenas construído (validação), sem publicar.
+# A publicação ocorre somente a partir da branch principal.
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "docs-requirements.txt"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "docs-requirements.txt"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+# Permissões mínimas para publicar no Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita deploys concorrentes; não cancela um deploy em andamento.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: docs-requirements.txt
+      - run: pip install -r docs-requirements.txt
+      # --strict falha o build em links internos quebrados ou avisos.
+      - run: mkdocs build --strict
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    # Publica só fora de pull requests e apenas na branch principal.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

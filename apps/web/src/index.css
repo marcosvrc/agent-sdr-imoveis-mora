@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Design tokens. Um lugar só para cor, raio, sombra e superfície — antes disso
+   cada componente escolhia o seu, e o site tinha quatro raios e quatro sombras
+   sem critério. O Tailwind lê estes valores em tailwind.config.js.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  /* Tinta: o par ink/ink-muted é o texto do site. ink-soft é o mínimo que ainda
+     passa em AA (4.6:1 no branco) — abaixo disso não existe token, de propósito. */
+  --ink: #0f172a;
+  --ink-muted: #475569;
+  --ink-soft: #64748b;
+
+  /* Marca. O acento tem dois tons porque a exigência é diferente: preenchimento
+     precisa de contraste com o texto branco por cima (600), texto sobre branco
+     precisa de 4.5:1 sozinho (700 = 6.3:1). */
+  --brand: #0f172a;
+  --accent: #2563eb;
+  --accent-forte: #1d4ed8;
+  --accent-suave: #eff6ff;
+
+  /* Superfícies */
+  --ground: #fbfaf7;
+  --surface: #ffffff;
+  --surface-2: #f5f1ea;
+  --line: #e2e8f0;
+  --line-forte: #cbd5e1;
+
+  /* Estado */
+  --ok: #047857;
+  --alerta: #b45309;
+  --erro: #b91c1c;
+
+  --raio-sm: 0.5rem;
+  --raio-md: 0.75rem;
+  --raio-lg: 1rem;
+  --raio-xl: 1.5rem;
+
+  --sombra-sm: 0 1px 2px rgb(15 23 42 / 0.06), 0 1px 3px rgb(15 23 42 / 0.08);
+  --sombra-md: 0 2px 10px -4px rgb(15 23 42 / 0.12);
+  --sombra-lg: 0 8px 30px -12px rgb(15 23 42 / 0.18);
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: "Inter", ui-sans-serif, system-ui, sans-serif; }
+h1, h2, h3, .font-display { font-family: "Fraunces", ui-serif, Georgia, serif; }
+
+/* Foco visível e consistente em todo elemento interativo — o teclado precisa "ver" onde está. */
+:focus-visible { outline: 2px solid var(--accent-forte); outline-offset: 2px; border-radius: 4px; }
+
+/* Alvo de toque mínimo de 44px (WCAG 2.2 AA, critério 2.5.8). Por classe e não
+   global: um chip de filtro pode ser menor se tiver espaçamento suficiente em volta. */
+.alvo-toque { min-height: 44px; min-width: 44px; }
+
+/* Card clicável inteiro sem aninhar interativos: o link cobre o card via ::after,
+   e o botão de favorito fica ACIMA dele (z-10). Antes, o <button> ficava dentro do
+   <a> — HTML inválido e um nó só para o leitor de tela. */
+.link-cobre::after { content: ""; position: absolute; inset: 0; z-index: 0; }
+
+/* A ficha do imóvel tem barra de conversão fixa no rodapé (só no celular): o lançador do chat
+   sobe para não cobrir o botão. Coordenado por classe no <body> porque são dois componentes
+   irmãos, cada um dono do seu canto, e nenhum deles deveria saber do outro. */
+@media (max-width: 767px) {
+  body.com-barra-cta .lancador-chat { bottom: 5.75rem; }
+}
+
+/* Pular para o conteúdo: primeiro tab da página, invisível até receber foco. */
+.pular-para-conteudo {
+  position: absolute; left: 1rem; top: -4rem; z-index: 60;
+  background: var(--surface); color: var(--ink);
+  padding: 0.625rem 1rem; border-radius: var(--raio-md);
+  box-shadow: var(--sombra-lg); transition: top .15s ease-out;
+}
+.pular-para-conteudo:focus { top: 1rem; }
+
+/* Quem pediu menos movimento recebe menos movimento — inclusive o scroll suave,
+   causa conhecida de enjoo em quem tem sensibilidade vestibular. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-forte); border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }

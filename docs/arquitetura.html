@@ -1,0 +1,833 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Dossiê de arquitetura do agente SDR imobiliário Mora: diagramas C4 dos perfis local e AWS, decisões e divergências conhecidas.">
+<title>Arquitetura da Mora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#F1F4F6; --surface:#FFFFFF; --surface-2:#F8FAFB; --sunken:#E9EEF1;
+  --ink:#111A21; --ink-2:#41525E; --ink-3:#6F818D;
+  --line:#D3DBE1; --line-2:#E6ECF0;
+  --core:#0E6B70; --core-soft:#DCEDED;
+  --aws:#3C51A4; --aws-soft:#E2E6F5;
+  --local:#84611F; --local-soft:#F2EADA;
+  --gap:#A2372A; --gap-soft:#F7E4E1;
+  --display:"Newsreader",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0C1216; --surface:#141D23; --surface-2:#18232A; --sunken:#101920;
+    --ink:#E4ECF1; --ink-2:#A6B6C1; --ink-3:#7A8B97;
+    --line:#28353D; --line-2:#1F2B32;
+    --core:#54C2C6; --core-soft:#123334;
+    --aws:#93A2EC; --aws-soft:#1B2340;
+    --local:#D6AB5C; --local-soft:#332913;
+    --gap:#E68675; --gap-soft:#3A1E1A;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0C1216; --surface:#141D23; --surface-2:#18232A; --sunken:#101920;
+  --ink:#E4ECF1; --ink-2:#A6B6C1; --ink-3:#7A8B97;
+  --line:#28353D; --line-2:#1F2B32;
+  --core:#54C2C6; --core-soft:#123334;
+  --aws:#93A2EC; --aws-soft:#1B2340;
+  --local:#D6AB5C; --local-soft:#332913;
+  --gap:#E68675; --gap-soft:#3A1E1A;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1100px; margin:0 auto; padding-inline:20px; padding-block:0 72px}
+
+/* ---------- cabeçalho ---------- */
+header.top{padding-block:56px 40px; border-bottom:1px solid var(--line)}
+.eyebrow{
+  font-family:var(--mono); font-size:11.5px; font-weight:500; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--ink-3); margin:0 0 14px
+}
+h1{
+  font-family:var(--display); font-weight:500; font-size:clamp(2.4rem,6vw,3.6rem);
+  line-height:1.06; letter-spacing:-.02em; margin:0 0 16px; text-wrap:balance
+}
+.lede{font-size:1.1rem; color:var(--ink-2); max-width:64ch; margin:0}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:26px; padding:0; list-style:none}
+.chips li{
+  font-family:var(--mono); font-size:11.5px; letter-spacing:.02em;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  border-radius:2px; padding:5px 10px
+}
+.chips li b{color:var(--ink); font-weight:600}
+
+/* ---------- seções ---------- */
+section{padding-block:52px; border-bottom:1px solid var(--line-2)}
+section:last-of-type{border-bottom:0}
+.sec-head{margin-bottom:26px}
+.sec-head .lvl{
+  font-family:var(--mono); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase;
+  color:var(--core); font-weight:600; display:block; margin-bottom:8px
+}
+h2{
+  font-family:var(--display); font-weight:500; font-size:clamp(1.6rem,3.2vw,2.1rem);
+  line-height:1.16; letter-spacing:-.012em; margin:0 0 12px; text-wrap:balance
+}
+h3{
+  font-family:var(--sans); font-weight:600; font-size:1rem; letter-spacing:.005em;
+  margin:34px 0 10px
+}
+p{max-width:70ch; margin:0 0 14px; color:var(--ink-2)}
+p strong{color:var(--ink); font-weight:600}
+code{
+  font-family:var(--mono); font-size:.87em; background:var(--sunken);
+  border-radius:2px; padding:1px 5px; color:var(--ink)
+}
+a{color:var(--core); text-decoration-thickness:1px; text-underline-offset:2px}
+a:focus-visible,button:focus-visible{outline:2px solid var(--core); outline-offset:2px}
+
+/* ---------- figuras ---------- */
+.fig{margin:26px 0 8px}
+.fig-scroll{
+  overflow-x:auto; background:var(--surface); border:1px solid var(--line);
+  border-radius:3px; padding:18px
+}
+.dg{display:block; width:100%; min-width:640px; max-width:100%; height:auto; color:var(--ink-2)}
+.dg text{font-family:var(--sans); font-size:12.5px; fill:var(--ink)}
+.dg text.m{font-family:var(--mono); font-size:11.5px; fill:var(--ink)}
+.dg text.sub{font-size:11px; fill:var(--ink-3)}
+.dg text.edge{font-family:var(--mono); font-size:10.5px; fill:var(--ink-3)}
+.dg text.hd{font-family:var(--mono); font-size:11.5px; font-weight:600; letter-spacing:.08em}
+.dg rect,.dg line,.dg path,.dg polyline,.dg circle{vector-effect:non-scaling-stroke}
+.box{fill:var(--surface-2); stroke:var(--line); stroke-width:1.2}
+.box-core{fill:var(--core-soft); stroke:var(--core); stroke-width:1.4}
+.box-aws{fill:var(--aws-soft); stroke:var(--aws); stroke-width:1.2}
+.box-local{fill:var(--local-soft); stroke:var(--local); stroke-width:1.2}
+.box-ext{fill:none; stroke:var(--line); stroke-width:1.2; stroke-dasharray:5 3}
+.bus{fill:var(--sunken); stroke:var(--line); stroke-width:1.2}
+.flow{stroke:var(--ink-3); stroke-width:1.3; fill:none}
+.flow-core{stroke:var(--core); stroke-width:1.5; fill:none}
+.bound{fill:none; stroke:var(--ink-3); stroke-width:1.1; stroke-dasharray:6 4}
+figcaption{
+  font-size:13.5px; color:var(--ink-3); max-width:78ch; margin-top:12px;
+  padding-left:13px; border-left:2px solid var(--line)
+}
+figcaption b{color:var(--ink-2); font-weight:600}
+
+/* ---------- tabelas ---------- */
+.tbl-scroll{overflow-x:auto; margin:20px 0}
+table{border-collapse:collapse; width:100%; min-width:560px; font-size:14px}
+th,td{text-align:left; padding:10px 14px 10px 0; border-bottom:1px solid var(--line-2); vertical-align:top}
+th{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-3); font-weight:600; border-bottom:1px solid var(--line)
+}
+td{color:var(--ink-2)}
+td:first-child{color:var(--ink); font-weight:500}
+td .m,th .m{font-family:var(--mono); font-size:12.5px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- lista de divergências ---------- */
+.gaps{list-style:none; padding:0; margin:22px 0 0; display:grid; gap:14px}
+.gaps li{
+  background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--gap);
+  border-radius:2px; padding:14px 16px
+}
+.gaps h4{
+  margin:0 0 6px; font-size:14.5px; font-weight:600; color:var(--ink);
+  font-family:var(--sans)
+}
+.gaps p{margin:0; font-size:13.5px; max-width:none}
+.gaps .tag{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--gap); display:block; margin-bottom:5px
+}
+
+/* ---------- legenda de cores ---------- */
+.key{display:flex; flex-wrap:wrap; gap:18px; margin:0 0 22px; padding:0; list-style:none;
+  font-family:var(--mono); font-size:11.5px; color:var(--ink-2)}
+.key li{display:flex; align-items:center; gap:7px}
+.key i{width:11px; height:11px; border-radius:2px; display:block; border:1px solid}
+.k-core{background:var(--core-soft); border-color:var(--core)}
+.k-local{background:var(--local-soft); border-color:var(--local)}
+.k-aws{background:var(--aws-soft); border-color:var(--aws)}
+.ic-key i{border-radius:50%; border:0; width:12px; height:12px}
+
+/* ---------- ícones de tecnologia ---------- */
+.ic-user{fill:#55636E} .ic-svc{fill:#DF9A16} .ic-data{fill:#33569E}
+.ic-infra{fill:#0F7F85} .ic-sec{fill:#C93B30} .ic-ai{fill:#6A50B5}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --icu:#7C8B96; --ics:#E5A937; --icd:#4C77C4; --ici:#159CA3; --icc:#DB5044; --ica:#8467D6}}
+:root{--icu:#55636E; --ics:#DF9A16; --icd:#33569E; --ici:#0F7F85; --icc:#C93B30; --ica:#6A50B5}
+:root[data-theme="dark"]{--icu:#7C8B96; --ics:#E5A937; --icd:#4C77C4; --ici:#159CA3; --icc:#DB5044; --ica:#8467D6}
+.ic-user{fill:var(--icu)} .ic-svc{fill:var(--ics)} .ic-data{fill:var(--icd)}
+.ic-infra{fill:var(--ici)} .ic-sec{fill:var(--icc)} .ic-ai{fill:var(--ica)}
+.glyph{fill:none; stroke:#fff; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+.grp{fill:none; stroke:var(--core); stroke-width:1.2; stroke-dasharray:5 4; opacity:.75}
+.grp-t{font-family:var(--mono); font-size:10.5px; font-weight:600; letter-spacing:.09em; fill:var(--core)}
+.zone{fill:none; stroke:var(--ink-3); stroke-width:1.4}
+.zone-t{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.09em; fill:var(--ink-2)}
+.tl{font-family:var(--mono); font-size:11.5px; font-weight:500; fill:var(--ink)}
+.ts{font-size:10.5px; fill:var(--ink-3)}
+
+@media (max-width:640px){
+  header.top{padding-block:40px 32px}
+  section{padding-block:38px}
+  .fig-scroll{padding:12px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">Dossiê de arquitetura · FIAP fase 5</p>
+  <h1>Arquitetura da Mora</h1>
+  <p class="lede">Agente SDR imobiliário com IA generativa. Um mesmo núcleo de domínio roda em dois
+  perfis de implantação — <code>local</code> em Docker Compose e <code>aws</code> serverless — trocando
+  apenas adaptadores de infraestrutura.</p>
+  <ul class="chips">
+    <li><b>2</b> perfis de implantação</li>
+    <li><b>10</b> stacks CDK</li>
+    <li><b>10</b> ADRs</li>
+    <li><b>245</b> testes automatizados</li>
+    <li><b>3</b> canais de atendimento</li>
+  </ul>
+</header>
+
+<!-- ============================= NÍVEL 1 ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">C4 · Nível 1 — Contexto</span>
+    <h2>Quem usa e com o que o sistema fala</h2>
+  </div>
+  <p>Dois públicos com necessidades opostas. O <strong>cliente</strong> conversa em linguagem natural
+  e quer resposta imediata a qualquer hora; o <strong>corretor</strong> quer um funil organizado,
+  contexto pronto e poder assumir a conversa quando ela esquenta. O sistema fica no meio, qualificando
+  o lead antes de ocupar o tempo de uma pessoa.</p>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 900 370" role="img"
+           aria-label="Diagrama de contexto: cliente e corretor usam a Mora, que consome modelo de linguagem da Bedrock ou Anthropic, a API do Telegram e o Google Agenda.">
+        <defs>
+<marker id="c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<g id="c-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
+<g id="c-db" class="glyph"><ellipse cy="-5.5" rx="7.2" ry="2.9"/><path d="M-7.2-5.5v11c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-11"/><path d="M-7.2 0c0 1.6 3.2 2.9 7.2 2.9S7.2 1.6 7.2 0"/></g>
+<g id="c-q" class="glyph"><rect x="-8.5" y="-5" width="4.2" height="10" rx="1"/><rect x="-2.1" y="-5" width="4.2" height="10" rx="1"/><rect x="4.3" y="-5" width="4.2" height="10" rx="1"/></g>
+<g id="c-fn" class="glyph"><path d="M1.5-9L-6 1.5h5l-1 7.5 7.5-10.5h-5z"/></g>
+<g id="c-mon" class="glyph"><rect x="-8.5" y="-7" width="17" height="11.5" rx="1.5"/><path d="M-3 9h6"/><path d="M0 4.5v4.5"/></g>
+<g id="c-msg" class="glyph"><rect x="-8.5" y="-7.5" width="17" height="11" rx="2"/><path d="M-4 3.5l-1.5 4.5 4.5-4.5"/></g>
+<g id="c-cdn" class="glyph"><circle r="8.2"/><path d="M-8.2 0h16.4"/><path d="M0-8.2c2.5 2.6 2.5 13.8 0 16.4"/><path d="M0-8.2c-2.5 2.6-2.5 13.8 0 16.4"/></g>
+<g id="c-gate" class="glyph"><path d="M-6.5-8v16"/><path d="M6.5-8v16"/><path d="M-3.5 0h6"/><path d="M1.2-3l3 3-3 3"/></g>
+<g id="c-sh" class="glyph"><path d="M0-9l6.8 2.7v5.8c0 4.5-2.9 7.8-6.8 9.3-3.9-1.5-6.8-4.8-6.8-9.3v-5.8z"/><path d="M-2.9 0l2.1 2.1L3.4-2"/></g>
+<g id="c-ai" class="glyph"><path d="M-1.5-9l1.8 4.9 4.9 1.8-4.9 1.8L-1.5 4.4-3.3-.5-8.2-2.3l4.9-1.8z"/><path d="M5.2 3.2l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></g>
+<g id="c-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
+<g id="c-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
+</defs>
+        <circle class="ic-user" cx="70" cy="105" r="22"/><use href="#c-msg" x="70" y="105"/><text class="tl" x="70" y="143" text-anchor="middle">Cliente</text><text class="ts" x="70" y="158" text-anchor="middle">site · Telegram</text>
+        <circle class="ic-user" cx="70" cy="235" r="22"/><use href="#c-mon" x="70" y="235"/><text class="tl" x="70" y="273" text-anchor="middle">Corretor</text><text class="ts" x="70" y="288" text-anchor="middle">painel autenticado</text>
+
+        <rect class="box-core" x="230" y="46" width="300" height="250" rx="5"/>
+        <circle class="ic-svc" cx="380" cy="96" r="26"/><use href="#c-svc" x="380" y="96"/><text class="tl" x="380" y="138" text-anchor="middle"></text>
+        <text class="hd" x="380" y="152" text-anchor="middle" fill="var(--core)">MORA</text>
+        <text class="ts" x="380" y="176" text-anchor="middle">qualifica · recomenda · agenda visita</text>
+        <text class="ts" x="380" y="193" text-anchor="middle">faz follow-up · entrega o lead ao corretor</text>
+        <circle class="ic-infra" cx="300" cy="238" r="15"/><use href="#c-msg" x="300" y="238"/><text class="tl" x="300" y="269" text-anchor="middle">site + chat</text>
+        <circle class="ic-svc" cx="380" cy="238" r="15"/><use href="#c-svc" x="380" y="238"/><text class="tl" x="380" y="269" text-anchor="middle">agente</text>
+        <circle class="ic-infra" cx="460" cy="238" r="15"/><use href="#c-mon" x="460" y="238"/><text class="tl" x="460" y="269" text-anchor="middle">painel</text>
+
+        <circle class="ic-ai" cx="760" cy="80" r="22"/><use href="#c-ai" x="760" y="80"/><text class="tl" x="760" y="118" text-anchor="middle">Bedrock · Anthropic</text><text class="ts" x="760" y="133" text-anchor="middle">modelo e embeddings</text>
+        <circle class="ic-infra" cx="760" cy="190" r="22"/><use href="#c-msg" x="760" y="190"/><text class="tl" x="760" y="228" text-anchor="middle">Telegram Bot API</text><text class="ts" x="760" y="243" text-anchor="middle">canal de mensagem</text>
+        <circle class="ic-infra" cx="760" cy="300" r="22"/><use href="#c-clk" x="760" y="300"/><text class="tl" x="760" y="338" text-anchor="middle">Google Agenda</text><text class="ts" x="760" y="353" text-anchor="middle">opcional por corretor</text>
+
+        <path class="flow" d="M96,105 L230,105" marker-end="url(#c-ar)"/>
+        <text class="edge" x="163" y="97" text-anchor="middle">conversa</text>
+        <path class="flow" d="M96,235 L230,235" marker-end="url(#c-ar)"/>
+        <text class="edge" x="163" y="227" text-anchor="middle">funil · handoff</text>
+        <path class="flow" d="M530,100 L640,100 L640,80 L734,80" marker-end="url(#c-ar)"/>
+        <text class="edge" x="640" y="72" text-anchor="middle">infere</text>
+        <path class="flow" d="M530,180 L640,180 L640,190 L734,190" marker-end="url(#c-ar)"/>
+        <text class="edge" x="640" y="172" text-anchor="middle">envia · recebe</text>
+        <path class="flow" d="M530,260 L640,260 L640,300 L734,300" marker-end="url(#c-ar)"/>
+        <text class="edge" x="640" y="322" text-anchor="middle">consulta · cria evento</text>
+      </svg>
+    </div>
+    <figcaption><b>Figura 1.</b> O cliente nunca autentica — a sessão do chat é assinada pelo servidor
+    (HMAC) só para provar que aquele identificador de conversa foi emitido por nós. O Google Agenda é
+    opcional por corretor: sem credencial, o sistema usa a agenda do próprio banco.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= A TESE ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Decisão estruturante</span>
+    <h2>Um núcleo, dois conjuntos de adaptadores</h2>
+  </div>
+  <p>É a decisão que sustenta todo o resto. O código de domínio — o grafo do agente, os guardrails, a
+  governança de custo, os modelos — <strong>não sabe em qual perfil está rodando</strong>. Ele fala com
+  portas; <code>ports/factory.py</code> resolve cada porta para um adaptador conforme
+  <code>SDR_PROFILE</code>. É o que torna o perfil local uma réplica funcional da nuvem, e não uma
+  maquete: o mesmo grafo, os mesmos guardrails e a mesma suíte de testes rodam nos dois.</p>
+
+  <ul class="key">
+    <li><i class="k-local"></i> adaptadores do perfil local</li>
+    <li><i class="k-core"></i> núcleo compartilhado</li>
+    <li><i class="k-aws"></i> adaptadores do perfil AWS</li>
+  </ul>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 900 500" role="img"
+           aria-label="Diagrama de portas e adaptadores: o núcleo do agente expõe cinco portas — broker, scheduler, modelo de chat, embedder e calendário — e cada uma é resolvida por um adaptador local (Redis, Postgres, Ollama, agenda no banco) ou AWS (SQS FIFO, EventBridge Scheduler, Bedrock, Titan, Google Agenda).">
+        <defs>
+          <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <text class="hd" x="120" y="34" text-anchor="middle" fill="var(--local)">SDR_PROFILE=local</text>
+        <text class="hd" x="450" y="34" text-anchor="middle" fill="var(--core)">NÚCLEO</text>
+        <text class="hd" x="780" y="34" text-anchor="middle" fill="var(--aws)">SDR_PROFILE=aws</text>
+
+        <!-- núcleo -->
+        <rect class="box-core" x="300" y="54" width="300" height="392" rx="4"/>
+        <text x="450" y="80" text-anchor="middle" font-weight="600">não muda entre perfis</text>
+        <line x1="320" y1="94" x2="580" y2="94" stroke="var(--core)" stroke-width="1" opacity=".4"/>
+
+        <!-- portas -->
+        <text class="m" x="450" y="136" text-anchor="middle">Broker</text>
+        <text class="m" x="450" y="192" text-anchor="middle">Scheduler</text>
+        <text class="m" x="450" y="248" text-anchor="middle">ChatModel</text>
+        <text class="m" x="450" y="304" text-anchor="middle">Embedder</text>
+        <text class="m" x="450" y="360" text-anchor="middle">Calendario</text>
+
+        <line x1="320" y1="386" x2="580" y2="386" stroke="var(--core)" stroke-width="1" opacity=".4"/>
+        <text class="sub" x="450" y="406" text-anchor="middle">grafo LangGraph · guardrails</text>
+        <text class="sub" x="450" y="424" text-anchor="middle">governança de custo · domínio</text>
+
+        <!-- adaptadores locais -->
+        <rect class="box-local" x="20" y="111" width="200" height="42" rx="3"/>
+        <text class="m" x="120" y="137" text-anchor="middle">Redis Streams</text>
+        <rect class="box-local" x="20" y="167" width="200" height="42" rx="3"/>
+        <text class="m" x="120" y="193" text-anchor="middle">Postgres + worker</text>
+        <rect class="box-local" x="20" y="223" width="200" height="42" rx="3"/>
+        <text class="m" x="120" y="249" text-anchor="middle">Anthropic · Ollama</text>
+        <rect class="box-local" x="20" y="279" width="200" height="42" rx="3"/>
+        <text class="m" x="120" y="305" text-anchor="middle">Ollama embeddings</text>
+        <rect class="box-local" x="20" y="335" width="200" height="42" rx="3"/>
+        <text class="m" x="120" y="361" text-anchor="middle">agenda no banco</text>
+
+        <!-- adaptadores aws -->
+        <rect class="box-aws" x="680" y="111" width="200" height="42" rx="3"/>
+        <text class="m" x="780" y="137" text-anchor="middle">SQS FIFO</text>
+        <rect class="box-aws" x="680" y="167" width="200" height="42" rx="3"/>
+        <text class="m" x="780" y="193" text-anchor="middle">EventBridge Scheduler</text>
+        <rect class="box-aws" x="680" y="223" width="200" height="42" rx="3"/>
+        <text class="m" x="780" y="249" text-anchor="middle">Bedrock</text>
+        <rect class="box-aws" x="680" y="279" width="200" height="42" rx="3"/>
+        <text class="m" x="780" y="305" text-anchor="middle">Titan Embed v2</text>
+        <rect class="box-aws" x="680" y="335" width="200" height="42" rx="3"/>
+        <text class="m" x="780" y="361" text-anchor="middle">Google Agenda</text>
+
+        <!-- ligações -->
+        <line class="flow" x1="220" y1="132" x2="300" y2="132" stroke="var(--local)"/>
+        <line class="flow" x1="220" y1="188" x2="300" y2="188" stroke="var(--local)"/>
+        <line class="flow" x1="220" y1="244" x2="300" y2="244" stroke="var(--local)"/>
+        <line class="flow" x1="220" y1="300" x2="300" y2="300" stroke="var(--local)"/>
+        <line class="flow" x1="220" y1="356" x2="300" y2="356" stroke="var(--local)"/>
+
+        <line class="flow" x1="600" y1="132" x2="680" y2="132" stroke="var(--aws)"/>
+        <line class="flow" x1="600" y1="188" x2="680" y2="188" stroke="var(--aws)"/>
+        <line class="flow" x1="600" y1="244" x2="680" y2="244" stroke="var(--aws)"/>
+        <line class="flow" x1="600" y1="300" x2="680" y2="300" stroke="var(--aws)"/>
+        <line class="flow" x1="600" y1="356" x2="680" y2="356" stroke="var(--aws)"/>
+
+        <text class="edge" x="450" y="474" text-anchor="middle">ports/factory.py resolve cada porta na primeira chamada — nenhum nó do grafo consulta SDR_PROFILE</text>
+      </svg>
+    </div>
+    <figcaption><b>Figura 2.</b> A troca é por porta, não por bloco: dá para rodar local com LLM da
+    Anthropic e embeddings do Ollama, ou local apontando para Bedrock. O <code>Calendario</code> é a
+    única porta que não decide pelo perfil, e sim pela existência de credencial do Google.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= LOCAL ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">C4 · Nível 2 — Contêineres · perfil local</span>
+    <h2>Docker Compose: tudo na máquina, exceto o modelo</h2>
+  </div>
+  <p>O perfil local existe para demonstrar e desenvolver o sistema inteiro sem conta AWS. O Redis
+  substitui SQS e EventBridge; o Postgres com <code>pgvector</code> substitui o Aurora e a Knowledge
+  Base; workers Python substituem as Lambdas. Só o LLM é pago por uso — ou roda no Ollama, aceitando
+  qualidade menor.</p>
+
+  <ul class="key ic-key">
+    <li><i style="background:var(--icu)"></i> cliente</li>
+    <li><i style="background:var(--ici)"></i> rede, fila e gateway</li>
+    <li><i style="background:var(--ics)"></i> serviço de aplicação</li>
+    <li><i style="background:var(--icd)"></i> banco e armazenamento</li>
+    <li><i style="background:var(--ica)"></i> modelo de IA</li>
+    <li><i style="background:var(--icc)"></i> identidade</li>
+  </ul>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 940 710" role="img"
+           aria-label="Topologia do perfil local em Docker Compose: navegador e Telegram entram pelos serviços channels, api e telegram-in; o Redis é o barramento central de filas; os workers agent, resumidor, scheduler e telegram-out consomem dele; Postgres com pgvector e Ollama formam a camada de dados; a API do modelo é o único serviço externo pago.">
+        <defs>
+<marker id="l-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<g id="l-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
+<g id="l-db" class="glyph"><ellipse cy="-5.5" rx="7.2" ry="2.9"/><path d="M-7.2-5.5v11c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-11"/><path d="M-7.2 0c0 1.6 3.2 2.9 7.2 2.9S7.2 1.6 7.2 0"/></g>
+<g id="l-q" class="glyph"><rect x="-8.5" y="-5" width="4.2" height="10" rx="1"/><rect x="-2.1" y="-5" width="4.2" height="10" rx="1"/><rect x="4.3" y="-5" width="4.2" height="10" rx="1"/></g>
+<g id="l-fn" class="glyph"><path d="M1.5-9L-6 1.5h5l-1 7.5 7.5-10.5h-5z"/></g>
+<g id="l-mon" class="glyph"><rect x="-8.5" y="-7" width="17" height="11.5" rx="1.5"/><path d="M-3 9h6"/><path d="M0 4.5v4.5"/></g>
+<g id="l-msg" class="glyph"><rect x="-8.5" y="-7.5" width="17" height="11" rx="2"/><path d="M-4 3.5l-1.5 4.5 4.5-4.5"/></g>
+<g id="l-cdn" class="glyph"><circle r="8.2"/><path d="M-8.2 0h16.4"/><path d="M0-8.2c2.5 2.6 2.5 13.8 0 16.4"/><path d="M0-8.2c-2.5 2.6-2.5 13.8 0 16.4"/></g>
+<g id="l-gate" class="glyph"><path d="M-6.5-8v16"/><path d="M6.5-8v16"/><path d="M-3.5 0h6"/><path d="M1.2-3l3 3-3 3"/></g>
+<g id="l-sh" class="glyph"><path d="M0-9l6.8 2.7v5.8c0 4.5-2.9 7.8-6.8 9.3-3.9-1.5-6.8-4.8-6.8-9.3v-5.8z"/><path d="M-2.9 0l2.1 2.1L3.4-2"/></g>
+<g id="l-ai" class="glyph"><path d="M-1.5-9l1.8 4.9 4.9 1.8-4.9 1.8L-1.5 4.4-3.3-.5-8.2-2.3l4.9-1.8z"/><path d="M5.2 3.2l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></g>
+<g id="l-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
+<g id="l-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
+</defs>
+        <rect class="zone" x="10" y="10" width="920" height="670" rx="4"/><text class="zone-t" x="28" y="34">AMBIENTE LOCAL · máquina do desenvolvedor</text>
+        <rect class="zone" x="170" y="52" width="650" height="460" rx="4"/><text class="zone-t" x="188" y="76">DOCKER COMPOSE · rede sdr-local</text>
+
+        <circle class="ic-user" cx="88" cy="168" r="22"/><use href="#l-mon" x="88" y="168"/><text class="tl" x="88" y="206" text-anchor="middle">Navegador</text><text class="ts" x="88" y="221" text-anchor="middle">site :5173</text><text class="ts" x="88" y="235" text-anchor="middle">painel :5174</text>
+        <circle class="ic-infra" cx="88" cy="388" r="22"/><use href="#l-msg" x="88" y="388"/><text class="tl" x="88" y="426" text-anchor="middle">Telegram</text><text class="ts" x="88" y="441" text-anchor="middle">nuvem pública</text>
+
+        <rect class="grp" x="188" y="96" width="150" height="380" rx="4"/><text class="grp-t" x="263.0" y="118" text-anchor="middle">SERVIÇOS DE ENTRADA</text>
+        <circle class="ic-infra" cx="263" cy="168" r="22"/><use href="#l-gate" x="263" y="168"/><text class="tl" x="263" y="206" text-anchor="middle">channels</text><text class="ts" x="263" y="221" text-anchor="middle">:8001 · WebSocket</text>
+        <circle class="ic-infra" cx="263" cy="278" r="22"/><use href="#l-gate" x="263" y="278"/><text class="tl" x="263" y="316" text-anchor="middle">api</text><text class="ts" x="263" y="331" text-anchor="middle">:8000 · REST</text>
+        <circle class="ic-svc" cx="263" cy="388" r="22"/><use href="#l-svc" x="263" y="388"/><text class="tl" x="263" y="426" text-anchor="middle">telegram-in</text><text class="ts" x="263" y="441" text-anchor="middle">long polling</text>
+
+        <circle class="ic-infra" cx="400" cy="250" r="26"/><use href="#l-q" x="400" y="250"/><text class="tl" x="400" y="292" text-anchor="middle">redis</text><text class="ts" x="400" y="307" text-anchor="middle">Streams · locks</text>
+
+        <rect class="grp" x="458" y="96" width="196" height="270" rx="4"/><text class="grp-t" x="556.0" y="118" text-anchor="middle">WORKERS DO AGENTE</text>
+        <circle class="ic-svc" cx="506" cy="168" r="22"/><use href="#l-svc" x="506" y="168"/><text class="tl" x="506" y="206" text-anchor="middle">agent</text><text class="ts" x="506" y="221" text-anchor="middle">grafo LangGraph</text>
+        <circle class="ic-svc" cx="606" cy="168" r="22"/><use href="#l-svc" x="606" y="168"/><text class="tl" x="606" y="206" text-anchor="middle">resumidor</text><text class="ts" x="606" y="221" text-anchor="middle">briefing</text>
+        <circle class="ic-svc" cx="506" cy="278" r="22"/><use href="#l-clk" x="506" y="278"/><text class="tl" x="506" y="316" text-anchor="middle">scheduler</text><text class="ts" x="506" y="331" text-anchor="middle">follow-up</text>
+        <circle class="ic-svc" cx="606" cy="278" r="22"/><use href="#l-svc" x="606" y="278"/><text class="tl" x="606" y="316" text-anchor="middle">telegram-out</text><text class="ts" x="606" y="331" text-anchor="middle">envio</text>
+
+        <rect class="grp" x="676" y="96" width="128" height="270" rx="4"/><text class="grp-t" x="740.0" y="118" text-anchor="middle">DADOS</text>
+        <circle class="ic-data" cx="740" cy="168" r="22"/><use href="#l-db" x="740" y="168"/><text class="tl" x="740" y="206" text-anchor="middle">Postgres 16</text><text class="ts" x="740" y="221" text-anchor="middle">+ pgvector</text>
+        <circle class="ic-ai" cx="740" cy="278" r="22"/><use href="#l-ai" x="740" y="278"/><text class="tl" x="740" y="316" text-anchor="middle">ollama</text><text class="ts" x="740" y="331" text-anchor="middle">embeddings</text>
+
+        <rect class="grp" x="300" y="548" width="390" height="124" rx="4"/><text class="grp-t" x="495.0" y="570" text-anchor="middle">SERVIÇO EXTERNO · pago por uso</text>
+        <circle class="ic-ai" cx="495" cy="600" r="22"/><use href="#l-ai" x="495" y="600"/><text class="tl" x="495" y="638" text-anchor="middle">Anthropic API · Bedrock</text><text class="ts" x="495" y="653" text-anchor="middle">único custo variável do sistema</text>
+
+        <path class="flow" d="M114,168 L188,168" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M114,388 L237,388" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M338,250 L372,250" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M428,250 L458,250" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M654,240 L676,240" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M338,300 L420,300 L420,424 L740,424 L740,370" marker-end="url(#l-ar)"/>
+        <text class="edge" x="560" y="418" text-anchor="middle">api → banco</text>
+        <path class="flow-core" d="M556,366 L556,528 L495,528 L495,564" marker-end="url(#l-ar)"/>
+        <text class="edge" x="600" y="524" text-anchor="middle">chamada ao modelo</text>
+      </svg>
+    </div>
+    <figcaption><b>Figura 3.</b> O Redis ocupa o papel de barramento — é ele que substitui SQS e
+    EventBridge do perfil de nuvem. O Telegram entra por <em>long polling</em>, não por webhook, o que
+    eliminou a necessidade de túnel público e de conta de negócio verificada (ADR-0007). A conexão
+    WebSocket do painel é somente leitura: o corretor responde ao cliente pelo <code>/handoff</code>
+    da API, que é auditado (ADR-0008).</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= AWS ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">C4 · Nível 2 — Contêineres · perfil aws</span>
+    <h2>Serverless: nada ligado sem conversa acontecendo</h2>
+  </div>
+  <p>O alvo da arquitetura. Dez stacks CDK, uma por domínio, com ordem de dependência explícita.
+  A premissa de custo é escala a zero: Aurora Serverless v2 com capacidade mínima <code>0</code>,
+  Lambdas sob demanda, filas cobradas por mensagem. O único gasto fixo é o NAT Gateway da VPC.</p>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 1000 668" role="img"
+           aria-label="Topologia do perfil AWS: CloudFront e S3 entregam os frontends; API Gateway HTTP e WebSocket recebem as requisições; filas SQS FIFO ligam a entrada às Lambdas do agente dentro da VPC; Aurora Serverless v2 guarda os dados; Bedrock, Cognito, S3, DynamoDB e EventBridge Scheduler são os serviços gerenciados.">
+        <defs>
+<marker id="a-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+<g id="a-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
+<g id="a-db" class="glyph"><ellipse cy="-5.5" rx="7.2" ry="2.9"/><path d="M-7.2-5.5v11c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-11"/><path d="M-7.2 0c0 1.6 3.2 2.9 7.2 2.9S7.2 1.6 7.2 0"/></g>
+<g id="a-q" class="glyph"><rect x="-8.5" y="-5" width="4.2" height="10" rx="1"/><rect x="-2.1" y="-5" width="4.2" height="10" rx="1"/><rect x="4.3" y="-5" width="4.2" height="10" rx="1"/></g>
+<g id="a-fn" class="glyph"><path d="M1.5-9L-6 1.5h5l-1 7.5 7.5-10.5h-5z"/></g>
+<g id="a-mon" class="glyph"><rect x="-8.5" y="-7" width="17" height="11.5" rx="1.5"/><path d="M-3 9h6"/><path d="M0 4.5v4.5"/></g>
+<g id="a-msg" class="glyph"><rect x="-8.5" y="-7.5" width="17" height="11" rx="2"/><path d="M-4 3.5l-1.5 4.5 4.5-4.5"/></g>
+<g id="a-cdn" class="glyph"><circle r="8.2"/><path d="M-8.2 0h16.4"/><path d="M0-8.2c2.5 2.6 2.5 13.8 0 16.4"/><path d="M0-8.2c-2.5 2.6-2.5 13.8 0 16.4"/></g>
+<g id="a-gate" class="glyph"><path d="M-6.5-8v16"/><path d="M6.5-8v16"/><path d="M-3.5 0h6"/><path d="M1.2-3l3 3-3 3"/></g>
+<g id="a-sh" class="glyph"><path d="M0-9l6.8 2.7v5.8c0 4.5-2.9 7.8-6.8 9.3-3.9-1.5-6.8-4.8-6.8-9.3v-5.8z"/><path d="M-2.9 0l2.1 2.1L3.4-2"/></g>
+<g id="a-ai" class="glyph"><path d="M-1.5-9l1.8 4.9 4.9 1.8-4.9 1.8L-1.5 4.4-3.3-.5-8.2-2.3l4.9-1.8z"/><path d="M5.2 3.2l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></g>
+<g id="a-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
+<g id="a-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
+</defs>
+        <rect class="zone" x="170" y="10" width="820" height="618" rx="4"/><text class="zone-t" x="188" y="34">AWS · us-east-1</text>
+
+        <circle class="ic-user" cx="88" cy="130" r="22"/><use href="#a-mon" x="88" y="130"/><text class="tl" x="88" y="168" text-anchor="middle">Navegador</text><text class="ts" x="88" y="183" text-anchor="middle">site e painel</text>
+        <circle class="ic-infra" cx="88" cy="370" r="22"/><use href="#a-msg" x="88" y="370"/><text class="tl" x="88" y="408" text-anchor="middle">WhatsApp</text><text class="ts" x="88" y="423" text-anchor="middle">Cloud API</text>
+
+        <rect class="grp" x="188" y="52" width="137" height="270" rx="4"/><text class="grp-t" x="256.5" y="74" text-anchor="middle">ENTREGA</text>
+        <circle class="ic-infra" cx="256" cy="130" r="22"/><use href="#a-cdn" x="256" y="130"/><text class="tl" x="256" y="168" text-anchor="middle">CloudFront</text><text class="ts" x="256" y="183" text-anchor="middle">+ S3 · vitrine</text>
+        <circle class="ic-infra" cx="256" cy="250" r="22"/><use href="#a-cdn" x="256" y="250"/><text class="tl" x="256" y="288" text-anchor="middle">CloudFront</text><text class="ts" x="256" y="303" text-anchor="middle">+ S3 · painel</text>
+
+        <rect class="grp" x="341" y="52" width="132" height="490" rx="4"/><text class="grp-t" x="410.5" y="74" text-anchor="middle">ENTRADA</text>
+        <circle class="ic-infra" cx="410" cy="130" r="22"/><use href="#a-gate" x="410" y="130"/><text class="tl" x="410" y="168" text-anchor="middle">API GW HTTP</text><text class="ts" x="410" y="183" text-anchor="middle">sdr-api</text>
+        <circle class="ic-infra" cx="410" cy="250" r="22"/><use href="#a-gate" x="410" y="250"/><text class="tl" x="410" y="288" text-anchor="middle">API GW WS</text><text class="ts" x="410" y="303" text-anchor="middle">chat do site</text>
+        <circle class="ic-infra" cx="410" cy="370" r="22"/><use href="#a-gate" x="410" y="370"/><text class="tl" x="410" y="408" text-anchor="middle">API GW HTTP</text><text class="ts" x="410" y="423" text-anchor="middle">webhook</text>
+        <circle class="ic-svc" cx="410" cy="490" r="22"/><use href="#a-fn" x="410" y="490"/><text class="tl" x="410" y="528" text-anchor="middle">λ canal web</text><text class="ts" x="410" y="543" text-anchor="middle">fora da VPC</text>
+
+        <circle class="ic-infra" cx="538" cy="300" r="26"/><use href="#a-q" x="538" y="300"/><text class="tl" x="538" y="342" text-anchor="middle">SQS FIFO</text><text class="ts" x="538" y="357" text-anchor="middle">inbound · outbound · DLQ</text>
+
+        <rect class="zone" x="606" y="52" width="204" height="490" rx="4"/><text class="zone-t" x="622" y="76">VPC · 2 AZ</text>
+        <rect class="grp" x="608" y="92" width="190" height="270" rx="4"/><text class="grp-t" x="703.0" y="114" text-anchor="middle">COMPUTE</text>
+        <circle class="ic-svc" cx="655" cy="164" r="22"/><use href="#a-fn" x="655" y="164"/><text class="tl" x="655" y="202" text-anchor="middle">λ agente</text><text class="ts" x="655" y="217" text-anchor="middle">container ARM64</text>
+        <circle class="ic-svc" cx="751" cy="164" r="22"/><use href="#a-fn" x="751" y="164"/><text class="tl" x="751" y="202" text-anchor="middle">λ resumidor</text><text class="ts" x="751" y="217" text-anchor="middle">fora do turno</text>
+        <circle class="ic-svc" cx="655" cy="274" r="22"/><use href="#a-fn" x="655" y="274"/><text class="tl" x="655" y="312" text-anchor="middle">λ API</text><text class="ts" x="655" y="327" text-anchor="middle">FastAPI</text>
+        <circle class="ic-svc" cx="751" cy="274" r="22"/><use href="#a-fn" x="751" y="274"/><text class="tl" x="751" y="312" text-anchor="middle">λ canal WA</text><text class="ts" x="751" y="327" text-anchor="middle">na VPC</text>
+        <rect class="grp" x="608" y="392" width="190" height="130" rx="4"/><text class="grp-t" x="703.0" y="414" text-anchor="middle">DADOS NA VPC</text>
+        <circle class="ic-data" cx="703" cy="452" r="22"/><use href="#a-db" x="703" y="452"/><text class="tl" x="703" y="490" text-anchor="middle">Aurora Serverless v2</text><text class="ts" x="703" y="505" text-anchor="middle">Postgres 16 + pgvector</text>
+
+        <rect class="grp" x="826" y="52" width="150" height="545" rx="4"/><text class="grp-t" x="901.0" y="74" text-anchor="middle">GERENCIADOS</text>
+        <circle class="ic-ai" cx="901" cy="120" r="22"/><use href="#a-ai" x="901" y="120"/><text class="tl" x="901" y="158" text-anchor="middle">Bedrock</text><text class="ts" x="901" y="173" text-anchor="middle">Claude · Titan · KB</text>
+        <circle class="ic-sec" cx="901" cy="220" r="22"/><use href="#a-sh" x="901" y="220"/><text class="tl" x="901" y="258" text-anchor="middle">Cognito</text><text class="ts" x="901" y="273" text-anchor="middle">JWT do painel</text>
+        <circle class="ic-data" cx="901" cy="320" r="22"/><use href="#a-st" x="901" y="320"/><text class="tl" x="901" y="358" text-anchor="middle">S3</text><text class="ts" x="901" y="373" text-anchor="middle">imóveis · documentos</text>
+        <circle class="ic-data" cx="901" cy="420" r="22"/><use href="#a-db" x="901" y="420"/><text class="tl" x="901" y="458" text-anchor="middle">DynamoDB</text><text class="ts" x="901" y="473" text-anchor="middle">conexões do λ web</text>
+        <circle class="ic-infra" cx="901" cy="520" r="22"/><use href="#a-clk" x="901" y="520"/><text class="tl" x="901" y="558" text-anchor="middle">EventBridge</text><text class="ts" x="901" y="573" text-anchor="middle">Scheduler</text>
+
+        <path class="flow" d="M114,130 L188,130" marker-end="url(#a-ar)"/>
+        <path class="flow" d="M114,370 L384,370" marker-end="url(#a-ar)"/>
+        <path class="flow" d="M325,190 L339,190" marker-end="url(#a-ar)"/>
+        <path class="flow-core" d="M429,262 L508,292" marker-end="url(#a-ar)"/>
+        <path class="flow-core" d="M433,490 L505,490 L505,318" marker-end="url(#a-ar)"/>
+        <text class="edge" x="472" y="482" text-anchor="middle">publica inbound</text>
+        <path class="flow" d="M429,130 L606,130" marker-end="url(#a-ar)"/>
+        <text class="edge" x="516" y="122" text-anchor="middle">invoca λ API</text>
+        <path class="flow-core" d="M566,300 L618,300" marker-end="url(#a-ar)" marker-start="url(#a-ar)"/>
+        <text class="edge" x="590" y="284" text-anchor="middle">fila</text>
+        <path class="flow" d="M703,362 L703,392" marker-end="url(#a-ar)"/>
+        <path class="flow" d="M810,200 L845,200 L845,138 L877,138" marker-end="url(#a-ar)"/>
+        <text class="edge" x="843" y="216" text-anchor="middle">infere</text>
+        <path class="flow" d="M879,220 L818,220 L818,36 L407,36 L407,106" marker-end="url(#a-ar)"/>
+        <text class="edge" x="618" y="30" text-anchor="middle">autoriza as rotas privadas</text>
+        <path class="flow" d="M877,520 L818,520 L818,612 L538,612 L538,332" marker-end="url(#a-ar)"/>
+        <text class="edge" x="688" y="606" text-anchor="middle">reinjeta o follow-up na fila</text>
+      </svg>
+    </div>
+    <figcaption><b>Figura 4.</b> Duas decisões finas ficam visíveis no desenho: a Lambda do canal web
+    está <em>fora</em> da VPC de propósito — não toca o banco, fala só com DynamoDB e SQS, e evita o
+    custo de ENI —, enquanto a do canal WhatsApp está dentro porque precisa do Aurora. E a Lambda do
+    agente consome a fila com <code>batch_size=1</code>: a fila é FIFO por lead, e processar em lote
+    quebraria a ordem da conversa.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= AGENTE ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">C4 · Nível 3 — Componentes do agente</span>
+    <h2>Supervisor e especialistas sobre um estado único</h2>
+  </div>
+  <p>O agente é um grafo LangGraph com um supervisor que roteia e sete especialistas. Só três deles
+  falam com o lead. O supervisor decide por <strong>regra determinística primeiro</strong> — o modelo
+  só é chamado na ambiguidade real, o que corta custo e torna o roteamento testável sem LLM.</p>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 900 400" role="img"
+           aria-label="Grafo do agente: o supervisor roteia para qualificador, consultor, agendador, follow-up, handoff e recusa, e todos retornam ao supervisor; o resumidor encerra direto.">
+        <defs>
+          <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <rect class="box-core" x="30" y="150" width="150" height="70" rx="3"/>
+        <text class="m" x="105" y="180" text-anchor="middle">supervisor</text>
+        <text class="sub" x="105" y="200" text-anchor="middle">regra → LLM só se ambíguo</text>
+
+        <!-- especialistas que falam com o lead -->
+        <rect class="box" x="330" y="30" width="180" height="46" rx="3"/>
+        <text class="m" x="420" y="52" text-anchor="middle">qualificador</text>
+        <text class="sub" x="420" y="68" text-anchor="middle">extrai o cartão · pergunta</text>
+
+        <rect class="box" x="330" y="96" width="180" height="46" rx="3"/>
+        <text class="m" x="420" y="118" text-anchor="middle">consultor</text>
+        <text class="sub" x="420" y="134" text-anchor="middle">RAG híbrido · recomenda</text>
+
+        <rect class="box" x="330" y="162" width="180" height="46" rx="3"/>
+        <text class="m" x="420" y="184" text-anchor="middle">agendador</text>
+        <text class="sub" x="420" y="200" text-anchor="middle">oferece e confirma horário</text>
+
+        <!-- demais -->
+        <rect class="box" x="330" y="228" width="180" height="46" rx="3"/>
+        <text class="m" x="420" y="250" text-anchor="middle">followup</text>
+        <text class="sub" x="420" y="266" text-anchor="middle">retoma quem sumiu</text>
+
+        <rect class="box" x="330" y="294" width="180" height="46" rx="3"/>
+        <text class="m" x="420" y="316" text-anchor="middle">handoff</text>
+        <text class="sub" x="420" y="332" text-anchor="middle">entrega ao corretor</text>
+
+        <rect class="box" x="330" y="352" width="180" height="40" rx="3"/>
+        <text class="m" x="420" y="377" text-anchor="middle">recusa</text>
+
+        <!-- resumidor -->
+        <rect class="box" x="620" y="150" width="160" height="46" rx="3"/>
+        <text class="m" x="700" y="172" text-anchor="middle">resumidor</text>
+        <text class="sub" x="700" y="188" text-anchor="middle">briefing do corretor</text>
+        <rect class="box-ext" x="812" y="150" width="60" height="46" rx="3"/>
+        <text class="m" x="842" y="178" text-anchor="middle">END</text>
+
+        <!-- fan-out -->
+        <path class="flow" d="M180,185 L250,185 L250,53 L330,53" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,185 L250,119 L330,119" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,185 L330,185" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,185 L250,251 L330,251" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,185 L250,317 L330,317" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,185 L250,372 L330,372" marker-end="url(#a5)"/>
+
+        <!-- retorno -->
+        <path class="flow-core" d="M510,372 L560,372 L560,240 L105,240 L105,220" marker-end="url(#a5)"/>
+        <text class="edge" x="330" y="234" text-anchor="middle">todos voltam ao supervisor — ele encerra ao ver resposta (máx. 4 saltos)</text>
+
+        <!-- resumidor -->
+        <path class="flow" d="M180,168 L620,168" marker-end="url(#a5)" opacity=".55"/>
+        <text class="edge" x="400" y="162" text-anchor="middle">fora da conversa</text>
+        <path class="flow" d="M780,173 L812,173" marker-end="url(#a5)"/>
+      </svg>
+    </div>
+    <figcaption><b>Figura 5.</b> O estado do grafo é persistido em checkpoint no Postgres com
+    <code>thread_id = lead_id</code>, então a conversa sobrevive a reinício de worker e a troca de
+    canal. O limite de quatro saltos existe para impedir laço entre especialistas.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= FLUXO ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Fluxo</span>
+    <h2>O que acontece entre a mensagem e a resposta</h2>
+  </div>
+  <p>Toda mensagem atravessa a mesma sequência de guardas antes de chegar ao modelo, e a resposta
+  atravessa mais uma antes de chegar ao cliente. As guardas são <strong>determinísticas e baratas</strong>:
+  recusar custa zero token, e é por isso que elas vêm antes do grafo.</p>
+
+  <figure class="fig">
+    <div class="fig-scroll">
+      <svg class="dg" viewBox="0 0 1010 250" role="img"
+           aria-label="Pipeline de um turno: a mensagem do cliente entra na fila inbound, passa pelas guardas de escopo, vazão e orçamento, depois pelo grafo do agente e pela sanitização de saída, e volta pela fila outbound até o cliente.">
+        <defs>
+          <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <rect class="box-ext" x="14" y="88" width="92" height="52" rx="3"/>
+        <text x="60" y="112" text-anchor="middle">Cliente</text>
+        <text class="sub" x="60" y="129" text-anchor="middle">mensagem</text>
+
+        <rect class="bus" x="128" y="94" width="86" height="40" rx="3"/>
+        <text class="m" x="171" y="119" text-anchor="middle">inbound</text>
+
+        <rect class="box-core" x="236" y="52" width="560" height="124" rx="4"/>
+        <text class="hd" x="516" y="76" text-anchor="middle" fill="var(--core)">UM TURNO DO AGENTE</text>
+
+        <rect class="box" x="247" y="94" width="98" height="46" rx="3"/>
+        <text class="m" x="296" y="115" text-anchor="middle">escopo</text>
+        <text class="sub" x="296" y="131" text-anchor="middle">injeção · off-topic</text>
+
+        <rect class="box" x="357" y="94" width="98" height="46" rx="3"/>
+        <text class="m" x="406" y="115" text-anchor="middle">vazão</text>
+        <text class="sub" x="406" y="131" text-anchor="middle">rajada · hora</text>
+
+        <rect class="box" x="467" y="94" width="98" height="46" rx="3"/>
+        <text class="m" x="516" y="115" text-anchor="middle">orçamento</text>
+        <text class="sub" x="516" y="131" text-anchor="middle">degrada · bloqueia</text>
+
+        <rect class="box-core" x="577" y="94" width="98" height="46" rx="3"/>
+        <text class="m" x="626" y="115" text-anchor="middle">grafo</text>
+        <text class="sub" x="626" y="131" text-anchor="middle">LLM aqui</text>
+
+        <rect class="box" x="687" y="94" width="98" height="46" rx="3"/>
+        <text class="m" x="736" y="115" text-anchor="middle">saída</text>
+        <text class="sub" x="736" y="131" text-anchor="middle">mascara PII</text>
+
+        <rect class="bus" x="818" y="94" width="86" height="40" rx="3"/>
+        <text class="m" x="861" y="119" text-anchor="middle">outbound</text>
+
+        <rect class="box-ext" x="926" y="88" width="76" height="52" rx="3"/>
+        <text x="964" y="112" text-anchor="middle">Cliente</text>
+        <text class="sub" x="964" y="129" text-anchor="middle">resposta</text>
+
+        <path class="flow" d="M106,114 L128,114" marker-end="url(#a6)"/>
+        <path class="flow-core" d="M214,114 L247,114" marker-end="url(#a6)"/>
+        <path class="flow" d="M345,117 L357,117" marker-end="url(#a6)"/>
+        <path class="flow" d="M455,117 L467,117" marker-end="url(#a6)"/>
+        <path class="flow" d="M565,117 L577,117" marker-end="url(#a6)"/>
+        <path class="flow" d="M675,117 L687,117" marker-end="url(#a6)"/>
+        <path class="flow-core" d="M796,114 L818,114" marker-end="url(#a6)"/>
+        <path class="flow" d="M904,114 L926,114" marker-end="url(#a6)"/>
+
+        <text class="edge" x="296" y="168" text-anchor="middle">recusa sem gastar token</text>
+        <text class="edge" x="516" y="168" text-anchor="middle">troca de modelo ou entrega a humano</text>
+        <text class="edge" x="736" y="168" text-anchor="middle">descarta resposta que vazar prompt</text>
+
+        <text class="edge" x="516" y="216" text-anchor="middle">falha em qualquer ponto → o cliente recebe uma resposta de contorno; o turno nunca termina em silêncio</text>
+      </svg>
+    </div>
+    <figcaption><b>Figura 6.</b> A guarda de orçamento é a única que muda o comportamento em vez de
+    barrar: ao estourar o teto, o agente troca o modelo caro pelo econômico e segue atendendo; passando
+    de 150%, entrega a conversa a um corretor. Recusar o cliente é sempre o último recurso.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================= EQUIVALÊNCIAS ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Correspondência</span>
+    <h2>O mesmo papel, dois serviços</h2>
+  </div>
+  <div class="tbl-scroll">
+    <table>
+      <thead>
+        <tr><th>Papel na arquitetura</th><th>Perfil local</th><th>Perfil aws</th><th>Onde a troca acontece</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Fila de mensagens</td><td>Redis Streams</td><td>SQS FIFO + DLQ</td><td class="m">ports/factory.get_broker</td></tr>
+        <tr><td>Agendamento de follow-up</td><td>Postgres + worker</td><td>EventBridge Scheduler</td><td class="m">ports/factory.get_scheduler</td></tr>
+        <tr><td>Modelo de linguagem</td><td>Anthropic API ou Ollama</td><td>Bedrock</td><td class="m">ports/factory.get_chat_model</td></tr>
+        <tr><td>Embeddings</td><td>Ollama</td><td>Titan Embed v2</td><td class="m">ports/factory.get_embedder</td></tr>
+        <tr><td>Busca semântica</td><td>pgvector direto</td><td>Bedrock Knowledge Base</td><td class="m">tools/buscar_imoveis</td></tr>
+        <tr><td>Banco de dados</td><td>Postgres 16 em container</td><td>Aurora Serverless v2</td><td class="m">SDR_DATABASE_DSN</td></tr>
+        <tr><td>Autenticação do painel</td><td>token estático configurável</td><td>Cognito JWT no authorizer</td><td class="m">api/auth.corretor_atual</td></tr>
+        <tr><td>Canal de mensagem</td><td>Telegram (long polling)</td><td>WhatsApp (webhook)</td><td class="m">services/channels/*</td></tr>
+        <tr><td>Hospedagem do front</td><td>Vite dev server</td><td>S3 + CloudFront</td><td class="m">FrontendStack</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>A última linha é uma divergência real, não uma equivalência — está detalhada abaixo.</p>
+</section>
+
+<!-- ============================= DECISÕES ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Registro de decisões</span>
+    <h2>Dez ADRs, incluindo as revertidas</h2>
+  </div>
+  <p>Decisões revogadas foram mantidas com o motivo da reversão em vez de apagadas — para uma banca,
+  o caminho percorrido diz mais que o estado final.</p>
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>#</th><th>Decisão</th><th>Situação</th></tr></thead>
+      <tbody>
+        <tr><td class="num">0001</td><td>RAG com Knowledge Base sobre Aurora pgvector</td><td>aceita</td></tr>
+        <tr><td class="num">0002</td><td>Agente em Lambda container</td><td>aceita</td></tr>
+        <tr><td class="num">0003</td><td>Canais como adaptadores</td><td>aceita</td></tr>
+        <tr><td class="num">0004</td><td>Aurora em vez de DynamoDB</td><td>aceita</td></tr>
+        <tr><td class="num">0005</td><td>Observabilidade com OpenTelemetry + Grafana</td><td><b>revogada</b> — os sete containers competiam por CPU com o Ollama na máquina de desenvolvimento</td></tr>
+        <tr><td class="num">0006</td><td>Site vitrine com agente embutido</td><td>aceita</td></tr>
+        <tr><td class="num">0007</td><td>Telegram em vez de WhatsApp</td><td>aceita — sem verificação de negócio, sem túnel</td></tr>
+        <tr><td class="num">0008</td><td>Portões de autenticação fora do API Gateway</td><td>aceita — fechou WebSocket que expunha todas as conversas</td></tr>
+        <tr><td class="num">0009</td><td>Gateway de LLM: LiteLLM, OpenRouter ou camada própria</td><td>aceita — nenhum dos dois; fallback entre provedores feito na camada existente</td></tr>
+        <tr><td class="num">0010</td><td>Modelo por nível, editável no painel</td><td>aceita</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================= DIVERGÊNCIAS ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Honestidade arquitetural</span>
+    <h2>Divergências conhecidas entre o desenho e o código</h2>
+  </div>
+  <p>Estas são as lacunas que uma banca encontraria lendo a IaC. Estão listadas com o motivo e o
+  impacto, porque nenhuma delas é acidente de implementação — são consequência de o perfil local ter
+  evoluído mais rápido que o perfil de nuvem durante a POC.</p>
+
+  <ul class="gaps">
+    <li>
+      <span class="tag">canal · IaC desatualizada</span>
+      <h4>A stack AWS ainda provisiona WhatsApp, não Telegram</h4>
+      <p>A ADR-0007 trocou o canal no perfil local, mas <code>channels_stack.py</code> segue criando as
+      Lambdas e o webhook do WhatsApp, e <code>messaging_stack.py</code> cria a fila
+      <code>outbound-whatsapp</code>. O adapter do Telegram existe e é testado; falta portá-lo para a
+      stack. Impacto: um <code>cdk deploy</code> hoje sobe o canal errado.</p>
+    </li>
+    <li>
+      <span class="tag">api · rotas ausentes</span>
+      <h4>Sete dos doze routers não têm rota no API Gateway</h4>
+      <p><code>api_stack.py</code> registra apenas <code>/imoveis</code>, <code>/eventos</code>,
+      <code>/leads</code>, <code>/dashboard</code> e <code>/handoff</code>. Configurações, governança,
+      auditoria, corretores, clientes, notificações e calendário responderiam 404 na nuvem. O risco não
+      é o 404 — é a correção apressada: adicionar um catch-all sem o <code>authorizer</code> publicaria
+      rotas administrativas sem autenticação.</p>
+    </li>
+    <li>
+      <span class="tag">autorização · modelo de permissão</span>
+      <h4>Não há separação entre corretores</h4>
+      <p>Qualquer corretor autenticado lê e altera leads, clientes, visitas e configurações de todos;
+      <code>/config</code> e <code>/governanca</code> não distinguem administrador de corretor comum.
+      Defensável para uma imobiliária de escritório único, que é a premissa da POC, mas é o próximo
+      passo antes de qualquer operação com mais de uma equipe.</p>
+    </li>
+    <li>
+      <span class="tag">observabilidade · lacuna aceita</span>
+      <h4>Saúde de sistema só existe em produção</h4>
+      <p>Com a ADR-0005 revogada, o perfil local não tem métrica de latência, fila ou erro além dos
+      logs. Na nuvem existe o painel CloudWatch da <code>ObservabilityStack</code>. A observabilidade de
+      negócio — custo por lead, tokens por nó do grafo, funil — é própria e funciona nos dois perfis.</p>
+    </li>
+  </ul>
+</section>
+
+<!-- ============================= QUALIDADE ============================= -->
+<section>
+  <div class="sec-head">
+    <span class="lvl">Garantia de qualidade</span>
+    <h2>Duas malhas: encanamento e comportamento</h2>
+  </div>
+  <p>São perguntas diferentes e por isso são instrumentos diferentes. A suíte de testes roda com
+  <strong>LLM falso</strong>: é determinística, gratuita, roda a cada commit e responde “o sistema está
+  montado certo?”. O harness de avaliação chama o <strong>modelo de verdade</strong> e responde “o
+  modelo está se comportando bem?” — custa dinheiro, varia entre execuções e por isso vive fora do
+  portão de commit.</p>
+
+  <div class="tbl-scroll">
+    <table>
+      <thead><tr><th>Malha</th><th>Escopo</th><th>Sinal</th></tr></thead>
+      <tbody>
+        <tr><td>Testes de integração</td><td class="num">245 testes · Postgres real · LLM falso</td><td>grafo, persistência, despacho, guardrails, autenticação</td></tr>
+        <tr><td>Harness · extração</td><td class="num">15 casos</td><td>acerto por campo do cartão e <b>campos inventados</b></td></tr>
+        <tr><td>Harness · roteamento</td><td class="num">15 casos</td><td>acurácia e matriz de confusão do supervisor</td></tr>
+        <tr><td>Harness · adversarial</td><td class="num">18 casos</td><td>taxa de escape, separando o que a regra barrou do que só o modelo segurou</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>A separação da última linha é o dado mais útil do conjunto: o filtro de escopo é regex em
+  português e termina em “na dúvida, atende”, então ataque em inglês ou com homóglifo passa por ele
+  por construção. Medir quanto o modelo está segurando sozinho transforma esse risco residual em
+  número acompanhável.</p>
+</section>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,118 @@
+Agente SDR Imobiliário com Inteligência Artificial
+
+Visão Geral
+
+O mercado imobiliário vem passando por uma transformação
+impulsionada por inteligência artificial, automação e experiências
+conversacionais.
+
+O desafio deste Hackathon é criar uma Prova de Conceito (POC) de um
+Agente SDR Imobiliário utilizando IA Generativa.
+
+Objetivo do Desafio
+
+Construir um agente de IA capaz de:
+
+• Atender leads automaticamente;
+• Realizar conversa humanizada;
+• Qualificar clientes;
+• Identificar intenção de compra, aluguel ou investimento;
+• Coletar informações relevantes;
+• Realizar follow-up automático;
+• Agendar reuniões ou visitas;
+• Integrar com uma base simulada de imóveis;
+• Gerar resumos para corretores.
+
+Contexto de Negócio
+
+Uma imobiliária deseja acelerar seu processo comercial utilizando IA.
+Hoje, muitos leads são perdidos devido a:
+
+• Tempo de resposta elevado;
+• Falta de acompanhamento;
+• Atendimento manual;
+• Dificuldade em priorizar leads quentes;
+• Sobrecarga operacional dos corretores.
+
+Cenários Esperados
+
+Exemplo 1 — Compra
+
+Cliente: “Estou procurando apartamento na zona sul.”
+
+O agente deverá:
+• Entender intenção;
+• Perguntar faixa de preço;
+• Perguntar quantidade de quartos;
+• Perguntar região de interesse;
+• Identificar urgência;
+• Encaminhar para reunião.
+
+Exemplo 2 — Investimento
+
+Cliente: “Quero investir em imóveis para renda.”
+
+O agente deverá:
+• Entender perfil investidor;
+• Identificar ticket;
+• Identificar expectativa de retorno;
+• Direcionar para especialista.
+
+Exemplo 3 — Follow-up
+
+Cliente iniciou conversa e não respondeu.
+
+O agente deverá:
+
+• Retomar contato automaticamente;
+• Manter contexto da conversa;
+• Reengajar o lead.
+
+
+Requisitos Funcionais:
+
+• Atendimento conversacional;
+• Conversa natural;
+• Fluxo humanizado;
+• Continuidade da conversa;
+• Qualificação de leads;
+• Agendamento de reuniões;
+• Resumo inteligente;
+• Dashboard mínimo de acompanhamento.
+
+Diferenciais:
+
+• Uso de RAG;
+• Integração com WhatsApp;
+• Memória conversacional;
+• Multiagentes;
+• Voice AI;
+• Integração com CRM;
+• Observabilidade;
+• Segurança;
+• Deploy em cloud.
+
+Critérios de Avaliação:
+
+Arquitetura:
+
+• Organização da solução;
+• Escalabilidade;
+• Componentização.
+
+Inteligência Artificial:
+
+• Qualidade das respostas;
+• Humanização;
+• Contexto conversacional.
+
+Experiência do Usuário:
+
+• Interface;
+• Clareza;
+• Usabilidade.
+
+Inovação:
+
+• Criatividade;
+• Diferenciais técnicos .

@@ -1,0 +1,45 @@
+# Cobertura do Python. As suítes rodam uma por pacote, cada uma no seu diretório e com o seu
+# PYTHONPATH (ver o alvo `test` do Makefile), então a medição é feita em paralelo (`-p`, um arquivo
+# por execução) e depois combinada — medir só uma suíte daria um número bonito e falso.
+[run]
+branch = true
+parallel = true
+# Nomes de pacote (e não caminhos): cada suíte roda de um diretório diferente, e caminho relativo
+# resolveria contra o cwd errado — medindo zero sem avisar.
+source =
+    sdr_shared
+    agent
+    api
+    sdr_ingestion
+    sdr_scheduler
+omit =
+    */tests/*
+    */__pycache__/*
+    */evals/*
+
+[paths]
+# O mesmo arquivo aparece com caminhos diferentes conforme o diretório de onde a suíte rodou.
+codigo =
+    shared/sdr_shared
+    */shared/sdr_shared
+    services/agent/src/agent
+    */services/agent/src/agent
+    services/api/src/api
+    */services/api/src/api
+    services/ingestion/sdr_ingestion
+    */services/ingestion/sdr_ingestion
+    services/scheduler/sdr_scheduler
+    */services/scheduler/sdr_scheduler
+
+[report]
+# Piso, não meta: 81% é o estado atual. O número existe para uma queda brusca aparecer na CI,
+# e não para virar corrida por cobertura — teste escrito para subir porcentagem não testa nada.
+fail_under = 75
+skip_covered = false
+show_missing = false
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
+    raise NotImplementedError
+    def local_worker
+    def handler\(event

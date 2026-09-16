@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Ajuste o host abaixo para o domínio real do GitHub Pages.
+# Sitemap: https://<usuario-ou-organizacao>.github.io/agent-sdr-morai/sitemap.xml

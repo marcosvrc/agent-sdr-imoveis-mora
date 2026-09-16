@@ -1,0 +1,8 @@
+# Vértice Imóveis
+User-agent: *
+Allow: /
+
+# Páginas pessoais: nada a indexar, e o conteúdo depende do navegador de quem acessa.
+Disallow: /favoritos
+
+Sitemap: https://www.verticeimoveis.exemplo.br/sitemap.xml

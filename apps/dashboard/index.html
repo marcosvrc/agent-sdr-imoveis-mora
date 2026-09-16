@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Vértice Imóveis · Painel</title>
+    <!-- Tema antes da primeira pintura (ADR-0014). Se isto virasse um useEffect, quem usa o tema
+         escuro veria um lampejo branco em cada carregamento — o clássico "flash of wrong theme".
+         Duplica três linhas de lib/tema.ts de propósito: é o preço de rodar antes do bundle. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("tema") || "sistema";
+          var escuro = t === "escuro" || (t === "sistema" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var r = document.documentElement;
+          r.setAttribute("data-tema", t);
+          r.setAttribute("data-tema-efetivo", escuro ? "escuro" : "claro");
+        } catch (e) { /* storage bloqueado: fica no tema claro, que é o padrão do CSS */ }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

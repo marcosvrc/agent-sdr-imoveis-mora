@@ -1,0 +1,13 @@
+# Imagem única do perfil local: todos os workers Python. Build a partir da raiz do repo (context: ..).
+FROM python:3.12-slim
+WORKDIR /app
+COPY shared /app/shared
+COPY services /app/services
+# shared editável: os volumes do compose montam o código do host por cima, e as edições valem na hora.
+RUN pip install --no-cache-dir -e "/app/shared[local,aws,openai]" \
+    -e /app/services/agent -e /app/services/api -e /app/services/channels/whatsapp \
+    -e /app/services/channels/telegram -e /app/services/channels/web \
+    -e /app/services/scheduler -e /app/services/ingestion \
+    fastapi "uvicorn[standard]" websockets
+ENV PYTHONPATH=/app/services/agent/src \
+    PYTHONUNBUFFERED=1
