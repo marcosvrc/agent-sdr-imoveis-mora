@@ -40,7 +40,7 @@ def test_chave_truncada():
 
 def test_anthropic_com_embeddings_bedrock_sem_credencial():
     e = erros(SDR_EMBEDDINGS_PROVIDER="bedrock")
-    assert any("não tem API de embeddings" in x for x in e)
+    assert any("serve embeddings" in x for x in e)
     assert any("credenciais AWS" in x for x in e)
 
 
@@ -56,7 +56,26 @@ def test_bedrock_com_credenciais_passa():
 
 
 def test_provedor_inexistente():
-    assert any("inválido" in x for x in erros(SDR_LLM_PROVIDER="openai"))
+    # `openrouter` existe e funciona — mas é bancada de avaliação, não caminho de produção
+    # (ADR-0009). O check_env recusa de propósito, e é justamente isso que este teste protege:
+    # um provedor plausível é bem mais fácil de aparecer num .env do que um nome inventado.
+    assert any("inválido" in x for x in erros(SDR_LLM_PROVIDER="openrouter"))
+
+
+def test_openai_e_provedor_valido_mas_exige_a_chave():
+    e = erros(SDR_LLM_PROVIDER="openai")
+    assert not any("inválido" in x for x in e)
+    assert any("OPENAI_API_KEY" in x for x in e)
+
+
+def test_openai_como_reserva_tambem_exige_a_chave():
+    # A reserva só entra em cena quando o primário cai — ou seja, no pior momento possível para
+    # descobrir que a credencial nunca foi preenchida.
+    assert any("OPENAI_API_KEY" in x for x in erros(SDR_LLM_PROVIDER_FALLBACK="openai"))
+
+
+def test_reserva_configurada_passa():
+    assert erros(SDR_LLM_PROVIDER_FALLBACK="openai", OPENAI_API_KEY="sk-" + "b" * 40) == []
 
 
 def test_modelo_de_embedding_com_dimensao_diferente_avisa():
