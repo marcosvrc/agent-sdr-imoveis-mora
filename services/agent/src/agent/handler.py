@@ -6,6 +6,7 @@ import traceback
 from sdr_shared.db import (LeadRepository, MensagemRepository, EventoNavegacaoRepository, CanalRepository,
                            InteresseRepository,
                            auditar, notificar, registrar_turno)
+from sdr_shared.crm import publicar_turno as publicar_no_crm
 from sdr_shared.log import configurar as configurar_log, contexto, limpar_contexto
 from sdr_shared.messaging import MensagemNormalizada, TipoMensagem, Canal, INICIADAS_PELO_AGENTE
 from sdr_shared.models import Lead, Estagio
@@ -87,8 +88,9 @@ def processar(entrada: MensagemNormalizada) -> None:
     # medido ANTES de marcar a atividade: depois disso o carimbo antigo se perde
     rapido = not iniciada_pelo_agente and respondeu_rapido(lead.ultima_mensagem_em)
     msgs = MensagemRepository()
+    id_entrada = None
     if not iniciada_pelo_agente:
-        msgs.registrar(lead.id, entrada.canal, "in", entrada.conteudo, entrada.meta)
+        id_entrada = msgs.registrar(lead.id, entrada.canal, "in", entrada.conteudo, entrada.meta)
         LeadRepository().marcar_atividade(lead.id)
 
     # Handoff ativo: o corretor responde pelo painel; o agente não fala (mas registra, avisa e resume)
@@ -129,10 +131,17 @@ def processar(entrada: MensagemNormalizada) -> None:
                 ator_nome="Mora", origem=str(entrada.canal.value),
                 dados={"de": str(estagio_antes.value), "para": str(lead.estagio.value),
                        "temperatura": str(lead.temperatura), "score": lead.score})
-    if resposta := out.get("resposta"):
-        msgs.registrar(lead.id, entrada.canal, "out", resposta.texto, {"opcoes": resposta.opcoes, "imoveis": [c.id for c in resposta.imoveis]})
+    id_saida = None
+    resposta = out.get("resposta")
+    if resposta:
+        id_saida = msgs.registrar(lead.id, entrada.canal, "out", resposta.texto, {"opcoes": resposta.opcoes, "imoveis": [c.id for c in resposta.imoveis]})
         despachar(entrada.canal, entrada.identificador_canal, resposta)
     publicar_eventos(lead, estagio_antes)
+    # Espelha no CRM o que a conversa produziu (docs/decisions.md, D-01). Depois do despacho de
+    # propósito: o cliente já recebeu a resposta, então nada aqui atrasa o atendimento — e a função
+    # engole a própria falha, porque um CRM fora do ar não pode virar um atendimento fora do ar.
+    publicar_no_crm(lead, entrada, texto_saida=resposta.texto if resposta else None,
+                    estagio_antes=estagio_antes, id_entrada=id_entrada, id_saida=id_saida)
     reagendar_followup(lead, entrada.canal, entrada.identificador_canal)
     # Reativação sai separada em `turnos`: é a métrica da fase 4 (quantos avisos viraram conversa),
     # e misturada com "ok" ela seria indistinguível de um turno pedido pelo cliente.

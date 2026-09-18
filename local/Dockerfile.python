@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -e "/app/shared[local,aws,openai]" \
     -e /app/services/agent -e /app/services/api -e /app/services/channels/whatsapp \
     -e /app/services/channels/telegram -e /app/services/channels/web \
     -e /app/services/scheduler -e /app/services/ingestion \
+    -e "/app/services/crm[mcp]" \
     fastapi "uvicorn[standard]" websockets
 ENV PYTHONPATH=/app/services/agent/src \
     PYTHONUNBUFFERED=1

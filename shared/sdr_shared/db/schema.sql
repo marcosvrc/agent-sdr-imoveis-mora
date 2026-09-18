@@ -302,3 +302,17 @@ CREATE INDEX IF NOT EXISTS interesses_lead_idx   ON interesses (lead_id, atualiz
 --     Sem ele, reprocessar a fila viraria enxurrada de mensagem para a mesma pessoa.
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS aceita_reativacao BOOLEAN NOT NULL DEFAULT true;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS reativado_em TIMESTAMPTZ;
+
+-- Ponte para o CRM (docs/decisions.md, D-01). A tabela fica AQUI, no banco da Mora, porque é dado
+-- da Mora sobre a própria integração: quem precisa saber "para onde publiquei este lead" é quem
+-- publica. Guardá-la do outro lado obrigaria o CRM a conhecer a existência da Mora.
+--   • um lead da Mora vira DOIS registros no CRM: a pessoa (lead) e a intenção (opportunity);
+--   • crm_version é o If-Match da próxima escrita — guardá-lo evita um GET por turno, e quando
+--     envelhece (o corretor editou pelo painel) o CRM responde 412 e o publicador relê.
+CREATE TABLE IF NOT EXISTS crm_vinculo (
+  lead_id            TEXT PRIMARY KEY REFERENCES leads(id) ON DELETE CASCADE,
+  crm_lead_id        TEXT NOT NULL,
+  crm_opportunity_id TEXT NOT NULL,
+  crm_version        INT  NOT NULL DEFAULT 1,
+  atualizado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
+);

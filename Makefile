@@ -26,6 +26,27 @@ docs-kb:
 migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CREATE/ALTER ... IF NOT EXISTS)
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql
 
+# ============================== CRM imobiliário (docs/decisions.md D-01) ==============================
+# Sistema à parte, com banco próprio. A Mora publica nele o que a conversa descobre; nada daqui
+# escreve no banco dela.
+
+crm-migrate:   # aplica o schema do CRM no banco `crm` — idempotente, como o da Mora
+	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
+
+crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs
+	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --seed 42 --reference-date $(CRM_REF)
+
+crm-reset:     # apaga o dataset e reaplica. Recusa se houver qualquer registro sem marca sintética.
+	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --reset --confirm-reset --seed 42 --reference-date $(CRM_REF)
+
+crm-token:     # emite a credencial da Mora. O token aparece UMA vez — copie para local/.env.
+	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.credenciais emitir --nome mora
+
+crm-mcp:       # servidor MCP por stdio. -T é obrigatório: sem ele o terminal se mistura ao JSON-RPC.
+	cd local && docker compose run --rm -T crm-mcp
+
+CRM_REF ?= 2026-09-17T12:00:00Z
+
 ollama-pull:   # garante o serviço (profile ollama) de pé antes de baixar o modelo de embeddings
 	cd local && docker compose --profile ollama up -d ollama && docker compose --profile ollama exec ollama ollama pull bge-m3
 
@@ -35,6 +56,8 @@ cli: check-env
 # Testes de integração: usam o banco sdr_test (separado do de desenvolvimento) no Postgres do compose.
 # As suítes apagam tabelas — por isso há uma trava que recusa rodar contra um banco sem "test" no nome.
 TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/sdr_test
+# O CRM tem banco próprio também nos testes — a separação de D-01 vale na suíte.
+CRM_TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/crm_test
 # Onde o banco de teste é preparado. `compose` usa o Postgres do docker compose (padrão, na máquina
 # do desenvolvedor); `psql` fala direto com o TEST_DSN — é o caminho da CI, onde o Postgres é um
 # service container do runner e não existe compose nenhum para dar `exec`.
@@ -59,6 +82,7 @@ test: test-db
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/api && PYTHONPATH=../../shared:src python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/whatsapp && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
+	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/telegram && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/local && PYTHONPATH=../../../shared:.:../whatsapp python3 -m pytest -q tests
 

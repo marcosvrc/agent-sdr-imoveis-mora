@@ -12,6 +12,10 @@ x-py: &py
     SDR_DATABASE_DSN: postgresql://sdr:sdr@db:5432/sdr
     SDR_REDIS_URL: redis://redis:6379/0
     SDR_OLLAMA_URL: http://ollama:11434
+    # Ponte com o CRM (D-01). Vazia = desligada: sem token emitido, a Mora roda exatamente como
+    # antes e não tenta publicar nada. Emitir com `make crm-token`.
+    SDR_CRM_URL: "${SDR_CRM_URL-http://crm-api:8100}"
+    SDR_CRM_TOKEN: "${SDR_CRM_TOKEN-}"
   volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts" ]
   depends_on: { db: { condition: service_healthy }, redis: { condition: service_started } }
 
@@ -22,6 +26,7 @@ services:
     ports: ["${DB_HOST_PORT:-5433}:5432"]      # host: 5433 (5432 costuma estar ocupado por um Postgres nativo)
     volumes:
       - ./00-langfuse.sql:/docker-entrypoint-initdb.d/00-langfuse.sql
+      - ./00-crm.sql:/docker-entrypoint-initdb.d/00-crm.sql
       - ../shared/sdr_shared/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - pgdata:/var/lib/postgresql/data
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U sdr"], interval: 3s, retries: 20 }
@@ -91,6 +96,37 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+
+  crm-api:                     # CRM da imobiliária — sistema À PARTE, com banco próprio (D-01/D-02)
+    <<: *py
+    command: uvicorn sdr_crm.api.main:app --host 0.0.0.0 --port 8100 --reload
+    working_dir: /app/services/crm
+    # Ambiente PRÓPRIO, sem herdar o do agente: o CRM não pode enxergar o DSN da Mora. A separação
+    # é o que impede uma consulta cruzada de aparecer "sem querer" um dia.
+    environment:
+      CRM_DATABASE_DSN: postgresql://sdr:sdr@db:5432/crm
+      CRM_APP_ENV: development
+      PYTHONPATH: /app/services/crm
+    ports: ["8100:8100"]
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8100/health/ready', timeout=3).status==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  crm-mcp:                     # servidor MCP do CRM: stdio, iniciado pelo CLIENTE, não é serviço
+    <<: *py
+    profiles: [mcp]            # fora do `up` normal de propósito — nada a "manter no ar"
+    command: python -m sdr_crm.mcp
+    working_dir: /app/services/crm
+    stdin_open: true
+    environment:
+      CRM_API_BASE_URL: http://crm-api:8100
+      CRM_API_TOKEN: "${SDR_CRM_TOKEN}"
+      PYTHONPATH: /app/services/crm
+    # Uso: docker compose run --rm -T crm-mcp     (-T é obrigatório: sem ele o terminal se mistura
+    # ao fluxo JSON-RPC do stdio e o cliente desconecta com um erro que não aponta para a causa)
 
   web:                         # substitui S3 + CloudFront
     image: node:20-alpine

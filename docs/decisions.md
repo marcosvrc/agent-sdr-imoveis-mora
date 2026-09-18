@@ -113,3 +113,33 @@ o que o documento pede; nos decoradores eles seriam inferidos da assinatura.
 `readOnlyHint` e `idempotentHint` vão declarados, mas quem recusa é a API. A especificação diz isso
 com todas as letras, e vale repetir aqui: um cliente MCP pode ignorar anotação, e a única coisa que
 impede o agente de confirmar uma visita é `confirmar_visita` **não existir** no catálogo.
+
+## D-12 — A Mora publica no fim do turno, depois de responder ao cliente
+
+A chamada ao CRM acontece **depois** do despacho da resposta e engole a própria falha. Um CRM fora
+do ar não pode virar um atendimento fora do ar: o cliente recebe a resposta, e a publicação perdida
+vira uma linha de log — e volta sozinha no turno seguinte, porque o `operation_id` é estável.
+
+Por isso também o encaminhamento é publicado do handler, e não do nó do grafo: no nó, uma falha do
+CRM abortaria a resposta que a pessoa está esperando.
+
+## D-13 — O `external_event_id` é o id da mensagem, não um hash do texto
+
+Primeira versão derivava o identificador da interação de um hash do CONTEÚDO. O índice único do CRM
+é `(canal, external_event_id)` — global, não por cliente. Resultado: dois clientes diferentes que
+escrevessem "Oi, tudo bem?" no mesmo canal colidiam, e a mensagem do segundo entrava no histórico do
+primeiro (ou melhor: não entrava em lugar nenhum).
+
+`MensagemRepository.registrar` passou a devolver o id da linha, e é ele que vai para o CRM. Além de
+único, resolve o caso legítimo de duas mensagens idênticas do mesmo cliente em turnos diferentes —
+que o hash do texto engolia.
+
+*Apareceu ao rodar a suíte duas vezes seguidas: na segunda, o histórico saía vazio.*
+
+## D-14 — `agendado` da Mora não vira `visit_scheduled` no CRM
+
+O CRM só aceita `visit_scheduled` com visita confirmada por uma pessoa, e o agente não confirma
+visita. Então o estágio publicado para em `qualified`, e avança lá quando o corretor confirmar.
+
+É uma divergência deliberada entre os dois sistemas: o CRM não pode afirmar "visita marcada" porque
+o agente achou que marcou.

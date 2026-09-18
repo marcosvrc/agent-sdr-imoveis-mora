@@ -152,10 +152,18 @@ class CanalRepository:
 
 
 class MensagemRepository:
-    def registrar(self, lead_id: str, canal: str, direcao: str, conteudo: str, meta: dict | None = None) -> None:
+    def registrar(self, lead_id: str, canal: str, direcao: str, conteudo: str, meta: dict | None = None) -> int:
+        """Devolve o id da linha inserida.
+
+        Ele é o identificador natural da mensagem, e é o que a ponte com o CRM usa como
+        `external_event_id`. Derivar esse identificador do TEXTO, como eu fazia antes, junta duas
+        mensagens iguais de clientes diferentes numa só — descoberto rodando a suíte duas vezes.
+        """
         with _conn() as c:
-            c.execute("INSERT INTO mensagens (lead_id, canal, direcao, conteudo, meta) VALUES (%s, %s, %s, %s, %s)",
-                      (lead_id, canal, direcao, conteudo, json.dumps(meta or {})))
+            linha = c.execute("INSERT INTO mensagens (lead_id, canal, direcao, conteudo, meta) "
+                              "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                              (lead_id, canal, direcao, conteudo, json.dumps(meta or {}))).fetchone()
+        return linha["id"]
 
     def historico(self, lead_id: str, limite: int = 100) -> list[dict]:
         with _conn() as c:
