@@ -60,19 +60,25 @@ def _contexto_funil(conn, op: dict) -> funil.Contexto:
 def listar(ctx: Contexto = Ctx, stage: str | None = None, owner_id: str | None = None,
            lead_id: str | None = None, limit: int | None = None, cursor: str | None = None):
     ctx.ator.exigir("crm:read")
+    # Colunas qualificadas desde o início: a consulta tem JOIN, e `stage` sozinho seria ambíguo no
+    # dia em que `leads` ganhar uma coluna de mesmo nome.
     onde, valores = ["true"], []
-    for coluna, valor in (("stage", stage), ("owner_id", owner_id), ("lead_id", lead_id)):
+    for coluna, valor in (("o.stage", stage), ("o.owner_id", owner_id), ("o.lead_id", lead_id)):
         if valor:
             onde.append(f"{coluna} = %s")
             valores.append(valor)
     n = protocolo.limite(limit)
     if (marca := protocolo.decifrar_cursor(cursor)) is not None:
-        onde.append("(created_at, id) < (%s, %s)")
+        onde.append("(o.created_at, o.id) < (%s, %s)")
         valores.extend(marca)
     with leitura() as conn:
+        # O nome do cliente vem junto: sem ele o quadro do funil vira uma parede de UUIDs, e saber
+        # de quem é o cartão exige abrir um por um.
         linhas = conn.execute(
-            f"SELECT * FROM opportunities WHERE {' AND '.join(onde)} "
-            f"ORDER BY created_at DESC, id DESC LIMIT %s", [*valores, n + 1]).fetchall()
+            f"""SELECT o.*, l.name AS lead_name FROM opportunities o
+                  JOIN leads l ON l.id = o.lead_id
+                 WHERE {' AND '.join(onde)}
+                 ORDER BY o.created_at DESC, o.id DESC LIMIT %s""", [*valores, n + 1]).fetchall()
     proximo = None
     if len(linhas) > n:
         linhas = linhas[:n]

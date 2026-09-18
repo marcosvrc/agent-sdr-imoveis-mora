@@ -143,3 +143,34 @@ visita. Então o estágio publicado para em `qualified`, e avança lá quando o 
 
 É uma divergência deliberada entre os dois sistemas: o CRM não pode afirmar "visita marcada" porque
 o agente achou que marcou.
+
+## D-15 — O painel usa sessão em cookie, e o mesmo host da API
+
+`credentials: "include"` em toda chamada, e nenhum token de serviço no bundle: qualquer `VITE_*` vai
+para dentro do arquivo que o navegador baixa.
+
+A armadilha que isso cria, e que só apareceu abrindo o painel de verdade: **`localhost` e
+`127.0.0.1` são sites diferentes para o navegador**. Com o painel em um e a API no outro, o login
+devolve 200, o cookie `SameSite=Lax` não é guardado, e a tela volta ao formulário em branco — o
+clássico "cliquei e não aconteceu nada". Três consertos: os dois endereços entraram na lista de
+origens permitidas; o painel confere `/auth/me` logo após o login e explica o problema quando a
+sessão não cola; e uma falha de rede/CORS agora tem mensagem própria, em vez do genérico "não foi
+possível carregar" que mandaria a pessoa procurar o erro na senha.
+
+## D-16 — Senha de acesso ao painel é GERADA no seed, não escrita no código
+
+O seed cria uma senha aleatória para quem ainda não tem e a imprime uma vez. Senha de
+desenvolvimento fixa no repositório é senha de produção no dia em que alguém apontar isto para um
+ambiente exposto. Quem já tem senha não é tocado, então o seed continua idempotente.
+
+## D-17 — Dois defeitos que só a tela mostrou
+
+O quadro do funil pedia uma página (o máximo da API é 100) e exibia **100 de 120** oportunidades,
+com contagens que contradiziam a Visão geral na tela anterior. Agora segue o cursor, com teto de 20
+páginas e aviso quando trunca.
+
+E os cartões mostravam `cliente 4a9ff44e`: a lista de oportunidades não trazia o nome. Um Kanban de
+UUIDs obriga a abrir cada cartão para saber de quem se trata — `GET /opportunities` passou a
+devolver `lead_name`.
+
+Nenhum dos dois quebrava teste nenhum, e nenhum aparece em `tsc`.

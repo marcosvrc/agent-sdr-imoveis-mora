@@ -17,6 +17,7 @@ no caminho do comando.
 """
 import argparse
 import json
+import secrets
 import sys
 from datetime import UTC, datetime
 
@@ -61,6 +62,28 @@ def _resetar(dataset_id: str) -> dict:
     return apagados
 
 
+def _senha_de_bootstrap() -> None:
+    """Gera uma senha ALEATÓRIA para quem ainda não tem, e imprime uma vez (seção 11).
+
+    Gerada, e não fixa no código: senha de desenvolvimento escrita no repositório é senha de
+    produção no dia em que alguém apontar isto para um ambiente exposto. Quem já tem senha não é
+    tocado — assim o seed continua idempotente e reaplicar não derruba o acesso de ninguém.
+    """
+    with transacao() as conn:
+        sem_senha = conn.execute(
+            "SELECT id, name, email, role FROM users WHERE password_hash IS NULL ORDER BY role"
+        ).fetchall()
+        if not sem_senha:
+            return
+        from ..api.auth import hash_senha
+        print("\nAcesso ao painel (aparece só nesta execução):")
+        for u in sem_senha:
+            senha = secrets.token_urlsafe(12)
+            conn.execute("UPDATE users SET password_hash = %s WHERE id = %s",
+                         (hash_senha(senha), u["id"]))
+            print(f"  {u['role']:7} {u['email']:28} {senha}")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="sdr_crm.seed", description="Massa sintética do CRM.")
     p.add_argument("--seed", type=int, default=42)
@@ -83,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"reset": _resetar(args.dataset_id)}, ensure_ascii=False))
 
     contagens = aplicar(Plano(seed=args.seed, referencia=referencia, dataset_id=args.dataset_id))
+    _senha_de_bootstrap()
     print(json.dumps({"seed": args.seed, "reference_date": referencia.isoformat(),
                       "dataset_id": args.dataset_id, "contagens": contagens}, ensure_ascii=False))
     return 0

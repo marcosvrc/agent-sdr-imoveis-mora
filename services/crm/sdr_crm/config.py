@@ -17,7 +17,11 @@ class Settings(BaseSettings):
     # Assina o cookie de sessão humana. Vazio fora de desenvolvimento é erro, não padrão silencioso:
     # sessão assinada com segredo previsível é sessão de qualquer um.
     session_secret: str = ""
-    allowed_origins: list[str] = ["http://localhost:3000"]
+    # Os dois, e não só um: para o navegador, `localhost:3000` e `127.0.0.1:3000` são origens
+    # DIFERENTES. Com só um na lista, abrir o painel pelo outro endereço faz toda chamada falhar no
+    # CORS — e o erro que chega ao JavaScript não diz "CORS", diz "failed to fetch". Descoberto
+    # abrindo o painel de verdade.
+    allowed_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
     # Limite por credencial, por minuto (seção 11). Contador em memória, de uma instância só — está
     # documentado como tal para ninguém confundir com proteção distribuída.
     rate_limit_por_minuto: int = 120

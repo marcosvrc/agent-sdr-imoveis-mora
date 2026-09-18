@@ -128,6 +128,19 @@ services:
     # Uso: docker compose run --rm -T crm-mcp     (-T é obrigatório: sem ele o terminal se mistura
     # ao fluxo JSON-RPC do stdio e o cliente desconecta com um erro que não aponta para a causa)
 
+  crm-web:                     # painel do CRM (React) — porta 3000, como a especificação documenta
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host --port 3000"
+    # `localhost` e não `crm-api`: esta URL é resolvida pelo NAVEGADOR, não pelo container. Apontar
+    # para o nome do serviço faria toda chamada falhar na máquina de quem abre o painel. E tem de
+    # ser o MESMO host da barra de endereços — `localhost` aqui e `127.0.0.1` lá são sites
+    # diferentes para o navegador, e o cookie de sessão simplesmente não é guardado.
+    environment: { VITE_CRM_API: "http://localhost:8100", CHOKIDAR_USEPOLLING: "true" }
+    volumes: [ "../apps/crm:/app", "/app/node_modules" ]
+    ports: ["3000:3000"]
+    depends_on: [crm-api]
+
   web:                         # substitui S3 + CloudFront
     image: node:20-alpine
     working_dir: /app
