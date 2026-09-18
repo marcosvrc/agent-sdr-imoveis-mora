@@ -16,7 +16,7 @@ dependencies = [
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.2"]
-dev = ["uvicorn", "pytest", "httpx"]
+dev = ["uvicorn", "pytest", "pytest-anyio", "httpx"]
 
 [build-system]
 requires = ["hatchling"]

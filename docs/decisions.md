@@ -92,3 +92,24 @@ agenda cheia de qualquer um.
 Índice único parcial `visits (slot_id) WHERE status IN ('confirmed', 'completed')`. Deixar isso só na
 aplicação perde a corrida entre o `SELECT` e o `UPDATE` de duas transações simultâneas — e o cenário
 "duas confirmações no mesmo slot" da seção 14 é exatamente essa corrida.
+
+## D-10 — Servidor MCP pela API de baixo nível do SDK
+
+**Documento:** SDK oficial do MCP, sem JSON-RPC à mão.
+**Feito:** `mcp.server.lowlevel.Server`, com `tools/list` e `tools/call` registrados à mão — e não
+a API de decoradores.
+
+A razão é uma exigência da própria seção 8 que a API de alto nível não atende: erro de negócio
+precisa sair com `isError=true` **e** `structuredContent` `{ok:false, error:{code,...}}`. Nos
+decoradores, um retorno normal nunca marca `isError`, e uma exceção marca `isError` mas descarta o
+conteúdo estruturado, entregando só "Error executing tool X". O `code` estável — que é o que o
+agente usa para decidir se pergunta, espera ou desiste — se perderia.
+
+A API de baixo nível também obriga a declarar `inputSchema` e `outputSchema` explicitamente, que é
+o que o documento pede; nos decoradores eles seriam inferidos da assinatura.
+
+## D-11 — Anotações de ferramenta são dica, não autorização
+
+`readOnlyHint` e `idempotentHint` vão declarados, mas quem recusa é a API. A especificação diz isso
+com todas as letras, e vale repetir aqui: um cliente MCP pode ignorar anotação, e a única coisa que
+impede o agente de confirmar uma visita é `confirmar_visita` **não existir** no catálogo.
