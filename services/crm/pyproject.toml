@@ -1,0 +1,26 @@
+[project]
+name = "sdr-crm"
+version = "0.1.0"
+description = "CRM imobiliário sintético: registro comercial que a Mora consulta e alimenta"
+requires-python = ">=3.12"
+# Sem `sdr-shared`: o CRM é um sistema à parte e não pode alcançar o banco nem os modelos da Mora.
+# A dependência existe no sentido contrário, e só pela API.
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "psycopg[binary,pool]>=3.2",
+    "argon2-cffi>=23.1",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.2"]
+dev = ["uvicorn", "pytest", "httpx"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sdr_crm"]
