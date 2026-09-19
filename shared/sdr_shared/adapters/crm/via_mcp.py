@@ -170,6 +170,31 @@ class _Sessao:
     def consultar_oportunidade(self, crm_opportunity_id: str) -> dict | None:
         return self._ferramenta("consultar_oportunidade", {"opportunity_id": crm_opportunity_id})
 
+    def imovel_por_codigo(self, codigo: str) -> dict | None:
+        r = self._ferramenta("buscar_imoveis", {"code": codigo, "limit": 2})
+        itens = (r or {}).get("items") or []
+        # `code` é único no CRM; mais de um resultado seria o filtro tendo sido ignorado, e aí o
+        # primeiro item é um imóvel qualquer. Melhor não resolver do que resolver errado: um pedido
+        # de visita no imóvel errado é pior que nenhum.
+        if len(itens) != 1:
+            if itens:
+                log.warning("busca por código %s devolveu %d imóveis; não resolvi", codigo, len(itens))
+            return None
+        return itens[0]
+
+    def horarios_livres(self, crm_property_id: str, *, limite: int = 20) -> list[dict]:
+        r = self._ferramenta("consultar_horarios", {"property_id": crm_property_id,
+                                                    "limit": limite})
+        itens = (r or {}).get("items")
+        return itens if isinstance(itens, list) else []
+
+    def solicitar_visita(self, *, crm_opportunity_id: str, crm_property_id: str, slot_id: str,
+                         observacao: str | None = None) -> dict | None:
+        return self._ferramenta("solicitar_visita", {
+            "opportunity_id": crm_opportunity_id, "property_id": crm_property_id,
+            "slot_id": slot_id, "notes": observacao,
+            "operation_id": _op(crm_opportunity_id, "visita", slot_id)})
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         r = self._ferramenta("consultar_historico", {"lead_id": crm_lead_id, "limit": limite})
         if not r:
@@ -191,6 +216,9 @@ class _Inerte:
     def buscar_lead_por_contato(self, **k): return None
     def consultar_lead(self, crm_lead_id): return None
     def consultar_oportunidade(self, crm_opportunity_id): return None
+    def imovel_por_codigo(self, codigo): return None
+    def horarios_livres(self, crm_property_id, **k): return []
+    def solicitar_visita(self, **k): return None
     def consultar_historico(self, crm_lead_id, **k): return []
 
 

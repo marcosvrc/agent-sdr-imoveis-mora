@@ -14,7 +14,7 @@ from sdr_crm.seed.gerar import Plano
 
 PLANO = Plano(seed=42, referencia=datetime(2026, 9, 17, 12, tzinfo=UTC), dataset_id="teste")
 
-ESPERADO = {"users": 4, "properties": 50, "leads": 100, "opportunities": 120,
+ESPERADO = {"users": 4, "properties": 200, "leads": 100, "opportunities": 120,
             "interactions": 300, "visits": 20, "tasks": 30, "handoffs": 10}
 
 

@@ -15,6 +15,9 @@ Nada aqui sai para a rede, e nenhum dado é real: e-mails em `example.com`, tele
 comum, identificadores `sim-*`, endereços marcados como fictícios. Bairros e cidades são reais —
 são referência geográfica, não dado pessoal.
 """
+import json
+import os
+import pathlib
 import random
 import uuid
 from dataclasses import dataclass
@@ -67,42 +70,95 @@ def usuarios(p: Plano) -> list[dict]:
             for i, (nome, papel) in enumerate(base)]
 
 
+ACERVO_PADRAO = pathlib.Path(__file__).resolve().parents[4] / "data" / "imoveis" / "imoveis.json"
+
+
+def ler_acervo(caminho: pathlib.Path | None = None) -> list[dict]:
+    """O acervo da imobiliária, de um arquivo só.
+
+    Antes, o CRM sorteava cinquenta imóveis próprios e a Mora indexava outros duzentos — dois
+    acervos disjuntos descrevendo a mesma imobiliária. Enquanto ninguém cruzava os dois, passava;
+    na hora de pedir os horários de um imóvel, `SP-0001` não existia do lado do CRM e a integração
+    de visita simplesmente não tinha como funcionar.
+
+    Ler o mesmo arquivo é o que faz `code` ser uma chave de verdade entre os dois sistemas. O
+    arquivo não é "da Mora": é a massa da imobiliária, que o CRM registra e a Mora indexa.
+    """
+    caminho = caminho or pathlib.Path(os.environ.get("CRM_ACERVO_JSON", "") or ACERVO_PADRAO)
+    dados = json.loads(caminho.read_text(encoding="utf-8"))
+    return dados if isinstance(dados, list) else dados.get("imoveis", dados)
+
+
+def _reais_para_centavos(valor) -> int | None:
+    return None if valor is None else round(float(valor) * 100)
+
+
 def imoveis(p: Plano) -> list[dict]:
-    r = p.rnd("imoveis")
+    """Traduz o acervo para o registro comercial do CRM.
+
+    As fixtures obrigatórias da seção 9 — "aluguel até R$ 3.000 de custo total" e "compra com três
+    quartos" — deixaram de ser FORÇADAS por índice e passaram a ser CONFERIDAS: o acervo já as
+    contém, e o seed recusa rodar sem elas. É uma garantia mais forte, porque agora o teste prova
+    que a massa tem o cenário em vez de provar que eu escrevi uma exceção para ele.
+    """
     saida = []
-    for i in range(50):
-        aluguel = i % 2 == 0
-        bairro = BAIRROS[i % len(BAIRROS)]
-        base = r.randrange(180_000, 900_000, 5_000) if aluguel else r.randrange(
-            35_000_000, 180_000_000, 500_000)
-        # Um em cada dez fica com o condomínio DESCONHECIDO: é o caso que prova que o total sai
-        # marcado como incompleto em vez de sair menor.
-        condo = None if (aluguel and i % 10 == 4) else (r.randrange(30_000, 150_000, 5_000)
-                                                       if aluguel else None)
-        # Duas fixtures da seção 9 que o sorteio NÃO garante sozinho, e por isso são fixadas por
-        # índice: "aluguel até R$ 3.000 de custo total" (i=0) e "compra com três quartos" (i=1).
-        # Descoberto por um teste que procurava as duas e não achava nenhuma.
-        if i == 0:
-            base, condo = 180_000, 60_000        # 1.800 + 600 + IPTU ≤ 3.000
+    for i, x in enumerate(ler_acervo()):
+        aluguel = x["operacao"] == "aluguel"
+        codigo = str(x["id"])
+        condominio = _reais_para_centavos(x.get("condominio"))
         saida.append({
-            "id": det(p.seed, "property", i),
-            "code": f"SIM-{i:03d}",
-            "title": f"{TIPOS[i % len(TIPOS)].capitalize()} em {bairro} (endereço fictício)",
+            "id": det(p.seed, "property", codigo),
+            # `code` é a chave entre os dois sistemas: é por ele que a Mora resolve `SP-0001` para
+            # o `property_id` do CRM na hora de pedir horários e registrar interesse.
+            "code": codigo,
+            "title": f"{str(x['tipo']).capitalize()} em {x['bairro']} (endereço fictício)",
+            # Um imóvel com descrição adulterada continua existindo: é o alvo do teste de injeção
+            # de segunda ordem, e some se o acervo mudar de tamanho sem que alguém perceba.
             "description": INJECAO if i == 7 else
-                           f"Imóvel sintético para testes, {bairro}. Endereço fictício.",
-            "city": "São Paulo", "neighborhood": bairro, "type": TIPOS[i % len(TIPOS)],
+                           (x.get("descricao") or f"Imóvel em {x['bairro']}. Endereço fictício."),
+            "city": x.get("cidade") or "São Paulo", "neighborhood": x["bairro"],
+            "type": x["tipo"],
             "purpose": "rent" if aluguel else "buy",
-            "base_price_cents": base,
-            "condo_monthly_cents": condo,
-            "property_tax_monthly_cents": (20_000 if i == 0 else
-                                           r.randrange(5_000, 60_000, 1_000)) if aluguel else None,
+            "base_price_cents": _reais_para_centavos(x["preco"]),
+            # Condomínio ausente no acervo vira NULO, e nulo é DESCONHECIDO — nunca zero. É o que
+            # faz o custo total sair marcado como incompleto em vez de sair menor do que é.
+            "condo_monthly_cents": condominio if aluguel else None,
+            # O acervo não traz IPTU. Para aluguel ele é derivado do preço, de forma determinística,
+            # porque sem nenhum valor todo custo total ficaria incompleto e os cenários de
+            # orçamento não existiriam. Para compra não se aplica.
+            "property_tax_monthly_cents": (
+                max(5_000, _reais_para_centavos(x["preco"]) // 20) if aluguel else None),
             "other_monthly_cents": 0 if aluguel else None,
-            "bedrooms": 3 if i == 1 else 1 + (i % 4), "parking": i % 3,
-            "area_m2": round(35 + (i % 40) * 2.5, 2),
-            # Um indisponível e um reservado, para o teste de "imóvel indisponível não recebe visita".
+            "bedrooms": x["quartos"], "parking": x.get("vagas") or 0,
+            "area_m2": round(float(x["area_m2"]), 2) if x.get("area_m2") else None,
+            # Um indisponível e um reservado, para "imóvel indisponível não recebe visita".
             "status": "unavailable" if i == 11 else ("reserved" if i == 12 else "available"),
         })
+    _conferir_fixtures(saida)
     return saida
+
+
+def _conferir_fixtures(linhas: list[dict]) -> None:
+    """Recusa um acervo que não sirva para demonstrar o produto.
+
+    Falhar aqui, na geração, é muito melhor que falhar no teste: a mensagem diz qual cenário
+    sumiu e por quê, em vez de um `assert` vermelho a três camadas de distância.
+    """
+    def total(x):
+        return sum(x[c] or 0 for c in ("base_price_cents", "condo_monthly_cents",
+                                       "property_tax_monthly_cents", "other_monthly_cents"))
+
+    faltando = []
+    if not any(x["purpose"] == "rent" and x["condo_monthly_cents"] is not None
+               and total(x) <= 300_000 for x in linhas):
+        faltando.append("aluguel com custo total até R$ 3.000")
+    if not any(x["purpose"] == "buy" and x["bedrooms"] == 3 for x in linhas):
+        faltando.append("compra com três quartos")
+    if not any(x["condo_monthly_cents"] is None and x["purpose"] == "rent" for x in linhas):
+        faltando.append("aluguel com condomínio desconhecido")
+    if faltando:
+        raise SystemExit("✗ o acervo não contém " + "; ".join(faltando)
+                         + ".\n  Gere outro com `python scripts/gerar_imoveis.py 200`.")
 
 
 def leads(p: Plano) -> list[dict]:
@@ -188,16 +244,27 @@ def slots(p: Plano, imoveis_: list[dict]) -> list[dict]:
     dois slots do mesmo corretor nunca colidem. Sortear horários e torcer faria o `EXCLUDE` do banco
     recusar o seed de vez em quando — falha intermitente que custa caro para diagnosticar.
     """
+    # A grade alterna aluguel e compra de propósito. O acervo real é desequilibrado (bem mais
+    # venda que aluguel), e tomando os imóveis na ordem do arquivo os slots ficavam quase todos de
+    # venda — as visitas do seed, que exigem imóvel do MESMO propósito da oportunidade, não
+    # encontravam par e a massa nascia com menos visitas do que a especificação pede. Alternar é o
+    # que mantém a massa fiel à especificação independentemente da mistura do acervo.
     disponiveis = [x for x in imoveis_ if x["status"] == "available"]
+    por_proposito = {alvo: [x for x in disponiveis if x["purpose"] == alvo]
+                     for alvo in ("rent", "buy")}
+    if not all(por_proposito.values()):
+        raise SystemExit("✗ o acervo precisa ter imóveis disponíveis de aluguel E de compra.")
+
     base = p.referencia.replace(hour=13, minute=0, second=0, microsecond=0)
     saida = []
     for i in range(40):
         corretor = 1 + (i % 3)
         passo = i // 3                          # posição dentro da trilha daquele corretor
         inicio = base + timedelta(days=1 + passo, hours=corretor)
+        fila = por_proposito["rent" if i % 2 == 0 else "buy"]
         saida.append({
             "id": det(p.seed, "slot", i),
-            "property_id": disponiveis[i % len(disponiveis)]["id"],
+            "property_id": fila[(i // 2) % len(fila)]["id"],
             "broker_id": det(p.seed, "user", corretor),
             "starts_at": inicio,
             "ends_at": inicio + timedelta(hours=1),

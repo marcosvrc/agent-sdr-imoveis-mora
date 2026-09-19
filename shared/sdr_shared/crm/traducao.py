@@ -25,6 +25,10 @@ PROPOSITO = {
 # O agente só move até `qualified` (seção 6 da especificação do CRM). Estágios que não estão aqui
 # significam "não mexer": `handoff` é tratado pelo encaminhamento, e `inativo`/`frio` seriam `lost`,
 # que é decisão humana.
+# O teto do agente no funil do CRM, nomeado uma vez: é precondição para pedir visita, e escrever
+# "qualified" solto em outro arquivo faria a regra existir em dois lugares.
+ESTAGIO_QUALIFICADO = "qualified"
+
 ESTAGIO = {
     Estagio.NOVO: "new",
     Estagio.QUALIFICANDO: "in_service",

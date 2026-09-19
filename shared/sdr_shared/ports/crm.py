@@ -76,6 +76,25 @@ class SessaoCRM(Protocol):
         """A oportunidade com preferências, interesses e versão."""
         ...
 
+    def imovel_por_codigo(self, codigo: str) -> dict | None:
+        """O imóvel do acervo, pelo código que os dois sistemas compartilham (`SP-0001`).
+
+        É o de-para: a Mora indexa o acervo pelo código e o CRM registra o mesmo código, então
+        nenhum dos dois precisa adivinhar o identificador interno do outro.
+        """
+        ...
+
+    def horarios_livres(self, crm_property_id: str, *, limite: int = 20) -> list[dict]:
+        """Horários sem visita confirmada para aquele imóvel. Solicitação não ocupa horário — duas
+        pessoas podem pedir o mesmo, e só uma será confirmada pelo corretor."""
+        ...
+
+    def solicitar_visita(self, *, crm_opportunity_id: str, crm_property_id: str, slot_id: str,
+                         observacao: str | None = None) -> dict | None:
+        """PEDE uma visita. Não agenda: quem confirma é o corretor, e só então a oportunidade passa
+        a `visit_scheduled`. Chamar isto não autoriza dizer "agendado" ao cliente."""
+        ...
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         """Interações anteriores. É o que deixa a Mora saber o que já foi conversado com o cliente
         antes dela — inclusive por outro corretor, em outro canal.

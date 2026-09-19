@@ -164,7 +164,10 @@ T: list[Ferramenta] = [
         "buscar_imoveis",
         "Catálogo com os custos DISCRIMINADOS. Quando algum custo mensal é desconhecido, o total "
         "vem nulo e marcado como incompleto — nunca trate isso como zero ao falar com o cliente.",
-        entrada({"purpose": {"type": "string", "enum": ["rent", "buy"]},
+        entrada({"code": {"type": "string", "maxLength": 60,
+                          "description": "Código do imóvel no acervo (ex.: SP-0001). Identifica "
+                                         "UM imóvel; ignora o filtro de status."},
+                 "purpose": {"type": "string", "enum": ["rent", "buy"]},
                  "city": {"type": "string", "maxLength": 120},
                  "neighborhood": {"type": "string", "maxLength": 120},
                  "bedrooms_min": {"type": "integer", "minimum": 0, "maximum": 20},
@@ -174,7 +177,7 @@ T: list[Ferramenta] = [
                  **PAGINA}, []),
         "GET", "/v1/properties",
         params=("purpose", "city", "neighborhood", "bedrooms_min", "parking_min",
-                "max_price_cents", "budget_basis", "limit", "cursor")),
+                "code", "max_price_cents", "budget_basis", "limit", "cursor")),
     Ferramenta(
         "registrar_interesse",
         "Marca o que aconteceu com um imóvel nesta oportunidade: apresentado, interessou ou "

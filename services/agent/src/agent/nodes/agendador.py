@@ -9,6 +9,8 @@ from ..llm import llm_conversa
 from ..prompts import carregar
 from ..state import AgentState
 from ..guardrails.saida import sanear
+from sdr_shared.crm import horarios_do_imovel, pedir_visita
+
 from ..tools.agenda import HorarioOcupado, listar_horarios, agendar, formatar
 
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
@@ -85,6 +87,11 @@ def run(state: AgentState) -> dict:
             # Alguém pegou o horário entre a oferta e o clique: reoferece em vez de confirmar em falso.
             return _oferecer(state, lead, imovel_id, txt, ocupado_agora=True)
         lead.estagio, lead.cartao.pediu_visita = Estagio.AGENDADO, True
+        # A Mora reservou o horário; quem confirma a visita é o corretor. O pedido no CRM é o que
+        # faz o painel dele mostrar a mesma coisa que o cliente ouviu. Falhar aqui não desfaz a
+        # reserva: o cliente tem o horário e o corretor recebe a notificação de qualquer jeito.
+        pedir_visita(lead, imovel_id, (state.get("slots_crm") or {}).get(inicio.isoformat()),
+                     observacao=f"Pedido pela Mora no canal {entrada.canal.value}.")
         # Visita marcada sem telefone é visita perdida: é o momento natural de pedir o contato.
         pedir = ("" if lead.telefone or lead.cartao.tem_contato() else
                  "IMPORTANTE: ainda não temos o contato deste cliente. Ao confirmar, peça o WhatsApp dele numa "
@@ -95,7 +102,7 @@ def run(state: AgentState) -> dict:
         visita = {"inicio": inicio.isoformat(), "duracao_min": 60, "imovel_id": imovel_id,
                   "titulo": f"Visita: {card.titulo}" if card else "Visita ao imóvel — Vértice Imóveis",
                   "local": local, "rotulo": formatar(inicio)}
-        return {"lead": lead, "messages": [msg], "horarios_oferecidos": [],
+        return {"lead": lead, "messages": [msg], "horarios_oferecidos": [], "slots_crm": {},
                 "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id), acao=Acao.AGENDAR,
                                            dados={"visita": visita})}
 
@@ -103,8 +110,17 @@ def run(state: AgentState) -> dict:
 
 
 def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool = False) -> dict:
-    """Monta a oferta de horários. A grade já vem descontada da agenda real do corretor."""
-    horarios = listar_horarios(corretor_id=lead.corretor_id)[:8]
+    """Monta a oferta de horários.
+
+    Com imóvel definido, a disponibilidade vem do CRM: horário de visita a um imóvel é dado
+    comercial da imobiliária, e é lá que o corretor o mantém. Sem imóvel escolhido ainda, ou sem
+    CRM, vale a agenda do corretor — que é o que a Mora sempre soube fazer e continua funcionando
+    sozinha. Lista vazia do CRM significa "não sei", nunca "não há": recusar uma visita por causa
+    de uma falha de integração seria inventar indisponibilidade.
+    """
+    do_crm = horarios_do_imovel(imovel_id)
+    slots_crm = {h.inicio.isoformat(): h.slot_id for h in do_crm if h.slot_id}
+    horarios = [h.inicio for h in do_crm][:8] or listar_horarios(corretor_id=lead.corretor_id)[:8]
     lead.cartao.pediu_visita = True
     # Cliente pediu um horário que não existe na agenda (ex.: 17h): explicar e reoferecer, sem inventar
     pedido_invalido = bool(state.get("horarios_oferecidos")) and bool(re.search(r"\d{1,2}\s*h|\d{1,2}:\d{2}", txt))
@@ -115,5 +131,6 @@ def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool 
                                           pedido_invalido=pedido_invalido, contexto_contato=contexto), *state["messages"]])
     # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista
     return {"lead": lead, "messages": [msg], "horarios_oferecidos": [h.isoformat() for h in horarios],
+            "slots_crm": slots_crm,
             "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id),
                                        opcoes=[f"slot:{h.isoformat()}|{formatar(h)}" for h in horarios])}

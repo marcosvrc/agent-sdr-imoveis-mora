@@ -20,5 +20,7 @@ controle. É a diferença entre um CRM indisponível e um atendimento indisponí
 """
 from .publicador import habilitado, publicar_encaminhamento, publicar_turno
 from .reconhecimento import reconhecer
+from .visitas import Horario, horarios_do_imovel, pedir_visita
 
-__all__ = ["habilitado", "publicar_encaminhamento", "publicar_turno", "reconhecer"]
+__all__ = ["Horario", "habilitado", "horarios_do_imovel", "pedir_visita",
+           "publicar_encaminhamento", "publicar_turno", "reconhecer"]

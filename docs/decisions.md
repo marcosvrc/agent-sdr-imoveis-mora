@@ -29,6 +29,26 @@ da Mora não delega essa escolha — decisão fica no código, MCP fica no trans
 Mora para o CRM) reescreveria reativação, follow-up, score e busca vetorial, que estão apoiados no
 schema atual.
 
+## D-01b — Um acervo só, ligado por `code` *(escopo)*
+
+O CRM sorteava cinquenta imóveis próprios e a Mora indexava outros duzentos: dois acervos
+disjuntos descrevendo a mesma imobiliária. Passou despercebido enquanto ninguém cruzou os dois —
+e apareceu de uma vez na integração de visita, onde pedir os horários de `SP-0001` ao CRM não
+devolvia nada, porque `SP-0001` não existia lá.
+
+O seed do CRM passou a gerar o acervo a partir do mesmo `data/imoveis/imoveis.json`, com `code`
+igual ao identificador que a Mora usa. `code` é a chave entre os dois sistemas: nenhum dos lados
+precisa adivinhar o identificador interno do outro, e a Mora resolve `SP-0001` para o `property_id`
+do CRM por uma busca.
+
+Fotos, região e destaque de investimento continuam só na Mora — são dados de vitrine. O CRM fica
+com o registro comercial. O arquivo não é "da Mora": é a massa da imobiliária, que o CRM registra
+e a Mora indexa.
+
+As duas fixtures obrigatórias da especificação do CRM deixaram de ser forçadas por índice e
+passaram a ser conferidas na geração, com mensagem própria: agora o teste prova que a massa tem o
+cenário, em vez de provar que alguém escreveu uma exceção para ele.
+
 ## D-02 — Banco separado no mesmo Postgres *(armazenamento — destacado)*
 
 **Documento:** PostgreSQL próprio, em Compose próprio.

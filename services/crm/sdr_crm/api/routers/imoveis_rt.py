@@ -21,7 +21,8 @@ def _com_custos(linha: dict) -> dict:
 
 
 @router.get("/properties")
-def listar(ctx: Contexto = Ctx, purpose: str | None = None, city: str | None = None,
+def listar(ctx: Contexto = Ctx, code: str | None = None,
+           purpose: str | None = None, city: str | None = None,
            neighborhood: str | None = None, bedrooms_min: int | None = None,
            parking_min: int | None = None, max_price_cents: int | None = None,
            budget_basis: str = "base_price", status: str | None = "available",
@@ -34,6 +35,14 @@ def listar(ctx: Contexto = Ctx, purpose: str | None = None, city: str | None = N
     """
     ctx.ator.exigir("crm:read")
     onde, valores = ["true"], []
+    # `code` é a chave que um sistema externo já conhece — é assim que a Mora resolve `SP-0001`
+    # para o id do imóvel aqui, sem nenhum dos dois lados ter de adivinhar o do outro. Procurar
+    # por código ignora o filtro de status: quem pergunta por um código específico quer AQUELE
+    # imóvel, inclusive para descobrir que ele está indisponível.
+    if code:
+        onde.append("code = %s")
+        valores.append(code)
+        status = None
     for coluna, valor in (("purpose", purpose), ("city", city), ("neighborhood", neighborhood),
                           ("status", status)):
         if valor:

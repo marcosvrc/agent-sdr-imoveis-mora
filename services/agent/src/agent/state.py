@@ -16,4 +16,5 @@ class AgentState(TypedDict, total=False):
     recusas: int                              # quantas vezes este lead já foi recusado (persiste no checkpoint)
     imoveis_sugeridos: list[ImovelCard]
     horarios_oferecidos: list[str]            # ISO strings, para o turno de confirmação
+    slots_crm: dict[str, str]                 # ISO → slot_id do CRM, quando a grade veio de lá
     resposta: RespostaAgente
