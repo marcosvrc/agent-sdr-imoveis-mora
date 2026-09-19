@@ -297,3 +297,61 @@ def test_excecao_do_chamador_nao_vira_erro_do_crm(ligado, lead):
         with get_crm().sessao() as s:
             assert s.consultar_historico("00000000-0000-0000-0000-000000000000") == []
             raise ZeroDivisionError("falha do chamador, não do CRM")
+
+
+# ------------------------------------------------- ponte corretor ↔ usuário do CRM
+
+def test_encaminhamento_leva_o_destinatario_quando_a_ponte_existe(monkeypatch):
+    """Sem destinatário, o CRM atribui o encaminhamento a quem aceitar — enquanto o painel da Mora
+    já apontou uma pessoa. Dois sistemas nomeando gente diferente para o mesmo atendimento é como
+    dois corretores ligam para o mesmo cliente."""
+    from sdr_shared.crm import publicador
+
+    monkeypatch.setattr(publicador, "_usuario_no_crm", lambda cid: "u-123" if cid else None)
+    enviados = {}
+
+    class Sessao:
+        def encaminhar(self, lead_id, op_id, **k):
+            enviados.update(k)
+            return True
+
+    from sdr_shared.models import Lead
+    lead = Lead(id="l1", corretor_id="cor_ana")
+    lead.resumo = "quer 2 quartos em Pinheiros"
+    v = type("V", (), {"crm_lead_id": "cl", "crm_opportunity_id": "co"})()
+    publicador._encaminhar(Sessao(), v, lead)
+    assert enviados["destinatario"] == "u-123"
+
+
+def test_sem_ponte_o_encaminhamento_sobe_sem_destinatario(monkeypatch):
+    """Ponte vazia é caso normal, não erro: nem todo corretor tem cadastro dos dois lados, e a fila
+    aberta é exatamente o comportamento de antes."""
+    from sdr_shared.crm import publicador
+    from sdr_shared.models import Lead
+
+    monkeypatch.setattr(publicador, "_usuario_no_crm", lambda cid: None)
+    enviados = {}
+
+    class Sessao:
+        def encaminhar(self, lead_id, op_id, **k):
+            enviados.update(k)
+            return True
+
+    lead = Lead(id="l2")
+    lead.resumo = "x"
+    v = type("V", (), {"crm_lead_id": "cl", "crm_opportunity_id": "co"})()
+    publicador._encaminhar(Sessao(), v, lead)
+    assert enviados["destinatario"] is None
+
+
+def test_corretor_guarda_o_id_do_crm():
+    from sdr_shared.db import CorretorRepository
+    from sdr_shared.models import Corretor
+
+    repo = CorretorRepository()
+    repo.upsert(Corretor(id="cor_ponte", nome="Ana Ponte", crm_user_id="u-999"))
+    assert repo.get("cor_ponte").crm_user_id == "u-999"
+    # E sobrevive a uma edição que não mexe no campo — o upsert grava a coluna inteira.
+    salvo = repo.get("cor_ponte")
+    repo.upsert(salvo.model_copy(update={"nome": "Ana Ponte Silva"}))
+    assert repo.get("cor_ponte").crm_user_id == "u-999"

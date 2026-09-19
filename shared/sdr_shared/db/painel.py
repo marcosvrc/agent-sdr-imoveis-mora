@@ -87,7 +87,7 @@ class MetricasRepository:
 
 
 class CorretorRepository:
-    COLS = "id, nome, email, telefone, regioes, ativo, criado_em, foto"
+    COLS = "id, nome, email, telefone, regioes, ativo, criado_em, foto, crm_user_id"
 
     def listar(self, somente_ativos: bool = False) -> list[Corretor]:
         with _conn() as c:
@@ -101,10 +101,11 @@ class CorretorRepository:
 
     def upsert(self, co: Corretor) -> Corretor:
         with _conn() as c:
-            c.execute("""INSERT INTO corretores (id, nome, email, telefone, regioes, ativo, foto)
-                         VALUES (%(id)s, %(nome)s, %(email)s, %(telefone)s, %(regioes)s, %(ativo)s, %(foto)s)
+            c.execute("""INSERT INTO corretores (id, nome, email, telefone, regioes, ativo, foto, crm_user_id)
+                         VALUES (%(id)s, %(nome)s, %(email)s, %(telefone)s, %(regioes)s, %(ativo)s, %(foto)s, %(crm_user_id)s)
                          ON CONFLICT (id) DO UPDATE SET nome = EXCLUDED.nome, email = EXCLUDED.email, telefone = EXCLUDED.telefone,
-                           regioes = EXCLUDED.regioes, ativo = EXCLUDED.ativo, foto = EXCLUDED.foto""",
+                           regioes = EXCLUDED.regioes, ativo = EXCLUDED.ativo, foto = EXCLUDED.foto,
+                           crm_user_id = EXCLUDED.crm_user_id""",
                       {**co.model_dump(exclude={"criado_em", "regioes"}), "regioes": json.dumps(co.regioes)})
         return self.get(co.id)
 

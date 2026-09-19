@@ -489,6 +489,17 @@
             "title": "Ativo",
             "type": "boolean"
           },
+          "crm_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Crm User Id"
+          },
           "email": {
             "anyOf": [
               {

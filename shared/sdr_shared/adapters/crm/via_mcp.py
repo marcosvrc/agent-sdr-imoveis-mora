@@ -143,11 +143,13 @@ class _Sessao:
         return _versao(r)
 
     def encaminhar(self, crm_lead_id: str, crm_opportunity_id: str, *, motivo: str,
-                   resumo: str) -> bool:
-        return self._ferramenta("encaminhar_para_corretor", {
-            "lead_id": crm_lead_id, "opportunity_id": crm_opportunity_id,
-            "reason": motivo, "summary": resumo,
-            "operation_id": _op(crm_lead_id, "handoff")}) is not None
+                   resumo: str, destinatario: str | None = None) -> bool:
+        corpo = {"lead_id": crm_lead_id, "opportunity_id": crm_opportunity_id,
+                 "reason": motivo, "summary": resumo,
+                 "operation_id": _op(crm_lead_id, "handoff")}
+        if destinatario:
+            corpo["assignee_id"] = destinatario
+        return self._ferramenta("encaminhar_para_corretor", corpo) is not None
 
     def buscar_lead_por_contato(self, *, email: str | None = None,
                                 telefone: str | None = None) -> dict | None:

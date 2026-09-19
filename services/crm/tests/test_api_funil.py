@@ -288,6 +288,29 @@ def test_encaminhamento_congela_o_agente_e_deixa_ouvir(agente, oportunidade):
     assert ouvir.status_code == 201
 
 
+def test_encaminhamento_pode_nomear_o_corretor(agente, oportunidade, corretor_id):
+    """A Mora já escolheu uma pessoa antes de encaminhar; sem carregar essa escolha, o CRM atribui a
+    fila a quem aceitar e os dois sistemas passam a nomear gente diferente para o mesmo cliente."""
+    oid = oportunidade["op"]["id"]
+    r = agente.post("/v1/handoffs", {"opportunity_id": oid, "reason": "pediu humano",
+                                     "summary": "resumo", "assignee_id": corretor_id})
+    assert r.status_code == 201
+    assert r.json()["data"]["assignee_id"] == corretor_id
+
+
+def test_encaminhamento_recusa_destinatario_que_nao_atende(agente, oportunidade):
+    """Destinatário inexistente (ou inativo) transformaria o encaminhamento numa fila que ninguém
+    vê — pior que fila aberta, porque parece atribuída."""
+    import uuid
+    oid = oportunidade["op"]["id"]
+    r = agente.post("/v1/handoffs", {"opportunity_id": oid, "reason": "pediu humano",
+                                     "summary": "resumo", "assignee_id": str(uuid.uuid4())})
+    # 409/BUSINESS_RULE, a mesma resposta que abrir horário com corretor inexistente devolve
+    # (`imoveis_rt.criar_slot`): é regra de negócio, não corpo malformado.
+    assert r.status_code == 409 and r.json()["error"]["code"] == "BUSINESS_RULE"
+    assert "corretor ativo" in r.json()["error"]["message"]
+
+
 def test_segundo_pedido_de_encaminhamento_nao_cria_segunda_fila(agente, oportunidade):
     oid = oportunidade["op"]["id"]
     corpo = {"opportunity_id": oid, "reason": "pediu humano", "summary": "resumo"}

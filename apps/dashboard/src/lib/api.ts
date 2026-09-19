@@ -24,7 +24,7 @@ export type Atividade = { id: number; lead_id: string; nome?: string; canal: str
 export type Funil = { estagios: Record<string, number>; temperaturas: Record<string, number> };
 export type Visita = { id: string; lead_id: string; nome?: string; imovel_id?: string; bairro?: string; tipo: string; inicio: string; status: string; corretor_id?: string | null; corretor_nome?: string | null };
 export type Imovel = { id: string; tipo: string; operacao: string; cidade: string; regiao: string; bairro: string; quartos: number; suites: number; vagas: number; area_m2: number; preco: number; condominio?: number | null; descricao: string; fotos: string[]; destaque_investimento: boolean };
-export type Corretor = { id: string; nome: string; email?: string | null; telefone?: string | null; regioes: string[]; ativo: boolean; foto?: string | null; criado_em?: string; leads_handoff?: number; visitas?: number };
+export type Corretor = { id: string; nome: string; email?: string | null; telefone?: string | null; regioes: string[]; ativo: boolean; foto?: string | null; crm_user_id?: string | null; criado_em?: string; leads_handoff?: number; visitas?: number };
 export type CorretorIn = Omit<Corretor, "id" | "criado_em" | "leads_handoff" | "visitas">;
 
 export type AvisoReativacao = { lead_id: string; nome?: string | null; temperatura?: string | null; em: string;

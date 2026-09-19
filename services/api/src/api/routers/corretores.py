@@ -17,6 +17,9 @@ class CorretorIn(BaseModel):
     regioes: list[str] = Field(default_factory=list)
     ativo: bool = True
     foto: str | None = None
+    # `users.id` desta pessoa no CRM. Preenchido, o encaminhamento chega lá com destinatário em vez
+    # de cair numa fila aberta — que é o que fazia os dois sistemas apontarem gente diferente.
+    crm_user_id: str | None = None
 
     @field_validator("foto")
     @classmethod

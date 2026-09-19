@@ -59,9 +59,19 @@ def solicitar(corpo: HandoffNovo, ctx: Contexto = Ctx):
             # Repetir o pedido não cria uma segunda fila: devolve o encaminhamento que já existe.
             # Duas filas para o mesmo atendimento é como dois corretores ligam para a mesma pessoa.
             return 200, envelope(aberto, ctx.request_id)
+        if corpo.assignee_id:
+            # Mesma conferência que os horários fazem com `broker_id`: destinatário inexistente ou
+            # inativo transformaria o encaminhamento numa fila que ninguém vê.
+            dono = conn.execute(
+                "SELECT id FROM users WHERE id = %s AND active AND role IN ('admin','broker')",
+                (corpo.assignee_id,)).fetchone()
+            if dono is None:
+                raise ErroDeNegocio("Destinatário não é um corretor ativo.",
+                                    assignee_id=corpo.assignee_id)
         linha = conn.execute(
-            """INSERT INTO handoffs (opportunity_id, reason, summary) VALUES (%s, %s, %s)
-               RETURNING *""", (corpo.opportunity_id, corpo.reason, corpo.summary)).fetchone()
+            """INSERT INTO handoffs (opportunity_id, reason, summary, assignee_id)
+               VALUES (%s, %s, %s, %s) RETURNING *""",
+            (corpo.opportunity_id, corpo.reason, corpo.summary, corpo.assignee_id)).fetchone()
         conn.execute("UPDATE opportunities SET atendimento = 'human_pending', updated_at = now(), "
                      "version = version + 1 WHERE id = %s", (corpo.opportunity_id,))
         auditoria.registrar(conn, ator=ctx.ator, action="handoff.requested", entity_type="handoff",

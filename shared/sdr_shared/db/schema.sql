@@ -105,6 +105,14 @@ CREATE TABLE IF NOT EXISTS configuracoes (
 
 ALTER TABLE corretores ADD COLUMN IF NOT EXISTS foto TEXT;   -- data URL
 
+-- Quem é este corretor DENTRO do CRM (users.id). Sem esta coluna, a mesma pessoa tem dois
+-- cadastros que não se conhecem, e o encaminhamento chega lá sem destinatário: o CRM atribui a
+-- quem clicou, enquanto o painel da Mora aponta outro. Dois sistemas dizendo nomes diferentes
+-- para o mesmo atendimento é como dois corretores ligam para o mesmo cliente.
+-- Fica na Mora, e não no CRM, porque é ela quem conhece os dois lados (D-01: nada do CRM toca
+-- este banco). Vazio é normal: a ponte é opcional e o resto segue funcionando sem ela.
+ALTER TABLE corretores ADD COLUMN IF NOT EXISTS crm_user_id TEXT;
+
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS analise JSONB;           -- AnaliseLead (sentimento/perfil), gerada pelo Resumidor
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS analisado_em TIMESTAMPTZ;
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS analise_solicitada_em TIMESTAMPTZ;  -- pedido > analisado = worker do resumidor não respondeu

@@ -277,8 +277,11 @@ T: list[Ferramenta] = [
         entrada({"opportunity_id": {"type": "string", "format": "uuid"},
                  "reason": {"type": "string", "minLength": 1, "maxLength": 300},
                  "summary": {"type": "string", "minLength": 1, "maxLength": 4000},
+                 "assignee_id": {"type": "string", "format": "uuid",
+                                 "description": "Corretor que vai assumir. Omita se não souber: "
+                                                "a fila fica aberta para quem aceitar."},
                  **OPERACAO}, ["opportunity_id", "reason", "summary", "operation_id"]),
-        "POST", "/v1/handoffs", corpo=("opportunity_id", "reason", "summary"),
+        "POST", "/v1/handoffs", corpo=("opportunity_id", "reason", "summary", "assignee_id"),
         mutacao=True, somente_leitura=False),
 ]
 

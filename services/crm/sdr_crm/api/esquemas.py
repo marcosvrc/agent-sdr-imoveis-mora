@@ -163,6 +163,9 @@ class HandoffNovo(Corpo):
     opportunity_id: str
     reason: str = Field(min_length=1, max_length=300)
     summary: str = Field(min_length=1, max_length=4000)
+    # Para quem vai. Opcional: quem encaminha nem sempre sabe, e nesse caso a fila fica aberta para
+    # qualquer corretor aceitar — que era o único comportamento possível antes deste campo existir.
+    assignee_id: str | None = None
 
 
 class TransicaoHandoff(Corpo):

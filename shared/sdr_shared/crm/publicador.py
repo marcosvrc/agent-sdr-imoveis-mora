@@ -184,7 +184,27 @@ def _encaminhar(s, v: vinculo.Vinculo, lead: Lead) -> None:
         if x)
     s.encaminhar(v.crm_lead_id, v.crm_opportunity_id,
                  motivo=f"lead {lead.temperatura} encaminhado pela Mora",
-                 resumo=resumo[:4000] or "Cliente pediu falar com uma pessoa.")
+                 resumo=resumo[:4000] or "Cliente pediu falar com uma pessoa.",
+                 destinatario=_usuario_no_crm(lead.corretor_id))
+
+
+def _usuario_no_crm(corretor_id: str | None) -> str | None:
+    """O `users.id` do corretor que a Mora já escolheu, quando a ponte está preenchida.
+
+    Sem isto, o encaminhamento chega ao CRM sem destinatário e é atribuído a quem aceitar — e o
+    painel da Mora, que já apontou uma pessoa, passa a discordar do CRM sobre quem está no
+    atendimento. Vazio continua sendo um caso normal: nem todo corretor tem cadastro dos dois
+    lados, e a fila aberta é o comportamento de antes.
+    """
+    if not corretor_id:
+        return None
+    try:
+        from ..db import CorretorRepository
+        co = CorretorRepository().get(corretor_id)
+        return co.crm_user_id if co else None
+    except Exception:
+        log.warning("não consegui resolver o usuário do CRM para %s", corretor_id, exc_info=True)
+        return None
 
 
 def publicar_encaminhamento(lead: Lead, motivo: str, resumo: str) -> None:

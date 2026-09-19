@@ -9,7 +9,7 @@ import { Ic } from "../components/Icons";
 import { ConexaoAgenda } from "../components/ConexaoAgenda";
 import { DesativarCorretor } from "../components/DesativarCorretor";
 
-const vazio: CorretorIn = { nome: "", email: "", telefone: "", regioes: [], ativo: true, foto: null };
+const vazio: CorretorIn = { nome: "", email: "", telefone: "", regioes: [], ativo: true, foto: null, crm_user_id: "" };
 const POR_PAGINA = 10;
 
 export function Corretores() {
@@ -24,8 +24,8 @@ export function Corretores() {
   const pag = usePaginacao(lista, POR_PAGINA, "corretores");
   const ok = () => { qc.invalidateQueries({ queryKey: ["corretores"] }); setEdit(null); setErro(""); };
   const salvar = useMutation({ mutationFn: (e: { id?: string; form: CorretorIn }) => e.id ? api.atualizarCorretor(e.id, e.form) : api.criarCorretor(e.form), onSuccess: ok, onError: (e: Error) => setErro(e.message) });
-  const alternar = useMutation({ mutationFn: (c: Corretor) => api.atualizarCorretor(c.id, { nome: c.nome, email: c.email, telefone: c.telefone, regioes: c.regioes, ativo: !c.ativo, foto: c.foto }), onSuccess: () => qc.invalidateQueries({ queryKey: ["corretores"] }) });
-  const abrirEdicao = (c: Corretor) => { setErro(""); setEdit({ id: c.id, form: { nome: c.nome, email: c.email ?? "", telefone: c.telefone ?? "", regioes: c.regioes, ativo: c.ativo, foto: c.foto ?? null } }); };
+  const alternar = useMutation({ mutationFn: (c: Corretor) => api.atualizarCorretor(c.id, { nome: c.nome, email: c.email, telefone: c.telefone, regioes: c.regioes, ativo: !c.ativo, foto: c.foto, crm_user_id: c.crm_user_id }), onSuccess: () => qc.invalidateQueries({ queryKey: ["corretores"] }) });
+  const abrirEdicao = (c: Corretor) => { setErro(""); setEdit({ id: c.id, form: { nome: c.nome, email: c.email ?? "", telefone: c.telefone ?? "", regioes: c.regioes, ativo: c.ativo, foto: c.foto ?? null, crm_user_id: c.crm_user_id ?? "" } }); };
 
   return (
     <div>
@@ -72,6 +72,9 @@ export function Corretores() {
               <Field label="E-mail"><Input type="email" value={edit.form.email ?? ""} onChange={(e) => setEdit({ ...edit, form: { ...edit.form, email: e.target.value } })} placeholder="ana@verticeimoveis.com.br" /></Field>
               <Field label="Telefone"><Input value={edit.form.telefone ?? ""} onChange={(e) => setEdit({ ...edit, form: { ...edit.form, telefone: e.target.value } })} placeholder="5511999990000" /></Field>
             </div>
+            <Field label="ID no CRM" dica="users.id desta pessoa no CRM. Vazio: o encaminhamento fica na fila para quem aceitar.">
+              <Input value={edit.form.crm_user_id ?? ""} onChange={(e) => setEdit({ ...edit, form: { ...edit.form, crm_user_id: e.target.value } })} placeholder="00000000-0000-0000-0000-000000000000" />
+            </Field>
             <Field label="Regiões que atende" dica="Sem seleção = atende todas">
               <div className="flex flex-wrap gap-1.5">{REGIOES.map((r) => { const on = edit.form.regioes.includes(r); return <button type="button" key={r} onClick={() => setEdit({ ...edit, form: { ...edit.form, regioes: on ? edit.form.regioes.filter((x) => x !== r) : [...edit.form.regioes, r] } })} className={cx("rounded-full border px-2.5 py-1 text-xs font-medium", on ? "border-brand bg-brand text-brand-ink" : "border-line text-ink-muted hover:bg-surface-2")}>{REGIAO[r]}</button>; })}</div>
             </Field>
