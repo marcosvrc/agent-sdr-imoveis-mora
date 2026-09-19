@@ -33,6 +33,41 @@ ESTAGIO = {
 }
 
 
+# Volta do CRM para a Mora. A tradução de ida é que perde informação: investimento e compra viram
+# ambos `buy`, então na volta `buy` só pode virar COMPRA. A perda é contida pela regra de quem
+# consome isto — só preenche campo VAZIO —, de modo que um cartão que já diz INVESTIMENTO não é
+# rebaixado a COMPRA por uma leitura do CRM.
+INTENCAO_DO_CRM = {"rent": Intencao.ALUGUEL, "buy": Intencao.COMPRA}
+
+# Oportunidade fechada não é contexto: reaproveitar as preferências de uma compra concluída ou de
+# um negócio perdido faria a Mora conduzir a conversa nova pela intenção velha.
+ABERTAS = frozenset({"new", "in_service", "qualified", "visit_scheduled", "negotiation"})
+
+
+def centavos_para_reais(valor) -> float | None:
+    return None if valor is None else round(int(valor) / 100, 2)
+
+
+def cartao_do_crm(oportunidade: dict) -> dict:
+    """O que o CRM já sabe, no vocabulário do cartão da Mora.
+
+    Devolve só os campos preenchidos: um `None` aqui significaria "o CRM diz que não sabe", e quem
+    consome não teria como distinguir isso de "o CRM não falou sobre isso".
+    """
+    prefs = oportunidade.get("preferences") or {}
+    tipos = prefs.get("property_types") or []
+    bruto = {
+        "intencao": INTENCAO_DO_CRM.get(oportunidade.get("purpose") or ""),
+        "regiao": prefs.get("city"),
+        "bairros": list(prefs.get("neighborhoods") or []),
+        "preco_min": centavos_para_reais(prefs.get("budget_min_cents")),
+        "preco_max": centavos_para_reais(prefs.get("budget_max_cents")),
+        "quartos": prefs.get("bedrooms_min"),
+        "tipo_imovel": tipos[0] if tipos else None,
+    }
+    return {k: v for k, v in bruto.items() if v not in (None, [], "")}
+
+
 def proposito(lead: Lead) -> str | None:
     """`None` enquanto a intenção não estiver clara: abrir uma oportunidade de compra para quem
     ainda não disse o que quer é inventar informação comercial."""

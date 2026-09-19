@@ -15,6 +15,9 @@ class _Nada:
     def atualizar_preferencias(self, crm_opportunity_id, lead, versao): return None
     def mover_estagio(self, crm_opportunity_id, **k): return None
     def encaminhar(self, crm_lead_id, crm_opportunity_id, **k): return False
+    def buscar_lead_por_contato(self, **k): return None
+    def consultar_lead(self, crm_lead_id): return None
+    def consultar_oportunidade(self, crm_opportunity_id): return None
     def consultar_historico(self, crm_lead_id, **k): return []
 
 

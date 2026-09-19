@@ -11,7 +11,8 @@ from sdr_shared.adapters.crm.ausente import CRMAusente
 from sdr_shared.adapters.crm.via_mcp import CRMviaMCP, _versao
 
 OPERACOES = ("garantir_lead", "garantir_oportunidade", "registrar_interacao",
-             "atualizar_preferencias", "mover_estagio", "encaminhar", "consultar_historico")
+             "atualizar_preferencias", "mover_estagio", "encaminhar", "consultar_historico",
+             "buscar_lead_por_contato", "consultar_lead", "consultar_oportunidade")
 
 
 @pytest.fixture(autouse=True)
@@ -85,3 +86,47 @@ def test_versao_prefere_o_campo_da_oportunidade():
     assert _versao({"opportunity_version": 7, "version": 1}) == 7
     assert _versao({}) is None
     assert _versao(None) is None
+
+
+# --------------------------------------------------------------------------- identificar é grave
+
+class _Chamada:
+    """Dublê do transporte, e só dele: devolve o envelope que o servidor MCP devolveria.
+
+    Aqui o dublê é legítimo porque o que se testa é a DECISÃO do adaptador diante de uma resposta,
+    não o encontro dos dois vocabulários — esse é provado contra o CRM real. E é o único jeito: o
+    CRM do projeto deduplica por contato, então a resposta com dois clientes não pode ser produzida
+    por ele. Um CRM que permita duplicata é exatamente o caso contra o qual esta regra existe.
+    """
+
+    def __init__(self, itens): self.itens = itens
+    def __call__(self, nome, argumentos):
+        return type("R", (), {"structured_content": {"ok": True, "data": {"items": self.itens}}})()
+
+
+def _sessao(itens):
+    from sdr_shared.adapters.crm.via_mcp import _Sessao
+    return _Sessao(_Chamada(itens))
+
+
+def test_um_cliente_encontrado_e_reconhecido():
+    assert _sessao([{"id": "abc"}]).buscar_lead_por_contato(telefone="+5511999999999") == {"id": "abc"}
+
+
+def test_dois_clientes_com_o_mesmo_contato_nao_reconhecem_ninguem(caplog):
+    """Escolher um no escuro entregaria o histórico de uma pessoa a outra. Perguntar de novo é
+    chato; contar a vida de alguém para um estranho não tem conserto."""
+    assert _sessao([{"id": "a"}, {"id": "b"}]).buscar_lead_por_contato(email="x@y.com") is None
+
+
+def test_nenhum_cliente_e_o_caso_comum():
+    assert _sessao([]).buscar_lead_por_contato(email="x@y.com") is None
+
+
+def test_sem_contato_nao_procura():
+    """Nome não identifica: duas pessoas podem se chamar igual. Sem e-mail nem telefone, não há
+    busca a fazer — e este caminho nem chega ao CRM."""
+    def explodir(*a, **k):
+        raise AssertionError("não devia ter chamado o CRM")
+    from sdr_shared.adapters.crm.via_mcp import _Sessao
+    assert _Sessao(explodir).buscar_lead_por_contato() is None

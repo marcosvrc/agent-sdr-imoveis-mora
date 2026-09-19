@@ -7,6 +7,7 @@ from sdr_shared.db import (LeadRepository, MensagemRepository, EventoNavegacaoRe
                            InteresseRepository,
                            auditar, notificar, registrar_turno)
 from sdr_shared.crm import publicar_turno as publicar_no_crm
+from sdr_shared.crm import reconhecer
 from sdr_shared.log import configurar as configurar_log, contexto, limpar_contexto
 from sdr_shared.messaging import MensagemNormalizada, TipoMensagem, Canal, INICIADAS_PELO_AGENTE
 from sdr_shared.models import Lead, Estagio
@@ -107,6 +108,14 @@ def processar(entrada: MensagemNormalizada) -> None:
     if not iniciada_pelo_agente and _bloqueado_por_orcamento(lead, entrada):
         _fim("orcamento", lead)
         return
+
+    # Antes de perguntar, ver se o CRM já sabe. Um cliente que falou com um corretor na semana
+    # passada não deve recomeçar do zero — e perguntar de novo o que ele já respondeu é o que faz um
+    # atendimento automático parecer automático. Só preenche campo vazio: o que ele disser agora
+    # continua valendo mais que o registro. Silencioso quando não há CRM, quando o contato é
+    # desconhecido ou quando já procuramos por este contato.
+    if reconhecer(lead):
+        LeadRepository().salvar(lead)
 
     entrada_grafo = {"lead": lead, "entrada": entrada, "primeira_interacao": novo, "saltos": 0, "resposta": None,
                      "messages": [("user", entrada.conteudo)] if entrada.conteudo else []}

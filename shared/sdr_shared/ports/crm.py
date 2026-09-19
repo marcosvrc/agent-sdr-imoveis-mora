@@ -58,6 +58,24 @@ class SessaoCRM(Protocol):
         """Passa o atendimento para um corretor humano."""
         ...
 
+    def buscar_lead_por_contato(self, *, email: str | None = None,
+                                telefone: str | None = None) -> dict | None:
+        """O cliente já existe no CRM? Procura por e-mail ou telefone — nunca por nome, que serve
+        para procurar e não para identificar: duas pessoas podem se chamar igual, e confundir uma
+        com a outra entrega o histórico de alguém a um estranho.
+
+        `None` também quando a busca devolve mais de um: ambiguidade não se resolve no escuro.
+        """
+        ...
+
+    def consultar_lead(self, crm_lead_id: str) -> dict | None:
+        """Dados do cliente e as oportunidades dele, com a versão de cada uma."""
+        ...
+
+    def consultar_oportunidade(self, crm_opportunity_id: str) -> dict | None:
+        """A oportunidade com preferências, interesses e versão."""
+        ...
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         """Interações anteriores. É o que deixa a Mora saber o que já foi conversado com o cliente
         antes dela — inclusive por outro corretor, em outro canal.

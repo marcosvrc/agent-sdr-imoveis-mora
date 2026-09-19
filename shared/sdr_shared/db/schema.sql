@@ -317,6 +317,17 @@ CREATE TABLE IF NOT EXISTS crm_vinculo (
   atualizado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Marca de que já procuramos este lead no CRM. Sem ela, um cliente que o CRM não conhece custaria
+-- uma busca por turno, para sempre. `marca_contato` é o hash do e-mail/telefone usados: quando o
+-- cliente informa um contato novo, a marca muda e vale procurar de novo — que é justamente o caso
+-- do chat anônimo do site, onde o e-mail só aparece no meio da conversa.
+CREATE TABLE IF NOT EXISTS crm_reconhecimento (
+  lead_id        TEXT PRIMARY KEY REFERENCES leads(id) ON DELETE CASCADE,
+  marca_contato  TEXT NOT NULL,
+  achado         BOOLEAN NOT NULL,
+  procurado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Base de conhecimento institucional: como a imobiliária trabalha (taxa, documentação, prazo,
 -- política de visita, financiamento). É o RAG que responde o que NÃO está no catálogo.
 --

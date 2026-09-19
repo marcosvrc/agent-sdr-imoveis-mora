@@ -149,6 +149,27 @@ class _Sessao:
             "reason": motivo, "summary": resumo,
             "operation_id": _op(crm_lead_id, "handoff")}) is not None
 
+    def buscar_lead_por_contato(self, *, email: str | None = None,
+                                telefone: str | None = None) -> dict | None:
+        if not (email or telefone):
+            return None
+        r = self._ferramenta("buscar_leads", {"email": email, "phone": telefone, "limit": 2})
+        achados = (r or {}).get("items") or []
+        if len(achados) != 1:
+            # Zero é o caso comum: cliente novo. Mais de um é ambiguidade real — dois cadastros com
+            # o mesmo telefone —, e escolher um no escuro entregaria o histórico de uma pessoa a
+            # outra. Nos dois casos a Mora segue perguntando do zero, que é seguro.
+            if len(achados) > 1:
+                log.info("mais de um cliente no CRM com o mesmo contato; seguindo sem reconhecer")
+            return None
+        return achados[0]
+
+    def consultar_lead(self, crm_lead_id: str) -> dict | None:
+        return self._ferramenta("consultar_lead", {"lead_id": crm_lead_id})
+
+    def consultar_oportunidade(self, crm_opportunity_id: str) -> dict | None:
+        return self._ferramenta("consultar_oportunidade", {"opportunity_id": crm_opportunity_id})
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         r = self._ferramenta("consultar_historico", {"lead_id": crm_lead_id, "limit": limite})
         if not r:
@@ -167,6 +188,9 @@ class _Inerte:
     def atualizar_preferencias(self, crm_opportunity_id, lead, versao): return None
     def mover_estagio(self, crm_opportunity_id, **k): return None
     def encaminhar(self, crm_lead_id, crm_opportunity_id, **k): return False
+    def buscar_lead_por_contato(self, **k): return None
+    def consultar_lead(self, crm_lead_id): return None
+    def consultar_oportunidade(self, crm_opportunity_id): return None
     def consultar_historico(self, crm_lead_id, **k): return []
 
 
