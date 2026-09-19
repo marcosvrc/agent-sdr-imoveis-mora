@@ -449,3 +449,56 @@ class EventoNavegacaoRepository:
             rows = c.execute("""SELECT DISTINCT dados->>'imovel_id' AS im FROM eventos_navegacao
                                 WHERE session_id = %s AND tipo = 'viewed_imovel' AND dados ? 'imovel_id'""", (session_id,)).fetchall()
         return [r["im"] for r in rows]
+
+
+class DocumentoRepository:
+    """Trechos da base de conhecimento institucional (tabela `documentos`).
+
+    A busca devolve o `score` de similaridade junto — e não filtra por ele aqui de propósito. Quem
+    decide o piso é o domínio (`conhecimento.PISO_SIMILARIDADE`), porque é lá que está escrito o
+    porquê; o repositório não deve ter opinião sobre o que é "perto o suficiente".
+    """
+
+    COLS = "id, arquivo, assunto, titulo, trecho, ordem"
+
+    def upsert(self, t, embedding: list[float] | None = None) -> None:
+        with _conn() as c:
+            register_vector(c)
+            c.execute("""
+                INSERT INTO documentos (id, arquivo, assunto, titulo, trecho, ordem, embedding, atualizado_em)
+                VALUES (%(id)s, %(arquivo)s, %(assunto)s, %(titulo)s, %(trecho)s, %(ordem)s, %(embedding)s, now())
+                ON CONFLICT (id) DO UPDATE SET
+                    arquivo = EXCLUDED.arquivo, assunto = EXCLUDED.assunto, titulo = EXCLUDED.titulo,
+                    trecho = EXCLUDED.trecho, ordem = EXCLUDED.ordem,
+                    embedding = COALESCE(EXCLUDED.embedding, documentos.embedding),
+                    atualizado_em = now()
+            """, {"id": t.id, "arquivo": t.arquivo, "assunto": t.assunto, "titulo": t.titulo,
+                  "trecho": t.texto, "ordem": t.ordem,
+                  "embedding": np.array(embedding, dtype=np.float32) if embedding else None})
+
+    def buscar(self, embedding: list[float], limite: int = 3, assunto: str | None = None) -> list:
+        from ..conhecimento import Trecho
+        with _conn() as c:
+            register_vector(c)
+            rows = c.execute(f"""
+                SELECT {self.COLS}, 1 - (embedding <=> %(emb)s) AS score FROM documentos
+                WHERE embedding IS NOT NULL
+                  AND (%(assunto)s::text IS NULL OR assunto = %(assunto)s)
+                ORDER BY embedding <=> %(emb)s LIMIT %(limite)s
+            """, {"emb": np.array(embedding, dtype=np.float32), "limite": limite,
+                  "assunto": assunto}).fetchall()
+        return [Trecho(id=r["id"], arquivo=r["arquivo"], assunto=r["assunto"], titulo=r["titulo"],
+                       texto=r["trecho"], ordem=r["ordem"], score=float(r["score"])) for r in rows]
+
+    def apagar_do_arquivo(self, arquivo: str) -> int:
+        """Reingerir um documento editado precisa remover os trechos que sumiram dele.
+
+        Sem isto, apagar uma seção do FAQ deixa o trecho antigo no banco para sempre — e o agente
+        continua respondendo com uma política que a imobiliária já revogou. É o pior tipo de dado
+        velho: o que ninguém sabe que ainda está lá."""
+        with _conn() as c:
+            return c.execute("DELETE FROM documentos WHERE arquivo = %s", (arquivo,)).rowcount
+
+    def contar(self) -> int:
+        with _conn() as c:
+            return c.execute("SELECT count(*) AS n FROM documentos").fetchone()["n"]

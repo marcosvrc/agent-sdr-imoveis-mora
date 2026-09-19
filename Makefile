@@ -18,10 +18,15 @@ seed:
 	cd local && docker compose exec agent python /app/scripts/gerar_imoveis.py 200
 	cd local && docker compose exec -w /app/services/ingestion agent python -m sdr_ingestion.ingest_imoveis /app/data/imoveis/imoveis.json
 
-# Documentos institucionais (FAQ, política de visita, taxas) → Knowledge Base. Sem BUCKET é uma
-# simulação: lista o que subiria. O perfil local não tem KB, então é assim que se confere a pasta.
+# Documentos institucionais (FAQ, política de visita, taxas) → base que a Mora consulta.
+# Com BUCKET, sobe para o S3 e dispara o job da Knowledge Base. SEM BUCKET (perfil local) indexa
+# no pgvector, na tabela `documentos` — exige `make migrate` e `make ollama-pull` antes, porque
+# gera embeddings de verdade. Para só conferir a pasta sem indexar nada, use `make docs-secos`.
 docs-kb:
 	cd services/ingestion && python3 -m sdr_ingestion.ingest_documentos ../../data/documentos $(BUCKET) $(KB_ID) $(DS_ID)
+
+docs-secos:    # lista o que seria indexado, sem tocar no banco nem gerar embedding
+	cd services/ingestion && python3 -m sdr_ingestion.ingest_documentos ../../data/documentos --seco
 
 migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CREATE/ALTER ... IF NOT EXISTS)
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql

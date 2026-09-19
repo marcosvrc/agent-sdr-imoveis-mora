@@ -8,6 +8,7 @@ from contextvars import ContextVar
 from sdr_shared.governanca import ctx_lead, ctx_no
 from .state import AgentState
 from .nodes import (supervisor, qualificador, consultor, agendador, followup, resumidor, handoff,
+                    informacoes,
                     recusa, reativador)
 
 log = logging.getLogger("agent.graph")
@@ -45,7 +46,7 @@ def _cronometrado(nome: str, fn):
 
 MAX_SALTOS = 4
 ESPECIALISTAS = ("qualificador", "consultor", "agendador", "followup", "resumidor", "handoff",
-                 "recusa", "reativador")
+                 "recusa", "reativador", "informacoes")
 
 
 def _rotear(state: AgentState) -> str:
@@ -60,12 +61,13 @@ def build_graph(checkpointer=None):
     # strict: acrescentar um nó a só uma das duas listas passaria despercebido — o zip truncaria
     # em silêncio e o especialista simplesmente não existiria no grafo.
     for nome, mod in zip(ESPECIALISTAS, (qualificador, consultor, agendador, followup, resumidor,
-                                         handoff, recusa, reativador), strict=True):
+                                         handoff, recusa, reativador, informacoes), strict=True):
         g.add_node(nome, _cronometrado(nome, mod.run))
 
     g.set_entry_point("supervisor")
     g.add_conditional_edges("supervisor", _rotear, {**{n: n for n in ESPECIALISTAS}, END: END})
-    for n in ("qualificador", "consultor", "agendador", "followup", "handoff", "recusa", "reativador"):
+    for n in ("qualificador", "consultor", "agendador", "followup", "handoff", "recusa",
+              "reativador", "informacoes"):
         g.add_edge(n, "supervisor")        # volta ao supervisor; ele encerra ao ver `resposta`
     g.add_edge("resumidor", END)
     return g.compile(checkpointer=checkpointer)

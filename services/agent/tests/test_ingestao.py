@@ -60,9 +60,10 @@ def _subir(s3, bucket, arquivo, raiz):
     return chave
 
 
-def test_sem_bucket_e_uma_simulacao(pasta, capsys):
-    """O perfil local não tem Knowledge Base: rodar aqui tem de listar e sair bem, não estourar."""
-    assert ing.main(str(pasta)) == 0
+def test_seco_lista_e_nao_toca_no_banco(pasta, capsys, monkeypatch):
+    """`--seco` é a inspeção: mostra o que seria processado sem indexar nada."""
+    monkeypatch.setattr(ing, "indexar_local", _nao_chamar)
+    assert ing.main(str(pasta), seco=True) == 0
     saida = capsys.readouterr().out
     assert "seco" in saida and "visitas/politica.md" in saida
 
@@ -70,3 +71,89 @@ def test_sem_bucket_e_uma_simulacao(pasta, capsys):
 def test_pasta_vazia_nao_e_erro(tmp_path, capsys):
     assert ing.main(str(tmp_path)) == 0
     assert "nenhum documento" in capsys.readouterr().out
+
+
+# --------------------------------------------------------- indexação local (perfil sem KB)
+
+def _nao_chamar(*a, **k):
+    raise AssertionError("não devia ter sido chamado")
+
+
+class RepoFalso:
+    def __init__(self): self.linhas, self.apagados = {}, []
+    def apagar_do_arquivo(self, nome):
+        self.apagados.append(nome)
+        antes = len(self.linhas)
+        self.linhas = {k: v for k, v in self.linhas.items() if not k.startswith(f"{nome}#")}
+        return antes - len(self.linhas)
+    def upsert(self, trecho, vetor): self.linhas[trecho.id] = vetor
+
+
+def _montar(monkeypatch, repo, embed):
+    """Liga o RepoFalso e um embedder dublê nos pontos que `indexar_local` importa lá dentro."""
+    import sdr_shared.db as db
+    import sdr_shared.ports as ports
+    monkeypatch.setattr(db, "DocumentoRepository", lambda: repo)
+    monkeypatch.setattr(ports, "get_embedder", lambda: type("E", (), {"embed": staticmethod(embed)})())
+
+
+def test_indexa_os_trechos_do_arquivo(pasta, monkeypatch, capsys):
+    repo = RepoFalso()
+    _montar(monkeypatch, repo, lambda texto: [0.1] * 1024)
+    assert ing.main(str(pasta)) == 0
+    assert repo.linhas, "nada foi gravado"
+    assert all("#" in ident for ident in repo.linhas)
+    assert "indexados" in capsys.readouterr().out
+
+
+def test_embedder_fora_do_ar_nao_esvazia_a_base(pasta, monkeypatch):
+    """O defeito que este teste tranca: apagava-se o trecho antigo e só depois se gerava o embedding.
+
+    Com o Ollama parado no meio do arquivo, a reindexação deixava a base com MENOS conteúdo do que
+    tinha antes de rodar — o agente perdia a política que já sabia responder. Falhar sem apagar é a
+    única saída aceitável: quem roda de novo amanhã ainda tem a versão de ontem.
+    """
+    repo = RepoFalso()
+    repo.linhas["visitas/politica.md#0"] = [0.0] * 1024      # o que já estava indexado
+
+    def embedder_caido(texto):
+        raise RuntimeError("connection refused")
+    _montar(monkeypatch, repo, embedder_caido)
+
+    with pytest.raises(SystemExit) as erro:
+        ing.main(str(pasta))
+
+    assert repo.apagados == [], "apagou antes de saber se conseguiria reindexar"
+    assert "visitas/politica.md#0" in repo.linhas, "a base ficou menor do que antes de rodar"
+    mensagem = str(erro.value)
+    assert "Nada foi apagado" in mensagem
+    assert "connection refused" in mensagem, "a causa real tem de aparecer, não só o rótulo"
+
+
+def test_arquivo_sem_trecho_aproveitavel_nao_apaga_o_que_ja_existia(tmp_path, monkeypatch, capsys):
+    """Achado por acidente enquanto se testava o embedder caído, e é um caminho separado: aqui nada
+    falha. O arquivo simplesmente não rende trecho nenhum (só cabeçalhos, ou corpo abaixo do mínimo),
+    o `for` dos embeddings não roda, exceção nenhuma sobe — e o apagar seguia em frente, zerando a
+    indexação anterior e imprimindo "✓ 0 trecho(s)" como se tivesse dado certo.
+    """
+    (tmp_path / "taxas.md").write_text("# Taxas\n\n## Reserva\n", encoding="utf-8")
+    repo = RepoFalso()
+    repo.linhas["taxas.md#0"] = [0.2] * 1024        # a versão boa, indexada ontem
+    _montar(monkeypatch, repo, lambda texto: [0.1] * 1024)
+
+    assert ing.main(str(tmp_path)) == 0
+    assert repo.apagados == []
+    assert "taxas.md#0" in repo.linhas, "esvaziou a indexação por causa de um arquivo vazio"
+    assert "nenhum trecho aproveitável" in capsys.readouterr().err
+
+
+def test_pdf_e_html_sao_recusados_no_caminho_local(tmp_path, monkeypatch, capsys):
+    """A KB extrai texto de PDF; o fatiador local não. Indexar o binário como texto produziria
+    trechos de lixo com embedding válido — ruído que a busca devolve com confiança."""
+    (tmp_path / "contrato.pdf").write_bytes(b"%PDF-1.4 binario")
+    (tmp_path / "taxas.md").write_text("# Taxas\nSem taxa de reserva.", encoding="utf-8")
+    repo = RepoFalso()
+    _montar(monkeypatch, repo, lambda texto: [0.1] * 1024)
+    ing.main(str(tmp_path))
+    assert all(ident.startswith("taxas.md") for ident in repo.linhas)
+    assert "contrato.pdf" in capsys.readouterr().err

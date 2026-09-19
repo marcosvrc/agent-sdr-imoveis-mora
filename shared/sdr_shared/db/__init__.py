@@ -1,5 +1,5 @@
 from .connection import get_pool
-from .repositories import (LeadRepository, ImovelRepository, VisitaRepository, CanalRepository,
+from .repositories import (LeadRepository, ImovelRepository, DocumentoRepository, VisitaRepository, CanalRepository,
                            InteresseRepository,
                            MensagemRepository, EventoNavegacaoRepository)
 from .painel import MetricasRepository, CorretorRepository, ConfigRepository, resumo_reativacao

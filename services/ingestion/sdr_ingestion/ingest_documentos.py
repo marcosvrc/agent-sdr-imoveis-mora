@@ -12,10 +12,12 @@ aqui não há código de chunking nenhum, só o envio e o metadado que permite f
 
 Uso:
     python -m sdr_ingestion.ingest_documentos data/documentos [bucket] [kb_id] [ds_id]
-    python -m sdr_ingestion.ingest_documentos data/documentos            # sem bucket: só lista (seco)
+    python -m sdr_ingestion.ingest_documentos data/documentos            # local: indexa no pgvector
 
-O perfil local não tem Knowledge Base: rodar sem bucket mostra o que subiria e sai sem erro, que é o
-comportamento útil para conferir a pasta antes de um deploy.
+Sem bucket (perfil local) o script NÃO faz mais uma listagem seca: ele fatia, gera embeddings e
+grava na tabela `documentos`, que é de onde o agente lê. Enquanto era só listagem, a base
+institucional existia no papel e o agente não tinha o que consultar — os documentos eram ingeridos
+para lugar nenhum. Use `--seco` para voltar a só listar.
 """
 import json
 import sys
@@ -23,6 +25,9 @@ from pathlib import Path
 
 EXTENSOES = {".md", ".txt", ".html", ".pdf"}     # o que a Knowledge Base sabe ler
 MAX_MB = 45                                      # limite prático por arquivo na KB
+# O que o fatiador local sabe ler. PDF e HTML exigiriam extrator e ficam só no caminho da KB —
+# melhor recusar explicitamente do que indexar o binário como se fosse texto.
+TEXTO_LOCAL = {".md", ".txt"}
 
 
 def coletar(pasta: str) -> list[Path]:
@@ -56,8 +61,61 @@ def sync_kb(kb_id: str, ds_id: str) -> None:
     boto3.client("bedrock-agent").start_ingestion_job(knowledgeBaseId=kb_id, dataSourceId=ds_id)
 
 
+def indexar_local(arquivos: list[Path], raiz: Path) -> int:
+    """Fatia, gera embeddings e grava na tabela `documentos` (perfil local, sem Knowledge Base).
+
+    Apaga os trechos antigos de cada arquivo ANTES de gravar os novos. Sem isso, editar o FAQ e
+    remover uma pergunta deixa o trecho revogado no banco para sempre — e o agente segue
+    respondendo com a política antiga, que é o pior tipo de dado velho: o que ninguém sabe que
+    ainda está lá.
+
+    Mas o apagar só acontece depois que TODOS os embeddings do arquivo foram gerados. A ordem
+    importa: gerar embedding é a parte que depende de serviço externo (Ollama, Bedrock) e é a que
+    falha. Apagando primeiro e embedando em seguida, um Ollama parado no meio do arquivo deixava a
+    base com MENOS trechos do que antes de rodar — uma reindexação que destrói em vez de atualizar.
+    Agora, se o embedder cair, nada foi apagado e o estado anterior continua de pé.
+    """
+    from sdr_shared.conhecimento import fatiar
+    from sdr_shared.db import DocumentoRepository
+    from sdr_shared.ports import get_embedder
+
+    repo, embedder, total = DocumentoRepository(), get_embedder(), 0
+    for a in arquivos:
+        if a.suffix.lower() not in TEXTO_LOCAL:
+            print(f"! {a.name}: {a.suffix} só é indexado pela Knowledge Base, não localmente",
+                  file=sys.stderr)
+            continue
+        nome = a.relative_to(raiz).as_posix()
+        assunto = metadata(a, raiz)["metadataAttributes"]["assunto"]
+        trechos = fatiar(a.read_text(encoding="utf-8"), nome, assunto)
+        if not trechos:
+            # Nenhum trecho aproveitável (arquivo só com cabeçalhos, corpo curto demais, formatação
+            # que o fatiador não entende). Apagar aqui zeraria silenciosamente o que já estava
+            # indexado deste arquivo: um "✓ 0 trecho(s)" que na verdade apagou a política inteira.
+            # Esvaziar a base tem de ser um ato explícito, não efeito colateral de um parse vazio.
+            print(f"! {nome}: nenhum trecho aproveitável — mantido o que já estava indexado",
+                  file=sys.stderr)
+            continue
+        try:
+            vetores = [embedder.embed(tr.texto) for tr in trechos]
+        except Exception as e:
+            # Sem traceback: quem roda isto quer saber o que ligar, não a pilha do botocore.
+            raise SystemExit(
+                f"✗ {nome}: falha ao gerar embeddings ({type(e).__name__}: {e}).\n"
+                f"  Nada foi apagado — a base institucional continua como estava.\n"
+                f"  No perfil local, confira se o Ollama está no ar (`ollama serve`) e se o modelo "
+                f"de embedding foi baixado.") from e
+        removidos = repo.apagar_do_arquivo(nome)
+        for tr, vetor in zip(trechos, vetores, strict=True):
+            repo.upsert(tr, vetor)
+        total += len(trechos)
+        print(f"  ✓ {nome}: {len(trechos)} trecho(s)"
+              + (f" (substituindo {removidos})" if removidos else ""))
+    return total
+
+
 def main(pasta: str = "data/documentos", bucket: str | None = None,
-         kb_id: str | None = None, ds_id: str | None = None) -> int:
+         kb_id: str | None = None, ds_id: str | None = None, seco: bool = False) -> int:
     raiz = Path(pasta)
     arquivos = coletar(pasta)
     if not arquivos:
@@ -72,10 +130,15 @@ def main(pasta: str = "data/documentos", bucket: str | None = None,
               file=sys.stderr)
     arquivos = [a for a in arquivos if a not in grandes]
 
-    if not bucket:
-        print(f"(seco — sem bucket) {len(arquivos)} documento(s) subiriam para `documentos/`:")
+    if seco:
+        print(f"(seco) {len(arquivos)} documento(s) seriam processados:")
         for a in arquivos:
             print(f"  {a.relative_to(raiz).as_posix()}  assunto={metadata(a, raiz)['metadataAttributes']['assunto']}")
+        return 0
+
+    if not bucket:
+        total = indexar_local(arquivos, raiz)
+        print(f"✓ {total} trecho(s) indexados em `documentos` — a Mora já consulta daqui.")
         return 0
 
     for a in arquivos:
@@ -88,4 +151,5 @@ def main(pasta: str = "data/documentos", bucket: str | None = None,
 
 
 if __name__ == "__main__":
-    raise SystemExit(main(*sys.argv[1:]))
+    argumentos = [a for a in sys.argv[1:] if a != "--seco"]
+    raise SystemExit(main(*argumentos, seco="--seco" in sys.argv))

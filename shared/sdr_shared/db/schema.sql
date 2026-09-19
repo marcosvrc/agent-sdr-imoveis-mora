@@ -316,3 +316,25 @@ CREATE TABLE IF NOT EXISTS crm_vinculo (
   crm_version        INT  NOT NULL DEFAULT 1,
   atualizado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Base de conhecimento institucional: como a imobiliária trabalha (taxa, documentação, prazo,
+-- política de visita, financiamento). É o RAG que responde o que NÃO está no catálogo.
+--
+-- Um registro = um TRECHO, não um arquivo. A pergunta do cliente é específica ("preciso de fiador?")
+-- e o documento inteiro como unidade traria três páginas de contexto para uma resposta de uma linha
+-- — e enterraria o parágrafo certo no meio do irrelevante.
+--
+-- `assunto` vem da subpasta e serve de filtro grosso antes da similaridade; `titulo` é o cabeçalho
+-- da seção, e é ele que vira a citação da fonte na resposta ao cliente. Responder sem poder dizer
+-- de onde veio é o que separa RAG de invenção com passos extras.
+CREATE TABLE IF NOT EXISTS documentos (
+  id            TEXT PRIMARY KEY,           -- <arquivo>#<ordem>: estável entre reingestões
+  arquivo       TEXT NOT NULL,
+  assunto       TEXT NOT NULL,
+  titulo        TEXT,
+  trecho        TEXT NOT NULL,
+  ordem         INT  NOT NULL,
+  embedding     vector(1024),
+  atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS documentos_assunto_idx ON documentos (assunto);

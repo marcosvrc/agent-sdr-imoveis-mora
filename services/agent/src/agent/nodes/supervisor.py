@@ -13,6 +13,25 @@ PEDE_VISITA = re.compile(r"\b(visitar|visita|agendar|marcar|conhecer o im[oó]ve
 ESCOLHE_HORARIO = re.compile(r"(\b\d{1,2}\s*(h|hs|hrs|horas|:\d{2})\b|\b(seg|ter|qua|qui|sex|segunda|ter[çc]a|quarta|quinta|sexta|amanh[ãa]|primeir[oa]|segund[oa]|terceir[oa]|[úu]ltim[oa])\b|\b\d{1,2}/\d{1,2}\b)", re.I)
 PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s? )?tem|outros? im[oó]ve(l|is)|ver outros)\b", re.I)
 
+# Pergunta sobre COMO A IMOBILIÁRIA TRABALHA — vai para o RAG institucional.
+#
+# Dois grupos, e a separação não é preciosismo. Termos FORTES (fiador, IPTU, vistoria, ITBI) só
+# aparecem em pergunta institucional; termos FRACOS (taxa, prazo, entrada, contrato, comissão)
+# aparecem também em conversa de imóvel — "quero um apê de entrada até 300 mil" não é pergunta
+# sobre política. Por isso o fraco exige uma marca de pergunta ao lado.
+INSTITUCIONAL_FORTE = re.compile(
+    r"\b(fiador|avalista|cau[çc][ãa]o|seguro.fian[çc]a|vistoria|iptu|itbi|escritura|financiamento|"
+    r"documenta[çc][ãa]o|documentos? (necess[áa]rios?|preciso|exigidos?)|reajuste|rescis[ãa]o|"
+    r"pet|cachorro|gato|animal de estima[çc][ãa]o)\b", re.I)
+PERGUNTA = (r"(como funciona|qual|quais|quanto|precis[oa]|posso|pode|tem|h[áa]|existe|"
+            r"voc[eê]s? (cobra|aceita|exige|pede|trabalha))")
+INSTITUCIONAL_FRACO = re.compile(
+    rf"{PERGUNTA}[^?]{{0,60}}\b(taxa|prazo|entrada|contrato|comiss[ãa]o|garantia|multa|repasse)\b", re.I)
+
+
+def pergunta_institucional(txt: str) -> bool:
+    return bool(INSTITUCIONAL_FORTE.search(txt) or INSTITUCIONAL_FRACO.search(txt))
+
 
 def run(state: AgentState) -> dict:
     saltos = state.get("saltos", 0) + 1
@@ -42,6 +61,11 @@ def run(state: AgentState) -> dict:
         return {"proximo": "recusa", "veredito": veredito, "saltos": saltos}
     if txt == "Falar com corretor" or PEDE_HUMANO.search(txt) or lead.estagio == Estagio.HANDOFF:
         return {"proximo": "handoff", "saltos": saltos}
+    # Antes do agendador de propósito: "vocês cobram taxa de visita?" contém "visita" e cairia lá,
+    # oferecendo horário para quem pediu uma informação. A escolha de horário (slot:/data) tem
+    # precedência sobre isto, porque aí o cliente já está no meio do agendamento.
+    if not txt.startswith("slot:") and not state.get("horarios_oferecidos") and pergunta_institucional(txt):
+        return {"proximo": "informacoes", "saltos": saltos}
     if txt.startswith("slot:") or (state.get("horarios_oferecidos") and ESCOLHE_HORARIO.search(txt)):
         return {"proximo": "agendador", "saltos": saltos}       # escolha de horário (botão ou texto)
     if txt == "Agendar visita" or PEDE_VISITA.search(txt) or lead.cartao.pediu_visita:
@@ -57,5 +81,5 @@ def run(state: AgentState) -> dict:
     decisao = llm_roteamento().invoke(texto("supervisor", estagio=lead.estagio, intencao=lead.cartao.intencao,
                                             completo=lead.cartao.completo(), faltantes=[], mensagem=txt)).content
     decisao = decisao.strip().lower().split()[0] if decisao.strip() else "qualificador"
-    return {"proximo": decisao if decisao in ("qualificador", "consultor", "agendador", "handoff") else "qualificador",
+    return {"proximo": decisao if decisao in ("qualificador", "consultor", "agendador", "handoff", "informacoes") else "qualificador",
             "saltos": saltos}
