@@ -54,7 +54,10 @@ def _status_canais() -> dict:
                     "fallback": getattr(s, "llm_provider_fallback", "") or None,
                     # o que está valendo de fato: painel quando preenchido, .env quando não
                     "efetivo": _modelos_efetivos()},
-            "embeddings": {"provider": getattr(s, "embeddings_provider", "ollama")}}
+            "embeddings": {"provider": getattr(s, "embeddings_provider", "ollama"),
+                           "modelo": (getattr(s, "embeddings_model", "") if getattr(s, "embeddings_provider", "") == "openai"
+                                      else getattr(s, "ollama_embedding_model", "")),
+                           "dimensoes": getattr(s, "embeddings_dimensoes", 1024)}}
 
 
 @router.get("")

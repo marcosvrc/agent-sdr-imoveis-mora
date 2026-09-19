@@ -12,6 +12,9 @@ RAIZ = Path(__file__).resolve().parents[1]
 # Provedores de LLM aceitos. `openrouter` fica de fora de propósito: é bancada de avaliação, não
 # caminho de produção (ADR-0009).
 PROVEDORES = {"anthropic", "openai", "ollama"}
+# Provedores de embeddings. Os dois entregam as 1024 dimensões do schema; trocar entre eles obriga
+# a reindexar, porque vetor de modelo diferente não se compara com o que já está gravado.
+EMBEDDINGS = {"ollama", "openai"}
 PLACEHOLDERS = re.compile(r"(COLE_|SEU_ID|SEU_|CHANGE_?ME|<.*>|xxx+|placeholder|preencher)", re.I)
 
 
@@ -37,10 +40,17 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
     emb = env.get("SDR_EMBEDDINGS_PROVIDER", "ollama")
     if llm not in PROVEDORES:
         erros.append(f"SDR_LLM_PROVIDER='{llm}' é inválido — use {', '.join(sorted(PROVEDORES))}.")
-    if emb != "ollama":
-        # Único provedor de embeddings que sobrou: o schema espera 1024 dimensões (bge-m3), e
-        # aceitar outro nome aqui só adiaria a falha para a hora de gravar o vetor.
-        erros.append(f"SDR_EMBEDDINGS_PROVIDER='{emb}' é inválido — use ollama.")
+    if emb not in EMBEDDINGS:
+        erros.append(f"SDR_EMBEDDINGS_PROVIDER='{emb}' é inválido — use {', '.join(sorted(EMBEDDINGS))}.")
+    if emb == "openai" and not env.get("OPENAI_API_KEY"):
+        erros.append("SDR_EMBEDDINGS_PROVIDER=openai exige OPENAI_API_KEY (sem o prefixo SDR_ — é o "
+                     "nome que a biblioteca procura no ambiente).")
+    dim = env.get("SDR_EMBEDDINGS_DIMENSOES", "1024")
+    if dim != "1024":
+        # Não é preferência: `imoveis.embedding` e `documentos.embedding` são `vector(1024)`, e
+        # gravar outro tamanho não degrada — recusa, no meio da indexação.
+        erros.append(f"SDR_EMBEDDINGS_DIMENSOES={dim} não casa com o `vector(1024)` do schema. "
+                     "Mudar exige alterar shared/sdr_shared/db/schema.sql e reindexar.")
 
     if llm == "anthropic":
         chave = env.get("ANTHROPIC_API_KEY", "")

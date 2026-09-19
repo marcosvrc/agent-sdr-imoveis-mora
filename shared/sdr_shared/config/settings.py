@@ -18,7 +18,13 @@ class Settings(BaseSettings):
     # Só para a bancada do harness comparar modelos (ADR-0009). NÃO usar no caminho de produção:
     # põe um terceiro no meio das conversas com PII de cliente. Exige `pip install langchain-openai`.
     openrouter_api_key: str | None = None
-    embeddings_provider: str = "ollama"     # ollama (único; o bge-m3 dá as 1024 dimensões do schema)
+    # ollama | openai. O padrão fica no ollama porque é o único que roda sem chave nenhuma —
+    # importa para os testes e para quem clona o projeto sem conta em lugar algum. O `.env.example`
+    # sugere `openai`, que é mais leve (tira um container do compose). Os dois entregam as 1024
+    # dimensões que o schema exige; trocar exige reindexar tudo (ver adapters/hospedados).
+    embeddings_provider: str = "ollama"
+    embeddings_model: str = "text-embedding-3-small"   # usado quando o provedor é `openai`
+    embeddings_dimensoes: int = 1024                   # tem de casar com o vector(N) do schema.sql
     # Chave de organização (não escopada a um workspace) exige este header em toda requisição.
     anthropic_workspace_id: str | None = None
     ollama_url: str = "http://localhost:11434"

@@ -6,7 +6,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 
 .PHONY: ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura eval eval-fake eval-rag test-docker openapi docs
+        cobertura eval eval-fake eval-rag eval-embeddings test-docker openapi docs
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -204,9 +204,32 @@ eval-fake:     # valida o HARNESS sem gastar token nem precisar do Ollama. Os n�
                # sobre qualidade: o LLM é falso e o embedder é de trigramas. É o que roda no CI.
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --fake --limite-abstencao 80 $(ARGS)
 
-eval-rag:      # avaliação do RAG institucional com o embedder DE VERDADE (exige `make ollama-pull`).
+eval-rag:      # avaliação do RAG institucional com o embedder DE VERDADE (o do seu local/.env).
                # É o único jeito de saber se a busca institucional responde bem, e não só se responde.
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
+
+# Compara os DOIS provedores de embeddings no mesmo dataset, um depois do outro. Existe porque a
+# pergunta "qual recupera melhor em português" não se responde por catálogo: o `bge-m3` é
+# fortemente multilíngue, o `text-embedding-3-small` é mais barato e dispensa o container, e qual
+# ganha no SEU corpus é medida.
+#
+# Cada passada REINDEXA a base institucional com o embedder da vez — é obrigatório, porque comparar
+# contra um índice gerado por outro modelo compararia coisas diferentes sem avisar. No fim, o índice
+# fica com o provedor do seu `.env`; se você trocar depois, rode `make docs-kb` e `make seed`.
+#
+# Exige as duas pontas prontas: Ollama no ar com o bge-m3 (`make ollama-pull`) e OPENAI_API_KEY no
+# local/.env. O custo da passada da OpenAI é de frações de centavo.
+eval-embeddings:
+	@echo "───────── ollama (bge-m3)"
+	@export SDR_DATABASE_DSN=$(TEST_DSN) SDR_EMBEDDINGS_PROVIDER=ollama; \
+	  cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
+	@echo
+	@echo "───────── openai (text-embedding-3-small, 1024 dims)"
+	@export SDR_DATABASE_DSN=$(TEST_DSN) SDR_EMBEDDINGS_PROVIDER=openai; \
+	  cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
+	@echo
+	@echo "Compare recall@3 e abstenção. Diferença dentro do ruído: fique no mais barato (openai)."
+	@echo "O índice ficou com o provedor da ÚLTIMA passada — rode 'make docs-kb' para voltar ao do .env."
 
 test-docker: test-db   # mesma suíte, rodando dentro do container do agente (não precisa de Python 3.12 no host)
 	cd local && docker compose exec -T -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test agent sh -c '\

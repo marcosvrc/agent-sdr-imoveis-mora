@@ -26,6 +26,19 @@ removido junto com o resto da infraestrutura em nuvem. Sobre a escolha de falar 
 fornecedor do modelo, em vez de um gateway, veja o
 [ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md).
 
+## Embeddings
+
+Dois provedores, escolhidos por `SDR_EMBEDDINGS_PROVIDER`, e os dois entregam as **1024
+dimensões** que `imoveis.embedding` e `documentos.embedding` declaram:
+
+- **`openai`** (`text-embedding-3-small`, truncado a 1024 pelo parâmetro `dimensions`) — dispensa o
+  container do Ollama. Reindexar o acervo inteiro custa frações de centavo.
+- **`ollama`** (`bge-m3`) — sem chave e sem custo, ao preço de um container e de ~1 GB de modelo.
+
+Trocar entre eles **exige reindexar** (`make seed` e `make docs-kb`): distância de cosseno entre
+vetores de modelos diferentes é ruído com aparência de número. Qual recupera melhor no corpus
+deste projeto é medida, não catálogo — `make eval-embeddings` roda os dois lado a lado.
+
 ## Ollama
 
 Serviço do compose (`--profile ollama`), em `SDR_OLLAMA_URL`. Faz duas coisas:

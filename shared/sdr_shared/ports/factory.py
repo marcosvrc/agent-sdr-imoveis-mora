@@ -61,9 +61,25 @@ def get_crm():
 
 @lru_cache
 def get_embedder():
+    """Ollama (local, sem chave) ou OpenAI (sem container). Os dois devolvem 1024 dimensões.
+
+    Provedor desconhecido levanta em vez de cair no padrão: gravar vetor de outro modelo no mesmo
+    índice não dá erro nenhum na hora — dá resultado de busca errado depois, que é muito pior de
+    diagnosticar.
+    """
     s = get_settings()
-    from ..adapters.local.embeddings import OllamaEmbedder
-    return OllamaEmbedder(s.ollama_url, s.ollama_embedding_model)
+    provider = (s.embeddings_provider or "ollama").strip().lower()
+    if provider == "ollama":
+        from ..adapters.local.embeddings import OllamaEmbedder
+        return OllamaEmbedder(s.ollama_url, s.ollama_embedding_model)
+    if provider == "openai":
+        import os
+        from ..adapters.hospedados.embeddings import OpenAIEmbedder
+        # `OPENAI_API_KEY` cru, sem o prefixo SDR_: é o nome que a própria biblioteca da OpenAI
+        # procura, e o caminho do LLM já usa esse mesmo. Duas variáveis para a mesma chave seria
+        # uma a mais para alguém preencher pela metade.
+        return OpenAIEmbedder(os.environ.get("OPENAI_API_KEY", ""), s.embeddings_model, s.embeddings_dimensoes)
+    raise RuntimeError(f"SDR_EMBEDDINGS_PROVIDER='{provider}' não é suportado. Use ollama ou openai.")
 
 
 # Prefixos que os IDs de modelo da Anthropic carregam em alguns provedores hospedados. Nenhum
