@@ -15,7 +15,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.2"]
+# `uvicorn` entra aqui, e não só em dev: o transporte HTTP do servidor MCP é código de execução.
+# Em dev ele já vinha junto, então a falta só apareceria em quem instalasse o extra `mcp` sozinho —
+# um ImportError ao subir o serviço, longe de qualquer teste.
+mcp = ["mcp>=1.2", "uvicorn>=0.30", "starlette>=0.37"]
 dev = ["uvicorn", "pytest", "pytest-anyio", "httpx"]
 
 [build-system]

@@ -14,8 +14,11 @@ x-py: &py
     SDR_OLLAMA_URL: http://ollama:11434
     # Ponte com o CRM (D-01). Vazia = desligada: sem token emitido, a Mora roda exatamente como
     # antes e não tenta publicar nada. Emitir com `make crm-token`.
-    SDR_CRM_URL: "${SDR_CRM_URL-http://crm-api:8100}"
-    SDR_CRM_TOKEN: "${SDR_CRM_TOKEN-}"
+    # A Mora fala com o CRM por MCP, não pela REST: esta URL é o endpoint do servidor MCP.
+    # Os dois segredos são diferentes e não devem ser confundidos — CRM_MCP_TOKEN autentica o
+    # AGENTE no servidor MCP; CRM_API_TOKEN autentica o SERVIDOR MCP na REST do CRM.
+    SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
+    SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
   volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts" ]
   depends_on: { db: { condition: service_healthy }, redis: { condition: service_started } }
 
@@ -115,18 +118,36 @@ services:
       retries: 3
       start_period: 40s
 
-  crm-mcp:                     # servidor MCP do CRM: stdio, iniciado pelo CLIENTE, não é serviço
+  crm-mcp:                     # servidor MCP do CRM por HTTP — é por aqui que a Mora entra
     <<: *py
-    profiles: [mcp]            # fora do `up` normal de propósito — nada a "manter no ar"
+    command: python -m sdr_crm.mcp --http --porta 8200
+    working_dir: /app/services/crm
+    environment:
+      CRM_API_BASE_URL: http://crm-api:8100
+      CRM_API_TOKEN: "${CRM_API_TOKEN-}"      # credencial DESTE servidor na REST do CRM
+      CRM_MCP_TOKEN: "${CRM_MCP_TOKEN-}"      # credencial que ELE exige de quem se conecta
+      PYTHONPATH: /app/services/crm
+    ports: ["8200:8200"]
+    depends_on: { crm-api: { condition: service_started } }
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8200/saude').status==200 else 1)\""]
+      interval: 5s
+      retries: 20
+
+  crm-mcp-stdio:               # o MESMO servidor por stdio, para um cliente MCP externo
+    <<: *py
+    profiles: [mcp]            # fora do `up` normal: quem usa stdio é quem sobe o processo
     command: python -m sdr_crm.mcp
     working_dir: /app/services/crm
     stdin_open: true
     environment:
       CRM_API_BASE_URL: http://crm-api:8100
-      CRM_API_TOKEN: "${SDR_CRM_TOKEN}"
+      CRM_API_TOKEN: "${CRM_API_TOKEN-}"
       PYTHONPATH: /app/services/crm
-    # Uso: docker compose run --rm -T crm-mcp     (-T é obrigatório: sem ele o terminal se mistura
-    # ao fluxo JSON-RPC do stdio e o cliente desconecta com um erro que não aponta para a causa)
+    # Uso: docker compose run --rm -T crm-mcp-stdio  (-T é obrigatório: sem ele o terminal se
+    # mistura ao fluxo JSON-RPC do stdio e o cliente desconecta com um erro que não aponta para a
+    # causa). Não pede CRM_MCP_TOKEN: em stdio não há porta aberta, e quem já consegue iniciar o
+    # processo tem a máquina.
 
   crm-web:                     # painel do CRM (React) — porta 3000, como a especificação documenta
     image: node:20-alpine

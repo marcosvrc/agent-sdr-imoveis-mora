@@ -16,8 +16,14 @@ arquivo é essa lista. Cada item diz o que o documento pedia, o que foi feito e 
 encaminhamento) e a Mora publica nele o que descobre na conversa. A Mora continua dona do que é
 dela: transcrição, estado do grafo, embeddings, cadência de follow-up e reativação.
 
-O fluxo é **num sentido só** — Mora escreve e lê do CRM pela API; nada do CRM escreve no banco da
-Mora. É a regra que impede as duas verdades sobre o mesmo lead.
+O fluxo é **num sentido só** — Mora escreve e lê do CRM por MCP sobre HTTP; nada do CRM escreve no
+banco da Mora. É a regra que impede as duas verdades sobre o mesmo lead.
+
+O transporte fechou uma divergência que ficou aberta por um tempo: o documento sempre disse "por
+MCP", mas a primeira ponte falava REST, e o servidor MCP existia sem cliente nenhum. Hoje a Mora
+entra por `ports/crm.py`, cujo adaptador é um cliente MCP; o stdio continua publicado para um
+cliente externo. A porta existe porque MCP é feito para o MODELO escolher a ferramenta, e o grafo
+da Mora não delega essa escolha — decisão fica no código, MCP fica no transporte.
 
 **Custo:** existem dois cadastros de lead no ambiente. A alternativa (reapontar a camada de dados da
 Mora para o CRM) reescreveria reativação, follow-up, score e busca vetorial, que estão apoiados no

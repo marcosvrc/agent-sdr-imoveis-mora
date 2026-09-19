@@ -47,8 +47,10 @@ crm-reset:     # apaga o dataset e reaplica. Recusa se houver qualquer registro 
 crm-token:     # emite a credencial da Mora. O token aparece UMA vez — copie para local/.env.
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.credenciais emitir --nome mora
 
-crm-mcp:       # servidor MCP por stdio. -T é obrigatório: sem ele o terminal se mistura ao JSON-RPC.
-	cd local && docker compose run --rm -T crm-mcp
+crm-mcp:       # servidor MCP por stdio, para um cliente MCP externo (Claude Desktop e afins).
+	@echo "O servidor HTTP já sobe com o compose — é por ele que a Mora entra (crm-mcp:8200/mcp)."
+	@echo "Este alvo é o transporte stdio. -T é obrigatório: sem ele o terminal se mistura ao JSON-RPC."
+	cd local && docker compose run --rm -T crm-mcp-stdio
 
 CRM_REF ?= 2026-09-17T12:00:00Z
 

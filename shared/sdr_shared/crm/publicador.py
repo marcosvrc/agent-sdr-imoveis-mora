@@ -16,26 +16,16 @@ from datetime import UTC, datetime
 
 from ..messaging import MensagemNormalizada
 from ..models import Estagio, Lead
+from ..ports import get_crm
 from . import traducao, vinculo
-from .cliente import ClienteCRM, habilitado
 
 log = logging.getLogger("crm")
 
-# Recusas que são o CRM funcionando, não falhando: com o atendimento em mãos humanas ou o contato
-# bloqueado, é ESPERADO que a escrita não passe. Sobem como debug para não poluir o log de erro.
-ESPERADOS = frozenset({"HUMAN_IN_CONTROL", "CONTACT_BLOCKED", "FORBIDDEN",
-                       "QUALIFICATION_INCOMPLETE", "INVALID_TRANSITION"})
 
-
-def _op(lead_id: str, acao: str, marca: str = "") -> str:
-    """Identificador ESTÁVEL da ação lógica.
-
-    Deriva do lead e do fato, nunca do relógio nem de um aleatório: é isso que faz a repetição da
-    mesma publicação, num turno seguinte ou depois de um timeout, encontrar o registro já gravado
-    em vez de criar um segundo.
-    """
-    digest = hashlib.sha256(f"{lead_id}:{acao}:{marca}".encode()).hexdigest()[:24]
-    return f"mora-{acao}-{digest}"
+def habilitado() -> bool:
+    """Há CRM configurado? Continua exportado porque chamadores fora daqui perguntam isso antes de
+    montar dados que só o CRM consome."""
+    return get_crm().habilitado()
 
 
 def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str | None = None,
@@ -46,59 +36,51 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
     `id_entrada` e `id_saida` são os ids das mensagens no banco da Mora; viram o
     `external_event_id` no CRM.
     """
-    if not habilitado():
+    crm = get_crm()
+    if not crm.habilitado():
         return
     try:
-        _publicar(lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
+        with crm.sessao() as s:
+            _publicar(s, lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
     except Exception:
         log.warning("falha ao publicar o lead %s no CRM — a conversa segue", lead.id, exc_info=True)
 
 
-def _publicar(lead: Lead, entrada: MensagemNormalizada, texto_saida: str | None,
+def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | None,
               estagio_antes: Estagio | None, id_entrada: int | None = None,
               id_saida: int | None = None) -> None:
-    crm = ClienteCRM()
-    v = vinculo.buscar(lead.id) or _abrir(crm, lead)
+    v = vinculo.buscar(lead.id) or _abrir(s, lead)
     if v is None:
         return          # intenção ainda indefinida: não há oportunidade a abrir
 
-    _registrar_conversa(crm, v, lead, entrada, texto_saida, id_entrada, id_saida)
-    versao = _atualizar_preferencias(crm, v, lead)
-    _mover(crm, v, lead, versao, estagio_antes)
+    _registrar_conversa(s, v, lead, entrada, texto_saida, id_entrada, id_saida)
+    versao = _atualizar_preferencias(s, v, lead)
+    _mover(s, v, lead, versao, estagio_antes)
 
     # Encaminhamento entra por aqui, e não pelo nó do grafo, porque só no fim do turno o lead já
     # foi persistido e o estágio anterior ainda é conhecido. No nó, uma falha do CRM abortaria a
     # resposta que o cliente está esperando.
     if lead.estagio == Estagio.HANDOFF and estagio_antes != Estagio.HANDOFF:
-        _encaminhar(crm, v, lead)
+        _encaminhar(s, v, lead)
 
 
-def _abrir(crm: ClienteCRM, lead: Lead) -> vinculo.Vinculo | None:
+def _abrir(s, lead: Lead) -> vinculo.Vinculo | None:
     """Cria cliente e oportunidade no CRM na primeira vez que a intenção fica clara.
 
     Esperar a intenção é deliberado: uma oportunidade precisa de propósito (aluguel ou compra), e
     abrir uma "de compra" para quem só disse "oi" encheria o funil do corretor de intenção
     inventada.
     """
-    proposito = traducao.proposito(lead)
-    if proposito is None:
+    if traducao.proposito(lead) is None:
         return None
 
-    dados = traducao.identificadores(lead)
-    r = crm.chamar("POST", "/v1/leads", corpo=dados,
-                   operation_id=_op(lead.id, "lead", dados["external_contact_id"]))
-    if not r.ok:
-        log.info("CRM não criou o cliente do lead %s: %s", lead.id, r.codigo)
+    crm_lead_id = s.garantir_lead(lead)
+    if not crm_lead_id:
         return None
-    crm_lead_id = r.dados["id"]
-
-    r = crm.chamar("POST", "/v1/opportunities",
-                   corpo={"lead_id": crm_lead_id, "purpose": proposito},
-                   operation_id=_op(lead.id, "oportunidade", proposito))
-    if not r.ok:
-        log.info("CRM não criou a oportunidade do lead %s: %s", lead.id, r.codigo)
+    aberta = s.garantir_oportunidade(lead, crm_lead_id)
+    if not aberta:
         return None
-    return vinculo.salvar(lead.id, crm_lead_id, r.dados["id"], r.dados["version"])
+    return vinculo.salvar(lead.id, crm_lead_id, aberta[0], aberta[1])
 
 
 def _evento(lead_id: str, direcao: str, id_mensagem: int | None, texto: str) -> str:
@@ -116,7 +98,7 @@ def _evento(lead_id: str, direcao: str, id_mensagem: int | None, texto: str) -> 
     return f"mora-{direcao}-{marca}"
 
 
-def _registrar_conversa(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead,
+def _registrar_conversa(s, v: vinculo.Vinculo, lead: Lead,
                         entrada: MensagemNormalizada, texto_saida: str | None,
                         id_entrada: int | None = None, id_saida: int | None = None) -> None:
     """Uma interação para o que entrou e outra para o que saiu.
@@ -126,53 +108,31 @@ def _registrar_conversa(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead,
     """
     quando = datetime.now(UTC).isoformat()
 
-    if entrada.conteudo:
-        evento = _evento(lead.id, "in", id_entrada, entrada.conteudo)
-        crm.chamar("POST", f"/v1/leads/{v.crm_lead_id}/interactions",
-                   corpo={"opportunity_id": v.crm_opportunity_id,
-                          "channel": str(entrada.canal.value), "direction": "inbound",
-                          "summary": entrada.conteudo[:4000], "occurred_at": quando,
-                          "external_event_id": evento},
-                   operation_id=_op(lead.id, "interacao-in", evento))
-    if texto_saida:
-        evento = _evento(lead.id, "out", id_saida, texto_saida)
-        crm.chamar("POST", f"/v1/leads/{v.crm_lead_id}/interactions",
-                   corpo={"opportunity_id": v.crm_opportunity_id,
-                          "channel": str(entrada.canal.value), "direction": "outbound",
-                          "summary": texto_saida[:4000], "occurred_at": quando,
-                          "external_event_id": evento},
-                   operation_id=_op(lead.id, "interacao-out", evento))
+    canal = str(entrada.canal.value)
+    for direcao, rotulo, texto, id_msg in (("in", "inbound", entrada.conteudo, id_entrada),
+                                           ("out", "outbound", texto_saida, id_saida)):
+        if not texto:
+            continue
+        s.registrar_interacao(v.crm_lead_id, crm_opportunity_id=v.crm_opportunity_id, canal=canal,
+                              direcao=rotulo, texto=texto, quando=quando,
+                              evento_externo=_evento(lead.id, direcao, id_msg, texto))
 
 
-def _atualizar_preferencias(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead) -> int:
+def _atualizar_preferencias(s, v: vinculo.Vinculo, lead: Lead) -> int:
     """Devolve a versão atual da oportunidade — que é a precondição do próximo passo.
 
     Em 412 (alguém editou pelo painel no meio do caminho) relê a oportunidade e tenta uma vez. Isso
     é convivência normal com um corretor trabalhando, não recuperação de erro: por isso UMA
     retentativa, e não um laço.
     """
-    corpo = traducao.preferencias(lead)
-    marca = hashlib.sha256(repr(sorted(corpo.items())).encode()).hexdigest()[:16]
-    r = crm.chamar("PUT", f"/v1/opportunities/{v.crm_opportunity_id}/preferences",
-                   corpo=corpo, versao=v.crm_version, operation_id=_op(lead.id, "prefs", marca))
-
-    if r.status == 412:
-        atual = crm.chamar("GET", f"/v1/opportunities/{v.crm_opportunity_id}")
-        if atual.ok:
-            versao = atual.dados["version"]
-            vinculo.atualizar_versao(lead.id, versao)
-            r = crm.chamar("PUT", f"/v1/opportunities/{v.crm_opportunity_id}/preferences",
-                           corpo=corpo, versao=versao, operation_id=_op(lead.id, "prefs", marca))
-
-    if r.ok:
-        versao = r.dados.get("opportunity_version", v.crm_version + 1)
-        vinculo.atualizar_versao(lead.id, versao)
-        return versao
-    _registrar_recusa(lead, "preferencias", r)
-    return v.crm_version
+    versao = s.atualizar_preferencias(v.crm_opportunity_id, lead, v.crm_version)
+    if versao is None:
+        return v.crm_version        # o adaptador já registrou o motivo
+    vinculo.atualizar_versao(lead.id, versao)
+    return versao
 
 
-def _mover(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead, versao: int,
+def _mover(s, v: vinculo.Vinculo, lead: Lead, versao: int,
            estagio_antes: Estagio | None) -> None:
     """Move o estágio no CRM UM passo por vez, respeitando a tabela de transições de lá.
 
@@ -191,20 +151,17 @@ def _mover(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead, versao: int,
         return
 
     for passo in caminho[:alvo + 1]:
-        r = crm.chamar("POST", f"/v1/opportunities/{v.crm_opportunity_id}/transitions",
-                       corpo={"target_stage": passo, "reason": None}, versao=versao,
-                       operation_id=_op(lead.id, f"estagio-{passo}"))
-        if r.ok:
-            versao = r.dados["version"]
-            vinculo.atualizar_versao(lead.id, versao)
+        nova = s.mover_estagio(v.crm_opportunity_id, destino=passo, versao=versao)
+        if nova is None:
+            # Recusa de um passo não interrompe o caminho: `INVALID_TRANSITION` significa que a
+            # oportunidade já está nesse estágio ou além dele, e é o caso mais comum aqui. O
+            # adaptador já distinguiu recusa esperada de falha no log.
             continue
-        if r.codigo == "INVALID_TRANSITION":
-            continue        # já estava nesse estágio ou além dele: seguir para o próximo passo
-        _registrar_recusa(lead, f"estagio {passo}", r)
-        return
+        versao = nova
+        vinculo.atualizar_versao(lead.id, versao)
 
 
-def _encaminhar(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead) -> None:
+def _encaminhar(s, v: vinculo.Vinculo, lead: Lead) -> None:
     """O resumo é o que o corretor lê antes de ligar. Usamos o que a Mora já escreveu; sem resumo
     ainda, o cartão de qualificação é a melhor descrição disponível — bem melhor que 'sem resumo'."""
     c = lead.cartao
@@ -214,13 +171,9 @@ def _encaminhar(crm: ClienteCRM, v: vinculo.Vinculo, lead: Lead) -> None:
                     c.preco_max and f"até R$ {c.preco_max:,.0f}".replace(",", "."),
                     c.quartos and f"{c.quartos} quarto(s)", c.urgencia and f"urgência: {c.urgencia}"]
         if x)
-    r = crm.chamar("POST", "/v1/handoffs",
-                   corpo={"opportunity_id": v.crm_opportunity_id,
-                          "reason": f"lead {lead.temperatura} encaminhado pela Mora",
-                          "summary": resumo[:4000] or "Cliente pediu falar com uma pessoa."},
-                   operation_id=_op(lead.id, "handoff"))
-    if not r.ok:
-        _registrar_recusa(lead, "encaminhamento", r)
+    s.encaminhar(v.crm_lead_id, v.crm_opportunity_id,
+                 motivo=f"lead {lead.temperatura} encaminhado pela Mora",
+                 resumo=resumo[:4000] or "Cliente pediu falar com uma pessoa.")
 
 
 def publicar_encaminhamento(lead: Lead, motivo: str, resumo: str) -> None:
@@ -230,24 +183,15 @@ def publicar_encaminhamento(lead: Lead, motivo: str, resumo: str) -> None:
     verdade a conversa já está com ele — e a ficha diria a coisa errada exatamente no momento em
     que alguém vai agir sobre ela.
     """
-    if not habilitado():
+    crm = get_crm()
+    if not crm.habilitado():
         return
     try:
         v = vinculo.buscar(lead.id)
         if v is None:
             return
-        crm = ClienteCRM()
-        r = crm.chamar("POST", "/v1/handoffs",
-                       corpo={"opportunity_id": v.crm_opportunity_id,
-                              "reason": motivo[:300],
-                              "summary": (resumo or motivo)[:4000]},
-                       operation_id=_op(lead.id, "handoff"))
-        if not r.ok:
-            _registrar_recusa(lead, "encaminhamento", r)
+        with crm.sessao() as s:
+            s.encaminhar(v.crm_lead_id, v.crm_opportunity_id, motivo=motivo[:300],
+                         resumo=(resumo or motivo)[:4000])
     except Exception:
         log.warning("falha ao encaminhar o lead %s no CRM", lead.id, exc_info=True)
-
-
-def _registrar_recusa(lead: Lead, o_que: str, r) -> None:
-    nivel = log.debug if r.codigo in ESPERADOS else log.info
-    nivel("CRM recusou %s do lead %s: %s %s", o_que, lead.id, r.codigo, r.mensagem)

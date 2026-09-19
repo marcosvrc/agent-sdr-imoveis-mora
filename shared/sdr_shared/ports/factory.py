@@ -38,6 +38,22 @@ def get_calendario():
 
 
 @lru_cache
+def get_crm():
+    """O CRM entra quando está configurado, e o padrão é não ter.
+
+    A escolha não é por `SDR_PROFILE`, como as outras portas, e sim por configuração presente: o
+    perfil diz onde a Mora roda, não se a imobiliária tem CRM. Rodar local com CRM e rodar local
+    sem CRM são os dois casos normais.
+    """
+    from ..adapters.crm.via_mcp import CRMviaMCP
+    adaptador = CRMviaMCP()
+    if adaptador.habilitado():
+        return adaptador
+    from ..adapters.crm.ausente import CRMAusente
+    return CRMAusente()
+
+
+@lru_cache
 def get_embedder():
     s = get_settings()
     if s.embeddings_provider == "ollama":
