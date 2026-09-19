@@ -1,0 +1,69 @@
+// Avaliação do RAG institucional.
+//
+// Regra que governa o dataset: a pergunta NUNCA repete o cabeçalho do documento. Um conjunto onde
+// "Qual a taxa de administração?" recupera a seção "Qual a taxa de administração?" mede casamento
+// de string com passos extras — e passaria com qualquer embedder, inclusive um ruim. O que precisa
+// ser medido é o que acontece quando o cliente escreve do jeito dele.
+//
+// `fonte` é o título da seção que responde. `responde: false` são perguntas que o corpus NÃO cobre,
+// e nelas o acerto é a lista VAZIA — abstenção é resultado, não falha.
+//
+// `tipo: "adjacente"` marca a negativa difícil: assunto vizinho ao corpus, onde a resposta certa é
+// discutível e a taxa é reportada à parte. Não entra no mesmo número das negativas óbvias porque
+// seria esconder uma escolha de produto dentro de uma métrica.
+
+// ---------------------------------------------------------------- visitas
+{"id": "vis-custo-1", "pergunta": "vocês cobram alguma coisa pra mostrar o imóvel?", "fonte": "A visita tem custo para o cliente?"}
+{"id": "vis-custo-2", "pergunta": "tem taxa pra visitar?", "fonte": "A visita tem custo para o cliente?"}
+{"id": "vis-acomp-1", "pergunta": "alguém vai junto comigo ver o apartamento?", "fonte": "O corretor acompanha a visita?"}
+{"id": "vis-acomp-2", "pergunta": "posso ir sozinho ou vem alguém da imobiliária?", "fonte": "O corretor acompanha a visita?"}
+{"id": "vis-remarcar-1", "pergunta": "deu um imprevisto, consigo mudar o horário?", "fonte": "Posso remarcar ou cancelar?"}
+{"id": "vis-remarcar-2", "pergunta": "e se eu não puder mais ir no dia combinado?", "fonte": "Posso remarcar ou cancelar?"}
+{"id": "vis-quantos-1", "pergunta": "consigo ver três ou quatro no mesmo sábado?", "fonte": "Quantos imóveis dá para ver no mesmo dia?"}
+{"id": "vis-doc-1", "pergunta": "preciso levar RG na hora de ver o imóvel?", "fonte": "Preciso levar algum documento na visita?"}
+{"id": "vis-agenda-1", "pergunta": "como faço pra marcar?", "fonte": "Como a visita é agendada?"}
+
+// ---------------------------------------------------------------- locação: garantias e documentos
+{"id": "loc-fiador-1", "pergunta": "não tenho ninguém pra ser meu fiador, e agora?", "fonte": "Preciso mesmo de fiador?"}
+{"id": "loc-fiador-2", "pergunta": "dá pra alugar sem alguém assinar junto comigo?", "fonte": "Preciso mesmo de fiador?"}
+{"id": "loc-garantia-1", "pergunta": "que tipo de garantia vocês pedem?", "fonte": "Quais garantias são aceitas na locação?"}
+{"id": "loc-garantia-2", "pergunta": "posso dar caução em vez de fiador?", "fonte": "Quais garantias são aceitas na locação?"}
+{"id": "loc-fiador-req-1", "pergunta": "que comprovação vocês pedem de quem vai ser fiador?", "fonte": "O que é exigido do fiador?"}
+{"id": "loc-doc-1", "pergunta": "o que tenho que separar de papelada pra fechar?", "fonte": "Que documentos preciso para alugar?"}
+{"id": "loc-prazo-analise-1", "pergunta": "demora quanto pra sair a aprovação?", "fonte": "Quanto tempo leva a análise?"}
+{"id": "loc-prazo-analise-2", "pergunta": "em quantos dias vocês me dão uma resposta do cadastro?", "fonte": "Quanto tempo leva a análise?"}
+{"id": "loc-pet-1", "pergunta": "posso levar meu cachorro?", "fonte": "Aceitam animais de estimação?"}
+{"id": "loc-pet-2", "pergunta": "tenho dois gatos, isso é problema?", "fonte": "Aceitam animais de estimação?"}
+{"id": "loc-prazo-contrato-1", "pergunta": "qual o tempo mínimo que tenho que ficar?", "fonte": "Qual o prazo mínimo de contrato?"}
+
+// ---------------------------------------------------------------- taxas e prazos
+{"id": "tax-adm-1", "pergunta": "quanto vocês ficam do aluguel por mês?", "fonte": "Qual a taxa de administração da locação?"}
+{"id": "tax-adm-2", "pergunta": "qual o percentual que a imobiliária cobra do proprietário?", "fonte": "Qual a taxa de administração da locação?"}
+{"id": "tax-cadastro-1", "pergunta": "tem algum custo só pra eu me cadastrar?", "fonte": "Existe taxa de cadastro ou de análise?"}
+{"id": "tax-repasse-1", "pergunta": "que dia cai o dinheiro na minha conta?", "fonte": "Quando o proprietário recebe o repasse?"}
+{"id": "tax-reajuste-1", "pergunta": "de quanto em quanto tempo o aluguel sobe?", "fonte": "Como funciona o reajuste do aluguel?"}
+{"id": "tax-reajuste-2", "pergunta": "por qual índice vocês corrigem?", "fonte": "Como funciona o reajuste do aluguel?"}
+{"id": "tax-vistoria-1", "pergunta": "quem arca com a vistoria de entrada?", "fonte": "Quem paga a vistoria?"}
+{"id": "tax-multa-1", "pergunta": "se eu precisar sair antes do fim do contrato, pago alguma coisa?", "fonte": "Qual a multa por rescisão antecipada?"}
+{"id": "tax-multa-2", "pergunta": "tem multa se eu devolver o imóvel no meio do caminho?", "fonte": "Qual a multa por rescisão antecipada?"}
+{"id": "tax-comissao-1", "pergunta": "quanto a imobiliária ganha quando vende?", "fonte": "Qual a comissão na venda?"}
+
+// ---------------------------------------------------------------- financiamento
+{"id": "fin-entrada-1", "pergunta": "quanto preciso ter guardado pra dar de entrada?", "fonte": "Qual a entrada mínima?"}
+{"id": "fin-doc-1", "pergunta": "o que o banco vai me pedir pra analisar o crédito?", "fonte": "Quais documentos preciso para iniciar a análise de crédito?"}
+
+// ---------------------------------------------------------------- o corpus NÃO cobre: abstenção
+{"id": "neg-seguro-auto", "pergunta": "vocês fazem seguro de automóvel?", "responde": false}
+{"id": "neg-consorcio", "pergunta": "trabalham com consórcio de carro?", "responde": false}
+{"id": "neg-mudanca", "pergunta": "vocês indicam empresa de mudança?", "responde": false}
+{"id": "neg-reforma", "pergunta": "fazem reforma de cozinha?", "responde": false}
+{"id": "neg-rural", "pergunta": "avaliam fazenda no interior?", "responde": false}
+{"id": "neg-emprego", "pergunta": "tem vaga de emprego aí?", "responde": false}
+{"id": "neg-clima", "pergunta": "vai chover no fim de semana?", "responde": false}
+
+// Negativas ADJACENTES: assunto vizinho ao corpus, onde a resposta certa é discutível. Reportadas
+// à parte de propósito — um agente que abstém aqui é conservador, um que responde pode estar
+// extrapolando. A escolha entre os dois é de produto, e não deve se esconder dentro de uma média.
+{"id": "adj-fgts", "pergunta": "posso usar o FGTS na entrada?", "responde": false, "tipo": "adjacente"}
+{"id": "adj-iptu-quem-paga", "pergunta": "quem paga o IPTU, eu ou o dono?", "responde": false, "tipo": "adjacente"}
+{"id": "adj-seguro-incendio", "pergunta": "o seguro incêndio está incluso?", "responde": false, "tipo": "adjacente"}

@@ -30,14 +30,57 @@ def _usar_llm_falso() -> None:
     sys.path.insert(0, str(__import__("pathlib").Path(__file__).parents[1] / "tests"))
     from conftest import FakeLLM  # type: ignore
 
+    import importlib
+
     import agent.llm as llm
-    import agent.nodes.qualificador as q
-    import agent.nodes.supervisor as s
+    from agent.graph import ESPECIALISTAS
     llm._modelo.cache_clear()
-    for mod in (llm, q, s):
+    # Derivada de ESPECIALISTAS, e não escrita à mão. Os nós fazem `from ..llm import llm_conversa`,
+    # então trocar a função no módulo `llm` NÃO alcança quem já importou o nome — um especialista
+    # novo continuaria chamando o modelo de verdade no modo falso, e a conta apareceria na fatura
+    # sem nenhum sinal no terminal. A mesma lista à mão já mordeu duas vezes neste projeto.
+    modulos = [llm] + [importlib.import_module(f"agent.nodes.{n}")
+                       for n in (*ESPECIALISTAS, "supervisor")]
+    for mod in modulos:
         for fn in ("llm_conversa", "llm_roteamento", "llm_analise"):
             if hasattr(mod, fn):
                 setattr(mod, fn, lambda: FakeLLM())
+
+
+def _usar_embedder_falso() -> None:
+    """Embedder determinístico, saco de palavras. Serve para o harness do RAG rodar sem Ollama.
+
+    Os números que ele produz NÃO dizem nada sobre a qualidade semântica — "fiador" e "avalista"
+    ficam distantes onde um modelo real os aproximaria. O que ele prova é que o encanamento
+    funciona: indexação, SQL vetorial, ordenação, piso e o caminho da abstenção. Serve de teste de
+    regressão do harness; não serve de baseline.
+
+    É de TRIGRAMAS de caractere, e não de palavras inteiras, por um motivo prático: o dataset foi
+    escrito de propósito sem repetir o vocabulário dos cabeçalhos, então um saco de palavras acerta
+    zero e um número que é sempre zero não detecta regressão nenhuma. Trigrama pega parentesco
+    morfológico ("alugar"/"aluguel", "visita"/"visitar") e produz um número baixo mas sensível: se
+    alguém subir o piso para 0,9 ou quebrar a ordenação, ele cai e o CI reclama.
+    """
+    import hashlib
+    import math
+
+    import sdr_shared.ports as ports
+
+    dim = 1024
+
+    def embed(texto: str) -> list[float]:
+        limpo = " " + "".join(c.lower() if c.isalnum() else " " for c in texto).strip() + " "
+        vetor = [0.0] * dim
+        for i in range(len(limpo) - 2):
+            tri = limpo[i:i + 3]
+            if tri.strip():
+                vetor[int(hashlib.sha256(tri.encode()).hexdigest()[:8], 16) % dim] += 1.0
+        norma = math.sqrt(sum(x * x for x in vetor)) or 1.0
+        return [x / norma for x in vetor]
+
+    falso = type("EmbedderFalso", (), {"dimensoes": dim, "embed": staticmethod(embed)})()
+    ports.get_embedder.cache_clear()
+    ports.get_embedder = lambda: falso
 
 
 def main() -> int:
@@ -51,17 +94,25 @@ def main() -> int:
                    help="taxa de escape adversarial aceitável em %%; acima disso, sai com erro")
     p.add_argument("--limite-extracao", type=float, default=0.0,
                    help="acerto mínimo por campo na extração em %%; abaixo disso, sai com erro")
+    p.add_argument("--limite-abstencao", type=float, default=0.0,
+                   help="abstenção mínima nas negativas ÓBVIAS do RAG em %%; abaixo disso, sai com "
+                        "erro. Só as óbvias: as adjacentes são decisão de produto, não regressão")
     args = p.parse_args()
 
     exigir_banco_de_teste()                      # nunca rodar contra o banco de dev
     if args.fake:
         _usar_llm_falso()
+        _usar_embedder_falso()
 
     inicio = datetime.now(timezone.utc)
     trechos = _trechos_do_prompt()
     resumos = []
     for nome in (args.suite or list(SUITES)):
         casos, fn = carregar(nome), SUITES[nome]
+        if nome == "rag":
+            from .suites import indexar_corpus
+            print("  indexando o corpus institucional com o embedder em uso…", flush=True)
+            print(f"  {indexar_corpus()} trechos indexados", flush=True)
         print(f"rodando {nome}: {len(casos)} casos × {args.repeticoes}…", flush=True)
         execucoes = []
         for _ in range(args.repeticoes):
@@ -84,9 +135,21 @@ def main() -> int:
     # Limiares: o harness só reprova se você pedir. Sem limiar ele informa, não bloqueia — números
     # de LLM oscilam, e transformar oscilação em falha de build ensina o time a ignorar o build.
     falhou = False
+    # Exceção num caso não é "reprovado", é harness quebrado — e some no meio de uma taxa de
+    # aprovação baixa. Reprova sempre, independentemente de limiar pedido.
+    quebrados = [(r["suite"], c["caso"]) for r in resumos for c in r["detalhes"]
+                 if c["detalhe"].startswith("exceção:")]
+    if quebrados:
+        print(f"\nREPROVADO: {len(quebrados)} caso(s) levantaram exceção — "
+              f"{', '.join(f'{s}/{c}' for s, c in quebrados[:5])}")
+        falhou = True
+
     for r in resumos:
         if r["suite"] == "adversarial" and r.get("taxa_de_escape", 0) > args.limite_escape:
             print(f"\nREPROVADO: taxa de escape {r['taxa_de_escape']}% > limite {args.limite_escape}%")
+            falhou = True
+        if r["suite"] == "rag" and args.limite_abstencao and r.get("abstencao_obvia", 0) < args.limite_abstencao:
+            print(f"\nREPROVADO: abstenção {r['abstencao_obvia']}% < limite {args.limite_abstencao}%")
             falhou = True
         if r["suite"] == "extracao" and args.limite_extracao and r.get("acerto_por_campo", 0) < args.limite_extracao:
             print(f"\nREPROVADO: acerto por campo {r['acerto_por_campo']}% < limite {args.limite_extracao}%")

@@ -116,8 +116,13 @@ cobertura: test-db
 eval: test-db
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals $(ARGS)
 
-eval-fake:     # valida o harness sem gastar token (LLM falso; os números não dizem nada sobre o modelo)
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --fake $(ARGS)
+eval-fake:     # valida o HARNESS sem gastar token nem precisar do Ollama. Os números não dizem nada
+               # sobre qualidade: o LLM é falso e o embedder é de trigramas. É o que roda no CI.
+	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --fake --limite-abstencao 80 $(ARGS)
+
+eval-rag:      # avaliação do RAG institucional com o embedder DE VERDADE (exige `make ollama-pull`).
+               # É o único jeito de saber se a busca institucional responde bem, e não só se responde.
+	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
 
 test-docker: test-db   # mesma suíte, rodando dentro do container do agente (não precisa de Python 3.12 no host)
 	cd local && docker compose exec -T -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test agent sh -c '\

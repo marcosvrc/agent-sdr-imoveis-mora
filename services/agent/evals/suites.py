@@ -1,4 +1,4 @@
-"""As três suítes. Cada uma exercita o caminho de PRODUÇÃO, não uma reimplementação:
+"""As suítes. Cada uma exercita o caminho de PRODUÇÃO, não uma reimplementação:
 extração chama `qualificador._extrair` + `_normalizar_local`, roteamento chama `supervisor.run`,
 adversarial chama `escopo.avaliar` e depois o modelo com o prompt real de `prompts/`.
 
@@ -161,4 +161,62 @@ def adversarial(caso: Caso, trechos: list[str] | None = None) -> Resultado:
     )
 
 
-SUITES = {"extracao": extracao, "roteamento": roteamento, "adversarial": adversarial}
+# ------------------------------------------------------------------ RAG institucional
+
+# Onde os documentos do corpus moram, a partir daqui.
+DOCUMENTOS = __import__("pathlib").Path(__file__).resolve().parents[3] / "data" / "documentos"
+
+
+def indexar_corpus() -> int:
+    """Indexa `data/documentos/` com o embedder EM USO e devolve quantos trechos entraram.
+
+    A indexação é parte da avaliação, não preparação dela: trocar o modelo de embeddings muda o
+    índice e o resultado junto, e medir contra um índice gerado por outro modelo compararia
+    coisas diferentes sem avisar.
+    """
+    from sdr_shared.conhecimento import fatiar
+    from sdr_shared.db import DocumentoRepository
+    from sdr_shared.ports import get_embedder
+
+    repo, embedder, total = DocumentoRepository(), get_embedder(), 0
+    for arquivo in sorted(DOCUMENTOS.glob("*.md")):
+        if arquivo.name == "README.md":
+            continue
+        trechos = fatiar(arquivo.read_text(encoding="utf-8"), arquivo.name, "geral")
+        repo.apagar_do_arquivo(arquivo.name)
+        for tr in trechos:
+            repo.upsert(tr, embedder.embed(tr.texto))
+        total += len(trechos)
+    return total
+
+
+def rag(caso: Caso) -> Resultado:
+    """Recupera pela pergunta do CLIENTE e confere se a seção certa veio — ou se, devendo, não veio.
+
+    Chama `tools.conhecimento.consultar`, que é o caminho de produção inteiro: embedding, SQL
+    vetorial, ordenação e piso de similaridade. Um eval que chamasse o repositório direto mediria
+    a busca e deixaria de fora justamente a decisão que mais importa, que é abster-se.
+    """
+    from agent.tools.conhecimento import consultar
+
+    achados = consultar(caso["pergunta"])
+    fontes = [t.fonte for t in achados]
+    topo = round(achados[0].score, 3) if achados else None
+    extras = {"fontes": fontes[:3], "score_topo": topo, "tipo": caso.get("tipo", "comum")}
+
+    if caso.get("responde", True) is False:
+        # Abstenção é o acerto. Um trecho recuperado aqui vira afirmação sobre a empresa.
+        return Resultado(caso=caso.id, passou=not achados,
+                         detalhe="" if not achados else f"não devia recuperar nada; veio {fontes[0]!r}",
+                         extras={**extras, "abstencao": True})
+
+    esperada = caso["fonte"]
+    extras |= {"esperada": esperada, "no_topo": bool(fontes) and fontes[0] == esperada}
+    return Resultado(caso=caso.id, passou=esperada in fontes,
+                     detalhe="" if esperada in fontes else
+                             (f"esperava {esperada!r}, veio {fontes!r}" if fontes else
+                              "não recuperou nada (piso alto demais ou corpus não indexado)"),
+                     extras=extras)
+
+
+SUITES = {"extracao": extracao, "roteamento": roteamento, "adversarial": adversarial, "rag": rag}

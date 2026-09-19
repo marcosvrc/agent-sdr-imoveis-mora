@@ -33,6 +33,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with: { name: cobertura, path: coverage.xml, if-no-files-found: warn }
+      # O harness de avaliação com dublês: LLM falso e embedder de trigramas. NÃO mede qualidade —
+      # mede que o harness funciona. Sem isto, o eval apodrece calado: um dataset que deixa de
+      # carregar, uma métrica que divide por zero ou um nó novo que escapa do dublê e vai chamar o
+      # modelo de verdade só apareceriam quando alguém rodasse à mão, meses depois. A qualidade
+      # continua sendo `make eval` e `make eval-rag`, locais, com modelo real.
+      - name: Harness de avaliação (dublês)
+        run: make eval-fake
       # A especificação versionada alimenta o Swagger do portal; se ela envelhecer,
       # a documentação publicada passa a mentir sobre a API.
       - run: python scripts/gerar_openapi.py --verificar

@@ -67,6 +67,27 @@ def resumir(suite: str, execucoes: list[list]) -> dict:
             por_cat[r.extras.get("categoria") or "?"][0] += 0 if r.passou else 1
             por_cat[r.extras.get("categoria") or "?"][1] += 1
         resumo["escape_por_categoria"] = {k: f"{v[0]}/{v[1]}" for k, v in sorted(por_cat.items())}
+    elif suite == "rag":
+        positivos = [r for r in todos if not r.extras.get("abstencao")]
+        obvias = [r for r in todos if r.extras.get("abstencao") and r.extras.get("tipo") != "adjacente"]
+        adjacentes = [r for r in todos if r.extras.get("abstencao") and r.extras.get("tipo") == "adjacente"]
+
+        resumo["recall_em_3"] = _pct(sum(1 for r in positivos if r.passou), len(positivos))
+        # Precisão no topo importa por si: o nó manda TRÊS trechos ao modelo, e o primeiro é o que
+        # vira a fonte citada ao cliente. Recall alto com topo errado é uma citação errada.
+        resumo["acerto_no_topo"] = _pct(sum(1 for r in positivos if r.extras.get("no_topo")), len(positivos))
+        resumo["abstencao_obvia"] = _pct(sum(1 for r in obvias if r.passou), len(obvias))
+        # Reportada à parte: aqui abster é conservador e responder pode ser extrapolar. A escolha é
+        # de produto e não deve ser diluída na média das negativas fáceis.
+        resumo["abstencao_adjacente"] = _pct(sum(1 for r in adjacentes if r.passou), len(adjacentes))
+
+        # A distribuição de score é o que permite calibrar o piso com evidência em vez de no olho.
+        acertos = sorted(r.extras["score_topo"] for r in positivos
+                         if r.passou and r.extras.get("score_topo") is not None)
+        enganos = sorted(r.extras["score_topo"] for r in todos
+                         if not r.passou and r.extras.get("score_topo") is not None)
+        resumo["score_acertos"] = {"min": acertos[0], "mediana": acertos[len(acertos) // 2]} if acertos else None
+        resumo["score_enganos_max"] = enganos[-1] if enganos else None
     return resumo
 
 
@@ -102,6 +123,20 @@ def imprimir(resumos: list[dict], custo: dict) -> None:
             print(f"   barrado pela regra: {r['barrado_pela_regra']}   "
                   f"barrado pelo modelo: {r['barrado_pelo_modelo']}   escapou: {r['escapou']}")
             print(f"   TAXA DE ESCAPE: {r['taxa_de_escape']}%   por categoria: {r['escape_por_categoria']}")
+        if r["suite"] == "rag":
+            print(f"   recall@3: {r['recall_em_3']}%   acerto no topo: {r['acerto_no_topo']}%")
+            print(f"   abstenção (óbvias): {r['abstencao_obvia']}%   "
+                  f"(adjacentes, decisão de produto): {r['abstencao_adjacente']}%")
+            acertos, engano = r.get("score_acertos"), r.get("score_enganos_max")
+            if acertos and engano is not None:
+                print(f"   score: acertos min {acertos['min']} / mediana {acertos['mediana']}   "
+                      f"maior score de engano {engano}")
+                if engano >= acertos["min"]:
+                    # O piso separa por score; quando o pior acerto pontua abaixo do melhor engano,
+                    # NENHUM limiar separa os dois. Dizer isso é mais útil que imprimir o número e
+                    # deixar quem lê concluir que basta ajustar o piso.
+                    print("   ⚠ nenhum piso separa acerto de engano neste conjunto — "
+                          "calibrar o limiar não resolve; o que falta é recuperação melhor")
         for c in r["detalhes"]:
             if c["taxa"] < 100.0:
                 print(f"   ✗ {c['caso']} ({c['taxa']}%) {c['detalhe'][:110]}")
