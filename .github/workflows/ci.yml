@@ -13,13 +13,16 @@ jobs:
       # As suítes APAGAM tabelas: a trava em guarda_teste.py exige um banco com "test" no nome.
       # PREPARO_DB=psql porque aqui o Postgres é service container do runner, não docker compose.
       TEST_DSN: postgresql://sdr:sdr@localhost:5432/sdr_test
+      # O CRM tem banco próprio, aqui também: a separação de D-01 vale na suíte.
+      CRM_TEST_DSN: postgresql://sdr:sdr@localhost:5432/crm_test
+      CRM_APP_ENV: test
       PREPARO_DB: psql
       SDR_PROFILE: local
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e services/channels/whatsapp -e services/channels/web -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
+      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/channels/whatsapp -e services/channels/web -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
       # Estático antes do teste: erro de nome ou import quebrado aparece em segundos, sem esperar
       # o banco subir e as sete suítes rodarem.
       - name: Análise estática (ruff)

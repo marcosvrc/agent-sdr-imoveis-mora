@@ -71,15 +71,24 @@ CRM_TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/crm_test
 PREPARO_DB ?= compose
 ADMIN_DSN = $(dir $(TEST_DSN))postgres
 
-test-db:       # cria o banco sdr_test (se não existir) e aplica o schema
+test-db:       # cria os bancos de teste (se não existirem) e aplica os dois schemas
+               # DOIS bancos: o CRM é sistema à parte (D-01), e a separação vale também na suíte.
+               # Faltava criar o `crm_test` aqui: quem clonasse o repositório e rodasse `make test`
+               # via a suíte do CRM falhar sem nenhuma pista de que o banco é que não existia.
 ifeq ($(PREPARO_DB),compose)
 	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='sdr_test'" | grep -q 1 || \
 	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE sdr_test")
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr_test -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql
+	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='crm_test'" | grep -q 1 || \
+	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE crm_test")
+	cd local && docker compose exec -T db psql -q -U sdr -d crm_test -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
 else
 	psql "$(ADMIN_DSN)" -tc "SELECT 1 FROM pg_database WHERE datname='sdr_test'" | grep -q 1 || \
 	  psql "$(ADMIN_DSN)" -c "CREATE DATABASE sdr_test"
 	psql "$(TEST_DSN)" -q -v ON_ERROR_STOP=1 -f shared/sdr_shared/db/schema.sql
+	psql "$(ADMIN_DSN)" -tc "SELECT 1 FROM pg_database WHERE datname='crm_test'" | grep -q 1 || \
+	  psql "$(ADMIN_DSN)" -c "CREATE DATABASE crm_test"
+	psql "$(CRM_TEST_DSN)" -q -v ON_ERROR_STOP=1 -f services/crm/sdr_crm/db/schema.sql
 endif
 
 test: test-db
@@ -109,6 +118,7 @@ cobertura: test-db
 	cd services/channels/whatsapp && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
 	cd services/channels/telegram && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
 	cd services/channels/local && PYTHONPATH=../../../shared:.:../whatsapp coverage run -m pytest -q tests; cd ../../..; \
+	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. coverage run -m pytest -q tests; cd ../..; \
 	coverage combine -q && coverage report && coverage xml -o coverage.xml
 
 # Harness de avaliação: mede o MODELO (chama a API de verdade), enquanto `test` mede o encanamento
