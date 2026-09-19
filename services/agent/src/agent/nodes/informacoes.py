@@ -41,8 +41,12 @@ def run(state: AgentState) -> dict:
     lead, entrada = state["lead"], state["entrada"]
     pergunta = entrada.conteudo or ""
 
+    # Só as falas do CLIENTE: o que a Mora respondeu antes é vocabulário dela, e realimentá-lo na
+    # consulta faria a busca perseguir as próprias palavras em vez das dele.
+    anteriores = [str(getattr(m, "content", "")) for m in state.get("messages") or []
+                  if getattr(m, "type", None) == "human"]
     try:
-        trechos = consultar(pergunta)
+        trechos = consultar(pergunta, anteriores=anteriores[:-1] or None)
     except Exception:
         # Falha da busca não pode virar invenção: segue pelo caminho do "vou confirmar".
         log.warning("busca institucional falhou para o lead %s", lead.id, exc_info=True)

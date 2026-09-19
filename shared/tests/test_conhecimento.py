@@ -117,6 +117,65 @@ def test_cabecalho_sem_corpo_nao_vira_trecho_vazio():
     assert [t.titulo for t in trechos] == ["Subseção"]
 
 
+# --------------------------------------------------------------------------- reescrita de consulta
+
+def test_pergunta_autonoma_nao_e_tocada():
+    """Reescrever demais é tão ruim quanto de menos: carregar o assunto anterior para dentro de uma
+    pergunta que já tem o seu próprio empurra a busca para o tema errado."""
+    from sdr_shared.conhecimento import reescrever_pergunta
+    pergunta = "quem paga a vistoria de entrada do imóvel?"
+    assert reescrever_pergunta(pergunta, ["que garantias vocês aceitam?"]) == pergunta
+
+
+@pytest.mark.parametrize("pergunta", [
+    "e se eu precisar sair antes?",      # conectivo
+    "quanto custa isso?",                # anáfora
+    "e a multa?",                        # curta demais para ter assunto
+    "e ele pode ir junto?",
+])
+def test_pergunta_dependente_herda_o_assunto(pergunta):
+    from sdr_shared.conhecimento import reescrever_pergunta
+    saida = reescrever_pergunta(pergunta, ["qual o prazo mínimo de contrato?"])
+    assert saida.startswith(pergunta), "o que o cliente acabou de perguntar vem primeiro"
+    assert "prazo mínimo" in saida
+
+
+def test_herda_a_ultima_pergunta_que_se_sustentava():
+    """O antecedente é a última fala COM assunto — não a última fala. Numa sequência de perguntas
+    curtas, herdar a anterior (também vazia) propagaria o vazio."""
+    from sdr_shared.conhecimento import reescrever_pergunta
+    saida = reescrever_pergunta("e isso?", ["como funciona o reajuste do aluguel?", "e depois?"])
+    assert "reajuste" in saida
+
+
+def test_sem_historico_nao_inventa_contexto():
+    from sdr_shared.conhecimento import reescrever_pergunta
+    assert reescrever_pergunta("e a multa?", None) == "e a multa?"
+    assert reescrever_pergunta("e a multa?", []) == "e a multa?"
+
+
+def test_historico_so_de_perguntas_dependentes_nao_muda_nada():
+    from sdr_shared.conhecimento import reescrever_pergunta
+    assert reescrever_pergunta("e isso?", ["e depois?", "certo"]) == "e isso?"
+
+
+@pytest.mark.parametrize("com, sem", [
+    # Conectivo acentuado, e frase LONGA de propósito: com menos palavras a regra de tamanho
+    # decidiria sozinha e o teste passaria sem exercitar a normalização. Foi o que aconteceu na
+    # primeira versão — passou com a normalização removida.
+    ("então qual seria o valor total mensal cobrado?", "entao qual seria o valor total mensal cobrado?"),
+    # Anáfora acentuada, mesma precaução com o tamanho.
+    ("o seguro também está incluso no valor mensal cobrado?",
+     "o seguro tambem esta incluso no valor mensal cobrado?"),
+])
+def test_acento_nao_muda_a_deteccao(com, sem):
+    """No chat a mesma palavra chega acentuada e sem acento. A detecção normaliza antes de comparar,
+    e as listas são escritas sem acento — um mecanismo só, que dá para testar."""
+    from sdr_shared.conhecimento import depende_do_contexto
+    assert depende_do_contexto(com), com
+    assert depende_do_contexto(sem), sem
+
+
 # --------------------------------------------------------------------------- piso
 
 def test_piso_descarta_o_vizinho_mais_proximo_quando_ele_esta_longe():

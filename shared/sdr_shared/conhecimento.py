@@ -100,6 +100,63 @@ def _dividir(texto: str, arquivo: str, assunto: str, titulo: str | None, inicio:
             for i, p in enumerate(partes) if len(p) >= MIN_CHARS]
 
 
+# Conectivos que abrem uma pergunta dependente do que veio antes, e anáforas que não têm a que se
+# referir sozinhas. Lista curta de propósito: cada entrada aqui é uma chance de reescrever uma
+# pergunta que não precisava, e reescrever demais é tão ruim quanto de menos.
+# Escritos SEM acento: a comparação acontece depois de `_sem_acento`, e listar as duas grafias
+# deixaria a normalização sem função — dois mecanismos para a mesma coisa, nenhum deles testável,
+# porque remover um não quebra nada. Apareceu numa mutação que passou quando não devia.
+_CONECTIVOS = ("e ", "mas ", "entao ", "ai ", "ok ", "certo ", "e se ", "e quanto ")
+_ANAFORAS = frozenset({"isso", "isto", "aquilo", "ele", "ela", "eles", "elas", "la", "disso",
+                       "dele", "dela", "nesse", "nisso", "esse", "essa", "mesmo", "tambem"})
+MIN_PALAVRAS_AUTONOMA = 4
+
+
+def _sem_acento(texto: str) -> str:
+    import unicodedata
+    return "".join(c for c in unicodedata.normalize("NFD", texto) if unicodedata.category(c) != "Mn")
+
+
+def depende_do_contexto(pergunta: str) -> bool:
+    """A pergunta se sustenta sozinha como consulta de busca?
+
+    Três sinais, e basta um: começa por conectivo ("e se eu sair antes?"), contém anáfora sem
+    antecedente ("quanto custa isso?"), ou é curta demais para ter assunto ("e a multa?").
+
+    O ponto não é entender a frase — é decidir se vale carregar o assunto anterior para dentro dela.
+    Errar para "depende" custa algumas palavras a mais no embedding; errar para o outro lado manda
+    ao banco uma consulta sem assunto nenhum, e a busca vetorial sempre devolve ALGO.
+    """
+    limpo = _sem_acento((pergunta or "").strip().lower())
+    if not limpo:
+        return False
+    if limpo.startswith(_CONECTIVOS):
+        return True
+    palavras = [p for p in "".join(c if c.isalnum() else " " for c in limpo).split() if len(p) > 2]
+    if any(p in _ANAFORAS for p in palavras):
+        return True
+    return len(palavras) < MIN_PALAVRAS_AUTONOMA
+
+
+def reescrever_pergunta(pergunta: str, anteriores: list[str] | None = None) -> str:
+    """Consulta de busca para a pergunta atual, trazendo o assunto anterior quando ela depende dele.
+
+    Determinística de propósito. Um reescritor com LLM acertaria mais casos e custaria uma chamada
+    a mais por turno, num caminho onde o cliente está esperando — e passaria a ser mais uma coisa
+    que pode alucinar bem na frente da busca. Aqui é concatenação: a pergunta que não se sustenta
+    sozinha herda a última que se sustentava.
+
+    O texto atual vem PRIMEIRO. A ordem importa pouco para um saco de palavras, mas importa para
+    modelos que pesam posição, e o que o cliente acabou de perguntar é o que ele quer saber.
+    """
+    atual = (pergunta or "").strip()
+    if not atual or not anteriores or not depende_do_contexto(atual):
+        return atual
+    ancora = next((a.strip() for a in reversed(anteriores)
+                   if a and a.strip() and not depende_do_contexto(a)), "")
+    return f"{atual} {ancora}".strip() if ancora else atual
+
+
 def acima_do_piso(trechos: list[Trecho], piso: float = PISO_SIMILARIDADE) -> list[Trecho]:
     """Filtra pelo piso e devolve na ordem de relevância. Lista vazia é resposta legítima — e o nó
     que consome precisa tratá-la como 'não sei', nunca como 'responda assim mesmo'."""

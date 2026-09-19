@@ -9,7 +9,8 @@ cobre produz uma afirmação **falsa sobre a política da empresa**, dita com a 
 um documento. Por isso a busca institucional tem piso de similaridade e devolve lista vazia sem
 constrangimento — "não sei, o corretor confirma" é uma resposta correta; inventar a taxa não é.
 """
-from sdr_shared.conhecimento import PISO_SIMILARIDADE, Trecho, acima_do_piso
+from sdr_shared.conhecimento import (PISO_SIMILARIDADE, Trecho, acima_do_piso,
+                                     reescrever_pergunta)
 from sdr_shared.config import get_settings
 from sdr_shared.db import DocumentoRepository
 
@@ -38,13 +39,19 @@ def _via_knowledge_base(pergunta: str, limite: int) -> list[Trecho]:
     return trechos
 
 
-def consultar(pergunta: str, limite: int = LIMITE, piso: float = PISO_SIMILARIDADE) -> list[Trecho]:
+def consultar(pergunta: str, limite: int = LIMITE, piso: float = PISO_SIMILARIDADE,
+              anteriores: list[str] | None = None) -> list[Trecho]:
     """Trechos institucionais relevantes para a pergunta, ou lista vazia.
 
     Lista vazia não é erro: é o caso em que a base não cobre o assunto, e quem chama precisa dizer
     isso ao cliente em vez de improvisar.
+
+    `anteriores` são as falas anteriores do CLIENTE. Servem para reescrever uma pergunta que não se
+    sustenta sozinha: "e se eu sair antes?" não tem assunto nenhum para um embedding, e sem a
+    reescrita ela vira uma consulta vaga — à qual a busca vetorial responde com o vizinho mais
+    próximo de coisa alguma.
     """
-    pergunta = (pergunta or "").strip()
+    pergunta = reescrever_pergunta(pergunta, anteriores)
     if not pergunta:
         return []
     if get_settings().knowledge_base_id:

@@ -67,3 +67,16 @@
 {"id": "adj-fgts", "pergunta": "posso usar o FGTS na entrada?", "responde": false, "tipo": "adjacente"}
 {"id": "adj-iptu-quem-paga", "pergunta": "quem paga o IPTU, eu ou o dono?", "responde": false, "tipo": "adjacente"}
 {"id": "adj-seguro-incendio", "pergunta": "o seguro incêndio está incluso?", "responde": false, "tipo": "adjacente"}
+
+// ---------------------------------------------------------------- perguntas que dependem do turno anterior
+// Medem a REESCRITA de consulta. A pergunta sozinha não tem assunto: "e se eu sair antes?" não diz
+// de que contrato se fala, e um embedding dela persegue o vizinho mais próximo de coisa nenhuma.
+// Sem a reescrita estes casos falham; com ela, passam pelo mesmo caminho dos outros.
+{"id": "seq-multa", "pergunta": "e se eu precisar sair antes?", "historico": ["qual o prazo mínimo de contrato?"], "fonte": "Qual a multa por rescisão antecipada?"}
+{"id": "seq-fiador", "pergunta": "e se eu não tiver?", "historico": ["que garantias vocês aceitam pra alugar?"], "fonte": "Preciso mesmo de fiador?"}
+{"id": "seq-visita-custo", "pergunta": "e isso tem custo?", "historico": ["como funciona a visita ao imóvel?"], "fonte": "A visita tem custo para o cliente?"}
+{"id": "seq-reajuste", "pergunta": "e de quanto em quanto tempo?", "historico": ["como funciona o reajuste do aluguel?"], "fonte": "Como funciona o reajuste do aluguel?"}
+{"id": "seq-pet", "pergunta": "e ele pode ir junto?", "historico": ["tenho um cachorro grande em casa"], "fonte": "Aceitam animais de estimação?"}
+{"id": "seq-repasse", "pergunta": "e quando eu recebo?", "historico": ["qual a taxa de administração que vocês cobram?"], "fonte": "Quando o proprietário recebe o repasse?"}
+// Pergunta autônoma COM histórico: a reescrita não pode atrapalhar quem já se sustenta sozinho.
+{"id": "seq-autonoma", "pergunta": "quem paga a vistoria de entrada do imóvel?", "historico": ["que garantias vocês aceitam pra alugar?"], "fonte": "Quem paga a vistoria?"}

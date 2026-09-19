@@ -193,13 +193,17 @@ def indexar_corpus() -> int:
 def rag(caso: Caso) -> Resultado:
     """Recupera pela pergunta do CLIENTE e confere se a seção certa veio — ou se, devendo, não veio.
 
-    Chama `tools.conhecimento.consultar`, que é o caminho de produção inteiro: embedding, SQL
-    vetorial, ordenação e piso de similaridade. Um eval que chamasse o repositório direto mediria
-    a busca e deixaria de fora justamente a decisão que mais importa, que é abster-se.
+    Chama `tools.conhecimento.consultar`, que é o caminho de produção inteiro: reescrita da
+    consulta, embedding, SQL vetorial, ordenação e piso de similaridade. Um eval que chamasse o
+    repositório direto mediria a busca e deixaria de fora justamente a decisão que mais importa,
+    que é abster-se.
+
+    `historico` são falas anteriores do cliente. Casos com histórico medem a reescrita: a pergunta
+    sozinha não tem assunto, e sem herdar o anterior ela não recupera nada.
     """
     from agent.tools.conhecimento import consultar
 
-    achados = consultar(caso["pergunta"])
+    achados = consultar(caso["pergunta"], anteriores=caso.get("historico"))
     fontes = [t.fonte for t in achados]
     topo = round(achados[0].score, 3) if achados else None
     extras = {"fontes": fontes[:3], "score_topo": topo, "tipo": caso.get("tipo", "comum")}
