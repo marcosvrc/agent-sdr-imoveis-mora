@@ -129,6 +129,7 @@ nav:
       - Contexto do projeto: overview/contexto.md
       - Funcionalidades: overview/funcionalidades.md
       - Quick Start: overview/quick-start.md
+      - Roteiro de demonstração: overview/roteiro-demonstracao.md
   - Primeiros passos:
       - Pré-requisitos: getting-started/pre-requisitos.md
       - Configuração e variáveis de ambiente: getting-started/configuracao.md
