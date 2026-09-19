@@ -4,9 +4,9 @@ WORKDIR /app
 COPY shared /app/shared
 COPY services /app/services
 # shared editável: os volumes do compose montam o código do host por cima, e as edições valem na hora.
-RUN pip install --no-cache-dir -e "/app/shared[local,aws,openai]" \
+RUN pip install --no-cache-dir -e "/app/shared[local,openai]" \
     -e /app/services/agent -e /app/services/api \
-    -e /app/services/channels/telegram -e /app/services/channels/web \
+    -e /app/services/channels/telegram \
     -e /app/services/scheduler -e /app/services/ingestion \
     -e "/app/services/crm[mcp]" \
     fastapi "uvicorn[standard]" websockets
