@@ -1,7 +1,7 @@
-# Perfil LOCAL — tudo roda no docker compose. Cloud só onde é inevitável ou pago por uso:
-#   • LLM: Bedrock / Anthropic API (pay-per-use, centavos) OU Ollama 100% local (qualidade menor)
+# A entrega inteira roda aqui. Só duas coisas saem da máquina, e nenhuma exige provisionar nada:
+#   • LLM: API da Anthropic ou da OpenAI (pago por uso, centavos) OU Ollama 100% local
 #   • Telegram: bot criado na hora com o @BotFather, sem aprovação — long polling, sem túnel (ADR-0007)
-# Uso: cd local && cp .env.example .env && docker compose --profile ollama up --build   (ou sem --profile ollama)
+# Uso: cd local && cp -n .env.example .env && docker compose --profile ollama up --build
 name: sdr-local
 
 x-py: &py
@@ -20,7 +20,10 @@ x-py: &py
     SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
     SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
   volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts" ]
-  depends_on: { db: { condition: service_healthy }, redis: { condition: service_started } }
+  depends_on:
+    db: { condition: service_healthy }
+    db-init: { condition: service_completed_successfully }
+    redis: { condition: service_started }
 
 services:
   db:
@@ -34,7 +37,43 @@ services:
       - pgdata:/var/lib/postgresql/data
     healthcheck: { test: ["CMD-SHELL", "pg_isready -U sdr"], interval: 3s, retries: 20 }
 
-  redis:                       # substitui SQS + EventBridge (Streams + locks)
+  db-init:                     # cria os bancos e aplica os schemas ANTES de qualquer serviço subir
+    # Por que não basta o `docker-entrypoint-initdb.d`: o Postgres só roda aqueles scripts quando o
+    # VOLUME é novo. Num volume que já existia — o caso de qualquer máquina que subiu o projeto uma
+    # vez antes de o CRM entrar nele — eles nunca rodaram, e o `crm-api` sobe direto para
+    # `FATAL: database "crm" does not exist`, num laço de reconexão que enche o log e não diz a
+    # causa. Criar o banco era passo de `make`, e passo de `make` depende de alguém lembrar de
+    # rodá-lo antes do serviço que precisa dele — o que não acontece, porque o compose sobe primeiro.
+    #
+    # Este container fecha a janela: roda até o fim, e só então os serviços Python começam. Rodar a
+    # cada subida não custa nada porque os três arquivos são idempotentes (`\gexec` condicionado a
+    # `pg_database`, e CREATE/ALTER ... IF NOT EXISTS nos schemas) — verificado aplicando cada um
+    # duas vezes seguidas.
+    image: pgvector/pgvector:pg16
+    # client_min_messages=warning: na segunda subida em diante cada `IF NOT EXISTS` emite um NOTICE,
+    # e são ~100 linhas de "already exists, skipping" a cada `up`. Log que ninguém lê é log que
+    # esconde o aviso que importa.
+    environment: { PGPASSWORD: sdr, PGOPTIONS: "-c client_min_messages=warning" }
+    depends_on: { db: { condition: service_healthy } }
+    volumes:
+      - ./00-crm.sql:/sql/00-crm.sql:ro
+      - ./00-langfuse.sql:/sql/00-langfuse.sql:ro
+      - ../shared/sdr_shared/db/schema.sql:/sql/sdr.sql:ro
+      - ../services/crm/sdr_crm/db/schema.sql:/sql/crm.sql:ro
+    # `psql -f` em vez de `printf ... | psql`: o `\gexec` atravessa o shell sem escapar, e já houve
+    # aqui um `\n` que chegou literal ao psql por causa de uma camada de aspas a mais.
+    command:
+      - sh
+      - -c
+      - >-
+        psql -q -h db -U sdr -d postgres -f /sql/00-crm.sql &&
+        psql -q -h db -U sdr -d postgres -f /sql/00-langfuse.sql &&
+        psql -q -h db -U sdr -d sdr -v ON_ERROR_STOP=1 -f /sql/sdr.sql &&
+        psql -q -h db -U sdr -d crm -v ON_ERROR_STOP=1 -f /sql/crm.sql &&
+        echo 'bancos sdr, crm e langfuse prontos; schemas aplicados'
+    restart: "no"
+
+  redis:                       # Streams + locks: é a fila entre os canais e o agente
     image: redis:7-alpine
     ports: ["${REDIS_HOST_PORT:-6380}:6379"]   # host: 6380 (6379 costuma estar ocupado por um Redis nativo)
 
@@ -196,6 +235,8 @@ services:
       SALT: dev
       NEXTAUTH_URL: http://localhost:3000
     ports: ["3000:3000"]
-    depends_on: [db]
+    depends_on:
+      db: { condition: service_healthy }
+      db-init: { condition: service_completed_successfully }
 
 volumes: { pgdata: {}, ollama: {} }

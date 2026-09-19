@@ -17,7 +17,7 @@ ajuda:
 	@echo "     preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN"
 	@echo "  2. make check-env                     confere o .env antes de subir nada"
 	@echo "  3. make local-ollama                  sobe o compose (primeiro plano; siga noutro terminal)"
-	@echo "  4. make preparar                      bancos + massa do CRM, na ordem certa"
+	@echo "  4. make preparar                      massa do CRM (os bancos o compose já criou)"
 	@echo "  5. make crm-token                     emite CRM_API_TOKEN -> cole no local/.env"
 	@echo "     cd local && docker compose up -d crm-mcp agent      (releem o .env)"
 	@echo "  6. make ollama-pull                   baixa o bge-m3 (demora, uma vez só)"
@@ -98,11 +98,12 @@ migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CRE
 # Sistema à parte, com banco próprio. A Mora publica nele o que a conversa descobre; nada daqui
 # escreve no banco dela.
 
-crm-migrate:   # cria o banco `crm` se não existir e aplica o schema — idempotente, como o da Mora
-               # Criar aqui, e não só em `local/00-crm.sql`: aquele arquivo é script de inicialização
-               # do Postgres, e o Postgres só roda esses scripts quando o VOLUME é novo. Num volume
-               # que já existia antes de o CRM entrar no projeto, ele nunca rodou — e o erro que
-               # aparecia era `FATAL: database "crm" does not exist`, sem nada dizendo por quê.
+crm-migrate:   # aplica o schema do CRM sem reiniciar nada — idempotente, como o da Mora
+               # Criar o banco deixou de ser trabalho deste alvo: quem faz isso agora é o serviço
+               # `db-init` do compose, que roda antes de qualquer serviço Python subir. Enquanto era
+               # passo de `make`, dependia de alguém rodá-lo ANTES do compose — e o compose sobe
+               # primeiro, então o `crm-api` batia em `FATAL: database "crm" does not exist` toda
+               # vez. O alvo continua aqui para aplicar uma mudança de schema com o ambiente no ar.
 	cd local && printf '%s\n' "SELECT 'CREATE DATABASE crm' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'crm')\\gexec" \
 	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
