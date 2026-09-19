@@ -114,8 +114,15 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
 def main() -> int:
     caminho = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "local/.env"
     if not caminho.exists():
-        print(f"✗ {caminho} não existe. Rode: cp local/.env.example local/.env")
+        print(f"✗ {caminho} não existe. Rode: cp -n local/.env.example local/.env")
         return 1
+    exemplo = RAIZ / "local/.env.example"
+    if exemplo.exists() and caminho.read_bytes() == exemplo.read_bytes():
+        print(f"✗ {caminho} é byte a byte igual ao .env.example — provavelmente foi sobrescrito por")
+        print("  um `cp` sem `-n`. Se os containers ainda estiverem no ar, os valores antigos podem")
+        print("  ser lidos deles: cd local && docker compose exec agent printenv | grep -E 'SDR_|_KEY'")
+        return 1
+
     erros, avisos = checar(carregar(caminho))
     for a in avisos:
         print(f"! {a}")

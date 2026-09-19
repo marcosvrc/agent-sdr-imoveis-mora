@@ -17,7 +17,7 @@ Crie seu arquivo a partir do exemplo:
 
 ```bash
 cp .env.example .env                  # execução manual / deploy
-cp local/.env.example local/.env      # perfil local (docker compose)
+cp -n local/.env.example local/.env      # perfil local (docker compose)
 ```
 
 ## Referência de variáveis

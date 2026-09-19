@@ -13,7 +13,8 @@ SERVICES = shared services/agent services/channels/whatsapp services/channels/we
 ajuda:
 	@echo "Mora — SDR imobiliário. Ordem de execução a partir de um clone limpo:"
 	@echo
-	@echo "  1. cp local/.env.example local/.env   e preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN"
+	@echo "  1. cp -n local/.env.example local/.env   (-n NÃO sobrescreve um .env que já existe)"
+	@echo "     preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN"
 	@echo "  2. make check-env                     confere o .env antes de subir nada"
 	@echo "  3. make local-ollama                  sobe o compose (primeiro plano; siga noutro terminal)"
 	@echo "  4. make preparar                      bancos + massa do CRM, na ordem certa"

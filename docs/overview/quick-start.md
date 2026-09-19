@@ -23,7 +23,7 @@ git clone <url-do-repositorio>
 cd agent-sdr-morai
 
 # 2. Configurar o ambiente do perfil local
-cp local/.env.example local/.env
+cp -n local/.env.example local/.env
 # edite local/.env: escolha o provedor de LLM e, se for usar o Telegram, o token do bot
 
 # 3. Subir tudo (adicione --profile ollama para LLM local)

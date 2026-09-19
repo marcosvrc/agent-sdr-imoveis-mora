@@ -371,7 +371,7 @@ Crie seu arquivo a partir do exemplo:
 
 ```bash
 cp .env.example .env                 # execução manual / deploy
-cp local/.env.example local/.env     # perfil local (docker compose)
+cp -n local/.env.example local/.env     # perfil local (docker compose)
 ```
 
 | Variável | Obrigatória | Exemplo seguro | Descrição |
@@ -416,7 +416,7 @@ git clone <url-do-repositorio>
 cd agent-sdr-morai
 
 # 2. Configurar o ambiente do perfil local
-cp local/.env.example local/.env
+cp -n local/.env.example local/.env
 # edite local/.env: provedor de LLM, e CRM_MCP_TOKEN se for usar o CRM (veja o .env.example)
 
 # 3. Subir tudo. Use `make local-ollama` para LLM e embeddings 100% locais.
