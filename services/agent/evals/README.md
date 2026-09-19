@@ -73,6 +73,38 @@ trigrama existe porque um número que é sempre zero não detecta regressão; es
 
 Qualidade só sai de `make eval` e `make eval-rag`, com modelo real, na sua máquina.
 
+## A decisão pendente: fusão léxica
+
+O repositório sabe fundir busca vetorial com busca full-text do Postgres (RRF). **Está desligada por
+padrão**, porque não há evidência de que ajude — e há uma medição dizendo que atrapalha.
+
+No harness, o embedder é de trigramas, ou seja, já é um método léxico. Ali os dois sinais são
+redundantes e o segundo, mais ruidoso, empurra o trecho certo para fora do top-3:
+
+| | recall@3 | paráfrase | literal | abstenção |
+|---|---|---|---|---|
+| vetorial | 31,9% | 20,5% | 87,5% | 85,7% |
+| + léxico | 29,8% | 17,9% | 87,5% | 85,7% |
+
+Com um embedder semântico de verdade a expectativa é a oposta: denso erra termo raro e exato, que é
+onde o léxico acerta. Mas expectativa não é medição. **Decida em dois comandos:**
+
+```bash
+make eval-rag                      # sem fusão
+SDR_RAG_LEXICO=1 make eval-rag     # com fusão
+```
+
+Compare `recall@3`, e principalmente `paráfrase` contra `literal` — se a fusão ajudar, o ganho
+aparece no literal sem custar no parafraseado. Olhe também a abstenção: ela não deve cair. Se
+ajudar, troque `POR_PADRAO_COM_LEXICO` para `True` em `tools/conhecimento.py`; se não, apague o
+caminho em vez de deixá-lo desligado para sempre.
+
+Uma nota sobre o piso: houve uma versão em que casamento léxico forte deixava um trecho passar do
+piso de similaridade. Ela foi removida. Com os termos ligados por OU — que é o que faz o léxico
+funcionar —, 7 das 10 negativas do conjunto pontuam acima de zero, porque quase toda pergunta em
+português compartilha alguma palavra com algum trecho. O léxico serve para ORDENAR; quem decide
+entre responder e calar continua sendo o cosseno.
+
 ## Limiares
 
 Por padrão o harness informa e não reprova: número de LLM oscila, e transformar oscilação em build

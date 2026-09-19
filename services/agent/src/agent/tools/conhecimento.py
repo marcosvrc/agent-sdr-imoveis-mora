@@ -16,6 +16,25 @@ from sdr_shared.db import DocumentoRepository
 
 LIMITE = 3          # três trechos cabem no prompt e cobrem a pergunta composta ("taxa e prazo?")
 
+# Fusão léxica: DESLIGADA por padrão, e a razão é uma medição, não uma preferência.
+#
+# O encanamento está pronto e testado (coluna `tsvector`, índice GIN, fusão RRF no repositório). O
+# que não existe é evidência de que ajuda. No único ambiente em que consegui medir, o embedder é de
+# trigramas — ou seja, ele próprio já é léxico — e ali a fusão PIORA: recall 31,9% → 29,8%, porque
+# os dois sinais são redundantes e o segundo, mais ruidoso, empurra o trecho certo para fora do
+# top-3.
+#
+# Com um embedder semântico de verdade a expectativa é a oposta: denso erra termo raro e exato, que
+# é exatamente onde o léxico acerta. Mas expectativa não é medição, e eu não tenho como medir isso
+# aqui. Quem tem o bge-m3 no ar decide em dois comandos — veja `evals/README.md`.
+POR_PADRAO_COM_LEXICO = False
+
+
+def _com_lexico() -> bool:
+    import os
+    return (os.environ.get("SDR_RAG_LEXICO", "").strip().lower() in ("1", "true", "sim")
+            or POR_PADRAO_COM_LEXICO)
+
 
 def _via_knowledge_base(pergunta: str, limite: int) -> list[Trecho]:
     import boto3
@@ -64,5 +83,8 @@ def consultar(pergunta: str, limite: int = LIMITE, piso: float = PISO_SIMILARIDA
         # Embedder fora do ar (Ollama caiu, Bedrock sem credencial): sem vetor não há busca. Devolver
         # vazio faz o nó cair no "não sei" e oferecer o corretor — que é degradar, não quebrar.
         return []
-    return acima_do_piso(DocumentoRepository().buscar(vetor, limite), piso)
+    # Quando ligada, a MESMA pergunta reescrita alimenta os dois lados: mandar o texto cru para o
+    # léxico e o reescrito para o denso faria os dois responderem a perguntas diferentes.
+    consulta = pergunta if _com_lexico() else None
+    return acima_do_piso(DocumentoRepository().buscar(vetor, limite, consulta=consulta), piso)
 

@@ -203,10 +203,13 @@ def rag(caso: Caso) -> Resultado:
     """
     from agent.tools.conhecimento import consultar
 
+    from agent.tools.conhecimento import _com_lexico
+
     achados = consultar(caso["pergunta"], anteriores=caso.get("historico"))
     fontes = [t.fonte for t in achados]
     topo = round(achados[0].score, 3) if achados else None
-    extras = {"fontes": fontes[:3], "score_topo": topo, "tipo": caso.get("tipo", "comum")}
+    extras = {"fontes": fontes[:3], "score_topo": topo, "tipo": caso.get("tipo", "comum"),
+              "lexico": _com_lexico()}
 
     if caso.get("responde", True) is False:
         # Abstenção é o acerto. Um trecho recuperado aqui vira afirmação sobre a empresa.

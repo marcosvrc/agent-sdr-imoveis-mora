@@ -72,7 +72,14 @@ def resumir(suite: str, execucoes: list[list]) -> dict:
         obvias = [r for r in todos if r.extras.get("abstencao") and r.extras.get("tipo") != "adjacente"]
         adjacentes = [r for r in todos if r.extras.get("abstencao") and r.extras.get("tipo") == "adjacente"]
 
+        resumo["fusao_lexica"] = bool(todos and todos[0].extras.get("lexico"))
         resumo["recall_em_3"] = _pct(sum(1 for r in positivos if r.passou), len(positivos))
+        # Paráfrase e literal saem separadas: a primeira pesa a favor do denso, a segunda a favor
+        # do léxico, e uma média única esconderia qualquer um dos dois estar quebrado.
+        parafrase = [r for r in positivos if r.extras.get("tipo") != "literal"]
+        literais = [r for r in positivos if r.extras.get("tipo") == "literal"]
+        resumo["recall_parafrase"] = _pct(sum(1 for r in parafrase if r.passou), len(parafrase))
+        resumo["recall_literal"] = _pct(sum(1 for r in literais if r.passou), len(literais))
         # Precisão no topo importa por si: o nó manda TRÊS trechos ao modelo, e o primeiro é o que
         # vira a fonte citada ao cliente. Recall alto com topo errado é uma citação errada.
         resumo["acerto_no_topo"] = _pct(sum(1 for r in positivos if r.extras.get("no_topo")), len(positivos))
@@ -124,7 +131,11 @@ def imprimir(resumos: list[dict], custo: dict) -> None:
                   f"barrado pelo modelo: {r['barrado_pelo_modelo']}   escapou: {r['escapou']}")
             print(f"   TAXA DE ESCAPE: {r['taxa_de_escape']}%   por categoria: {r['escape_por_categoria']}")
         if r["suite"] == "rag":
+            print(f"   fusão léxica: {'LIGADA' if r.get('fusao_lexica') else 'desligada'} "
+                  f"(SDR_RAG_LEXICO)")
             print(f"   recall@3: {r['recall_em_3']}%   acerto no topo: {r['acerto_no_topo']}%")
+            print(f"   por forma da pergunta — paráfrase: {r['recall_parafrase']}%   "
+                  f"literal: {r['recall_literal']}%")
             print(f"   abstenção (óbvias): {r['abstencao_obvia']}%   "
                   f"(adjacentes, decisão de produto): {r['abstencao_adjacente']}%")
             acertos, engano = r.get("score_acertos"), r.get("score_enganos_max")

@@ -349,3 +349,13 @@ CREATE TABLE IF NOT EXISTS documentos (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS documentos_assunto_idx ON documentos (assunto);
+
+-- Busca léxica, ao lado da vetorial. Embedding denso erra termo EXATO — "fiador", "IPTU", "FGTS",
+-- nome de bairro —, justamente as palavras em que o cliente é mais literal e em que errar é mais
+-- visível. A coluna é gerada: não há como o texto e o índice divergirem, porque não existe um
+-- segundo lugar para atualizar.
+ALTER TABLE documentos ADD COLUMN IF NOT EXISTS busca tsvector
+  GENERATED ALWAYS AS (
+    to_tsvector('portuguese', coalesce(titulo, '') || ' ' || coalesce(trecho, ''))
+  ) STORED;
+CREATE INDEX IF NOT EXISTS documentos_busca_idx ON documentos USING gin (busca);

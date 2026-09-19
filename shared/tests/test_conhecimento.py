@@ -246,3 +246,58 @@ def test_reingerir_documento_editado_remove_o_trecho_revogado(base):
 
     depois = base.buscar(embedder_lexical("preciso de fiador para alugar?"), limite=5)
     assert not any(t.titulo == "Preciso de fiador?" for t in depois)
+
+
+# --------------------------------------------------------------------------- fusão léxica
+
+def test_lexico_nao_e_salvo_conduto_para_passar_do_piso():
+    """Escrevi o contrário primeiro, e a medição desmentiu.
+
+    Com os termos ligados por OU — que é o que faz o léxico funcionar —, quase toda pergunta em
+    português compartilha alguma palavra com algum trecho: 7 das 10 negativas do conjunto pontuam
+    acima de zero. Nessa escala o léxico sozinho não distingue pergunta coberta de não coberta, e
+    deixá-lo furar o piso seria abrir uma porta para responder o que não se sabe.
+
+    Ele continua valendo para ORDENAR, que é onde é confiável.
+    """
+    from sdr_shared.conhecimento import acima_do_piso
+    lexico_forte_cosseno_fraco = Trecho("a", "f.md", "geral", "T", "texto", 0, score=0.10, lexico=0.90)
+    assert acima_do_piso([lexico_forte_cosseno_fraco]) == []
+
+
+@precisa_banco
+def test_lexico_resgata_o_que_o_denso_nao_alcanca(base):
+    """Prova o MECANISMO, que é o que dá para provar aqui.
+
+    Indexa um trecho com um termo raro e consulta com um vetor que aponta para OUTRO lugar — o
+    denso não tem como trazê-lo. Se ele aparece, veio pela fusão.
+
+    O ganho em tráfego real NÃO é medido por este teste, nem pelo harness: o embedder do harness é
+    de trigramas, ou seja, ele próprio é léxico, e por isso já acerta sozinho os casos em que a
+    fusão ajudaria. Medir isso exige o modelo de verdade, com `make eval-rag`.
+    """
+    from sdr_shared.conhecimento import Trecho as T
+    from sdr_shared.db import DocumentoRepository
+    repo = DocumentoRepository()
+    raro = T("raro.md#0", "raro.md", "geral", "Documentação exigida",
+             "Documentação exigida: é necessário apresentar o holerite dos últimos três meses.", 0)
+    repo.apagar_do_arquivo("raro.md")
+    repo.upsert(raro, embedder_lexical("assunto completamente diferente sobre garagem e elevador"))
+
+    vetor = embedder_lexical("garantias aceitas fiador caução seguro fiança")
+    so_denso = [x.titulo for x in repo.buscar(vetor, limite=3)]
+    com_lexico = [x.titulo for x in repo.buscar(vetor, limite=3, consulta="preciso apresentar holerite?")]
+
+    assert "Documentação exigida" not in so_denso, "o cenário exige que o denso NÃO o alcance"
+    assert "Documentação exigida" in com_lexico
+    repo.apagar_do_arquivo("raro.md")
+
+
+@precisa_banco
+def test_sem_consulta_textual_o_comportamento_e_o_de_antes(base):
+    """Quem chama sem o texto não perde nada — só não ganha o léxico. A compatibilidade importa:
+    a busca do catálogo e outros chamadores não passam consulta."""
+    vetor = embedder_lexical("preciso de fiador para alugar?")
+    from sdr_shared.db import DocumentoRepository
+    achados = DocumentoRepository().buscar(vetor, limite=3)
+    assert achados and all(t.lexico == 0.0 for t in achados)

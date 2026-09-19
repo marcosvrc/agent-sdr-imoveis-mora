@@ -80,3 +80,21 @@
 {"id": "seq-repasse", "pergunta": "e quando eu recebo?", "historico": ["qual a taxa de administração que vocês cobram?"], "fonte": "Quando o proprietário recebe o repasse?"}
 // Pergunta autônoma COM histórico: a reescrita não pode atrapalhar quem já se sustenta sozinho.
 {"id": "seq-autonoma", "pergunta": "quem paga a vistoria de entrada do imóvel?", "historico": ["que garantias vocês aceitam pra alugar?"], "fonte": "Quem paga a vistoria?"}
+
+// ---------------------------------------------------------------- perguntas LITERAIS
+// Corrigem um viés do conjunto, e vale dizer qual: as seções acima foram escritas de propósito SEM
+// repetir o vocabulário dos documentos, para que o eval não medisse casamento de string. Só que
+// isso enviesa o conjunto contra a busca léxica — e cliente real digita "preciso de fiador?" com
+// essas palavras mesmo. Um conjunto só de paráfrase concluiria que o léxico não serve para nada,
+// o que seria conclusão do conjunto e não do sistema.
+//
+// Reportadas à parte das paráfrases, nos dois sentidos: média única aqui esconderia tanto um
+// léxico inútil quanto um denso fraco.
+{"id": "lit-fiador", "pergunta": "preciso de fiador?", "tipo": "literal", "fonte": "Preciso mesmo de fiador?"}
+{"id": "lit-caucao", "pergunta": "aceitam caução?", "tipo": "literal", "fonte": "Quais garantias são aceitas na locação?"}
+{"id": "lit-taxa-adm", "pergunta": "qual a taxa de administração?", "tipo": "literal", "fonte": "Qual a taxa de administração da locação?"}
+{"id": "lit-vistoria", "pergunta": "quem paga a vistoria?", "tipo": "literal", "fonte": "Quem paga a vistoria?"}
+{"id": "lit-rescisao", "pergunta": "qual a multa por rescisão antecipada?", "tipo": "literal", "fonte": "Qual a multa por rescisão antecipada?"}
+{"id": "lit-comissao", "pergunta": "qual a comissão na venda?", "tipo": "literal", "fonte": "Qual a comissão na venda?"}
+{"id": "lit-reajuste", "pergunta": "qual o índice de reajuste do aluguel?", "tipo": "literal", "fonte": "Como funciona o reajuste do aluguel?"}
+{"id": "lit-pet", "pergunta": "aceitam animais de estimação?", "tipo": "literal", "fonte": "Aceitam animais de estimação?"}

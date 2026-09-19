@@ -492,19 +492,75 @@ class DocumentoRepository:
                   "trecho": t.texto, "ordem": t.ordem,
                   "embedding": np.array(embedding, dtype=np.float32) if embedding else None})
 
-    def buscar(self, embedding: list[float], limite: int = 3, assunto: str | None = None) -> list:
+    # Candidatos trazidos de CADA lado antes da fusão. Generoso de propósito: o trecho certo pode
+    # estar em quinto no denso e em primeiro no léxico, e é justamente esse o caso que a fusão
+    # existe para resgatar. Cortar cedo aqui desfaria o ganho antes de ele acontecer.
+    CANDIDATOS = 20
+    # Constante do Reciprocal Rank Fusion. 60 é o valor da publicação original; o que ele faz é
+    # achatar a diferença entre as primeiras posições, de modo que "1º no léxico e 5º no denso"
+    # vença "2º no denso e ausente no léxico" — que é o comportamento desejado.
+    RRF_K = 60
+
+    def buscar(self, embedding: list[float], limite: int = 3, assunto: str | None = None,
+               consulta: str | None = None) -> list:
+        """Busca híbrida: vetorial e léxica, fundidas por RRF.
+
+        Sem `consulta` textual é só vetorial, como antes — quem chama sem o texto não perde nada,
+        só não ganha o léxico.
+
+        Os DOIS sinais voltam em campos separados, e isso é deliberado: o piso de similaridade do
+        domínio é definido sobre cosseno, e devolver o score do RRF no mesmo campo faria o piso
+        comparar uma coisa com outra sem que nada avisasse. O número mudaria de significado e o
+        limiar continuaria parecendo o mesmo.
+        """
         from ..conhecimento import Trecho
         with _conn() as c:
             register_vector(c)
             rows = c.execute(f"""
-                SELECT {self.COLS}, 1 - (embedding <=> %(emb)s) AS score FROM documentos
-                WHERE embedding IS NOT NULL
-                  AND (%(assunto)s::text IS NULL OR assunto = %(assunto)s)
-                ORDER BY embedding <=> %(emb)s LIMIT %(limite)s
+                WITH pergunta AS (
+                    -- OU entre os termos, e não E. `plainto_tsquery` liga tudo com E, o que numa
+                    -- pergunta inteira exige que TODAS as palavras estejam no trecho — medido, isso
+                    -- derrubava o casamento certo de 20 para 2 num conjunto de 47. Com OU, quem
+                    -- ordena é o `ts_rank_cd`, que é o trabalho dele.
+                    SELECT CASE WHEN %(q)s::text IS NULL THEN NULL ELSE to_tsquery(
+                        'portuguese',
+                        array_to_string(tsvector_to_array(to_tsvector('portuguese', %(q)s)), ' | ')
+                    ) END AS tsq
+                ),
+                denso AS (
+                    SELECT id, row_number() OVER (ORDER BY embedding <=> %(emb)s) AS posicao
+                    FROM documentos
+                    WHERE embedding IS NOT NULL
+                      AND (%(assunto)s::text IS NULL OR assunto = %(assunto)s)
+                    ORDER BY embedding <=> %(emb)s LIMIT %(candidatos)s
+                ),
+                lexico AS (
+                    SELECT d.id, row_number() OVER (
+                             ORDER BY ts_rank_cd(d.busca, p.tsq) DESC
+                           ) AS posicao
+                    FROM documentos d, pergunta p
+                    WHERE p.tsq IS NOT NULL AND d.busca @@ p.tsq
+                      AND (%(assunto)s::text IS NULL OR d.assunto = %(assunto)s)
+                    LIMIT %(candidatos)s
+                ),
+                fundido AS (
+                    SELECT coalesce(d.id, l.id) AS id,
+                           coalesce(1.0 / (%(k)s + d.posicao), 0)
+                         + coalesce(1.0 / (%(k)s + l.posicao), 0) AS rrf
+                    FROM denso d FULL OUTER JOIN lexico l ON l.id = d.id
+                )
+                SELECT {", ".join("doc." + c.strip() for c in self.COLS.split(","))},
+                       1 - (doc.embedding <=> %(emb)s) AS score,
+                       coalesce(ts_rank_cd(doc.busca, p.tsq), 0) AS lexico,
+                       f.rrf
+                FROM fundido f JOIN documentos doc ON doc.id = f.id, pergunta p
+                ORDER BY f.rrf DESC LIMIT %(limite)s
             """, {"emb": np.array(embedding, dtype=np.float32), "limite": limite,
-                  "assunto": assunto}).fetchall()
+                  "assunto": assunto, "q": consulta, "candidatos": self.CANDIDATOS,
+                  "k": self.RRF_K}).fetchall()
         return [Trecho(id=r["id"], arquivo=r["arquivo"], assunto=r["assunto"], titulo=r["titulo"],
-                       texto=r["trecho"], ordem=r["ordem"], score=float(r["score"])) for r in rows]
+                       texto=r["trecho"], ordem=r["ordem"], score=float(r["score"] or 0.0),
+                       lexico=float(r["lexico"] or 0.0)) for r in rows]
 
     def apagar_do_arquivo(self, arquivo: str) -> int:
         """Reingerir um documento editado precisa remover os trechos que sumiram dele.

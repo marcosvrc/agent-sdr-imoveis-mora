@@ -29,6 +29,21 @@ MIN_CHARS = 40            # abaixo disso não é trecho, é sobra de formataçã
 # lado custa uma informação falsa sobre a empresa.
 PISO_SIMILARIDADE = 0.35
 
+# NÃO existe piso léxico, e a ausência é uma decisão medida.
+#
+# A primeira versão deixava um trecho passar por casamento léxico forte mesmo com cosseno baixo — a
+# ideia sendo que "o cliente usou a palavra do documento" é evidência forte. Com a consulta ligando
+# os termos por E, as negativas davam ts_rank_cd exatamente 0.0 e o atalho parecia gratuito.
+#
+# Ao trocar para OU (que é o que faz o léxico funcionar de verdade), as negativas passaram a
+# pontuar: 7 de 10 acima de zero, chegando a 0,2 — porque quase toda pergunta em português
+# compartilha alguma palavra com algum trecho. Nessa escala o sinal léxico sozinho não separa
+# pergunta coberta de pergunta não coberta, e o atalho viraria uma porta aberta para responder o
+# que não se sabe.
+#
+# O léxico continua valendo para ORDENAR (a fusão RRF), que é onde ele é confiável. Quem decide
+# entre responder e calar continua sendo o cosseno, sozinho.
+
 
 @dataclass(frozen=True)
 class Trecho:
@@ -39,6 +54,9 @@ class Trecho:
     texto: str
     ordem: int
     score: float = 0.0
+    # Sinal léxico (ts_rank_cd). Separado do cosseno de propósito: são escalas diferentes, e somá-los
+    # num número só esconderia qual dos dois trouxe o trecho.
+    lexico: float = 0.0
 
     @property
     def fonte(self) -> str:
@@ -159,5 +177,9 @@ def reescrever_pergunta(pergunta: str, anteriores: list[str] | None = None) -> s
 
 def acima_do_piso(trechos: list[Trecho], piso: float = PISO_SIMILARIDADE) -> list[Trecho]:
     """Filtra pelo piso e devolve na ordem de relevância. Lista vazia é resposta legítima — e o nó
-    que consome precisa tratá-la como 'não sei', nunca como 'responda assim mesmo'."""
+    que consome precisa tratá-la como 'não sei', nunca como 'responda assim mesmo'.
+
+    Decide pelo cosseno, e só por ele — veja a nota em PISO_LEXICO para o porquê de o sinal léxico
+    não valer como salvo-conduto.
+    """
     return [t for t in trechos if t.score >= piso]
