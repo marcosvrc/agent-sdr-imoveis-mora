@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { brl, duracao, num, pct, relativo, variacao, REGIAO, INTENCAO, CANAL } from "../lib/format";
 import { Ajuda, Card, PageHeader, StatTile, Estagio, Skeleton, EmptyState, Avatar, cx } from "../components/ui";
-import { SerieChart, FunilChart, PipelineChart, Distribuicao } from "../components/charts";
+import { SerieChart, FunilChart, Distribuicao } from "../components/charts";
 import { LeadsPorTemperatura } from "../components/Temperaturas";
 import { ReativacaoResumo } from "../components/ReativacaoResumo";
 import { Ic } from "../components/Icons";
@@ -22,34 +22,28 @@ export function VisaoGeral() {
 
   return (
     <div className="space-y-5">
-      <PageHeader titulo="Visão geral" descricao={m ? `Base com ${num(m.totais.leads)} leads, ${num(m.totais.imoveis)} imóveis e ${num(m.totais.visitas_futuras)} visitas futuras` : "Indicadores da operação da Mora"}
+      <PageHeader titulo="Visão geral" descricao={m ? `${num(m.totais.leads)} leads atendidos pela Mora · ${num(m.totais.imoveis)} imóveis no índice` : "Como o agente está atendendo"}
         acoes={<div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-xs">{PERIODOS.map((p) => <button key={p.d} onClick={() => setDias(p.d)} className={cx("rounded-md px-2.5 py-1.5 font-medium transition", dias === p.d ? "bg-brand text-brand-ink" : "text-ink-muted hover:text-ink")}>{p.r}</button>)}</div>} />
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {isLoading || !k ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />) : <>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {isLoading || !k ? Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24" />) : <>
           <StatTile label="Leads novos" valor={num(k.leads.atual)} delta={variacao(k.leads.atual, k.leads.anterior)} icone="leads" destaque
             ajuda={<>Pessoas que iniciaram conversa no período selecionado, contadas pela data de entrada. Inclui quem já foi encerrado depois. A comparação é com a janela imediatamente anterior de mesmo tamanho.</>} />
           <StatTile label="Taxa de qualificação" valor={pct(taxaQual!.atual)} delta={variacao(taxaQual!.atual, taxaQual!.anterior)} icone="check"
             ajuda={<>Dos leads que entraram no período, quantos chegaram a <b>qualificado</b>, <b>agendado</b> ou <b>com corretor</b>. Mede o quanto a Mora está conseguindo extrair da conversa. O numerador olha o estágio de hoje, então um lead que entrou ontem e avançou agora já conta.</>} />
-          <StatTile label="Visitas marcadas" valor={num(k.visitas.atual)} delta={variacao(k.visitas.atual, k.visitas.anterior)} icone="calendar"
-            ajuda={<>Visitas confirmadas no período, contadas pela data em que foram <b>marcadas</b> — não pela data em que acontecem. Uma visita marcada hoje para daqui a duas semanas entra aqui hoje.</>} />
+          <StatTile label="Visitas reservadas" valor={num(k.visitas.atual)} delta={variacao(k.visitas.atual, k.visitas.anterior)} icone="calendar"
+            ajuda={<>Horários que a Mora <b>reservou</b> no período, contados pela data da reserva e não pela data da visita. <b>Reservado não é confirmado</b>: quem confirma a visita é o corretor, no CRM. Este número mede o que o agente conseguiu encaminhar, não compromissos assumidos.</>} />
           <StatTile label="Tempo de 1ª resposta" valor={duracao(k.resposta_seg.atual)} delta={k.resposta_seg.atual != null && k.resposta_seg.anterior ? variacao(k.resposta_seg.atual, k.resposta_seg.anterior) : null} subirEBom={false} icone="bolt"
             ajuda={<>Quanto o cliente espera entre mandar a primeira mensagem e receber a primeira resposta, na média dos leads do período. Quanto menor, melhor — por isso a queda aparece em verde.</>} />
-        </>}
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        {isLoading || !m || !k ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24" />) : <>
-          <StatTile label="Pipeline ativo" valor={brl(m.pipeline.total_ativo, true)} icone="building"
-            ajuda={<>Soma do orçamento que os leads em atendimento declararam à Mora. É intenção de compra, não valor de imóvel nem receita: o cliente disse “até R$ 800 mil” e isso entra inteiro. <b>Não segue o filtro de período</b> — é a carteira ativa de hoje.</>} />
-          <StatTile label="Ticket médio declarado" valor={brl(m.pipeline.ticket_medio, true)} icone="spark"
-            ajuda={<>Média do orçamento declarado entre os leads ativos que já informaram um valor. Quem ainda não disse quanto pretende gastar fica de fora da conta. <b>Não segue o filtro de período.</b></>} />
-          <StatTile label="Valor em visitas futuras" valor={brl(m.pipeline.valor_visitas, true)} icone="calendar"
-            ajuda={<>Soma do preço dos <b>imóveis</b> com visita confirmada de hoje em diante. Aqui o valor é real, de catálogo. Visita marcada sem imóvel definido não entra.</>} />
           <StatTile label="Encaminhados ao corretor" valor={num(k.handoffs.atual)} delta={variacao(k.handoffs.atual, k.handoffs.anterior)} icone="handoff"
             ajuda={<>Leads que entraram no período e estão <b>agora</b> com um corretor humano. É um retrato do momento: se o corretor devolveu a conversa à Mora, o lead sai desta conta.</>} />
         </>}
       </div>
+      {/* Pipeline, ticket médio e valor em visitas saíram para o CRM: são leitura COMERCIAL da
+          carteira, e o corretor decide sobre ela no sistema dele. Repetir aqui criava dois números
+          para a mesma pergunta, calculados de fontes diferentes — e quando divergissem ninguém
+          saberia qual acreditar. O que sobrou, nesta fileira única, é o que só a Mora sabe. */}
 
       {/* Leads por temperatura: prioridade de atendimento em três grupos */}
       <section>
@@ -76,9 +70,10 @@ export function VisaoGeral() {
         </Card>
       </div>
 
-      {/* Pipeline + distribuições */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Card titulo="Pipeline por estágio" acoes={<span className="text-xs text-ink-muted">R$ declarado pelos leads</span>}>{m ? <PipelineChart porEstagio={m.pipeline.por_estagio} /> : <Skeleton className="h-[200px]" />}</Card>
+      {/* Distribuições. O "pipeline por estágio" em R$ saiu com os outros números comerciais: o
+          valor da carteira é leitura do CRM. O FUNIL acima fica, porque conta leads por estágio da
+          MORA — é medida de atendimento, não de dinheiro. */}
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card titulo="Leads por região">{m ? <Distribuicao dados={m.por_regiao} rotulos={REGIAO} /> : <Skeleton className="h-32" />}</Card>
         <div className="grid gap-4">
           <Card titulo="Por intenção">{m ? <Distribuicao dados={m.por_intencao} rotulos={INTENCAO} cor="var(--series-2)" /> : <Skeleton className="h-16" />}</Card>

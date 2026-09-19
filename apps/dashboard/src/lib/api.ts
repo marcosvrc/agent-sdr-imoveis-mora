@@ -63,13 +63,10 @@ export type StatusCalendario = { disponivel: boolean; corretores: Record<string,
 export type Notificacao = { id: number; corretor_id?: string | null; tipo: string; titulo: string;
   detalhe?: string | null; lead_id?: string | null; lead_nome?: string | null;
   dados: Record<string, unknown>; criada_em: string; lida_em?: string | null };
-export type ClienteLinha = { id: string; nome?: string | null; telefone?: string | null; email?: string | null;
-  criado_em: string; atualizado_em?: string | null; oportunidades: number; abertas: number; ultima_atividade?: string | null };
 export type Oportunidade = { id: string; estagio: string; temperatura: string; score: number; cartao: Cartao | null;
   corretor_id?: string | null; corretor_nome?: string | null; resumo?: string | null; criado_em: string;
   ultima_mensagem_em?: string | null; encerrado_em?: string | null; sucessora_id?: string | null;
   mensagens: number; visitas: number };
-export type FichaCliente = { cliente: ClienteLinha; oportunidades: Oportunidade[]; total_oportunidades: number; intencoes: string[] };
 export type RegistroAuditoria = { id: number; em: string; ator_tipo: string; ator_id?: string | null; ator_nome?: string | null;
   acao: string; entidade: string; entidade_id?: string | null; dados: Record<string, unknown>; origem?: string | null;
   resultado: string; detalhe?: string | null };
@@ -172,8 +169,9 @@ export const api = {
     req<{ notificacoes: Notificacao[]; nao_lidas: number }>(`/notificacoes${qs({ apenas_nao_lidas: apenas_nao_lidas ? "true" : "" })}`),
   marcarNotificacaoLida: (id: number) => req<void>(`/notificacoes/${id}/lida`, { method: "POST" }),
   marcarNotificacoesLidas: () => req<{ marcadas: number }>("/notificacoes/lidas", { method: "POST" }),
-  clientes: (busca?: string) => req<ClienteLinha[]>(`/clientes${qs({ busca })}`),
-  cliente: (id: string) => req<FichaCliente>(`/clientes/${id}`),
+  // `/clientes` saiu do painel: a ficha da PESSOA — quem é, quantas oportunidades tem, com quem
+  // já falou — é do CRM. As rotas continuam na API, sem cliente no painel; quem quiser reaproveitá-las
+  // as encontra em services/api/src/api/routers/clientes.py.
   auditoria: (f: { dias: number; acao?: string; entidade?: string; ator?: string; so_sensiveis?: boolean; busca?: string }) =>
     req<Auditoria>(`/auditoria${qs({ ...f, so_sensiveis: f.so_sensiveis ? "true" : "" })}`),
   exportarAuditoria: async (f: { dias: number; acao?: string; entidade?: string }) => {
@@ -194,5 +192,8 @@ export const api = {
 
 export { brl } from "./format";
 export const ESTAGIOS = ["novo", "qualificando", "qualificado", "agendado", "handoff", "inativo", "frio"];
-export const ROTULO: Record<string, string> = { novo: "Novo", qualificando: "Qualificando", qualificado: "Qualificado", agendado: "Agendado", handoff: "Com corretor", inativo: "Inativo", frio: "Frio" };
+// `agendado` é o nome do estágio no código; o RÓTULO diz "Visita reservada" porque é isso que
+// aconteceu — a Mora reservou o horário e quem confirma a visita é o corretor, no CRM. Deixar
+// "Agendado" na tela contradiria o que o próprio agente diz ao cliente.
+export const ROTULO: Record<string, string> = { novo: "Novo", qualificando: "Qualificando", qualificado: "Qualificado", agendado: "Visita reservada", handoff: "Com corretor", inativo: "Inativo", frio: "Frio" };
 export const REGIOES = ["zona_sul", "zona_oeste", "zona_norte", "zona_leste", "centro"];

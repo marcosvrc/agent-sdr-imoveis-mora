@@ -2,7 +2,7 @@
 // legenda para ≥2 séries, texto sempre em tokens de texto (nunca na cor da série).
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ESTAGIOS, ROTULO, type Metricas } from "../lib/api";
-import { brl, dataCurta, num } from "../lib/format";
+import { dataCurta, num } from "../lib/format";
 
 const S1 = "var(--series-1)", S2 = "var(--series-2)", S3 = "var(--series-3)";
 const ORD = ["var(--ord-1)", "var(--ord-2)", "var(--ord-3)", "var(--ord-4)", "var(--ord-5)"];
@@ -30,7 +30,7 @@ export function SerieChart({ serie }: { serie: Metricas["serie"] }) {
         <Tooltip content={<TooltipBox />} cursor={{ stroke: GRID }} />
         <Legend verticalAlign="top" align="right" height={28} iconType="plainline" wrapperStyle={{ fontSize: 12, color: "#6b6b66" }} />
         <Area type="monotone" dataKey="leads" name="Leads novos" stroke={S1} fill={S1} fillOpacity={0.1} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }} />
-        <Area type="monotone" dataKey="visitas" name="Visitas marcadas" stroke={S2} fill={S2} fillOpacity={0.1} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }} />
+        <Area type="monotone" dataKey="visitas" name="Visitas reservadas" stroke={S2} fill={S2} fillOpacity={0.1} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }} />
         <Area type="monotone" dataKey="mensagens" name="Mensagens recebidas" stroke={S3} fill={S3} fillOpacity={0.08} strokeWidth={2} dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }} />
       </AreaChart>
     </ResponsiveContainer>
@@ -48,24 +48,6 @@ export function FunilChart({ estagios }: { estagios: Record<string, number> }) {
         <YAxis type="category" dataKey="estagio" width={96} axisLine={false} tickLine={false} />
         <Tooltip content={<TooltipBox />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
         <Bar dataKey="n" name="Leads" maxBarSize={18} radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 11, fill: "#121212" }}>
-          {data.map((d) => <Cell key={d.k} fill={d.cor} />)}
-        </Bar>
-      </BarChart>
-    </ResponsiveContainer>
-  );
-}
-
-/** Pipeline em R$ por estágio (potencial declarado pelos leads). Uma série, rampa ordinal, valor na ponta. */
-export function PipelineChart({ porEstagio }: { porEstagio: Metricas["pipeline"]["por_estagio"] }) {
-  const ordem = ESTAGIOS.filter((e) => e !== "frio" && e !== "inativo");
-  const data = ordem.map((e, i) => ({ k: e, estagio: ROTULO[e], valor: porEstagio[e]?.valor ?? 0, n: porEstagio[e]?.n ?? 0, cor: ORD[i] }));
-  return (
-    <ResponsiveContainer width="100%" height={200}>
-      <BarChart data={data} layout="vertical" margin={{ left: 8, right: 64, top: 4, bottom: 4 }} barCategoryGap={6}>
-        <XAxis type="number" hide />
-        <YAxis type="category" dataKey="estagio" width={96} axisLine={false} tickLine={false} />
-        <Tooltip content={<TooltipBox fmt={(v) => brl(v)} />} cursor={{ fill: "rgba(0,0,0,0.03)" }} />
-        <Bar dataKey="valor" name="Pipeline" maxBarSize={18} radius={[0, 4, 4, 0]} label={{ position: "right", fontSize: 11, fill: "#121212", formatter: (v: number) => brl(v, true) }}>
           {data.map((d) => <Cell key={d.k} fill={d.cor} />)}
         </Bar>
       </BarChart>

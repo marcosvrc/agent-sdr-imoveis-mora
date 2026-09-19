@@ -12,7 +12,7 @@ export function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas p-4">
       <form className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-surface p-7 shadow-card" onSubmit={async (e) => { e.preventDefault(); setCarregando(true); try { await login(email, senha); nav("/"); } catch { setErro("Credenciais inválidas"); } finally { setCarregando(false); } }}>
-        <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-ink"><Ic.spark size={18} /></span><div><h1 className="text-base font-semibold">Vértice Imóveis</h1><p className="text-xs text-ink-muted">Painel administrativo</p></div></div>
+        <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-ink"><Ic.spark size={18} /></span><div><h1 className="text-base font-semibold">Mora</h1><p className="text-xs text-ink-muted">Painel do agente · Vértice Imóveis</p></div></div>
         <Field label="E-mail"><Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></Field>
         <Field label="Senha"><Input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder={local ? "qualquer senha no modo local" : ""} autoComplete="current-password" /></Field>
         {erro && <p className="rounded-lg bg-bad-soft px-3 py-2 text-xs text-bad-strong">{erro}</p>}

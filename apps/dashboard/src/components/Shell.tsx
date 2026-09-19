@@ -9,13 +9,15 @@ import { Avatar, cx } from "./ui";
 import { Notificacoes } from "./Notificacoes";
 import { SeletorTema } from "./SeletorTema";
 
+// Este painel é da MORA, não da imobiliária. Ficha de cliente, funil comercial, visitas e
+// oportunidades vivem no CRM (docs/decisions.md D-01) — "Clientes" e "Agenda" saíram daqui porque
+// eram a mesma informação em dois lugares, e duas telas que discordam sobre o mesmo cliente é pior
+// que uma tela só. O que fica é o que só a Mora sabe: como o agente está atendendo.
 type Item = { to: string; label: string; icone: IconName; fim?: boolean };
 const OPERACAO: Item[] = [
   { to: "/", label: "Visão geral", icone: "overview", fim: true },
   { to: "/leads", label: "Leads", icone: "leads" },
-  { to: "/clientes", label: "Clientes", icone: "contato" },
   { to: "/conversas", label: "Conversas", icone: "chat" },
-  { to: "/agenda", label: "Agenda", icone: "calendar" },
 ];
 const ADMIN: Item[] = [
   { to: "/imoveis", label: "Imóveis", icone: "building" },
@@ -25,7 +27,7 @@ const ADMIN: Item[] = [
   { to: "/saude", label: "Saúde do sistema", icone: "bolt" },
   { to: "/configuracoes", label: "Configurações", icone: "settings" },
 ];
-export const TITULOS: Record<string, string> = { "/": "Visão geral", "/leads": "Leads", "/clientes": "Clientes", "/conversas": "Conversas", "/agenda": "Agenda", "/imoveis": "Imóveis", "/corretores": "Corretores", "/governanca": "Governança de IA", "/auditoria": "Auditoria", "/saude": "Saúde do sistema", "/configuracoes": "Configurações" };
+export const TITULOS: Record<string, string> = { "/": "Visão geral", "/leads": "Leads", "/conversas": "Conversas", "/imoveis": "Imóveis", "/corretores": "Corretores", "/governanca": "Governança de IA", "/auditoria": "Auditoria", "/saude": "Saúde do sistema", "/configuracoes": "Configurações" };
 
 const KEY = "mora.sidebar";
 const lerColapsado = () => { try { return localStorage.getItem(KEY) === "1"; } catch { return false; } };
@@ -47,7 +49,7 @@ export function Shell() {
 
   const Nav = ({ compacto }: { compacto: boolean }) => (
     <nav className="flex flex-1 flex-col gap-4 px-2 py-3">
-      <Grupo titulo="Operação" compacto={compacto} itens={OPERACAO} />
+      <Grupo titulo="Atendimento" compacto={compacto} itens={OPERACAO} />
       <Grupo titulo="Administração" compacto={compacto} itens={ADMIN} />
     </nav>
   );
@@ -58,7 +60,7 @@ export function Shell() {
       <aside className={cx("sticky top-0 hidden h-screen shrink-0 flex-col border-r border-line bg-surface transition-[width] duration-200 md:flex", colapsado ? "w-16" : "w-60")}>
         <div className={cx("flex h-14 items-center border-b border-line", colapsado ? "justify-center" : "gap-2 px-4")}>
           <Logo />
-          {!colapsado && <div className="leading-tight"><div className="text-sm font-semibold">Vértice Imóveis</div><div className="text-[11px] text-ink-muted">Painel administrativo</div></div>}
+          {!colapsado && <div className="leading-tight"><div className="text-sm font-semibold">Mora</div><div className="text-[11px] text-ink-muted">Painel do agente</div></div>}
         </div>
         <Nav compacto={colapsado} />
         <div className="border-t border-line p-2">
@@ -73,7 +75,7 @@ export function Shell() {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/50" onClick={() => setDrawer(false)} />
           <aside className="relative flex h-full w-64 flex-col bg-surface shadow-2xl">
-            <div className="flex h-14 items-center gap-2 border-b border-line px-4"><Logo /><div className="text-sm font-semibold">Vértice Imóveis</div><button className="ml-auto rounded-md p-1 text-ink-muted hover:bg-surface-2" onClick={() => setDrawer(false)} aria-label="Fechar menu"><Ic.x size={18} /></button></div>
+            <div className="flex h-14 items-center gap-2 border-b border-line px-4"><Logo /><div className="text-sm font-semibold">Mora</div><button className="ml-auto rounded-md p-1 text-ink-muted hover:bg-surface-2" onClick={() => setDrawer(false)} aria-label="Fechar menu"><Ic.x size={18} /></button></div>
             <Nav compacto={false} />
           </aside>
         </div>

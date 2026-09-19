@@ -78,7 +78,7 @@ function Menu({ ator, admin }: { ator: { name: string; role: string | null }; ad
 
   return (
     <nav aria-label="Seções" className="shrink-0 border-b border-line bg-surface p-3 lg:w-56 lg:border-b-0 lg:border-r">
-      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-inkFaint">CRM</p>
+      <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-inkFaint">Vértice Imóveis · CRM</p>
       <ul className="flex flex-wrap gap-1 lg:block lg:space-y-0.5">
         {MENU.map((m) => (
           <li key={m.para}>
