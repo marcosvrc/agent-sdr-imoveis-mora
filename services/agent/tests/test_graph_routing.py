@@ -53,3 +53,20 @@ def test_quem_quer_remarcar_continua_chegando_ao_agendador():
     lead = _lead_com_visita_reservada()
     assert supervisor.run(_estado("preciso remarcar a visita", lead))["proximo"] == "agendador"
     assert supervisor.run(_estado("Agendar visita", lead))["proximo"] == "agendador"
+
+
+def test_modelo_nao_devolve_visita_reservada_ao_agendador(monkeypatch):
+    """As regras determinísticas já decidiram que a mensagem não pede visita, e a visita deste lead
+    já está reservada. Se o modelo de roteamento mandar para o agendador mesmo assim, o cliente —
+    que só quis mudar de bairro — recebe a grade de horários de novo."""
+    from agent.nodes import supervisor
+
+    class Falso:
+        def invoke(self, _):
+            return type("M", (), {"content": "agendador"})()
+
+    monkeypatch.setattr(supervisor, "llm_roteamento", lambda: Falso())
+    lead = _lead_com_visita_reservada()
+    lead.cartao.pediu_visita = False          # força a decisão a cair no modelo
+    destino = supervisor.run(_estado("prefiro na Vila Madalena", lead))["proximo"]
+    assert destino != "agendador"

@@ -236,3 +236,53 @@ def test_interessados_ordena_por_score_e_ignora_descartado(infra):
     nomes = [i["nome"] for i in repo.interessados("SP-0003")]
     assert "Fora" not in nomes, "quem descartou não entra na lista de quem chamar"
     assert nomes.index("Quente") < nomes.index("Frio"), "o mais quente vem primeiro"
+
+
+# --------------------------------------------------- mudar de ideia depois de qualificado
+
+def test_cliente_qualificado_pode_trocar_de_bairro(infra, monkeypatch):
+    """Relato do cliente: mandou um áudio pedindo Vila Mariana e Vila Madalena e recebeu os imóveis
+    da busca ANTERIOR, com um texto por cima dizendo "claro, posso buscar na Vila Madalena também".
+
+    A causa: o cartão só era extraído no qualificador. Depois de completo, o supervisor manda a
+    conversa para o consultor — que buscava com os bairros antigos. Os cards diziam uma coisa e o
+    texto dizia outra, na mesma resposta.
+    """
+    from agent.nodes import consultor
+    from sdr_shared.models import Estagio, Intencao, Lead
+
+    lead = Lead(id="lead-muda", nome="Marcos", estagio=Estagio.QUALIFICADO)
+    lead.cartao.intencao = Intencao.ALUGUEL
+    lead.cartao.bairros = ["Pinheiros"]
+    lead.cartao.regiao = "zona_oeste"
+    lead.cartao.preco_max = 4000
+    lead.cartao.quartos = 2
+    lead.cartao.urgencia = "30 dias"
+
+    # A extração é substituída: o que está sob prova aqui é o consultor ABSORVER o cartão novo no
+    # lead, não a qualidade do extrator (que tem suíte própria e, no dublê, nem olha bairro).
+    def extrair_falso(cartao, mensagem):
+        return cartao.model_copy(update={"bairros": ["Vila Mariana", "Vila Madalena"]})
+
+    monkeypatch.setattr("agent.nodes.qualificador._extrair", extrair_falso)
+    consultor._absorver_mudanca(lead, "quero ver na Vila Mariana e na Vila Madalena")
+    # "Vila Madalena" canonicaliza para "Pinheiros" no catálogo do `sdr_shared.geo` — então a
+    # presença de Pinheiros aqui é a RESOLUÇÃO do bairro novo, não sobra do antigo. Afirmar a
+    # ausência dele seria afirmar algo falso sobre o catálogo.
+    assert "Vila Mariana" in lead.cartao.bairros, "o bairro novo precisa alimentar a busca"
+    assert lead.cartao.regiao == "zona_sul", "a região acompanha o bairro novo (era zona_oeste)"
+    assert lead.cartao.intencao == Intencao.ALUGUEL, "mudar de bairro não muda a intenção"
+
+
+def test_mudanca_nao_derruba_o_turno(infra, monkeypatch):
+    """A extração é melhoria, não pré-requisito: se ela falhar, o cliente ainda recebe imóveis."""
+    from agent.nodes import consultor
+    from sdr_shared.models import Estagio, Intencao, Lead
+
+    monkeypatch.setattr("agent.nodes.qualificador._extrair",
+                        lambda c, m: (_ for _ in ()).throw(RuntimeError("modelo fora do ar")))
+    lead = Lead(id="lead-falha", estagio=Estagio.QUALIFICADO)
+    lead.cartao.intencao = Intencao.ALUGUEL
+    lead.cartao.bairros = ["Pinheiros"]
+    consultor._absorver_mudanca(lead, "quero na Vila Mariana")
+    assert lead.cartao.bairros == ["Pinheiros"], "sem extração, segue com o cartão anterior"

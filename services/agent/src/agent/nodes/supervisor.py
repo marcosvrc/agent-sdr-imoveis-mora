@@ -87,5 +87,12 @@ def run(state: AgentState) -> dict:
     decisao = llm_roteamento().invoke(texto("supervisor", estagio=lead.estagio, intencao=lead.cartao.intencao,
                                             completo=lead.cartao.completo(), faltantes=[], mensagem=txt)).content
     decisao = decisao.strip().lower().split()[0] if decisao.strip() else "qualificador"
-    return {"proximo": decisao if decisao in ("qualificador", "consultor", "agendador", "handoff", "informacoes") else "qualificador",
-            "saltos": saltos}
+    if decisao not in ("qualificador", "consultor", "agendador", "handoff", "informacoes"):
+        decisao = "qualificador"
+    # As regras determinísticas acima já decidiram que esta mensagem NÃO pede visita (nem botão de
+    # horário, nem palavra de agendamento) e que a visita deste lead já está reservada. O modelo não
+    # pode desfazer isso: mandado ao agendador, ele reoferece a grade de horários — e o cliente, que
+    # só quis mudar de bairro, recebe dias de visita que não pediu.
+    if decisao == "agendador" and lead.estagio == Estagio.AGENDADO:
+        decisao = "consultor" if lead.cartao.completo() else "qualificador"
+    return {"proximo": decisao, "saltos": saltos}

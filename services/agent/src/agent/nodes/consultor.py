@@ -52,8 +52,33 @@ def _contexto_da_busca(busca: dict, cards: list) -> str:
             "(preço, bairro ou quartos)." + sugestao_alt)
 
 
+def _absorver_mudanca(lead, mensagem: str) -> None:
+    """Deixa o cliente MUDAR DE IDEIA depois de qualificado.
+
+    O cartão só era extraído no qualificador. Quando ele fica completo, o supervisor passa a mandar
+    a conversa para cá — e a partir daí "agora quero ver na Vila Mariana e na Vila Madalena" não
+    entrava em lugar nenhum. A busca rodava com os bairros ANTIGOS, devolvia os mesmos imóveis de
+    antes, e o modelo, que lê a mensagem crua, escrevia por cima "claro, posso buscar na Vila
+    Madalena também". Os cards diziam uma coisa e o texto dizia outra, na mesma resposta.
+
+    É uma extração a mais por turno, no modelo barato. O que ela compra: um cliente qualificado
+    deixa de ficar preso ao primeiro pedido dele.
+    """
+    from .qualificador import _extrair, _normalizar_local
+    if not mensagem:
+        return
+    try:
+        novo, _fora = _normalizar_local(_extrair(lead.cartao, mensagem), mensagem)
+        # A intenção NÃO é tocada aqui: mudar de aluguel para compra abre outra oportunidade, e
+        # quem sabe fazer isso é o qualificador. Aqui é ajuste de critério dentro da mesma busca.
+        lead.cartao = novo.model_copy(update={"intencao": lead.cartao.intencao})
+    except Exception:
+        log.warning("não consegui atualizar o cartão do lead %s; sigo com o anterior", lead.id, exc_info=True)
+
+
 def run(state: AgentState) -> dict:
     lead = state["lead"]
+    _absorver_mudanca(lead, state["entrada"].conteudo or "")
     # O estado do grafo só conhece esta conversa. `interesses` atravessa sessões: quem voltou
     # duas semanas depois não recebe os mesmos três imóveis de novo, e o que foi descartado
     # não reaparece nunca — reoferecer o que a pessoa já recusou é o que faz um bot parecer burro.
