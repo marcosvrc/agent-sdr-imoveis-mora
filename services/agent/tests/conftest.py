@@ -126,7 +126,13 @@ def seed_db():
     import pathlib
     import random
     with get_pool().connection() as c:
-        for t in ("visitas", "mensagens", "canais", "followups_agendados", "eventos_navegacao", "interesses", "leads", "corretores", "uso_llm", "configuracoes"):
+        # `imoveis` entra na lista, e não é detalhe: vários testes daqui afirmam AUSÊNCIA de
+        # estoque ("Tatuapé não tem imóvel neste perfil, então a busca desce a cascata"). Uma
+        # afirmação dessas só tem sentido contra um catálogo conhecido. Enquanto a tabela só era
+        # completada e nunca limpa, qualquer suíte que gravasse imóveis antes desta — a
+        # sincronização do acervo do CRM, por exemplo — fazia o bairro "vazio" passar a ter
+        # estoque, e o teste falhava longe da causa, em outro arquivo, sem ninguém ter mexido nele.
+        for t in ("visitas", "mensagens", "canais", "followups_agendados", "eventos_navegacao", "interesses", "imoveis", "leads", "corretores", "uso_llm", "configuracoes"):
             c.execute(f"DELETE FROM {t}")
         for t in ("checkpoint_writes", "checkpoint_blobs", "checkpoints"):          # memória do LangGraph
             c.execute(f"DELETE FROM {t}") if c.execute("SELECT to_regclass(%s) AS t", (t,)).fetchone()["t"] else None

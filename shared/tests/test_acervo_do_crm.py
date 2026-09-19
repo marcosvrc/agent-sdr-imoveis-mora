@@ -146,3 +146,78 @@ def test_purga_tira_do_indice_o_que_saiu_do_acervo():
 
     assert repo.get(sai) is None
     assert repo.get(fica) is not None
+
+
+# --------------------------------------------------------- reindexação incremental (scheduler)
+
+@pytest.fixture
+def embedder_contado(monkeypatch):
+    """Conta quantos embeddings foram gerados. É a métrica que este desenho existe para manter em
+    zero quando nada mudou — com provedor hospedado, cada um tem preço."""
+    chamadas = []
+
+    class Contador:
+        dimensoes = 1024
+
+        def embed(self, texto: str) -> list[float]:
+            chamadas.append(texto)
+            return [0.001] * 1024
+
+    from sdr_shared.ports import factory
+    factory.get_embedder.cache_clear()
+    monkeypatch.setattr(factory, "get_embedder", lambda: Contador())
+    import sdr_shared.ports as portas
+    monkeypatch.setattr(portas, "get_embedder", lambda: Contador(), raising=False)
+    return chamadas
+
+
+def test_segunda_passada_nao_gera_embedding_nenhum(ligado, acervo_no_crm, arquivo_de_vitrine,
+                                                   embedder_contado):
+    """A razão de ser da sincronia incremental.
+
+    O worker acorda a cada quinze minutos. Se cada passada reembedasse o acervo inteiro para
+    descobrir que nada mudou, seria conta de API (ou CPU) recorrente por trabalho nenhum. A primeira
+    passada indexa; a segunda, sem nenhuma mudança no CRM, não pode gerar um único vetor.
+    """
+    from sdr_ingestion.sincronia import sincronizar
+
+    # Contagens relativas, nunca absolutas: o banco de teste do CRM é compartilhado entre suítes e
+    # já tem acervo de outras execuções. Um número fixo aqui passaria hoje e quebraria amanhã por
+    # motivo nenhum.
+    primeira = sincronizar(arquivo_de_vitrine)
+    assert primeira["fonte"] == "crm"
+    assert len(embedder_contado) == primeira["novos"] + primeira["mudados"]
+
+    embedder_contado.clear()
+    segunda = sincronizar(arquivo_de_vitrine)
+    assert segunda["novos"] == 0 and segunda["mudados"] == 0
+    assert segunda["sem_mudanca"] == segunda["total"]
+    assert embedder_contado == [], "nada mudou no CRM; nenhum embedding deveria ter sido gerado"
+
+
+def test_preco_mudado_no_crm_chega_ao_indice(ligado, acervo_no_crm, arquivo_de_vitrine,
+                                             embedder_contado):
+    """O buraco que a sincronia fecha: preço é do CRM, busca é do índice."""
+    from sdr_ingestion.sincronia import sincronizar
+    from sdr_shared.db import ImovelRepository
+
+    sincronizar(arquivo_de_vitrine)          # estabiliza o índice
+    with psycopg.connect(DSN_CRM, autocommit=True) as conn:
+        conn.execute("UPDATE properties SET base_price_cents = 999900 WHERE code = %s",
+                     (acervo_no_crm[0],))
+
+    embedder_contado.clear()
+    r = sincronizar(arquivo_de_vitrine)
+    assert r["mudados"] == 1 and r["sem_mudanca"] == r["total"] - 1
+    assert len(embedder_contado) == 1, "só o imóvel que mudou deveria reembedar"
+    assert ImovelRepository().get(acervo_no_crm[0]).preco == 9999.0
+
+
+def test_sem_crm_a_sincronia_nao_faz_nada(arquivo_de_vitrine, monkeypatch, embedder_contado):
+    """Sem fonte autoritativa não se reindexa e, sobretudo, não se purga: o arquivo pode ser um
+    recorte, e um recorte não autoriza esvaziar o catálogo."""
+    from sdr_ingestion.sincronia import sincronizar
+    monkeypatch.delenv("SDR_CRM_URL", raising=False)
+    monkeypatch.delenv("SDR_CRM_TOKEN", raising=False)
+    assert sincronizar(arquivo_de_vitrine) == {"fonte": "arquivo", "ignorado": True}
+    assert embedder_contado == []
