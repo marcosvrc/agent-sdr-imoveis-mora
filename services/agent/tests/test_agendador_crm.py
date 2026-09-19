@@ -128,3 +128,65 @@ def test_erro_do_crm_nao_derruba_o_turno(infra, grade, monkeypatch, lead_no_banc
         agendador.run(estado(f"slot:{escolhido.inicio.isoformat()}",
                              horarios_oferecidos=[h.inicio.isoformat() for h in grade],
                              slots_crm={h.inicio.isoformat(): h.slot_id for h in grade}))
+
+
+# --------------------------------------------------------------- o prompt da confirmação
+
+def _prompt_capturado(monkeypatch) -> list[str]:
+    """Captura o prompt de sistema que o agendador manda ao modelo."""
+    capturado: list[str] = []
+    from langchain_core.messages import AIMessage
+
+    class Espiao:
+        def invoke(self, msgs):
+            capturado.append(msgs[0].content)
+            return AIMessage(content="[resposta da Mora]")
+
+    monkeypatch.setattr(agendador, "llm_conversa", lambda: Espiao())
+    return capturado
+
+
+def test_confirmacao_nao_deixa_placeholder_no_prompt(monkeypatch, lead_no_banco, grade):
+    """O defeito que o cliente viu: a Mora confirmou a visita E disse, na mesma resposta, que o
+    horário não estava disponível, reoferecendo a lista.
+
+    A causa está aqui. O ramo da confirmação chamava `carregar("agendador", ...)` sem passar
+    `pedido_invalido`, e `_fmt` substitui chave faltante por ela mesma — então o modelo recebia,
+    literalmente, "Se {pedido_invalido} for verdadeiro, o cliente pediu um horário que não existe".
+    Sobrava ao modelo adivinhar, e às vezes ele adivinhava que sim.
+
+    Placeholder não resolvido em prompt não é cosmético: é uma instrução que o modelo lê e obedece.
+    """
+    capturado = _prompt_capturado(monkeypatch)
+    slots = [h.inicio for h in grade]
+    agendador.run(estado(f"slot:{slots[0].isoformat()}",
+                         horarios_oferecidos=[s.isoformat() for s in slots]))
+    assert capturado, "o agendador não chegou a chamar o modelo"
+    import re
+    sobrando = re.findall(r"\{[A-Za-z_][A-Za-z0-9_]*\}", capturado[0])
+    assert not sobrando, f"placeholders não resolvidos chegaram ao modelo: {sobrando}"
+
+
+def test_confirmacao_nao_manda_a_lista_de_horarios(monkeypatch, lead_no_banco, grade):
+    """Confirmando, não há o que oferecer. A lista no prompt é o que alimenta um 'temos também às
+    10h, 14h ou 16h' colado à confirmação."""
+    capturado = _prompt_capturado(monkeypatch)
+    slots = [h.inicio for h in grade]
+    agendador.run(estado(f"slot:{slots[0].isoformat()}",
+                         horarios_oferecidos=[s.isoformat() for s in slots]))
+    corpo = capturado[0]
+    assert agendador.formatar(slots[0]) in corpo, "o horário reservado precisa estar no prompt"
+    outros = [agendador.formatar(s) for s in slots[1:]]
+    assert not [o for o in outros if o in corpo], "a confirmação não deve carregar os outros horários"
+
+
+def test_clique_no_botao_nao_vira_iso_no_historico(monkeypatch, lead_no_banco, grade):
+    """`slot:2026-09-21T17:00:00+00:00` é protocolo, não fala do cliente.
+
+    Entrando cru no histórico, o modelo lê "17:00" — o horário em UTC — e responde sobre um horário
+    que o cliente nunca pediu; foi assim que "14h" virou "esse horário às 17h". O que vai para o
+    histórico tem de ser o que o cliente veria escrito: o rótulo do botão."""
+    slot = grade[0].inicio
+    bruto = f"slot:{slot.isoformat()}"
+    assert agendador.texto_para_historico(bruto) == agendador.formatar(slot)
+    assert agendador.texto_para_historico("terça às 14h") == "terça às 14h"

@@ -117,8 +117,11 @@ def processar(entrada: MensagemNormalizada) -> None:
     if reconhecer(lead):
         LeadRepository().salvar(lead)
 
+    # O histórico guarda o que o cliente VIU, não o protocolo do botão: ver `texto_para_historico`.
+    # `entrada.conteudo` segue cru para os nós, que é quem precisa do identificador.
+    from .nodes.agendador import texto_para_historico
     entrada_grafo = {"lead": lead, "entrada": entrada, "primeira_interacao": novo, "saltos": 0, "resposta": None,
-                     "messages": [("user", entrada.conteudo)] if entrada.conteudo else []}
+                     "messages": [("user", texto_para_historico(entrada.conteudo))] if entrada.conteudo else []}
     try:
         out = get_graph().invoke(entrada_grafo, config={"configurable": {"thread_id": lead.id}})
     except Exception:

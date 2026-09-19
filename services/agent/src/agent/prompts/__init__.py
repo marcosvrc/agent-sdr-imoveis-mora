@@ -32,11 +32,23 @@ def _envelope(valor: object) -> str:
 
 
 def _fmt(texto: str, ctx: dict) -> str:
-    class _Safe(dict):
-        def __missing__(self, k):
-            return "{" + k + "}"
+    """Preenche o template. Chave faltante ESTOURA, e é de propósito.
+
+    Havia aqui um dicionário que devolvia `{chave}` para o que faltasse. A intenção era não derrubar
+    um turno por causa de um detalhe de formatação; o efeito era outro. Um prompt é lido por um
+    modelo, não renderizado numa tela: `Se {pedido_invalido} for verdadeiro, o cliente pediu um
+    horário que não existe` chega como uma instrução com a condição ilegível, e sobra ao modelo
+    adivinhar. Foi assim que uma confirmação de visita saiu junto com "esse horário não está
+    disponível" — o cliente leu as duas coisas na mesma resposta.
+
+    Estourar aqui é melhor: quem chama erra uma vez, no teste, em vez de o cliente receber a
+    instrução crua travestida de resposta.
+    """
     seguro = {k: (_envelope(v) if k in NAO_CONFIAVEIS and v is not None else v) for k, v in ctx.items()}
-    return texto.format_map(_Safe(seguro))
+    try:
+        return texto.format_map(seguro)
+    except KeyError as e:
+        raise KeyError(f"prompt sem valor para {e}; quem chama precisa passar essa chave") from e
 
 
 def carregar(prompt: str, **ctx) -> SystemMessage:

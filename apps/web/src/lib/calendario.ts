@@ -6,7 +6,7 @@ const fmtGoogle = (d: Date) => d.toISOString().replace(/[-:]|\.\d{3}/g, "");   /
 export function googleCalendarUrl(e: EventoAgenda): string {
   const ini = new Date(e.inicio), fim = new Date(ini.getTime() + (e.duracao_min ?? 60) * 60_000);
   const q = new URLSearchParams({ action: "TEMPLATE", text: e.titulo, dates: `${fmtGoogle(ini)}/${fmtGoogle(fim)}`,
-    details: e.descricao ?? "Visita agendada pela Mora — Vértice Imóveis", location: e.local ?? "", ctz: "America/Sao_Paulo" });
+    details: e.descricao ?? "Visita reservada pela Mora — Vértice Imóveis. O corretor confirma antes do dia.", location: e.local ?? "", ctz: "America/Sao_Paulo" });
   return `https://calendar.google.com/calendar/render?${q}`;
 }
 
@@ -14,7 +14,7 @@ export function icsDataUrl(e: EventoAgenda): string {
   const ini = new Date(e.inicio), fim = new Date(ini.getTime() + (e.duracao_min ?? 60) * 60_000);
   const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Mora//Vértice//PT", "BEGIN:VEVENT",
     `UID:${ini.getTime()}@vertice`, `DTSTAMP:${fmtGoogle(new Date())}`, `DTSTART:${fmtGoogle(ini)}`, `DTEND:${fmtGoogle(fim)}`,
-    `SUMMARY:${e.titulo}`, `LOCATION:${e.local ?? ""}`, `DESCRIPTION:${e.descricao ?? "Visita agendada pela Mora"}`,
+    `SUMMARY:${e.titulo}`, `LOCATION:${e.local ?? ""}`, `DESCRIPTION:${e.descricao ?? "Visita reservada pela Mora. O corretor confirma antes do dia."}`,
     "END:VEVENT", "END:VCALENDAR"].join("\r\n");
   return `data:text/calendar;charset=utf-8,${encodeURIComponent(ics)}`;
 }

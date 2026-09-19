@@ -19,6 +19,22 @@ _SEMANA = {"segunda": 0, "seg": 0, "terca": 1, "ter": 1, "quarta": 2, "qua": 2, 
 _BR = timezone(timedelta(hours=-3))
 
 
+def texto_para_historico(conteudo: str) -> str:
+    """O que o modelo deve ler como fala do cliente.
+
+    `slot:2026-09-21T17:00:00+00:00` é o identificador do botão, não uma frase. Entrando cru no
+    histórico, o modelo lê "17:00" — a hora em UTC do que o cliente viu escrito como 14h — e passa a
+    responder sobre um horário que ninguém pediu. Trocar pelo rótulo do botão devolve ao histórico o
+    que de fato aconteceu na tela.
+    """
+    if not conteudo.startswith("slot:"):
+        return conteudo
+    try:
+        return formatar(datetime.fromisoformat(conteudo[5:]))
+    except ValueError:
+        return conteudo
+
+
 def _sem_acento(t: str) -> str:
     return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
 
@@ -96,8 +112,8 @@ def run(state: AgentState) -> dict:
         pedir = ("" if lead.telefone or lead.cartao.tem_contato() else
                  "IMPORTANTE: ainda não temos o contato deste cliente. Ao confirmar, peça o telefone dele numa "
                  "frase, explicando o motivo (o corretor confirma a visita e manda a localização por lá).")
-        msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente", imovel=imovel_id or "a definir",
-                                              horarios="", confirmado=True, escolhido=formatar(inicio),
+        msg = llm_conversa().invoke([carregar("agendador_reserva", nome=lead.nome or "cliente",
+                                              imovel=imovel_id or "a definir", escolhido=formatar(inicio),
                                               contexto_contato=pedir), *state["messages"]])
         visita = {"inicio": inicio.isoformat(), "duracao_min": 60, "imovel_id": imovel_id,
                   "titulo": f"Visita: {card.titulo}" if card else "Visita ao imóvel — Vértice Imóveis",
@@ -122,13 +138,17 @@ def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool 
     slots_crm = {h.inicio.isoformat(): h.slot_id for h in do_crm if h.slot_id}
     horarios = [h.inicio for h in do_crm][:8] or listar_horarios(corretor_id=lead.corretor_id)[:8]
     lead.cartao.pediu_visita = True
-    # Cliente pediu um horário que não existe na agenda (ex.: 17h): explicar e reoferecer, sem inventar
-    pedido_invalido = bool(state.get("horarios_oferecidos")) and bool(re.search(r"\d{1,2}\s*h|\d{1,2}:\d{2}", txt))
+    # Nota em TEXTO, e não um booleano no template: `Se {pedido_invalido} for verdadeiro…` obriga o
+    # modelo a interpretar uma condição, e é o tipo de ambiguidade que ele resolve para o lado
+    # errado justamente quando o cliente está esperando uma confirmação.
+    pediu_hora = bool(state.get("horarios_oferecidos")) and bool(re.search(r"\d{1,2}\s*h|\d{1,2}:\d{2}", txt))
+    nota = ("O cliente pediu um horário que não existe nesta agenda: diga isso em meia frase, sem pedir desculpas "
+            "em excesso, e ofereça os disponíveis do mesmo dia ou o mais próximo." if pediu_hora else "")
     contexto = ("O horário que ele escolheu acabou de ser ocupado por outra pessoa. Diga isso em meia frase, "
                 "sem culpar ninguém, e ofereça os que restam." if ocupado_agora else "")
     msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente", imovel=imovel_id or "a definir",
-                                          horarios=[formatar(h) for h in horarios], confirmado=False, escolhido="",
-                                          pedido_invalido=pedido_invalido, contexto_contato=contexto), *state["messages"]])
+                                          horarios=[formatar(h) for h in horarios], nota=nota,
+                                          contexto_contato=contexto), *state["messages"]])
     # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista
     return {"lead": lead, "messages": [msg], "horarios_oferecidos": [h.isoformat() for h in horarios],
             "slots_crm": slots_crm,
