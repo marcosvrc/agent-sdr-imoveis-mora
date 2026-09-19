@@ -417,21 +417,43 @@ cd agent-sdr-morai
 
 # 2. Configurar o ambiente do perfil local
 cp local/.env.example local/.env
-# edite local/.env: escolha o provedor de LLM e, se for usar o canal externo, o token do Telegram
+# edite local/.env: provedor de LLM, e CRM_MCP_TOKEN se for usar o CRM (veja o .env.example)
 
-# 3. Subir tudo (adicione --profile ollama para LLM local; --profile observability para Langfuse)
+# 3. Subir tudo. Use `make local-ollama` para LLM e embeddings 100% locais.
 make local
 # equivalente a: cd local && docker compose up --build
 
-# 4. Popular o catálogo (200 imóveis determinísticos + embeddings)
-make seed
+# --- daqui em diante, em OUTRO terminal, com o compose no ar ---
 
-# 5. Encerrar o ambiente
+# 4. Bancos e massa, na ordem das dependências
+make preparar
+
+# 5. Credencial da Mora no CRM (aparece uma vez; cole em CRM_API_TOKEN no local/.env)
+make crm-token
+cd local && docker compose up -d crm-mcp agent && cd ..
+
+# 6. Índices: acervo e documentos institucionais
+make ollama-pull      # só se usar embeddings locais
+make seed
+make docs-kb
+
+# 7. Encerrar o ambiente
 cd local && docker compose down          # use down -v para apagar também os volumes (Postgres/Ollama)
 ```
 
-O `make local` executa `scripts/check_env.py` antes de subir. O schema do banco é aplicado
-automaticamente na inicialização do container `db` (`shared/sdr_shared/db/schema.sql`).
+`make` sozinho imprime essa ordem — é o alvo padrão, e é a fonte que se mantém em dia com o
+Makefile.
+
+O `make local` executa `scripts/check_env.py` antes de subir.
+
+**Sobre o schema:** `local/00-crm.sql` e `shared/sdr_shared/db/schema.sql` estão montados em
+`docker-entrypoint-initdb.d`, mas o Postgres só executa esses scripts quando o **volume é novo**.
+Num volume que já existia — o caso de quem acompanha o projeto há algum tempo — eles nunca rodam, e
+o sintoma é `FATAL: database "crm" does not exist` sem nada explicando a causa. Por isso `make
+preparar` cria e aplica tudo explicitamente, e é idempotente: rodar de novo não estraga nada.
+
+**Sem CRM:** a Mora roda sozinha. Pule os passos 4 e 5 (exceto `make migrate`, que o `preparar`
+inclui) e siga para o 6.
 
 ### Opção B — Execução manual (desenvolvimento)
 

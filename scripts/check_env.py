@@ -88,6 +88,23 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
                           "(bge-m3). Outro modelo exige alterar shared/sdr_shared/db/schema.sql.")
         avisos.append("Embeddings no Ollama: suba com `make local-ollama` e rode `make ollama-pull` uma vez.")
 
+    # CRM: dois segredos distintos, e trocá-los um pelo outro dá 401 sem explicação. O servidor MCP
+    # RECUSA subir sem o dele, então a falta aparece como um container que sai — sintoma que não
+    # aponta para a causa. Conferir aqui é o que transforma isso numa linha legível.
+    mcp_token, api_token = env.get("CRM_MCP_TOKEN", ""), env.get("CRM_API_TOKEN", "")
+    if mcp_token and len(mcp_token) < 24:
+        erros.append(f"CRM_MCP_TOKEN tem só {len(mcp_token)} caracteres. Gere um forte: "
+                     "python3 -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    if mcp_token and not api_token:
+        avisos.append("CRM_MCP_TOKEN definido mas CRM_API_TOKEN vazio: o servidor MCP sobe e não "
+                      "consegue falar com a API do CRM. Emita com `make crm-token` e cole aqui.")
+    if api_token and not mcp_token:
+        erros.append("CRM_API_TOKEN definido mas CRM_MCP_TOKEN vazio — o servidor MCP recusa "
+                     "iniciar sem ele, e o container vai sair sem explicar por quê.")
+    if not mcp_token and not api_token:
+        avisos.append("CRM não configurado — a Mora roda normalmente sozinha. Para ligar, veja a "
+                      "seção do CRM em local/.env.example.")
+
     if not env.get("SDR_WHATSAPP_TOKEN"):
         avisos.append("WhatsApp não configurado — a Mora ainda funciona pelo chat do site e por `make cli`.")
 

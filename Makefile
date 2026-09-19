@@ -1,5 +1,58 @@
 SERVICES = shared services/agent services/channels/whatsapp services/channels/web services/api services/scheduler services/ingestion
 
+# Nada aqui ganha com paralelismo, e vários alvos disputam o mesmo Postgres. Sem isto, um `make -j`
+# rodaria `crm-reset` antes de `crm-migrate` e a falha não apontaria para a causa.
+.NOTPARALLEL:
+
+.PHONY: ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
+        crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
+        cobertura eval eval-fake eval-rag test-docker synth deploy openapi docs
+
+# Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
+# projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
+ajuda:
+	@echo "Mora — SDR imobiliário. Ordem de execução a partir de um clone limpo:"
+	@echo
+	@echo "  1. cp local/.env.example local/.env   e preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN"
+	@echo "  2. make check-env                     confere o .env antes de subir nada"
+	@echo "  3. make local-ollama                  sobe o compose (primeiro plano; siga noutro terminal)"
+	@echo "  4. make preparar                      bancos + massa do CRM, na ordem certa"
+	@echo "  5. make crm-token                     emite CRM_API_TOKEN -> cole no local/.env"
+	@echo "     cd local && docker compose up -d crm-mcp agent      (releem o .env)"
+	@echo "  6. make ollama-pull                   baixa o bge-m3 (demora, uma vez só)"
+	@echo "  7. make seed && make docs-kb          indexa acervo e documentos institucionais"
+	@echo
+	@echo "Verificar:  make lint · make test · make eval-fake"
+	@echo "Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
+	@echo "Demonstrar: site :5173 · painel da Mora :5174 · CRM :3000"
+	@echo "            roteiro em docs/overview/roteiro-demonstracao.md"
+	@echo
+	@echo "Sem CRM a Mora roda sozinha: pule 4, 5 e a parte de CRM. Os alvos avisam."
+
+# Tudo que precisa acontecer entre "compose no ar" e "emitir o token", na ordem das dependências.
+# Existe porque essa ordem já me custou dois enganos: o schema do CRM precisa do banco `crm`, que
+# precisa do Postgres no ar; e a massa precisa do schema. Cada alvo isolado é idempotente, então
+# rodar este de novo não estraga nada.
+preparar: migrate crm-migrate crm-api-pronto crm-reset
+	@echo
+	@echo "✓ bancos e massa prontos. Agora: make crm-token, cole CRM_API_TOKEN no local/.env e rode"
+	@echo "  cd local && docker compose up -d crm-mcp agent"
+
+crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
+	@# Entre `crm-migrate` e `crm-reset` há um passo que não é óbvio: quando o banco `crm` não
+	@# existia, o crm-api subiu, não conseguiu conectar e ficou em laço de falha (ou saiu). Criar o
+	@# banco não o traz de volta sozinho, e o `crm-reset` seguinte falharia com um erro do docker
+	@# sobre container não estar rodando — que não diz nada sobre o banco.
+	cd local && docker compose up -d crm-api
+	@echo "aguardando o crm-api ficar saudável…"
+	@cd local && for i in $$(seq 1 60); do \
+	  estado=$$(docker compose ps --format '{{.Health}}' crm-api 2>/dev/null); \
+	  if [ "$$estado" = "healthy" ]; then echo "✓ crm-api saudável"; exit 0; fi; \
+	  sleep 2; \
+	done; \
+	echo "✗ crm-api não ficou saudável em 2 min. Veja: cd local && docker compose logs --tail 30 crm-api"; \
+	exit 1
+
 setup:
 	for s in $(SERVICES); do (cd $$s && uv sync --all-extras 2>/dev/null || pip install -e .); done
 	cd apps/web && npm install; cd ../dashboard && npm install
@@ -17,19 +70,29 @@ local-ollama: check-env
 seed:
 	cd local && docker compose exec agent python /app/scripts/gerar_imoveis.py 200
 	cd local && docker compose exec -w /app/services/ingestion agent python -m sdr_ingestion.ingest_imoveis /app/data/imoveis/imoveis.json
+	@echo "✓ acervo indexado. Com CRM configurado ele veio de lá; sem CRM, do arquivo."
 
 # Documentos institucionais (FAQ, política de visita, taxas) → base que a Mora consulta.
 # Com BUCKET, sobe para o S3 e dispara o job da Knowledge Base. SEM BUCKET (perfil local) indexa
 # no pgvector, na tabela `documentos` — exige `make migrate` e `make ollama-pull` antes, porque
 # gera embeddings de verdade. Para só conferir a pasta sem indexar nada, use `make docs-secos`.
+#
+# Roda DENTRO do container, como `make seed`. Rodava no host, e ali os padrões de conexão são
+# localhost:5432 e localhost:11434 — enquanto o compose publica em 5433 e 11435. O melhor desfecho
+# era falhar; o pior, numa máquina com Postgres nativo na 5432, era indexar os documentos no banco
+# errado, em silêncio, e o agente nunca os ver.
 docs-kb:
-	cd services/ingestion && python3 -m sdr_ingestion.ingest_documentos ../../data/documentos $(BUCKET) $(KB_ID) $(DS_ID)
+	cd local && docker compose exec -w /app/services/ingestion agent \
+	  python -m sdr_ingestion.ingest_documentos /app/data/documentos $(BUCKET) $(KB_ID) $(DS_ID)
+	@echo "✓ documentos institucionais indexados na tabela \`documentos\` — a Mora já consulta daqui."
 
 docs-secos:    # lista o que seria indexado, sem tocar no banco nem gerar embedding
-	cd services/ingestion && python3 -m sdr_ingestion.ingest_documentos ../../data/documentos --seco
+	cd local && docker compose exec -w /app/services/ingestion agent \
+	  python -m sdr_ingestion.ingest_documentos /app/data/documentos --seco
 
 migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CREATE/ALTER ... IF NOT EXISTS)
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql
+	@echo "✓ schema da Mora aplicado no banco \`sdr\` (idempotente)."
 
 # ============================== CRM imobiliário (docs/decisions.md D-01) ==============================
 # Sistema à parte, com banco próprio. A Mora publica nele o que a conversa descobre; nada daqui
@@ -43,12 +106,14 @@ crm-migrate:   # cria o banco `crm` se não existir e aplica o schema — idempo
 	cd local && printf '%s\n' "SELECT 'CREATE DATABASE crm' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'crm')\\gexec" \
 	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
+	@echo "✓ banco \`crm\` pronto e schema aplicado. Próximo: make crm-reset"
 
 crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --seed 42 --reference-date $(CRM_REF)
 
 crm-reset:     # apaga o dataset e reaplica. Recusa se houver qualquer registro sem marca sintética.
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --reset --confirm-reset --seed 42 --reference-date $(CRM_REF)
+	@echo "✓ massa do CRM recriada (seed 42). Próximo: make crm-token"
 
 crm-token:     # emite a credencial da Mora. O token aparece UMA vez — copie para local/.env.
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.credenciais emitir --nome mora

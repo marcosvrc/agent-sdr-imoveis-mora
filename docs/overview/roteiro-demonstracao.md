@@ -19,25 +19,26 @@ A ordem importa: cada momento usa o estado que o anterior deixou. Pular um quebr
 ## Antes de começar
 
 ```bash
-make local-ollama      # sobe o compose com o perfil do Ollama, em primeiro plano
-                       # (`make local` sobe sem ele; aí a busca vetorial fica sem embeddings)
+make                   # a ajuda, com a ordem completa — é o alvo padrão
+make check-env         # confere o local/.env antes de subir nada
+make local-ollama      # sobe o compose com o Ollama, em primeiro plano
 ```
 
 Em outro terminal, com o compose no ar:
 
 ```bash
-make migrate           # tabelas da Mora (inclui `documentos` e `crm_reconhecimento`)
-make crm-migrate       # schema do CRM, banco próprio
-make crm-reset         # massa sintética determinística
-make crm-token         # credencial do servidor MCP na API do CRM → CRM_API_TOKEN em local/.env
-                       # CRM_MCP_TOKEN é um segredo seu; veja local/.env.example
-make ollama-pull       # baixa o modelo de embeddings (bge-m3)
-make docs-kb           # indexa os documentos institucionais
-make seed              # indexa o acervo — vem do CRM quando ele está configurado
+make preparar          # schema da Mora + banco e schema do CRM + massa sintética, nesta ordem
+make crm-token         # emite o CRM_API_TOKEN → cole no local/.env
+cd local && docker compose up -d crm-mcp agent && cd ..
+
+make ollama-pull       # baixa o bge-m3 (demora, uma vez só)
+make seed              # acervo: vem do CRM quando ele está configurado
+make docs-kb           # documentos institucionais
 ```
 
-Os dois tokens precisam estar em `local/.env` **antes** de subir o compose: o servidor MCP recusa
-iniciar sem o dele. Se você os gerou agora, derrube e suba de novo.
+`CRM_MCP_TOKEN` precisa estar em `local/.env` **antes** de subir o compose — o servidor MCP recusa
+iniciar sem ele. O `CRM_API_TOKEN` só existe depois que o CRM está no ar, e é por isso que há duas
+idas ao arquivo. O `make check-env` reclama se só um dos dois estiver lá.
 
 Confira antes de chamar alguém: `make check-env` não pode ter nenhum `✗`, e a Visão geral do
 painel da Mora tem de mostrar imóveis no índice. Um roteiro que quebra no primeiro passo custa mais
