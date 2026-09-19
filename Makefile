@@ -40,8 +40,8 @@ crm-migrate:   # cria o banco `crm` se não existir e aplica o schema — idempo
                # do Postgres, e o Postgres só roda esses scripts quando o VOLUME é novo. Num volume
                # que já existia antes de o CRM entrar no projeto, ele nunca rodou — e o erro que
                # aparecia era `FATAL: database "crm" does not exist`, sem nada dizendo por quê.
-	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='crm'" | grep -q 1 || \
-	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE crm")
+	cd local && printf '%s\n' "SELECT 'CREATE DATABASE crm' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'crm')\\gexec" \
+	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
 
 crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs
@@ -77,16 +77,20 @@ CRM_TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/crm_test
 PREPARO_DB ?= compose
 ADMIN_DSN = $(dir $(TEST_DSN))postgres
 
+# `\gexec` em vez de `... | grep -q 1 || (cd local && ...)`: naquele padrão a linha inteira já
+# rodou `cd local`, então o `cd local` de dentro do parêntese procurava `local/local` e o ramo de
+# criação falhava com "No such file or directory". O defeito ficou latente enquanto os bancos já
+# existiam — só aparecia na máquina de quem ainda não os tinha, que é exatamente quem depende dele.
 test-db:       # cria os bancos de teste (se não existirem) e aplica os dois schemas
                # DOIS bancos: o CRM é sistema à parte (D-01), e a separação vale também na suíte.
                # Faltava criar o `crm_test` aqui: quem clonasse o repositório e rodasse `make test`
                # via a suíte do CRM falhar sem nenhuma pista de que o banco é que não existia.
 ifeq ($(PREPARO_DB),compose)
-	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='sdr_test'" | grep -q 1 || \
-	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE sdr_test")
+	cd local && printf '%s\n' "SELECT 'CREATE DATABASE sdr_test' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'sdr_test')\\gexec" \
+	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr_test -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql
-	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='crm_test'" | grep -q 1 || \
-	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE crm_test")
+	cd local && printf '%s\n' "SELECT 'CREATE DATABASE crm_test' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'crm_test')\\gexec" \
+	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d crm_test -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
 else
 	psql "$(ADMIN_DSN)" -tc "SELECT 1 FROM pg_database WHERE datname='sdr_test'" | grep -q 1 || \
