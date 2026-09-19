@@ -190,3 +190,27 @@ def test_clique_no_botao_nao_vira_iso_no_historico(monkeypatch, lead_no_banco, g
     bruto = f"slot:{slot.isoformat()}"
     assert agendador.texto_para_historico(bruto) == agendador.formatar(slot)
     assert agendador.texto_para_historico("terça às 14h") == "terça às 14h"
+
+
+# --------------------------------------------------------- como o imóvel é chamado
+
+def test_reserva_fala_do_imovel_pela_descricao_e_nao_pelo_codigo(monkeypatch, lead_no_banco, grade):
+    """Relato do cliente: "Sua visita ao **SP-0282** está reservada".
+
+    `SP-0282` é o código do cadastro. Para quem está do outro lado não significa nada, e faz a
+    conversa soar como um sistema respondendo em vez de alguém atendendo. O prompt recebia o código
+    no lugar do imóvel e o modelo fazia o óbvio: repetia.
+    """
+    capturado = _prompt_capturado(monkeypatch)
+    slots = [h.inicio for h in grade]
+    agendador.run(estado(f"slot:{slots[0].isoformat()}",
+                         horarios_oferecidos=[s.isoformat() for s in slots]))
+    corpo = capturado[0]
+    assert "Apartamento 2q · Pinheiros" in corpo, "o prompt precisa do título que o cliente viu"
+    assert "SP-0001" not in corpo, "o código do cadastro não pode chegar ao modelo como nome do imóvel"
+
+
+def test_descricao_cai_para_o_banco_e_depois_para_generico():
+    """Sem card na mão — turnos depois, ou vindo do Telegram — ainda assim não se cita o código."""
+    assert agendador.descrever_imovel(None, []) == "o imóvel"
+    assert "SP-" not in agendador.descrever_imovel("SP-INEXISTENTE-9999", [])

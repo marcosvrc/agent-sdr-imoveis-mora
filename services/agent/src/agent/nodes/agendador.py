@@ -19,6 +19,28 @@ _SEMANA = {"segunda": 0, "seg": 0, "terca": 1, "ter": 1, "quarta": 2, "qua": 2, 
 _BR = timezone(timedelta(hours=-3))
 
 
+def descrever_imovel(imovel_id: str | None, sugeridos: list) -> str:
+    """Como o imóvel deve ser CHAMADO na conversa.
+
+    O prompt recebia o código do cadastro (`SP-0282`) no lugar do imóvel, e o modelo fazia o óbvio:
+    repetia o código para o cliente. Para quem está do outro lado, isso não significa nada — e faz
+    a conversa soar como um sistema respondendo em vez de alguém atendendo.
+
+    Ordem de preferência: o título do card que a Mora acabou de mostrar (é o texto que o cliente viu
+    na tela), depois o cadastro no banco, e só então um genérico. Nunca o código.
+    """
+    if card := next((c for c in sugeridos if c.id == imovel_id), None):
+        return card.titulo
+    if imovel_id:
+        try:
+            from sdr_shared.db import ImovelRepository
+            if im := ImovelRepository().get(imovel_id):
+                return f"{im.tipo.capitalize()} de {im.quartos} quarto(s) no {im.bairro}"
+        except Exception:
+            pass
+    return "o imóvel"
+
+
 def texto_para_historico(conteudo: str) -> str:
     """O que o modelo deve ler como fala do cliente.
 
@@ -113,7 +135,8 @@ def run(state: AgentState) -> dict:
                  "IMPORTANTE: ainda não temos o contato deste cliente. Ao confirmar, peça o telefone dele numa "
                  "frase, explicando o motivo (o corretor confirma a visita e manda a localização por lá).")
         msg = llm_conversa().invoke([carregar("agendador_reserva", nome=lead.nome or "cliente",
-                                              imovel=imovel_id or "a definir", escolhido=formatar(inicio),
+                                              imovel=descrever_imovel(imovel_id, sugeridos),
+                                              escolhido=formatar(inicio),
                                               contexto_contato=pedir), *state["messages"]])
         visita = {"inicio": inicio.isoformat(), "duracao_min": 60, "imovel_id": imovel_id,
                   "titulo": f"Visita: {card.titulo}" if card else "Visita ao imóvel — Vértice Imóveis",
@@ -146,7 +169,8 @@ def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool 
             "em excesso, e ofereça os disponíveis do mesmo dia ou o mais próximo." if pediu_hora else "")
     contexto = ("O horário que ele escolheu acabou de ser ocupado por outra pessoa. Diga isso em meia frase, "
                 "sem culpar ninguém, e ofereça os que restam." if ocupado_agora else "")
-    msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente", imovel=imovel_id or "a definir",
+    msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente",
+                                          imovel=descrever_imovel(imovel_id, state.get("imoveis_sugeridos") or []),
                                           horarios=[formatar(h) for h in horarios], nota=nota,
                                           contexto_contato=contexto), *state["messages"]])
     # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista

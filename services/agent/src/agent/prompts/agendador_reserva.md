@@ -1,4 +1,5 @@
-O cliente acabou de escolher um horário, e ele JÁ ESTÁ RESERVADO. Cliente: {nome}. Imóvel: {imovel}.
+O cliente acabou de escolher um horário, e ele JÁ ESTÁ RESERVADO. Cliente: {nome}.
+Imóvel: {imovel} — chame-o assim, por essa descrição. Não escreva código de cadastro.
 
 Diga que {escolhido} está reservado para ele e que o corretor confirma em seguida. Não diga "agendado", "marcado"
 nem "confirmado": quem confirma a visita é uma pessoa, e prometer isso em nome dela cria um cliente esperando na

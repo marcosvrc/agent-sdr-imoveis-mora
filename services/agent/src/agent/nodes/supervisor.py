@@ -68,7 +68,13 @@ def run(state: AgentState) -> dict:
         return {"proximo": "informacoes", "saltos": saltos}
     if txt.startswith("slot:") or (state.get("horarios_oferecidos") and ESCOLHE_HORARIO.search(txt)):
         return {"proximo": "agendador", "saltos": saltos}       # escolha de horário (botão ou texto)
-    if txt == "Agendar visita" or PEDE_VISITA.search(txt) or lead.cartao.pediu_visita:
+    # `pediu_visita` fica ligado para sempre depois do primeiro pedido — é assim que o agendador
+    # sabe retomar de onde parou. Mas, DEPOIS que a visita foi reservada, ele deixa de ser sinal de
+    # intenção e vira uma rota grudada: o cliente manda o telefone que a Mora acabou de pedir, cai
+    # no agendador de novo, e recebe a grade de horários outra vez — sobre uma visita que já está
+    # reservada. Quem quiser remarcar diz isso, e aí cai nas duas condições explícitas acima.
+    if txt == "Agendar visita" or PEDE_VISITA.search(txt) or (
+            lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO):
         return {"proximo": "agendador", "saltos": saltos}
     if txt == "Ver outros" or PEDE_OPCOES.search(txt):
         return {"proximo": "consultor", "saltos": saltos}
