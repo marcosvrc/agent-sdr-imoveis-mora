@@ -56,3 +56,40 @@ def test_render_card_de_imovel_vira_sendphoto_antes_do_texto():
     m = render("555", r)
     assert m[0]["_method"] == "sendPhoto" and "R$ 780.000" in m[0]["caption"]
     assert m[1]["_method"] == "sendMessage" and m[1]["reply_markup"]["inline_keyboard"][0][0]["text"] == "Agendar visita"
+
+
+# ------------------------------------------------- os três jeitos de mandar voz no Telegram
+
+def _update(**campos):
+    return {"message": {"message_id": 9, "chat": {"id": 555},
+                        "from": {"id": 555, "first_name": "Marcos"}, **campos}}
+
+
+def test_audio_anexado_tambem_e_transcrito():
+    """`voice` é a voz gravada segurando o microfone. Quem ANEXA ou encaminha um áudio manda no
+    campo `audio`, e quem manda o vídeo redondo manda em `video_note` — os dois com faixa de voz
+    que o Whisper lê. Só o primeiro era tratado: os outros caíam no descarte mudo, e do lado do
+    cliente a Mora simplesmente não respondia."""
+    for campo in ("audio", "video_note"):
+        msgs = parse_inbound(_update(**{campo: {"file_id": f"f-{campo}", "duration": 8}}),
+                             resolver_lead=_resolver)
+        assert len(msgs) == 1, f"{campo} deveria virar mensagem"
+        assert msgs[0].tipo == TipoMensagem.AUDIO
+        assert msgs[0].meta["telegram_file_id"] == f"f-{campo}"
+
+
+def test_audio_longo_demais_e_recusado():
+    """Acima de cinco minutos não é recado de qualificação — e o getFile do Telegram recusa arquivo
+    grande de qualquer forma, o que apareceria como erro de download em vez de limite."""
+    assert parse_inbound(_update(audio={"file_id": "f", "duration": 3600}),
+                         resolver_lead=_resolver) == []
+
+
+def test_tipo_sem_tratamento_deixa_rastro(caplog):
+    """Um `return []` mudo é indistinguível, de fora, de worker parado ou token errado. Foi essa
+    ambiguidade que custou uma sessão inteira de teste de áudio."""
+    import logging
+    with caplog.at_level(logging.INFO):
+        assert parse_inbound(_update(sticker={"file_id": "s"}), resolver_lead=_resolver) == []
+    assert any("sticker" in r.getMessage() for r in caplog.records), \
+        "o campo ignorado precisa aparecer no log"

@@ -116,3 +116,36 @@ def test_falha_de_transcricao_deixa_rastro_no_log(monkeypatch, caplog):
         saida = handler._transcrever_se_audio(entrada)
     assert "áudio não compreendido" in saida.conteudo, "o cliente continua recebendo a degradação"
     assert any("transcrever" in r.message for r in caplog.records), "a causa precisa aparecer no log"
+
+
+def test_audio_ganha_recibo_antes_da_transcricao(monkeypatch):
+    """Transcrever leva segundos, e silêncio depois de mandar um áudio se parece com falha — o
+    cliente manda de novo ou desiste. O recibo sai ANTES do trabalho, e não entra no histórico:
+    é entrega, não fala da Mora sobre o assunto."""
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+
+    enviados = []
+    monkeypatch.setattr(handler, "despachar", lambda c, i, r: enviados.append(r.texto))
+    monkeypatch.setattr("agent.tools.transcricao._motor_efetivo", lambda: "whisper_local")
+    monkeypatch.setattr("agent.tools.transcricao.transcrever", lambda meta: "quero alugar em Pinheiros")
+
+    entrada = MensagemNormalizada(lead_id="l-rec", canal=Canal.TELEGRAM, tipo=TipoMensagem.AUDIO,
+                                  identificador_canal="123", conteudo="",
+                                  meta={"telegram_file_id": "abc"})
+    saida = handler._transcrever_se_audio(entrada)
+    assert enviados and "áudio" in enviados[0].lower()
+    assert saida.conteudo == "quero alugar em Pinheiros"
+
+
+def test_sem_motor_nao_se_promete_resposta(monkeypatch):
+    """Com a transcrição desligada o cliente vai receber um pedido para escrever. Prometer 'já te
+    respondo' antes disso seria mentir com uma frase a mais."""
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+
+    enviados = []
+    monkeypatch.setattr(handler, "despachar", lambda c, i, r: enviados.append(r.texto))
+    monkeypatch.setattr("agent.tools.transcricao._motor_efetivo", lambda: "off")
+    entrada = MensagemNormalizada(lead_id="l-off", canal=Canal.TELEGRAM, tipo=TipoMensagem.AUDIO,
+                                  identificador_canal="123", conteudo="", meta={})
+    handler._transcrever_se_audio(entrada)
+    assert enviados == []

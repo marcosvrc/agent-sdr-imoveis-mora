@@ -52,8 +52,32 @@ def _carregar_lead(entrada: MensagemNormalizada) -> tuple[Lead, bool]:
     return lead, novo
 
 
+def _avisar_que_ouviu(entrada: MensagemNormalizada) -> None:
+    """Recibo imediato do áudio, antes de transcrever.
+
+    Transcrever leva segundos — baixar o arquivo, rodar o modelo — e nesse intervalo o cliente vê
+    silêncio. Silêncio depois de mandar um áudio se parece com falha, e a reação natural é mandar
+    de novo, ou desistir. Uma linha resolve, e ela não entra no histórico da conversa: é recibo de
+    entrega, não fala da Mora sobre o assunto, e no prompt do próximo turno só atrapalharia.
+
+    Se o motor está desligado não se promete nada — o cliente vai receber o pedido para escrever.
+    """
+    from .tools.transcricao import _motor_efetivo
+    try:
+        if _motor_efetivo() == "off":
+            return
+        from sdr_shared.messaging import RespostaAgente
+        despachar(entrada.canal, entrada.identificador_canal,
+                  RespostaAgente(lead_id=entrada.lead_id,
+                                 texto="Recebi seu áudio, só um instante que já te respondo."))
+    except Exception:
+        # O recibo é cortesia: falhar aqui não pode impedir a transcrição, que é o que importa.
+        log.warning("não consegui avisar o lead %s de que o áudio chegou", entrada.lead_id, exc_info=True)
+
+
 def _transcrever_se_audio(entrada: MensagemNormalizada) -> MensagemNormalizada:
     if entrada.tipo == TipoMensagem.AUDIO and not entrada.conteudo:
+        _avisar_que_ouviu(entrada)
         try:
             from .tools.transcricao import transcrever
             entrada.conteudo = transcrever(entrada.meta)
