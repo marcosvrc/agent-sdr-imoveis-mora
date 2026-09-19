@@ -19,7 +19,10 @@ x-py: &py
     # AGENTE no servidor MCP; CRM_API_TOKEN autentica o SERVIDOR MCP na REST do CRM.
     SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
     SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
-  volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts" ]
+  # `whisper` é o cache do modelo de transcrição. Volume nomeado porque o download passa de meio
+  # giga e sem ele CADA `--force-recreate` baixa tudo de novo — inclusive na véspera de uma
+  # demonstração, com o cliente esperando a resposta do primeiro áudio.
+  volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts", "whisper:/root/.cache/huggingface" ]
   depends_on:
     db: { condition: service_healthy }
     db-init: { condition: service_completed_successfully }
@@ -239,4 +242,4 @@ services:
       db: { condition: service_healthy }
       db-init: { condition: service_completed_successfully }
 
-volumes: { pgdata: {}, ollama: {} }
+volumes: { pgdata: {}, ollama: {}, whisper: {} }

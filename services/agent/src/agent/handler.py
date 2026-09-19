@@ -58,6 +58,11 @@ def _transcrever_se_audio(entrada: MensagemNormalizada) -> MensagemNormalizada:
             from .tools.transcricao import transcrever
             entrada.conteudo = transcrever(entrada.meta)
         except Exception:
+            # Com log, e não só com o texto de degradação. O cliente recebe "não entendi o áudio"
+            # de qualquer jeito — mas quem opera precisa saber SE foi o motor faltando na imagem,
+            # o download do modelo, o token do canal ou o áudio em si. Sem esta linha, a única
+            # pista era a frase de desculpa, que é igual para as quatro causas.
+            log.exception("falha ao transcrever o áudio do lead %s", entrada.lead_id)
             entrada.conteudo = "(áudio não compreendido — peça para o cliente escrever)"
     return entrada
 

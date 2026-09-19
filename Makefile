@@ -6,7 +6,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 
 .PHONY: ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura eval eval-fake eval-rag eval-embeddings test-docker openapi docs
+        cobertura eval eval-fake eval-rag eval-embeddings whisper-aquecer test-docker openapi docs
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -85,6 +85,14 @@ docs-kb:
 	cd local && docker compose exec -w /app/services/ingestion agent \
 	  python -m sdr_ingestion.ingest_documentos /app/data/documentos
 	@echo "✓ documentos institucionais indexados na tabela \`documentos\` — a Mora já consulta daqui."
+
+whisper-aquecer:  # baixa o modelo de transcrição ANTES da demonstração
+               # O faster-whisper busca o modelo na primeira vez que transcreve, e `small` passa de
+               # meio giga. Sem aquecer, o primeiro áudio da demonstração fica esperando o download
+               # — e quem está do outro lado só vê a Mora muda. O cache é um volume nomeado, então
+               # isto se paga uma vez por máquina, não por container.
+	cd local && docker compose exec -T agent python -c "\
+from agent.tools.transcricao import _modelo_whisper; _modelo_whisper(); print('modelo de transcrição pronto')"
 
 docs-secos:    # lista o que seria indexado, sem tocar no banco nem gerar embedding
 	cd local && docker compose exec -w /app/services/ingestion agent \

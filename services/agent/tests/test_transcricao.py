@@ -95,3 +95,24 @@ def test_handler_ignora_nao_audio(monkeypatch):
     ent = MensagemNormalizada(lead_id="web_1", canal=Canal.WEB, identificador_canal="s",
                               tipo=TipoMensagem.TEXTO, conteudo="olá")
     assert handler._transcrever_se_audio(ent).conteudo == "olá"
+
+
+def test_falha_de_transcricao_deixa_rastro_no_log(monkeypatch, caplog):
+    """A frase de desculpa é igual para quatro causas diferentes: motor ausente na imagem, download
+    do modelo, token do canal e áudio ilegível. Sem log, quem opera não tem como distinguir — e a
+    primeira delas (o extra `local` faltando na imagem) foi exatamente o que aconteceu aqui."""
+    import logging
+
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+
+    def explode(meta):
+        raise ModuleNotFoundError("No module named 'faster_whisper'")
+
+    monkeypatch.setattr("agent.tools.transcricao.transcrever", explode)
+    entrada = MensagemNormalizada(lead_id="l-audio", canal=Canal.TELEGRAM, tipo=TipoMensagem.AUDIO,
+                                  identificador_canal="123", conteudo="",
+                                  meta={"telegram_file_id": "abc"})
+    with caplog.at_level(logging.ERROR):
+        saida = handler._transcrever_se_audio(entrada)
+    assert "áudio não compreendido" in saida.conteudo, "o cliente continua recebendo a degradação"
+    assert any("transcrever" in r.message for r in caplog.records), "a causa precisa aparecer no log"

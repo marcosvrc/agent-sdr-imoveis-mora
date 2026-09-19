@@ -4,8 +4,14 @@ WORKDIR /app
 COPY shared /app/shared
 COPY services /app/services
 # shared editável: os volumes do compose montam o código do host por cima, e as edições valem na hora.
+# O agente vai com o extra `local`, que é onde mora o faster-whisper. Sem ele, todo áudio recebido
+# vira "(áudio não compreendido)" — o import falha e o handler degrada. Custa algumas centenas de MB
+# na imagem (ctranslate2, onnxruntime, av) e a imagem é uma só para todos os serviços, então o
+# scheduler também carrega o peso. É o preço de não manter duas imagens num projeto deste tamanho.
+# O `av` traz o ffmpeg embutido: não é preciso instalar nada de sistema para ler o OGG/Opus do
+# Telegram.
 RUN pip install --no-cache-dir -e "/app/shared[local,openai]" \
-    -e /app/services/agent -e /app/services/api \
+    -e "/app/services/agent[local]" -e /app/services/api \
     -e /app/services/channels/telegram \
     -e /app/services/scheduler -e /app/services/ingestion \
     -e "/app/services/crm[mcp]" \
