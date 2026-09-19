@@ -57,7 +57,7 @@ class NotificacaoRepository:
 
     def marcar_lida(self, notificacao_id: int, corretor_id: str | None = None) -> None:
         """`corretor_id=None` = login único do perfil local (vê e marca tudo, ver routers/notificacoes.py).
-        Com Cognito, marca só o que é do próprio corretor (ou sem dono) — o id é sequencial e sem este
+        Marca só o que é do próprio corretor (ou sem dono) — o id é sequencial e sem este
         filtro dava para marcar como lido o aviso de outra pessoa só iterando números."""
         with _conn() as c:
             c.execute("""UPDATE notificacoes SET lida_em = now()

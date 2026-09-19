@@ -6,7 +6,7 @@ nunca derruba o agendamento**. Se a API não responde, a visita continua sendo m
 banco — o cliente não pode perder a visita porque um token expirou.
 
 Usa a API REST direta (httpx) em vez do google-api-python-client: são quatro chamadas, e evitamos
-arrastar uma dependência pesada para dentro do Lambda.
+arrastar uma dependência pesada para dentro do processo do agente.
 """
 import logging
 from datetime import datetime, timedelta, timezone

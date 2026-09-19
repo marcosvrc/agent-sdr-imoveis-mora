@@ -49,10 +49,12 @@ resposta do modelo passa por um saneamento final antes de virar mensagem.
 
 !!! note "Entrada de áudio (multimodal)"
     Quando a mensagem é de **voz**, o agente transcreve o áudio **antes** do grafo
-    (`handler._transcrever_se_audio`): baixa o arquivo do canal (Telegram ou WhatsApp) e transcreve com
-    o motor configurado (faster-whisper no local, Amazon Transcribe na AWS). A transcrição entra no
-    fluxo como texto do cliente — passando pela mesma blindagem acima. Se falhar, o cliente é convidado
-    a escrever. Veja [Integrações](../technical-reference/integracoes.md#transcricao-de-audio-agente-multimodal).
+    (`handler._transcrever_se_audio`): baixa o arquivo pela Bot API do Telegram (`getFile` +
+    download) e transcreve com o `faster-whisper` no próprio processo, sem serviço externo e sem
+    custo por minuto (`SDR_TRANSCRICAO_PROVIDER` ∈ `auto` | `whisper_local` | `off`). A transcrição
+    entra no fluxo como texto do cliente — e é tratada como entrada **não confiável**, passando pela
+    mesma blindagem acima. Se falhar, o cliente é convidado a escrever. Veja
+    [Integrações](../technical-reference/integracoes.md#transcricao-de-audio-agente-multimodal).
 
 ### Leitura do fluxo
 
@@ -69,8 +71,11 @@ resposta do modelo passa por um saneamento final antes de virar mensagem.
 
 | Papel | Modelo padrão | Ajustável |
 |---|---|---|
-| Conversa com o cliente | `anthropic.claude-sonnet-4-5` | Sim, no painel (ADR-0010) |
-| Roteamento / extração | `anthropic.claude-haiku-4-5` | Sim, no painel |
+| Conversa com o cliente | `claude-sonnet-4-5` | Sim, no painel (ADR-0010) |
+| Roteamento / extração | `claude-haiku-4-5` | Sim, no painel |
 
-Os modelos são editáveis no painel sem redeploy. Provedores alternativos: `anthropic` (API) e `ollama`
-(local), via `SDR_LLM_PROVIDER`.
+Os modelos são editáveis no painel, sem reiniciar nada. Provedores aceitos em `SDR_LLM_PROVIDER`:
+`anthropic` (padrão), `openai` e `ollama`; `SDR_LLM_PROVIDER_FALLBACK` nomeia o de reserva, e a
+tradução do ID do modelo entre provedores é feita sozinha (`ports/factory.modelo_do_provedor`) —
+sem ela, cair da Anthropic para a OpenAI mandaria `claude-sonnet-4-5` para a OpenAI e voltaria 404
+exatamente no momento em que a reserva existe para servir.

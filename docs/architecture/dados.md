@@ -1,19 +1,23 @@
 ---
 title: Dados e persistência
-description: Postgres + pgvector, RAG híbrido com cascata por localidade e o mesmo esquema em local e AWS.
+description: Postgres + pgvector, RAG híbrido com cascata por localidade e o banco único do Mora.
 ---
 
 # Dados e persistência
 
-## Banco único, dois perfis
+## Um Postgres para tudo
 
-O Mora usa **PostgreSQL com a extensão pgvector** para dados relacionais e vetores na mesma base:
+O Mora usa **PostgreSQL com a extensão pgvector** para dados relacionais e vetores na mesma base: o
+registro transacional (leads, visitas, imóveis), a busca vetorial, a agregação que o painel consulta
+e o checkpointer do grafo cabem no mesmo banco (ADR-0004). É o container `db`
+(`pgvector/pgvector:pg16`), publicado no host em `5433` para não colidir com um Postgres nativo.
 
-- **Local** — container `pgvector/pgvector:pg16`.
-- **AWS** — Aurora Serverless v2 (Postgres 16), que escala a zero quando ocioso (ADR-0004).
+O CRM é sistema à parte e tem **banco próprio** (`crm`) no mesmo servidor — a separação é o que
+impede uma consulta cruzada de aparecer sem querer um dia.
 
-O schema fica em `shared/sdr_shared/db/schema.sql` e é aplicado na inicialização do container `db`
-(local) ou via `make migrate`.
+O schema fica em `shared/sdr_shared/db/schema.sql`. Ele está montado em
+`docker-entrypoint-initdb.d`, mas o Postgres só executa esses scripts quando o **volume é novo**:
+num volume que já existia, quem aplica é `make migrate` (idempotente), que o `make preparar` chama.
 
 ## RAG híbrido com cascata por localidade
 
@@ -30,11 +34,29 @@ flowchart LR
   RANK --> OUT[Imóveis recomendados]
 ```
 
-- **Embeddings.** Amazon Titan Embeddings v2 (`amazon.titan-embed-text-v2:0`) no perfil AWS, ou Ollama
-  `bge-m3` (1024 dimensões) localmente.
-- **Dois caminhos de RAG.** Com `SDR_KNOWLEDGE_BASE_ID` definido, usa a Bedrock Knowledge Base
-  (gerenciada); vazio, cai para **busca vetorial direta no Postgres** — o caminho testado localmente
-  (ADR-0001).
+- **Embeddings.** Ollama `bge-m3`, provedor único — e não por falta de opção: o schema espera 1024
+  dimensões, que é o que esse modelo dá. Baixe uma vez com `make ollama-pull`.
+- **Um caminho de RAG.** Busca vetorial direta no Postgres, no mesmo banco que o painel consulta
+  (ADR-0001) — é o caminho testado, e é o único.
+
+## RAG institucional (documentos da imobiliária)
+
+FAQ, política de visita e tabela de taxas são texto corrido, não registro estruturado, e por isso
+têm tratamento próprio em `shared/sdr_shared/conhecimento.py`:
+
+- **Fatiamento por cabeçalho**, não por tamanho fixo: cada `##` já é a unidade de sentido, e o
+  cabeçalho acompanha cada pedaço quando a seção precisa ser dividida.
+- **Piso de similaridade de 0,35**: abaixo disso a busca devolve lista vazia, e o agente responde
+  "não sei, o corretor confirma". Sem piso, uma pergunta que o corpus não cobre traz o vizinho mais
+  próximo de coisa nenhuma — e vira afirmação falsa sobre a política da empresa.
+- **Reescrita da consulta** com as falas anteriores do cliente: "e se eu sair antes?" não tem
+  assunto nenhum para um embedding.
+- **Fusão léxica (RRF)** implementada, testada e **desligada** por padrão, atrás de
+  `SDR_RAG_LEXICO`: no único ambiente em que deu para medir, o A/B piorou o recall (31,9% → 29,8%),
+  porque ali o embedder já é léxico e os dois sinais ficam redundantes. Quem tiver o `bge-m3` no ar
+  decide com `SDR_RAG_LEXICO=1 make eval-rag`.
+
+Indexe com `make docs-kb` (ou `make docs-secos`, que lista o que seria indexado sem tocar no banco).
 
 !!! warning "Injeção indireta via RAG"
     A descrição de imóvel é **neutralizada** antes de entrar no prompt, para evitar que texto do
@@ -47,10 +69,14 @@ A observabilidade em vigor grava três tabelas no próprio Postgres — `turnos`
 
 ## Ingestão
 
-O serviço `services/ingestion` carrega imóveis e gera embeddings. No perfil local:
+O serviço `services/ingestion` carrega imóveis e documentos e gera os embeddings. Os dois alvos
+rodam **dentro do container** do agente, e não no host: ali os padrões de conexão seriam
+`localhost:5432` e `localhost:11434`, enquanto o compose publica em 5433 e 11435 — o melhor desfecho
+seria falhar, e o pior, numa máquina com Postgres nativo, seria indexar no banco errado em silêncio.
 
 ```bash
-make seed     # 200 imóveis determinísticos + embeddings
+make seed        # 200 imóveis determinísticos + embeddings
+make docs-kb     # documentos institucionais → tabela `documentos`
 ```
 
 Reindexe com `make seed` sempre que editar bairros ou descrições, para não deixar embeddings

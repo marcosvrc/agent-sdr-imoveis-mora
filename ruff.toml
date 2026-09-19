@@ -40,7 +40,7 @@ ignore = [
   # `datetime.UTC` em vez de `timezone.utc` é cosmético; trocar em 15 arquivos não corrige nada.
   "UP017",
   # `dict(Name=..., GroupName=...)` com chaves nomeadas é mais legível que o literal, e é assim que
-  # os SDKs da AWS documentam os parâmetros.
+  # bibliotecas de terceiros documentam os parâmetros.
   "C408",
 ]
 

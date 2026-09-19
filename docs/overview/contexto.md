@@ -40,15 +40,16 @@ follow-up automático, governança de IA e uma camada de segurança determiníst
 - CRM real — simulado no banco, com endpoint `/leads/crm/sync`.
 - Voice AI em tempo real.
 - Multi-tenant.
-- WhatsApp Business verificado da empresa.
+- WhatsApp. Chegou a existir um canal pela Cloud API da Meta e foi removido: o webhook exige URL
+  pública e conta de negócio verificada, o que não cabe numa entrega que roda na máquina de quem
+  avalia. O Telegram cobre o mesmo papel com um bot criado na hora pelo `@BotFather`.
 
 O raciocínio completo está na [Referência completa (ARCHITECTURE.md)](../ARCHITECTURE.md).
 
 ## Estágio atual
 
-Prova de conceito (POC). O núcleo está implementado e testado nos perfis local e AWS; alguns itens
-dependentes de serviços AWS estão escritos, mas não testados. O estado item a item está em
-[Funcionalidades](funcionalidades.md).
+Prova de conceito (POC). Roda inteira na máquina de quem avalia, com `docker compose`; **nada está
+implantado** em servidor. O estado item a item está em [Funcionalidades](funcionalidades.md).
 
 !!! info "Contexto acadêmico"
     O caminho do projeto sugere um trabalho acadêmico (FIAP, fase 5). Essa informação é **inferida** e

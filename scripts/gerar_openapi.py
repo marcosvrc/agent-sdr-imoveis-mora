@@ -32,7 +32,7 @@ def especificacao() -> str:
     # `servers` não vem do FastAPI: é o que dá ao "Try it out" do Swagger um endereço para chamar.
     spec["servers"] = [
         {"url": "http://localhost:8000", "description": "Perfil local (docker compose)"},
-        {"url": "https://api.exemplo.com.br", "description": "Perfil AWS — a confirmar no deploy"},
+        {"url": "https://api.exemplo.com.br", "description": "Produção — a confirmar no deploy"},
     ]
     # sort_keys: sem ordenação estável, cada geração produziria um diff diferente do anterior.
     return json.dumps(spec, ensure_ascii=False, indent=2, sort_keys=True) + "\n"

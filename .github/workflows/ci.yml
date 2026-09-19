@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/channels/whatsapp -e services/channels/web -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
+      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
       # Estático antes do teste: erro de nome ou import quebrado aparece em segundos, sem esperar
       # o banco subir e as sete suítes rodarem.
       - name: Análise estática (ruff)
@@ -63,11 +63,3 @@ jobs:
           cd apps/${{ matrix.app }}
           npm i --no-save --legacy-peer-deps eslint@9 typescript-eslint@8 @eslint/js eslint-plugin-react-hooks@5 globals
           npm run lint
-  infra:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: pip install -r infra/requirements.txt && npm i -g aws-cdk
-      - run: cd infra && cdk synth --context env=ci

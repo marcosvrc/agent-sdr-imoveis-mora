@@ -12,10 +12,12 @@ O caminho mais rápido é o **perfil local** com Docker Compose. Para os detalhe
 
 - Git
 - Docker e Docker Compose
-- Credenciais de um provedor de LLM (Amazon Bedrock ou Anthropic API) — **ou** Ollama para rodar 100%
-  local, sem custo.
+- Uma chave de LLM (`ANTHROPIC_API_KEY` ou `OPENAI_API_KEY`) — **ou** Ollama, que sobe no próprio
+  compose, para rodar sem custo e sem chave.
 
-## Subir em 4 passos
+## Subir
+
+`make` sozinho imprime esta mesma ordem.
 
 ```bash
 # 1. Clonar e entrar no diretório
@@ -24,17 +26,23 @@ cd agent-sdr-morai
 
 # 2. Configurar o ambiente do perfil local
 cp -n local/.env.example local/.env
-# edite local/.env: escolha o provedor de LLM e, se for usar o Telegram, o token do bot
+# edite local/.env: ANTHROPIC_API_KEY e, se for usar o Telegram, o token do bot
 
-# 3. Subir tudo (adicione --profile ollama para LLM local)
-make local
+# 3. Conferir o .env
+make check-env
 
-# 4. Popular o catálogo (200 imóveis determinísticos + embeddings)
-make seed
+# 4. Subir tudo (fica em primeiro plano; siga noutro terminal)
+make local-ollama
+
+# 5. Baixar o modelo de embeddings (demora, uma vez só)
+make ollama-pull
+
+# 6. Popular o catálogo (200 imóveis determinísticos + embeddings) e os documentos institucionais
+make seed && make docs-kb
 ```
 
-O `make local` executa `scripts/check_env.py` antes de subir e aplica o schema do banco
-automaticamente na inicialização do container `db`.
+Para a massa do CRM, acrescente `make preparar` e `make crm-token` entre os passos 4 e 5 — o
+[roteiro de demonstração](roteiro-demonstracao.md) detalha. Sem CRM a Mora roda sozinha.
 
 ## Validar
 
@@ -43,7 +51,8 @@ curl -s http://localhost:8000/health       # {"ok": true, "agente": "Mora", ...}
 curl -s "http://localhost:8000/imoveis?limite=3"
 ```
 
-Abra o site em <http://localhost:5173> e o painel em <http://localhost:5174>.
+Abra o site em <http://localhost:5173> e o painel em <http://localhost:5174>. O painel pede o token
+`SDR_PAINEL_TOKEN`; com ele em branco no `local/.env`, vale `dev-token`.
 
 ## Encerrar
 
@@ -52,6 +61,6 @@ cd local && docker compose down             # use down -v para apagar também os
 ```
 
 !!! tip "Próximo passo"
-    Para a execução manual (sem Docker), a lista completa de portas e o deploy AWS, siga para
+    Para a lista completa de portas e para a execução manual (sem Docker), siga para
     [Executando com Docker](../getting-started/docker.md) e
     [Executando manualmente](../getting-started/manual.md).

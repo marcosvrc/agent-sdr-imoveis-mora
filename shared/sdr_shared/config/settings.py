@@ -5,58 +5,46 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     env: str = "dev"
-    profile: str = "aws"                    # aws | local  (decide broker, scheduler e hospedagem)
-    aws_region: str = "us-east-1"
+    # `local` (padrão) | `producao`. Não decide adaptador — cada porta tem uma implementação só.
+    # Decide UMA coisa, e é de segurança: se o token estático de desenvolvimento vale. Ver
+    # `seguranca/painel.py` e `services/api/src/api/auth.py`.
+    profile: str = "local"
 
-    # Provedores (independentes do perfil: dá para rodar local com Bedrock, ou AWS com Anthropic API)
-    llm_provider: str = "bedrock"           # bedrock | anthropic | ollama
+    # Provedores de LLM
+    llm_provider: str = "anthropic"         # anthropic | openai | ollama
     # Provedor de reserva: assumido quando o primário falha (indisponibilidade, timeout, cota).
     # Vazio = sem fallback. O ID do modelo é traduzido sozinho entre provedores (normalizar_modelo).
     llm_provider_fallback: str | None = None
     # Só para a bancada do harness comparar modelos (ADR-0009). NÃO usar no caminho de produção:
     # põe um terceiro no meio das conversas com PII de cliente. Exige `pip install langchain-openai`.
     openrouter_api_key: str | None = None
-    embeddings_provider: str = "bedrock"    # bedrock | ollama
+    embeddings_provider: str = "ollama"     # ollama (único; o bge-m3 dá as 1024 dimensões do schema)
     # Chave de organização (não escopada a um workspace) exige este header em toda requisição.
     anthropic_workspace_id: str | None = None
     ollama_url: str = "http://localhost:11434"
     llm_timeout_s: float = 45.0             # acima disso o turno falha e o cliente recebe o fallback
-    # Fotos enviadas pelo painel (perfil local: disco; na AWS o equivalente é S3 + CloudFront)
+    # Fotos enviadas pelo painel: gravadas em disco.
     fotos_dir: str = str(Path(__file__).resolve().parents[3] / "data" / "fotos")
     public_api_url: str = "http://localhost:8000"     # base para montar URLs absolutas de fotos fora da API (cards do agente)
     ollama_embedding_model: str = "bge-m3"
     redis_url: str = "redis://localhost:6379/0"
 
-    # Transcrição de áudio (mensagens de voz do Telegram/WhatsApp → texto).
-    # auto: whisper_local no perfil local, transcribe no perfil aws. Outras opções forçam o motor.
-    # off: não transcreve (o cliente recebe o pedido para escrever).
-    transcricao_provider: str = "auto"      # auto | transcribe | whisper_local | off
-    # Tamanho do modelo faster-whisper no perfil local (tiny|base|small|medium|large-v3).
+    # Transcrição de áudio (mensagens de voz do Telegram → texto).
+    # auto: usa o whisper local. `off` não transcreve (o cliente recebe o pedido para escrever).
+    transcricao_provider: str = "auto"      # auto | whisper_local | off
+    # Tamanho do modelo faster-whisper (tiny|base|small|medium|large-v3).
     # small equilibra qualidade e custo de CPU/RAM para pt-BR; ajuste conforme a máquina.
     whisper_model: str = "small"
 
     # Dados
     database_dsn: str = "postgresql://sdr:sdr@localhost:5432/sdr"
 
-    # Bedrock
-    model_conversa: str = "anthropic.claude-sonnet-4-5"       # ajustar ao ID disponível na região
-    model_roteamento: str = "anthropic.claude-haiku-4-5"
-    model_embedding: str = "amazon.titan-embed-text-v2:0"
-    knowledge_base_id: str | None = None                    # None => fallback pgvector direto (ADR-0001)
-    guardrail_id: str | None = None
-    audio_bucket: str | None = None
+    # Modelos. IDs da API direta da Anthropic; `normalizar_modelo` ainda limpa prefixos de
+    # provedores hospedados que possam vir de um .env antigo.
+    model_conversa: str = "claude-sonnet-4-5"
+    model_roteamento: str = "claude-haiku-4-5"
 
-    # Mensageria (a URL da fila de entrada não aparece aqui: quem publica no inbound usa a porta
-    # do broker, e o Lambda recebe por event source — ninguém precisa da URL em configuração)
-    eventbus_name: str = "sdr-events"
-    scheduler_group: str = "sdr-followup"
-
-    # WhatsApp (Secrets Manager em prod; env em dev) — adapter mantido, não usado no perfil local (ADR-0007)
-    whatsapp_phone_number_id: str | None = None
-    whatsapp_token: str | None = None
-    whatsapp_app_secret: str | None = None
-    whatsapp_verify_token: str = "sdr-verify"
-    # Telegram (Secrets Manager em prod; env em dev) — canal ativo no perfil local hoje.
+    # Telegram — o canal externo ativo.
     # Token vem do @BotFather; não precisa de app review nem verificação de negócio.
     telegram_bot_token: str | None = None
     telegram_bot_username: str | None = None   # só para montar o link t.me/<usuario> no site

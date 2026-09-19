@@ -72,7 +72,7 @@ Um lead nunca é apagado. Ao mudar de intenção **depois** de um ciclo fechado,
 5. o lead ainda está ativo.
 
 A sucessora **herda** cliente, nome, telefone, e-mail e corretor, e **recomeça** o que a pessoa
-procura. Os canais (WhatsApp/Telegram) passam a entregar na oportunidade nova.
+procura. Os canais do lead passam a entregar na oportunidade nova.
 
 ---
 
@@ -118,10 +118,10 @@ cobertura, `bairros` e `regiao` são **zerados**.
 
 **Quando a Mora pede contato** (`nodes/qualificador.py`):
 
-- canal **≠ web** → nunca pede (no Telegram/WhatsApp já se tem o identificador);
+- canal **≠ web** → nunca pede (no Telegram já se tem o identificador);
 - canal web e sem nome → pede **só o primeiro nome**, nunca junto com outro dado;
 - canal web, com nome, **sem contato e com cartão completo** → pede **um** contato, de preferência
-  WhatsApp, ao apresentar imóveis ou agendar. Não insiste.
+  telefone, ao apresentar imóveis ou agendar. Não insiste.
 
 ### 3.4 Roteamento — a ordem importa
 
@@ -458,8 +458,8 @@ mostrar quem ficou de fora:
 | Leads varridos por rodada | 500 |
 | Imóveis novos por ingestão | acima de **5**, nada é anunciado (é carga de catálogo, não novidade) |
 
-Canais: **Telegram e WhatsApp**. Web fica de fora de propósito — o widget só existe com a aba
-aberta. Lead sem conversa aberta não recebe: quem fala primeiro com quem nunca escreveu é o corretor.
+Canal: **Telegram**, o único assíncrono que resta. Web fica de fora de propósito — o widget só
+existe com a aba aberta. Lead sem conversa aberta não recebe: quem fala primeiro com quem nunca escreveu é o corretor.
 
 ### 11.4 Saída
 
@@ -547,7 +547,7 @@ Com ação = `alertar`, o modo é sempre `normal`, mesmo estourado — só o pai
 
 - Três níveis: `conversa`, `roteamento`, `analise`. **`analise` sem configuração cai em `conversa`.**
 - O painel manda, o `.env` é o piso; campo vazio significa "usa o do ambiente".
-- Provedores: `bedrock`, `anthropic`, `openai`, `ollama`. O reserva
+- Provedores: `anthropic`, `openai`, `ollama`. O reserva
   ([ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md)) entra quando o primário
   falha, e se for de **outra família** o modelo é trocado pelo equivalente do papel — mandar
   `claude-sonnet-4-5` para a OpenAI voltaria 404.
@@ -615,9 +615,9 @@ exportou dado pessoal. **Falhar ao auditar nunca derruba a operação auditada.*
 | **Saúde** | ver espera, filas e serviços | leitura; >30 s ruim, >10 s alerta; fila >50 crítica |
 | **Configurações** | agente, follow-up, agenda, cobertura, handoff, modelos | **só `followup` e `modelos` valem no próximo turno**; as demais seções são declarativas. Canais é leitura |
 
-**Autenticação:** no perfil local, um token estático (`dev-token` quando nada é configurado) e um
-ator fixo; no perfil AWS, o JWT do Cognito validado **pelo API Gateway** antes de chegar à
-aplicação. Qualquer 401 devolve o corretor ao login.
+**Autenticação:** um token estático (`SDR_PAINEL_TOKEN`) e um ator fixo. No perfil local, sem
+token configurado, vale `dev-token`; fora dele, sem segredo nada é aceito. Qualquer 401 devolve o
+corretor ao login.
 
 ---
 

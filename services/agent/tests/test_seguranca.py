@@ -199,12 +199,12 @@ def test_quebras_de_linha_sobrevivem():
 # ---------------------------------------------------------------- ponta a ponta
 
 def _entrada(lead_id: str, texto: str) -> MensagemNormalizada:
-    return MensagemNormalizada(lead_id=lead_id, canal=Canal.WHATSAPP, identificador_canal="5511999990000",
+    return MensagemNormalizada(lead_id=lead_id, canal=Canal.TELEGRAM, identificador_canal="5511999990000",
                                conteudo=texto, tipo=TipoMensagem.TEXTO)
 
 
 def _respostas(broker) -> list:
-    return [b["resposta"] for t, b, _ in broker.msgs if t == "outbound-whatsapp"]
+    return [b["resposta"] for t, b, _ in broker.msgs if t == "outbound-telegram"]
 
 
 def test_ataque_completo_recebe_recusa_e_nao_chega_ao_modelo(infra):

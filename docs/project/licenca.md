@@ -36,8 +36,9 @@ sem garantia.
   (JSON-LD) — um buscador não deve ser convidado a indexar credencial inventada.
 - **Dependências de terceiros.** Cada biblioteca mantém a sua própria licença; nada aqui altera
   esses termos.
-- **Serviços externos.** Anthropic, AWS Bedrock, Google Calendar e Telegram têm termos próprios de
-  uso, e a licença deste código não concede direito algum sobre eles.
+- **Serviços externos.** Anthropic, OpenAI, Google Calendar e Telegram têm termos próprios de
+  uso, e a licença deste código não concede direito algum sobre eles. O mesmo vale para os modelos
+  baixados pelo Ollama, cada um com a sua licença.
 
 ## Uso acadêmico
 

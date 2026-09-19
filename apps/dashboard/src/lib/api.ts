@@ -113,7 +113,7 @@ export type Reativacao = {
 export type Carteira = { leads: number; visitas: number };
 
 export type Config = { config: Record<string, Record<string, unknown>>; defaults: Record<string, Record<string, unknown>>;
-  canais: { telegram: { configurado: boolean; usuario?: string | null }; whatsapp: { configurado: boolean; numero?: string | null }; web: { configurado: boolean }; llm: { provider: string; modelo_conversa: string; modelo_roteamento: string; fallback?: string | null;
+  canais: { telegram: { configurado: boolean; usuario?: string | null }; web: { configurado: boolean }; llm: { provider: string; modelo_conversa: string; modelo_roteamento: string; fallback?: string | null;
     efetivo: Record<string, { modelo: string; provider: string; origem: "painel" | "ambiente" }> }; embeddings: { provider: string } } };
 
 const qs = (o: Record<string, string | number | undefined>) => { const p = new URLSearchParams(); for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== "") p.set(k, String(v)); const s = p.toString(); return s ? `?${s}` : ""; };

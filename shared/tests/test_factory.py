@@ -1,5 +1,6 @@
 """O mesmo modelo tem ID diferente em cada provedor — trocar de provedor no .env não pode exigir
-trocar o ID do modelo. Regressão do caminho Anthropic (IDs do Bedrock quebravam a API direta)."""
+trocar o ID do modelo. Regressão do caminho Anthropic: IDs com prefixo de provedor hospedado
+(`anthropic.`, `us.`) quebravam a API direta, e um `.env` herdado ainda pode trazê-los."""
 import pytest
 from sdr_shared.ports.factory import modelo_do_provedor, normalizar_modelo
 
@@ -8,9 +9,8 @@ from sdr_shared.ports.factory import modelo_do_provedor, normalizar_modelo
     ("anthropic.claude-sonnet-4-5", "anthropic", "claude-sonnet-4-5"),
     ("us.anthropic.claude-haiku-4-5", "anthropic", "claude-haiku-4-5"),
     ("claude-sonnet-4-5", "anthropic", "claude-sonnet-4-5"),
-    ("claude-haiku-4-5", "bedrock", "anthropic.claude-haiku-4-5"),
-    ("anthropic.claude-haiku-4-5", "bedrock", "anthropic.claude-haiku-4-5"),
-    ("us.anthropic.claude-sonnet-4-5", "bedrock", "us.anthropic.claude-sonnet-4-5"),
+    # Outro provedor: o ID passa intacto — quem normaliza prefixo da Anthropic é o caminho dela.
+    ("gpt-5.6-terra", "openai", "gpt-5.6-terra"),
 ])
 def test_normalizar_modelo(modelo, provedor, esperado):
     assert normalizar_modelo(modelo, provedor) == esperado
@@ -41,7 +41,7 @@ def test_workspace_id_vira_header(monkeypatch):
     m = _modelo(monkeypatch, SDR_LLM_PROVIDER="anthropic", ANTHROPIC_API_KEY="sk-ant-teste",
                 SDR_ANTHROPIC_WORKSPACE_ID="wrkspc_abc")
     assert _headers(m)["anthropic-workspace-id"] == "wrkspc_abc"
-    assert m.model == "claude-sonnet-4-5"          # sem o prefixo `anthropic.` do Bedrock
+    assert m.model == "claude-sonnet-4-5"          # sem o prefixo `anthropic.` herdado
 
 
 def test_sem_workspace_id_nao_manda_header(monkeypatch):
@@ -53,10 +53,9 @@ def test_sem_workspace_id_nao_manda_header(monkeypatch):
 # ---------------------------------------------------------- famílias diferentes
 
 @pytest.mark.parametrize("modelo,provedor,papel,esperado", [
-    # Mesma família (Anthropic ↔ Bedrock): só o prefixo muda, o modelo é o mesmo.
+    # Mesma família: só o prefixo muda, o modelo é o mesmo.
     ("claude-sonnet-4-5", "anthropic", "conversa", "claude-sonnet-4-5"),
     ("anthropic.claude-haiku-4-5", "anthropic", "roteamento", "claude-haiku-4-5"),
-    ("claude-haiku-4-5", "bedrock", "roteamento", "anthropic.claude-haiku-4-5"),
     # Família diferente: traduzir o NOME não faria o modelo existir do outro lado. Troca-se pelo
     # equivalente do papel — modelo bom para conversa, modelo barato para roteamento.
     ("claude-sonnet-4-5", "openai", "conversa", "gpt-5.6-terra"),
@@ -64,7 +63,7 @@ def test_sem_workspace_id_nao_manda_header(monkeypatch):
     ("anthropic.claude-sonnet-4-5", "openai", "analise", "gpt-5.6-terra"),
     # E na volta: quem configura OpenAI como primário e Anthropic como reserva também precisa disso.
     ("gpt-5.6-terra", "anthropic", "conversa", "claude-sonnet-4-5"),
-    ("gpt-5.6-luna", "bedrock", "roteamento", "anthropic.claude-haiku-4-5"),
+    ("gpt-5.6-luna", "anthropic", "roteamento", "claude-haiku-4-5"),
     # Modelo já da família do provedor passa intacto.
     ("gpt-5-mini", "openai", "conversa", "gpt-5-mini"),
 ])

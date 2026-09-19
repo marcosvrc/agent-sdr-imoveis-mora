@@ -28,7 +28,7 @@ NAMESPACE = uuid.UUID("47dd649b-e85b-5805-b092-10830f6142c1")   # fixo: muda tud
 BAIRROS = ["Brooklin", "Vila Mariana", "Pinheiros", "Moema", "Tatuapé", "Santana",
            "Butantã", "Perdizes", "Ipiranga", "Lapa"]
 TIPOS = ["apartamento", "casa", "studio", "cobertura"]
-CANAIS = ["telegram", "site", "whatsapp", "telefone"]
+CANAIS = ["telegram", "site", "telefone", "e-mail"]
 ESTAGIOS = [("new", 20), ("in_service", 25), ("qualified", 25), ("visit_scheduled", 15),
             ("negotiation", 15), ("won", 10), ("lost", 10)]
 MOTIVOS_PERDA = ["comprou com outra imobiliária", "desistiu da mudança", "sem retorno",

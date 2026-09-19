@@ -83,7 +83,6 @@ function Canais({ c }: { c: Config["canais"] }) {
     <ul className="divide-y divide-line">
       <Linha icone={<Ic.globe size={16} />} nome="Chat do site" ok={c.web.configurado} detalhe="WebSocket · widget na landing e nas páginas de imóvel" />
       <Linha icone={<Ic.telegram size={16} />} nome="Telegram" ok={c.telegram.configurado} detalhe={c.telegram.configurado ? `bot @${c.telegram.usuario ?? "?"}` : "preencha SDR_TELEGRAM_BOT_TOKEN no local/.env — criado na hora com o @BotFather, sem aprovação"} />
-      <Linha icone={<Ic.whatsapp size={16} />} nome="WhatsApp (Meta Cloud API)" ok={c.whatsapp.configurado} detalhe={c.whatsapp.configurado ? `número ${c.whatsapp.numero}` : "não usado no perfil local hoje — trocado por Telegram (ver ADR-0007)"} />
       <Linha icone={<Ic.spark size={16} />} nome={`LLM · ${c.llm.provider}`} ok detalhe={`conversa: ${c.llm.modelo_conversa} · roteamento: ${c.llm.modelo_roteamento}`} />
       <Linha icone={<Ic.bolt size={16} />} nome={`Embeddings · ${c.embeddings.provider}`} ok detalhe="RAG híbrido: filtros SQL + similaridade no pgvector" />
     </ul>

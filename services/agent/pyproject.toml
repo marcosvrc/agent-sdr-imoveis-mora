@@ -1,7 +1,7 @@
 [project]
 name = "sdr-agent"
 version = "0.1.0"
-description = "Grafo multiagente do SDR (LangGraph + Bedrock)"
+description = "Grafo multiagente do SDR (LangGraph)"
 requires-python = ">=3.12"
 dependencies = [
   "sdr-shared",
@@ -11,11 +11,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-aws = ["sdr-shared[aws]", "boto3>=1.35"]
-# faster-whisper: transcrição de áudio in-process no perfil local (sem AWS). Opcional de propósito —
+# faster-whisper: transcrição de áudio in-process, sem serviço externo. Opcional de propósito —
 # o CI usa o extra [dev], que não o instala; os testes de transcrição mockam o motor.
 local = ["sdr-shared[local]", "faster-whisper>=1.0"]
-dev = ["pytest", "pytest-asyncio", "moto"]
+dev = ["pytest", "pytest-asyncio"]
 
 [tool.uv.sources]
 sdr-shared = { path = "../../shared", editable = true }

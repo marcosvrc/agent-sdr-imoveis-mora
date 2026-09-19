@@ -24,8 +24,8 @@ def test_painel_local_aceita_token_de_dev():
 
 
 def test_painel_fora_do_local_e_fail_closed():
-    """Sem SDR_PAINEL_TOKEN configurado, o perfil aws não aceita nada — nem o token de dev."""
-    _com_ambiente(SDR_PROFILE="aws", SDR_PAINEL_TOKEN=None)
+    """Sem SDR_PAINEL_TOKEN configurado, fora do perfil local nada é aceito — nem o token de dev."""
+    _com_ambiente(SDR_PROFILE="producao", SDR_PAINEL_TOKEN=None)
     assert not painel.valido("dev-token")
     _com_ambiente(SDR_PAINEL_TOKEN="token-de-producao")
     assert painel.valido("token-de-producao") and not painel.valido("dev-token")

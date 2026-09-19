@@ -5,7 +5,6 @@ description = "API REST: imóveis públicos, leads, dashboard, handoff, eventos 
 requires-python = ">=3.12"
 dependencies = ["sdr-shared", "fastapi>=0.115"]
 [project.optional-dependencies]
-aws = ["mangum>=0.17", "boto3>=1.35"]
 dev = ["uvicorn", "pytest", "httpx"]
 [tool.uv.sources]
 sdr-shared = { path = "../../shared", editable = true }

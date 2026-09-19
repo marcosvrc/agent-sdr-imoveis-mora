@@ -74,7 +74,7 @@ def build_graph(checkpointer=None):
 
 
 def build_checkpointer():
-    """Perfis aws e local: checkpointer Postgres (thread_id = lead_id)."""
+    """Checkpointer Postgres (thread_id = lead_id)."""
     from psycopg import Connection
     from langgraph.checkpoint.postgres import PostgresSaver
     from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer

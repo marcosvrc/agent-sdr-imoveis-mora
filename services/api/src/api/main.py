@@ -24,9 +24,8 @@ A etiqueta de cada rota diz quem a usa e o que ela exige:
 | `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |
 | `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |
 
-**Como autenticar no perfil local:** clique em **Authorize** e informe o valor de
-`SDR_PAINEL_TOKEN` (no ambiente de desenvolvimento, `dev-token`). No perfil AWS o token é o
-JWT do Cognito, validado pelo authorizer do API Gateway antes de chegar aqui.
+**Como autenticar:** clique em **Authorize** e informe o valor de `SDR_PAINEL_TOKEN` (no
+ambiente de desenvolvimento, `dev-token`).
 
 Toda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).
 """
@@ -34,7 +33,7 @@ Toda alteração feita por estas rotas é registrada em auditoria (ver `GET /aud
 ETIQUETAS = [
     {"name": "público", "description":
         "Catálogo de imóveis e eventos de navegação. Sem autenticação — é o que a vitrine consome "
-        "e o que o CloudFront pode cachear."},
+        "e o que um CDN na frente poderia cachear."},
     {"name": "corretor", "description":
         "Leads, conversas, agenda e KPIs do painel. Exige credencial de corretor."},
     {"name": "operacao", "description":
@@ -63,9 +62,9 @@ _origens = [o.strip() for o in (get_settings().cors_origins or "").split(",") if
 app.add_middleware(CORSMiddleware, allow_origins=_origens, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(AuditoriaMiddleware)      # registra tudo que muda o sistema
 
-app.include_router(imoveis.router, prefix="/imoveis", tags=["público"])       # sem auth, cache CloudFront
+app.include_router(imoveis.router, prefix="/imoveis", tags=["público"])       # sem auth: é a vitrine
 app.include_router(eventos.router, prefix="/eventos", tags=["público"])       # navegação do site → cartão do lead
-app.include_router(leads.router, prefix="/leads", tags=["corretor"])          # Cognito JWT (aws) / token dev (local)
+app.include_router(leads.router, prefix="/leads", tags=["corretor"])          # token do painel
 app.include_router(dashboard.router, prefix="/dashboard", tags=["corretor"])
 app.include_router(handoff.router, prefix="/handoff", tags=["corretor"])
 app.include_router(interesses.router, prefix="/interesses", tags=["corretor"])
@@ -82,7 +81,7 @@ app.include_router(calendario.router, prefix="/calendario", tags=["admin"])
 
 @app.get("/fotos/{imovel_id}/{nome}", tags=["público"], include_in_schema=False)
 def foto(imovel_id: str, nome: str):
-    """Fotos enviadas pelo painel (perfil local: disco). Na AWS: S3 + CloudFront com a mesma URL relativa."""
+    """Fotos enviadas pelo painel, servidas do disco pela mesma URL relativa que o card usa."""
     if not re.fullmatch(r"[A-Za-z0-9_-]+", imovel_id) or not re.fullmatch(r"[a-f0-9]{32}\.(jpg|png|webp)", nome):
         raise HTTPException(404)
     arq = Path(get_settings().fotos_dir) / imovel_id / nome
@@ -95,8 +94,9 @@ def foto(imovel_id: str, nome: str):
 def health(response: Response):
     """Saúde de verdade: banco alcançável e nenhum worker calado (ADR-0011).
 
-    Devolve 503 quando algo está degradado — é o que o `healthcheck` do compose e o target group
-    da AWS leem. Um /health que devolve 200 sempre não é monitoramento, é decoração."""
+    Devolve 503 quando algo está degradado — é o que o `healthcheck` do compose lê, e é o que
+    faria um balanceador tirar a instância de rotação. Um /health que devolve 200 sempre não é
+    monitoramento, é decoração."""
     problemas: list[str] = []
     try:
         with get_pool().connection() as c:
@@ -109,9 +109,3 @@ def health(response: Response):
         response.status_code = 503
     return {"ok": not problemas, "agente": "Mora", "problemas": problemas}
 
-
-try:
-    from mangum import Mangum
-    handler = Mangum(app)          # Lambda (perfil aws)
-except ImportError:                # perfil local não precisa do Mangum
-    handler = None

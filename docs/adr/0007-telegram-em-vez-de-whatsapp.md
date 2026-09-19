@@ -9,34 +9,38 @@ qualquer teste de ponta a ponta pelo canal de mensageria além do chat do site.
 
 ## Decisão
 `services/channels/telegram` (novo, mesmo contrato do ADR-0003) substitui `services/channels/whatsapp`
-como canal ativo no perfil local. Um bot do Telegram é criado na hora, falando com **@BotFather** —
-sem app review, sem verificação de negócio, sem prazo de espera.
+como canal externo. Um bot do Telegram é criado na hora, falando com **@BotFather** — sem app review,
+sem verificação de negócio, sem prazo de espera.
 
-Além disso, o perfil local passa a usar **long polling** (`getUpdates`) em vez de webhook: o worker
+Além disso, o canal passa a usar **long polling** (`getUpdates`) em vez de webhook: o worker
 `telegram-in` puxa mensagens ativamente, então não precisa de URL pública nem do túnel cloudflared que
 o webhook do WhatsApp exigia (`tunnel` saiu do compose). Isso também simplifica o ambiente de
 desenvolvimento — um serviço a menos no ar, uma dependência de rede a menos.
 
-O adapter do WhatsApp **não foi apagado** — só saiu do `docker-compose.yml` local. `Canal.WHATSAPP`
-continua no enum, os testes continuam passando, e religar é reabilitar o serviço no compose e
-preencher `SDR_WHATSAPP_*`, se um número de negócio verificado aparecer depois.
+**Atualização:** o WhatsApp saiu do código por completo. `services/channels/whatsapp` e o worker de
+envio foram removidos, e `Canal` tem hoje só `telegram`, `web` e `sistema`
+(`shared/sdr_shared/messaging/contracts.py`). Não é caso de "religar no compose": voltar ao WhatsApp
+significa escrever o adaptador de novo, contra a Cloud API da Meta, com a verificação de negócio que
+travou aqui. Manter um adaptador morto no repositório custava manutenção e teste por uma opção que
+ninguém ia exercer.
 
 ## O que muda para quem usa o sistema
 - Site (`apps/web`): o CTA que antes abria `wa.me/...` agora abre `t.me/<bot>?start=...`. Deep link
   com imóvel de origem funciona igual (`IMOVEL-<id>` no payload do `/start`).
 - Painel do corretor: a tela de Configurações mostra o status do Telegram; a coluna de canal de cada
-  lead aceita `telegram` ao lado de `whatsapp`/`web`.
+  lead mostra `telegram` ou `web`.
 - Botões: Telegram usa teclado inline (`inline_keyboard`), sem o limite de 3 botões do WhatsApp — o
   agente pode oferecer mais opções por mensagem sem precisar do formato de lista.
 
 ## Riscos e limitações aceitas por ora
-- **Áudio não transcreve ainda.** O adapter já marca a mensagem como `TipoMensagem.AUDIO` com o
-  `file_id` do Telegram, mas `tools/transcricao.py` só sabe buscar mídia da Meta Cloud API — falha
-  graciosamente (`handler.py` já trata isso: cai para "áudio não compreendido"). Estender a
-  transcrição para o Telegram (`getFile` + o mesmo pipeline de Transcribe) fica como próximo passo,
-  não bloqueia o resto.
+- **Áudio — resolvido depois.** Quando este ADR foi escrito, o adapter marcava a mensagem como
+  `TipoMensagem.AUDIO` com o `file_id` do Telegram mas nada sabia baixá-la. Hoje
+  `agent/tools/transcricao.py` faz `getFile` + download e transcreve com `faster-whisper` no próprio
+  processo (`SDR_TRANSCRICAO_PROVIDER` ∈ `auto` | `whisper_local` | `off`), sem serviço externo e sem
+  custo por minuto. Continua falhando graciosamente quando desligado: o `handler.py` pede texto.
 - **Long polling não escala como webhook** (um processo, uma conexão longa por vez) — aceitável para
-  demo e para o volume de uma POC; em produção real valeria voltar a webhook (Telegram suporta os dois).
+  demo e para o volume de uma POC. Voltar a webhook (o Telegram suporta os dois) exigiria uma URL
+  pública, e hoje nada está implantado: a entrega roda inteira em `docker compose`.
 
 ## Alternativas consideradas
 - **Insistir na verificação de negócio da Meta:** sem prazo previsível, travava a entrega.

@@ -22,7 +22,7 @@ def test_sem_contato_nao_inventamos_um_cliente():
     assert ClienteRepository().vincular(lead) is None, "duas sessões anônimas não são a mesma pessoa"
 
 
-def test_mesmo_telefone_no_whatsapp_e_na_web_e_um_cliente_so():
+def test_mesmo_telefone_no_telegram_e_na_web_e_um_cliente_so():
     repo = ClienteRepository()
     whats = _lead("wa_1", nome="Marcos", telefone="11988887777")
     web = _lead("web_2", telefone="(11) 98888-7777")          # o cliente digitou formatado

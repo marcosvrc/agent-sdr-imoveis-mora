@@ -5,11 +5,11 @@ from sdr_shared.db import LeadRepository, MensagemRepository, VisitaRepository
 from agent.handler import processar
 
 
-def msg(lead, texto, tipo=TipoMensagem.TEXTO, meta=None, canal=Canal.WHATSAPP):
+def msg(lead, texto, tipo=TipoMensagem.TEXTO, meta=None, canal=Canal.TELEGRAM):
     return MensagemNormalizada(lead_id=lead, canal=canal, identificador_canal="5511999990000", tipo=tipo, conteudo=texto, meta=meta or {})
 
 
-def ultima(broker, topic="outbound-whatsapp"):
+def ultima(broker, topic="outbound-telegram"):
     return [b for t, b, _ in broker.msgs if t == topic][-1]["resposta"]
 
 

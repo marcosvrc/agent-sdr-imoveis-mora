@@ -7,11 +7,14 @@ imóveis do catálogo, agenda visitas e passa o lead qualificado para um correto
 O repositório é um monorepo: cada componente vive na sua pasta, com dependências, testes e deploy
 independentes, comunicando-se apenas por contratos definidos em `shared/`.
 
-**Status:** POC (prova de conceito). Núcleo implementado e testado nos perfis local e AWS; alguns
-itens dependentes de serviços AWS estão escritos mas não testados (ver [Funcionalidades](#4-funcionalidades-implementadas)).
+**Status:** POC (prova de conceito). A entrega roda inteira na máquina de quem avalia, por
+`docker compose`; **nada está implantado**, e isso é escolha, não pendência — quem abre o
+repositório sobe o sistema todo sem conta em provedor nenhum. Ver
+[Funcionalidades](#4-funcionalidades-implementadas).
 
-**CI:** GitHub Actions — testes de backend (Python 3.12 + Postgres pgvector), build dos front-ends
-(`web` e `dashboard`) e `cdk synth` da infraestrutura. Ver [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+**CI:** GitHub Actions — testes de backend com cobertura (Python 3.12 + Postgres pgvector), harness
+de avaliação com dublês e build + `eslint` dos front-ends (`web` e `dashboard`). Ver
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 > ## 📖 Documentação completa (portal)
 >
@@ -25,7 +28,7 @@ itens dependentes de serviços AWS estão escritos mas não testados (ver [Funci
 > [`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
 
 **Documentação complementar:**
-[Portal (GitHub Pages)](https://marcosvrc.github.io/agent-sdr-imoveis-mora/) · [Arquitetura](docs/ARCHITECTURE.md) · [ADRs](docs/adr) · [Perfil local](local/README.md) · [Observabilidade](docs/observabilidade.md) · [Como contribuir](docs/project/contribuir.md)
+[Portal (GitHub Pages)](https://marcosvrc.github.io/agent-sdr-imoveis-mora/) · [Arquitetura](docs/ARCHITECTURE.md) · [ADRs](docs/adr) · [Ambiente local](local/README.md) · [Observabilidade](docs/quality/observabilidade.md) · [Como contribuir](docs/project/contribuir.md)
 
 ---
 
@@ -78,8 +81,9 @@ Telegram, API REST, RAG híbrido, follow-up automático, governança de IA e uma
 determinística contra abuso de prompt.
 
 **Fora do escopo (avaliado e cortado — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#8-o-que-ficou-fora-avaliado-e-cortado)).**
-App nativo (o PWA cobre), CRM real (simulado no banco + endpoint `/leads/crm/sync`), Voice AI em
-tempo real, multi-tenant e WhatsApp Business verificado da empresa.
+App nativo (o PWA cobre), Voice AI em tempo real, multi-tenant e o canal WhatsApp — que exigia
+número de negócio verificado e webhook com URL pública, e por isso foi removido do código em favor
+do Telegram ([ADR-0007](docs/adr/0007-telegram-em-vez-de-whatsapp.md)).
 
 ---
 
@@ -99,8 +103,9 @@ externo), **Planejada** (prevista, não implementada).
 | Scoring de temperatura do lead (quente/morno/frio) | Concluída | `test_cenarios.py` |
 | Guardrails de escopo, saneamento de saída e rate limiting | Concluída | `tests/test_seguranca.py` |
 | Governança de LLM: registro por chamada, custo por modelo, orçamento com degradação | Concluída | `tests/test_governanca.py` |
-| Transcrição de áudio (Amazon Transcribe) | Parcial | escrita, não testada (exige AWS) |
-| RAG via Bedrock Knowledge Base | Parcial | escrita, não testada (exige AWS); fallback pgvector é o testado |
+| Transcrição de voz do Telegram com `faster-whisper` no próprio processo | Concluída | `tools/transcricao.py`, `tests/test_transcricao.py` |
+| RAG institucional sobre pgvector (piso de similaridade, reescrita de consulta) | Concluída | `shared/sdr_shared/conhecimento.py`, `tools/conhecimento.py` |
+| Fusão léxica (RRF) no RAG institucional | Parcial | implementada e testada, **desligada** por padrão atrás de `SDR_RAG_LEXICO`: o A/B piorou o recall (31,9% → 29,8%) |
 
 ### Site (`apps/web`)
 | Funcionalidade | Estado | Evidência |
@@ -116,16 +121,16 @@ externo), **Planejada** (prevista, não implementada).
 | Configurações do agente e governança de IA (tokens, custos, limites) | Concluída | `routers/config.py`, `routers/governanca.py` |
 | Auditoria e aba de saúde do sistema (observabilidade leve) | Concluída | ADR-0011, `routers/auditoria.py`, `routers/dashboard.py` |
 
-### Backend, integrações e infraestrutura
+### Backend, integrações e execução
 | Funcionalidade | Estado | Evidência |
 |---|---|---|
 | API REST (imóveis públicos, leads, dashboard, handoff, eventos, config, governança, auditoria) | Concluída | `services/api`, `tests/test_api.py` |
-| Canal Telegram (long polling no local) | Concluída | `services/channels/telegram` |
-| Canal Web (WebSocket) | Concluída | `services/channels/local`, `services/channels/web` |
-| Canal WhatsApp (webhook HMAC, cards, template 24h) | Parcial | `tests/test_adapter.py`; **desativado** no compose (ADR-0007) |
+| Canal Telegram (long polling, `getUpdates`) | Concluída | `services/channels/telegram` |
+| Canal Web (WebSocket) | Concluída | `services/channels/local` |
 | Follow-up automático e ingestão de imóveis | Concluída | `services/scheduler`, `services/ingestion` |
-| Integração Google Agenda do corretor | Parcial | `tools/agenda.py`; opcional, degrada para agenda interna |
-| Infraestrutura como código (AWS CDK, 10 stacks) | Concluída | `cdk synth` na CI |
+| Ponte com o CRM por MCP sobre HTTP | Concluída | `services/crm`, `shared/sdr_shared/adapters/crm/via_mcp.py` |
+| Integração Google Agenda do corretor | Parcial | `tools/agenda.py`, `adapters/google/calendario.py`; opcional, degrada para a agenda do próprio banco |
+| Ambiente completo em `docker compose` (banco, fila, workers, canais, API, front-ends e CRM) | Concluída | [`local/docker-compose.yml`](local/docker-compose.yml) |
 
 > As funcionalidades marcadas como **Parcial** não devem ser tratadas como prontas para produção.
 
@@ -134,8 +139,8 @@ externo), **Planejada** (prevista, não implementada).
 ## 5. Tecnologias utilizadas
 
 Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `settings.py`,
-`docker-compose.yml`, `.github/workflows/ci.yml`). Onde a versão não está fixada no repositório,
-consta `A confirmar`.
+`local/docker-compose.yml`, `.github/workflows/ci.yml`). Onde a versão não está fixada no
+repositório, consta `A confirmar`.
 
 | Categoria | Tecnologia | Versão | Finalidade |
 |---|---|---:|---|
@@ -146,30 +151,25 @@ consta `A confirmar`.
 | Frontend | TanStack React Query | ^5.51.0 | Cache e sincronização de dados |
 | Frontend | Zustand | ^4.5.0 | Estado do chat (site) |
 | Frontend | Recharts | ^2.12.0 | Gráficos do painel |
-| Frontend | AWS Amplify | ^6.5.0 | Autenticação Cognito no painel (perfil AWS) |
 | Frontend | vite-plugin-pwa | ^0.20.0 | PWA do site |
 | Backend | Python | 3.12 | Linguagem dos serviços |
-| Backend | FastAPI | >=0.115 | API REST e apps de canal |
-| Backend | Mangum | A confirmar | Adaptador FastAPI → AWS Lambda |
+| Backend | FastAPI | >=0.115 | API REST e app de canal (HTTP + WebSocket) |
 | LLM/IA | LangGraph | >=0.2 | Orquestração do grafo multiagente |
 | LLM/IA | LangChain Core | >=0.3 | Abstrações de mensagens/modelos |
-| LLM/IA | Amazon Bedrock — Claude Sonnet | `anthropic.claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
-| LLM/IA | Amazon Bedrock — Claude Haiku | `anthropic.claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
-| LLM/IA | Provedores alternativos | — | `anthropic` (API) e `ollama` (local), via `SDR_LLM_PROVIDER` |
-| RAG/Embeddings | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0` | Embeddings (perfil AWS) |
-| RAG/Embeddings | Ollama bge-m3 | 1024 dims | Embeddings locais (opcional) |
-| RAG/Embeddings | Bedrock Knowledge Base | — | RAG gerenciado; fallback pgvector direto (ADR-0001) |
-| Banco de dados | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | Dados relacionais + vetores |
-| Banco de dados (AWS) | Aurora Serverless v2 (Postgres 16) | — | Mesma base, gerenciada (ADR-0004) |
-| Fila / assíncrono (AWS) | Amazon SQS + EventBridge Scheduler | — | Mensageria e follow-up |
-| Fila / assíncrono (local) | Redis Streams | `redis:7-alpine` | Substitui SQS/EventBridge no compose |
-| Armazenamento (AWS) | Amazon S3 + CloudFront | — | Fotos e documentos |
-| Autenticação | Amazon Cognito (AWS) / token estático (local) | — | Acesso ao painel (ADR-0008) |
-| Infraestrutura | AWS CDK (Python) | ver `infra/requirements.txt` | IaC, 10 stacks |
-| Containers | Docker + Docker Compose | — | Perfil local e imagens de deploy |
-| CI/CD | GitHub Actions | — | Testes, build de front-ends, `cdk synth` |
+| LLM/IA | Anthropic — Claude Sonnet | `claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
+| LLM/IA | Anthropic — Claude Haiku | `claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
+| LLM/IA | Provedores aceitos | — | `anthropic` (padrão), `openai` e `ollama`, via `SDR_LLM_PROVIDER`; reserva em `SDR_LLM_PROVIDER_FALLBACK` |
+| RAG/Embeddings | Ollama bge-m3 | 1024 dims | Provedor único de embeddings — é o que dá as dimensões que o schema espera |
+| RAG | pgvector no mesmo Postgres | — | Imóveis e documentos institucionais (ADR-0001) |
+| Áudio | faster-whisper | in-process | Transcreve a voz do Telegram; `SDR_TRANSCRICAO_PROVIDER` |
+| Banco de dados | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | Dados relacionais + vetores, na mesma base (ADR-0004) |
+| Fila / assíncrono | Redis Streams | `redis:7-alpine` | Tópicos e locks entre canais, agente e scheduler |
+| Autenticação | Token estático `SDR_PAINEL_TOKEN` | — | Acesso ao painel e ao WebSocket `papel=dashboard` (ADR-0008) |
+| Integração | MCP sobre HTTP | `services/crm` | Ponte da Mora com o CRM da imobiliária |
+| Containers | Docker + Docker Compose | — | Todo o ambiente de execução |
+| CI/CD | GitHub Actions | — | `ruff`, cobertura, harness com dublês, build + `eslint` dos front-ends |
 | Observabilidade | Postgres (tabelas de saúde) + `/health` + logs JSON | — | Observabilidade leve (ADR-0011) |
-| Observabilidade | Langfuse | `langfuse/langfuse:2` | Tracing de LLM (opcional, perfil local) |
+| Observabilidade | Langfuse | `langfuse/langfuse:2` | Tracing de LLM (opcional, `--profile observability`) |
 | Testes | pytest | — | Testes de backend |
 
 ---
@@ -178,25 +178,28 @@ consta `A confirmar`.
 
 ### Visão geral
 
-O sistema separa o **cérebro** (o agente) dos **canais** (Telegram, web). O agente não sabe por qual
-canal a mensagem chegou: cada canal traduz `evento do provedor → MensagemNormalizada` e
+O sistema separa o **cérebro** (o agente) dos **canais** (Telegram, web, CLI). O agente não sabe por
+qual canal a mensagem chegou: cada canal traduz `evento do provedor → MensagemNormalizada` e
 `RespostaAgente → formato do canal`. A única dependência cruzada permitida é o pacote `shared/`.
 
-O mesmo código roda em dois perfis, escolhidos por `SDR_PROFILE`: **aws** (serverless) e **local**
-(docker compose). A troca acontece apenas nos adaptadores (`shared/sdr_shared/adapters/{aws,local}`).
+Tudo roda como container no [`local/docker-compose.yml`](local/docker-compose.yml). Cada dependência
+externa entra por uma porta (`shared/sdr_shared/ports`), resolvida por
+`shared/sdr_shared/adapters/`; hoje broker, scheduler e embeddings têm uma implementação cada, e
+`SDR_PROFILE` decide apenas se o token estático de desenvolvimento vale.
 
 ```mermaid
 flowchart LR
   subgraph Entrada["Porta de entrada"]
-    SITE["apps/web<br/>site vitrine + chat"]
-    TG["Telegram<br/>Bot API"]
+    SITE["apps/web<br/>site vitrine + chat (:5173)"]
+    TG["Telegram<br/>Bot API (long polling)"]
   end
 
   subgraph Canais["services/channels"]
-    CH["Web (WebSocket)<br/>Telegram (long polling)"]
+    CH["channels :8001<br/>HTTP + WebSocket (local)"]
+    TGW["telegram-in / telegram-out"]
   end
 
-  Q[["Fila<br/>SQS (aws) / Redis (local)"]]
+  Q[["Redis Streams<br/>tópicos e locks"]]
 
   subgraph Agente["services/agent — grafo LangGraph"]
     SUP["Supervisor"]
@@ -204,17 +207,23 @@ flowchart LR
     SUP --> NODES
   end
 
-  LLM["LLM<br/>Bedrock / Anthropic / Ollama"]
-  DB[("Postgres + pgvector<br/>Aurora (aws) / container (local)")]
-  API["services/api<br/>FastAPI"]
-  DASH["apps/dashboard<br/>painel do corretor"]
+  LLM["LLM<br/>Anthropic · OpenAI · Ollama"]
+  DB[("Postgres 16 + pgvector<br/>container db")]
+  CRM["crm-mcp :8200<br/>servidor MCP do CRM"]
+  API["services/api :8000<br/>FastAPI"]
+  DASH["apps/dashboard :5174<br/>painel do corretor"]
 
   SITE --> CH
-  TG --> CH
-  CH --> Q --> Agente
+  TG --> TGW
+  CH --> Q
+  TGW --> Q
+  Q --> Agente
   Agente --> LLM
   Agente --> DB
-  Agente -->|resposta neutra| CH
+  Agente --> CRM
+  Agente -->|resposta neutra| Q
+  Q --> CH
+  Q --> TGW
   API --> DB
   DASH --> API
   DASH -->|tempo real| CH
@@ -223,13 +232,16 @@ flowchart LR
 **Componentes e responsabilidades.**
 - **`apps/web`** — site vitrine, catálogo e widget de chat; porta de entrada do cliente.
 - **`apps/dashboard`** — painel do corretor (funil, conversas, agenda, imóveis, governança, auditoria).
-- **`services/channels`** — adaptadores de canal, sem regra de negócio.
+- **`services/channels/local`** — chat do site: HTTP + WebSocket (`:8001`).
+- **`services/channels/telegram`** — long polling de entrada e worker de saída.
 - **`services/agent`** — grafo multiagente; único componente que fala com o LLM.
 - **`services/api`** — API REST (imóveis públicos, leads, dashboard, handoff, config, governança).
 - **`services/scheduler`** — follow-up automático (agenda e cancela por lead).
-- **`services/ingestion`** — carga de imóveis e geração de embeddings.
+- **`services/ingestion`** — carga de imóveis e documentos, e geração de embeddings.
+- **`services/crm`** — o CRM da imobiliária: sistema à parte, com banco próprio, API REST e o
+  servidor MCP por onde a Mora entra.
 - **`shared/`** — modelos, contratos, repositórios (SQL + pgvector), portas e adaptadores.
-- **`infra/`** — AWS CDK (só deploy; sem lógica).
+- **`local/`** — o `docker-compose.yml` que sobe tudo isso.
 
 ### Fluxo principal de atendimento (máquina de estados do lead)
 
@@ -274,14 +286,15 @@ aleatória, com um cabeçalho de blindagem que instrui o modelo a tratá-lo como
 resposta do modelo passa por um saneamento final antes de virar mensagem. Detalhes em
 [Segurança e privacidade](#14-segurança-e-privacidade).
 
-### Diagrama de implantação local
+### Diagrama de execução (docker compose)
 
 ```mermaid
 flowchart TB
-  subgraph Host["Máquina do desenvolvedor (docker compose)"]
+  subgraph Host["Máquina de quem avalia (docker compose)"]
     subgraph Front["Front-ends (Vite)"]
       W["web :5173"]
       D["dashboard :5174"]
+      CW["crm-web :3000"]
     end
     A["api :8000"]
     C["channels :8001 (HTTP + WS)"]
@@ -289,27 +302,38 @@ flowchart TB
     RS["resumidor (worker)"]
     RT["reativador (worker)"]
     SC["scheduler (worker)"]
-    TI["telegram-in / telegram-out"]
-    PG[("db :5433 → 5432<br/>Postgres + pgvector")]
+    TI["telegram-in / telegram-out<br/>(long polling)"]
+    CA["crm-api :8100"]
+    CM["crm-mcp :8200"]
+    PG[("db :5433 → 5432<br/>Postgres + pgvector<br/>bancos sdr e crm")]
     RD[("redis :6380 → 6379")]
-    OL[("ollama :11435 (opcional)")]
-    LF["langfuse :3000 (opcional)"]
+    OL[("ollama :11435<br/>--profile ollama")]
+    LF["langfuse :3000<br/>--profile observability"]
   end
   W --> A
   W --> C
   D --> A
   D --> C
+  CW --> CA
   A --> PG
   C --> RD
   AG --> RD
   AG --> PG
+  AG --> OL
+  AG --> CM
+  RS --> RD
+  RT --> RD
   SC --> RD
+  SC --> PG
   TI --> RD
+  CM --> CA
+  CA --> PG
 ```
 
 As portas do host (5433, 6380, 11435) são deslocadas para não colidir com instâncias nativas de
 Postgres, Redis e Ollama e podem ser ajustadas por `DB_HOST_PORT`, `REDIS_HOST_PORT` e
-`OLLAMA_HOST_PORT`. Ver [`local/README.md`](local/README.md).
+`OLLAMA_HOST_PORT`. O `crm-web` e o Langfuse disputam a porta 3000 — não suba os dois ao mesmo
+tempo. Ver [`local/README.md`](local/README.md).
 
 ---
 
@@ -318,17 +342,23 @@ Postgres, Redis e Ollama e podem ser ajustadas por `DB_HOST_PORT`, `REDIS_HOST_P
 Cada decisão está registrada como ADR (Architecture Decision Record) em [`docs/adr`](docs/adr).
 Resumo das principais:
 
-- **RAG com Knowledge Base + Aurora pgvector, com fallback pgvector direto** ([ADR-0001](docs/adr/0001-rag-knowledge-base-com-aurora-pgvector.md)).
-  Usa um serviço gerenciado quando disponível; se `SDR_KNOWLEDGE_BASE_ID` estiver vazio, cai para
-  busca vetorial direta no Postgres. **Trade-off:** o caminho gerenciado não é testado localmente.
-- **Agente em Lambda container consumindo SQS** ([ADR-0002](docs/adr/0002-agente-em-lambda-container.md)).
-  Maximiza serverless; as Lambdas são imagens de container porque dependem de `shared`, `psycopg` e `httpx`.
+- **RAG sobre Postgres + pgvector, com fusão de ranking** ([ADR-0001](docs/adr/0001-rag-com-postgres-pgvector.md)).
+  Imóvel e documento institucional no mesmo banco que o painel consulta, com piso de similaridade
+  (0,35) e reescrita de consulta. **Trade-off:** a fusão léxica (RRF) está implementada mas
+  desligada por padrão (`SDR_RAG_LEXICO`) — o A/B piorou o recall (31,9% → 29,8%).
+- **Runtime do agente: container local consumindo uma fila** ([ADR-0002](docs/adr/0002-runtime-do-agente-em-container.md)).
+  Um turno leva de 20 a 40 segundos e não cabe no fio da requisição HTTP; o agente é um worker que
+  consome o tópico `inbound` e publica na saída do canal.
 - **Canais como adaptadores sem lógica** ([ADR-0003](docs/adr/0003-canais-como-adaptadores.md)).
   Permite trocar/adicionar canal sem tocar no agente.
-- **Aurora Serverless v2 (Postgres) em vez de DynamoDB** ([ADR-0004](docs/adr/0004-aurora-em-vez-de-dynamodb.md)).
-  SQL para o painel e vetores na mesma base; escala a zero. **Trade-off:** exige VPC/NAT (custo).
-- **Telegram em vez de WhatsApp como canal ativo** ([ADR-0007](docs/adr/0007-telegram-em-vez-de-whatsapp.md)).
-  Bot criado sem verificação de negócio; o adapter de WhatsApp fica pronto para religar.
+- **Um Postgres para tudo, em vez de um banco por finalidade** ([ADR-0004](docs/adr/0004-postgres-como-banco-unico.md)).
+  Registro transacional, vetores, agregação do painel e o checkpointer do grafo na mesma base.
+- **Telegram em vez de WhatsApp como canal externo** ([ADR-0007](docs/adr/0007-telegram-em-vez-de-whatsapp.md)).
+  Bot criado na hora pelo `@BotFather` e long polling, sem verificação de negócio e sem URL
+  pública. O WhatsApp saiu do código: voltar significa escrever o adaptador de novo.
+- **Cada porta privada carrega o seu próprio portão** ([ADR-0008](docs/adr/0008-portoes-de-autenticacao-proprios.md)).
+  Sem gateway único na frente, cada porta privada (API e WebSocket do painel) confere a credencial
+  por conta própria.
 - **Modelo por nível, editável no painel** ([ADR-0010](docs/adr/0010-modelo-por-nivel-e-troca-pelo-painel.md)).
   Sonnet na conversa, Haiku em roteamento/extração; ajustável sem redeploy.
 - **Observabilidade leve no Postgres** ([ADR-0011](docs/adr/0011-observabilidade-leve-no-postgres.md)),
@@ -339,70 +369,76 @@ Resumo das principais:
 
 ## 8. Pré-requisitos
 
-**Para o perfil local (recomendado para começar):**
+**Para subir o ambiente (é o único caminho — não há nada implantado):**
 - Git.
 - Docker e Docker Compose.
-- Credenciais do provedor de LLM escolhido (Amazon Bedrock ou Anthropic API) — ou Ollama para rodar
-  100% local, sem custo.
-- (Opcional) Token de bot do Telegram, obtido no `@BotFather`, para exercitar o canal externo.
+- Chave do provedor de LLM escolhido (`ANTHROPIC_API_KEY` ou `OPENAI_API_KEY`) — ou Ollama, para
+  rodar 100% local e sem custo, aceitando qualidade de conversa menor.
+- (Opcional) Token de bot do Telegram, obtido no `@BotFather`, para exercitar o canal externo. Sem
+  ele a Mora ainda atende pelo chat do site e pela CLI.
 
-**Para rodar os testes de backend ou executar serviços manualmente:**
-- Python **3.12** (versão usada em produção e na CI).
+**Para rodar os testes de backend ou executar serviços fora do compose:**
+- Python **3.12** (a versão da CI).
 - `pip` ou [`uv`](https://docs.astral.sh/uv/) como gerenciador de pacotes (o `Makefile` usa `uv`).
 - Node.js **20** para os front-ends.
 
-**Para o deploy AWS:**
-- Conta AWS com acesso ao Amazon Bedrock na região escolhida.
-- AWS CLI configurada e AWS CDK (`npm i -g aws-cdk`).
-- Python 3.12 e dependências de `infra/requirements.txt`.
-
 > Requisitos de hardware mínimo/recomendado: `A confirmar`. O uso de Ollama local aumenta bastante o
-> consumo de CPU/RAM (ver [`docs/observabilidade.md`](docs/observabilidade.md)).
+> consumo de CPU/RAM (ver [`docs/quality/observabilidade.md`](docs/quality/observabilidade.md)).
 
 ---
 
 ## 9. Configuração das variáveis de ambiente
 
-Todas as variáveis usam o prefixo `SDR_`. O arquivo de referência é [`.env.example`](.env.example);
-o perfil local tem o seu em [`local/.env.example`](local). Os valores abaixo são **fictícios** — não
-use segredos reais no repositório.
+As variáveis do agente usam o prefixo `SDR_`; as chaves de provedor (`ANTHROPIC_API_KEY`,
+`OPENAI_API_KEY`) e as do CRM (`CRM_MCP_TOKEN`, `CRM_API_TOKEN`) não, porque são os nomes que as
+bibliotecas e o servidor MCP procuram. O arquivo de referência é [`.env.example`](.env.example); o
+ambiente do compose tem o seu em [`local/.env.example`](local/.env.example). Os valores abaixo são
+**fictícios** — não use segredos reais no repositório.
 
 Crie seu arquivo a partir do exemplo:
 
 ```bash
-cp .env.example .env                 # execução manual / deploy
-cp -n local/.env.example local/.env     # perfil local (docker compose)
+cp .env.example .env                    # execução fora do compose
+cp -n local/.env.example local/.env     # docker compose (-n não sobrescreve o que já existe)
+make check-env                          # confere o local/.env antes de subir nada
 ```
 
 | Variável | Obrigatória | Exemplo seguro | Descrição |
 |---|---|---|---|
 | `SDR_ENV` | Não | `dev` | Ambiente lógico. Padrão `dev`. |
-| `SDR_PROFILE` | Não | `local` | `aws` (padrão) ou `local`; decide fila, scheduler e hospedagem. |
-| `SDR_AWS_REGION` | Não | `us-east-1` | Região AWS. |
+| `SDR_PROFILE` | Não | `local` | `local` (padrão) ou `producao`. Decide **uma** coisa: se o token estático de desenvolvimento vale. |
 | `SDR_DATABASE_DSN` | Sim | `postgresql://sdr:sdr@localhost:5432/sdr` | DSN do Postgres. |
-| `SDR_LLM_PROVIDER` | Não | `bedrock` | `bedrock`, `anthropic` ou `ollama`. Padrão `bedrock`. |
-| `SDR_LLM_PROVIDER_FALLBACK` | Não | `anthropic` | Provedor de reserva quando o primário falha. Vazio = sem fallback. |
-| `SDR_MODEL_CONVERSA` | Não | `anthropic.claude-sonnet-4-5` | Modelo da conversa. |
-| `SDR_MODEL_ROTEAMENTO` | Não | `anthropic.claude-haiku-4-5` | Modelo de roteamento/extração. |
-| `SDR_EMBEDDINGS_PROVIDER` | Não | `bedrock` | `bedrock` ou `ollama`. |
-| `SDR_KNOWLEDGE_BASE_ID` | Não | *(vazio)* | ID da Knowledge Base; vazio = fallback pgvector direto. |
+| `SDR_LLM_PROVIDER` | Não | `anthropic` | `anthropic` (padrão), `openai` ou `ollama`. Outro valor levanta erro explicando. |
+| `SDR_LLM_PROVIDER_FALLBACK` | Não | `openai` | Provedor de reserva quando o primário falha. Vazio = sem reserva. |
+| `SDR_MODEL_CONVERSA` | Não | `claude-sonnet-4-5` | Modelo da conversa. |
+| `SDR_MODEL_ROTEAMENTO` | Não | `claude-haiku-4-5` | Modelo de roteamento/extração. |
+| `SDR_ANTHROPIC_WORKSPACE_ID` | Não | `wrkspc_exemplo` | Só para chave de organização; chave já escopada deixa vazio. |
+| `SDR_EMBEDDINGS_PROVIDER` | Não | `ollama` | Único valor aceito: o `bge-m3` dá as 1024 dimensões que o schema espera. |
+| `SDR_OLLAMA_EMBEDDING_MODEL` | Não | `bge-m3` | Trocar exige alterar `shared/sdr_shared/db/schema.sql`. |
+| `SDR_OLLAMA_URL` | Não | `http://localhost:11434` | Endereço do Ollama (no compose, `http://ollama:11434`). |
+| `SDR_RAG_LEXICO` | Não | *(vazio)* | `1` liga a fusão léxica (RRF) do RAG institucional, desligada por padrão. |
+| `SDR_TRANSCRICAO_PROVIDER` | Não | `auto` | `auto`, `whisper_local` ou `off` (não transcreve; o cliente é convidado a escrever). |
+| `SDR_WHISPER_MODEL` | Não | `small` | Tamanho do modelo faster-whisper (`tiny`…`large-v3`). |
 | `SDR_LLM_TIMEOUT_S` | Não | `45` | Timeout por turno; acima disso o cliente recebe o fallback. |
-| `SDR_REDIS_URL` | Não (local) | `redis://localhost:6379/0` | Fila do perfil local. |
-| `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot (canal ativo no local). |
+| `SDR_REDIS_URL` | Não | `redis://localhost:6379/0` | Fila (no compose, `redis://redis:6379/0`). |
+| `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot, do `@BotFather`. Sem ele, sobram o chat do site e a CLI. |
 | `SDR_TELEGRAM_BOT_USERNAME` | Não | `mora_vertice_bot` | Usuário do bot, para montar o link `t.me/<usuario>`. |
-| `SDR_WHATSAPP_PHONE_NUMBER_ID` | Não | `000000000000000` | ID do número (canal WhatsApp, desativado). |
-| `SDR_WHATSAPP_TOKEN` | Não | `EAAB...exemplo` | Token da Meta Cloud API. |
-| `SDR_WHATSAPP_APP_SECRET` | Não | `exemplo-app-secret` | Segredo para validar HMAC do webhook. |
-| `SDR_WHATSAPP_VERIFY_TOKEN` | Não | `sdr-verify` | Token de verificação do webhook. Padrão `sdr-verify`. |
 | `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site. Sem valor, as sessões caem a cada reinício. |
-| `SDR_PAINEL_TOKEN` | Sim (fora do local) | `exemplo-token-painel` | Credencial do painel fora do API Gateway (WebSocket). No local vazio vira `dev-token`. |
+| `SDR_PAINEL_TOKEN` | Sim (fora do perfil `local`) | `exemplo-token-painel` | Credencial do painel na API e no WebSocket `papel=dashboard`. No perfil `local`, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. |
+| `SDR_PUBLIC_API_URL` | Não | `http://localhost:8000` | Base para montar a URL absoluta das fotos (`/fotos/...`) fora da API. |
+| `SDR_CRM_URL` | Não | `http://crm-mcp:8200/mcp` | Endpoint do servidor **MCP** do CRM (não a REST). Vazio = ponte desligada. |
+| `SDR_CRM_TOKEN` | Não | *(o valor de `CRM_MCP_TOKEN`)* | Credencial do agente no servidor MCP. |
 | `SDR_CORS_ORIGINS` | Recomendada (produção) | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
 | `SDR_GOOGLE_CLIENT_ID` | Não | `exemplo.apps.googleusercontent.com` | OAuth do Google Agenda (opcional). |
 | `SDR_GOOGLE_CLIENT_SECRET` | Não | `exemplo-secret` | OAuth do Google Agenda (opcional). |
 | `SDR_GOOGLE_REDIRECT_URI` | Não | `http://localhost:8000/calendario/callback` | URI de retorno do OAuth. |
 
+Duas variáveis sem o prefixo `SDR_` completam a ponte com o CRM, e trocá-las uma pela outra dá 401
+sem explicação: **`CRM_API_TOKEN`** é a credencial do servidor MCP na REST do CRM (emitida por
+`make crm-token`) e **`CRM_MCP_TOKEN`** é a credencial de quem se conecta ao servidor MCP.
+
 Sem `SDR_GOOGLE_*`, a Mora usa a grade interna de horários e as visitas continuam sendo marcadas.
-Sem `SDR_KNOWLEDGE_BASE_ID`, o RAG usa pgvector direto.
+Sem `CRM_MCP_TOKEN`, a Mora roda sozinha, sem CRM.
 
 ---
 
@@ -415,13 +451,14 @@ Sem `SDR_KNOWLEDGE_BASE_ID`, o RAG usa pgvector direto.
 git clone <url-do-repositorio>
 cd agent-sdr-morai
 
-# 2. Configurar o ambiente do perfil local
+# 2. Configurar o ambiente e conferir antes de subir nada
 cp -n local/.env.example local/.env
-# edite local/.env: provedor de LLM, e CRM_MCP_TOKEN se for usar o CRM (veja o .env.example)
+# edite local/.env: ANTHROPIC_API_KEY e, se for usar o CRM, CRM_MCP_TOKEN
+make check-env
 
-# 3. Subir tudo. Use `make local-ollama` para LLM e embeddings 100% locais.
-make local
-# equivalente a: cd local && docker compose up --build
+# 3. Subir tudo, em primeiro plano. `make local` sobe o mesmo sem o serviço do Ollama.
+make local-ollama
+# equivalente a: cd local && docker compose --profile ollama up --build
 
 # --- daqui em diante, em OUTRO terminal, com o compose no ar ---
 
@@ -433,7 +470,7 @@ make crm-token
 cd local && docker compose up -d crm-mcp agent && cd ..
 
 # 6. Índices: acervo e documentos institucionais
-make ollama-pull      # só se usar embeddings locais
+make ollama-pull      # baixa o bge-m3 (embeddings); demora, uma vez só
 make seed
 make docs-kb
 
@@ -444,7 +481,7 @@ cd local && docker compose down          # use down -v para apagar também os vo
 `make` sozinho imprime essa ordem — é o alvo padrão, e é a fonte que se mantém em dia com o
 Makefile.
 
-O `make local` executa `scripts/check_env.py` antes de subir.
+`make local` e `make local-ollama` executam `scripts/check_env.py` antes de subir.
 
 **Sobre o schema:** `local/00-crm.sql` e `shared/sdr_shared/db/schema.sql` estão montados em
 `docker-entrypoint-initdb.d`, mas o Postgres só executa esses scripts quando o **volume é novo**.
@@ -455,7 +492,7 @@ preparar` cria e aplica tudo explicitamente, e é idempotente: rodar de novo nã
 **Sem CRM:** a Mora roda sozinha. Pule os passos 4 e 5 (exceto `make migrate`, que o `preparar`
 inclui) e siga para o 6.
 
-### Opção B — Execução manual (desenvolvimento)
+### Opção B — Execução fora do compose (desenvolvimento)
 
 Requer Postgres com pgvector acessível e Python 3.12. Instale as dependências e aplique o schema:
 
@@ -464,7 +501,7 @@ make setup                                # instala serviços (uv/pip) e front-e
 psql "$SDR_DATABASE_DSN" -f shared/sdr_shared/db/schema.sql
 ```
 
-Suba cada processo em um terminal (os comandos espelham o `docker-compose.yml`):
+Suba cada processo em um terminal (os comandos espelham o `local/docker-compose.yml`):
 
 ```bash
 # API REST
@@ -484,16 +521,17 @@ cd apps/dashboard && npm run dev -- --port 5174
 Uma alternativa via linha de comando, sem canais externos, é a CLI do agente:
 
 ```bash
-make cli                                  # conversa com a Mora no terminal (perfil local)
+make cli                                  # conversa com a Mora no terminal
 ```
 
-### Deploy AWS (referência)
+### Sobre implantação
 
-```bash
-make deploy ENV=dev                       # build dos front-ends + cdk deploy --all (perfil aws)
-```
+Não há ambiente implantado, e isso é uma escolha: a entrega roda inteira na máquina de quem avalia,
+com `docker compose`, sem conta em provedor de nuvem, sem túnel e sem URL pública. O que existiu de
+infraestrutura como código foi removido do repositório junto com os adaptadores que a acompanhavam
+([ADR-0002](docs/adr/0002-runtime-do-agente-em-container.md)).
 
-### Serviços e portas (perfil local)
+### Serviços e portas
 
 | Serviço | URL local | Porta | Health check |
 |---|---|---:|---|
@@ -503,7 +541,10 @@ make deploy ENV=dev                       # build dos front-ends + cdk deploy --
 | API (OpenAPI) | http://localhost:8000/docs | 8000 | — |
 | Canais (HTTP/WS) | http://localhost:8001 · ws://localhost:8001/ws | 8001 | `GET /health` (503 se o Redis cair) |
 | Agente | worker (sem HTTP) | — | via tabela de saúde no Postgres (ADR-0011) |
-| Langfuse (opcional) | http://localhost:3000 | 3000 | — |
+| CRM — API | http://localhost:8100 | 8100 | `GET /health/ready` |
+| CRM — servidor MCP | http://localhost:8200/mcp | 8200 | `GET /saude` |
+| CRM — painel | http://localhost:3000 | 3000 | — (Vite dev server) |
+| Langfuse (opcional) | http://localhost:3000 | 3000 | — (mesma porta do painel do CRM) |
 | Postgres / Redis / Ollama | host: 5433 / 6380 / 11435 | — | `pg_isready` (db) |
 
 Validação rápida após subir:
@@ -554,8 +595,10 @@ curl -s "http://localhost:8000/imoveis?limite=3"
 
 ### 11.3 Painel administrativo
 
-- **Acesso e autenticação.** `http://localhost:5174`. No perfil local, a autenticação usa um token
-  estático (`SDR_PAINEL_TOKEN`, que vira `dev-token` quando vazio). No perfil AWS, usa Amazon Cognito.
+- **Acesso e autenticação.** `http://localhost:5174`. A autenticação é um token estático
+  (`SDR_PAINEL_TOKEN`), que vale tanto para o header `Authorization` da API quanto para a conexão
+  WebSocket `papel=dashboard`. No perfil `local`, vazio vira `dev-token`; fora dele, vazio não
+  aceita nada (ADR-0008).
 - **Perfis e permissões.** A API distingue rotas públicas, de corretor, de administração e de
   operação (ver tags em [API](#12-api)). O detalhamento de papéis por usuário é `A confirmar`.
 - **Cadastro e manutenção.** Gestão de imóveis (incluindo upload/reordenação de fotos), corretores e
@@ -577,8 +620,9 @@ curl -s "http://localhost:8000/imoveis?limite=3"
 
 - **URL base (local):** `http://localhost:8000`
 - **Documentação interativa (OpenAPI):** `http://localhost:8000/docs`
-- **Autenticação:** rotas de corretor/admin exigem Cognito JWT (perfil AWS) ou `Authorization:
-  Bearer <SDR_PAINEL_TOKEN>` (perfil local). Rotas públicas (`/imoveis`, `/eventos`) não exigem auth.
+- **Autenticação:** rotas de corretor/admin exigem `Authorization: Bearer <SDR_PAINEL_TOKEN>` (em
+  desenvolvimento, `dev-token`) — o botão **Authorize** do Swagger aceita o mesmo valor. Rotas
+  públicas (`/imoveis`, `/eventos`, `/fotos/...`) não exigem credencial.
 
 Endpoints essenciais (a lista completa está no OpenAPI):
 
@@ -640,12 +684,11 @@ Estratégias observadas no código e na configuração:
 - **Cache de dados no front-end.** TanStack React Query.
 - **Cache HTTP de imagens.** `Cache-Control: public, max-age=86400` nas fotos.
 - **Paginação/limite.** Endpoints de listagem aceitam `limite` com teto (ex.: imóveis até 200).
-- **Aurora Serverless v2** escala a zero quando ocioso (perfil AWS).
 
 **Benchmarks.** Não há benchmarks de desempenho medidos e versionados no repositório. Procedimento
 reprodutível sugerido para obtê-los:
 
-1. Subir o perfil local e popular o catálogo (`make local && make seed`).
+1. Subir o ambiente e popular o catálogo (`make local-ollama`, depois `make preparar` e `make seed`).
 2. Medir a latência ponta a ponta de um turno com um provedor fixo (ex.: Anthropic API) capturando o
    `duracao_ms` já registrado nos logs do agente e na tabela de saúde (ADR-0011).
 3. Repetir por cenário (qualificação, consulta com RAG, agendamento) e registrar p50/p95.
@@ -663,9 +706,8 @@ sistema seja seguro para produção — esta é uma POC.
 
 | Controle | Estado | Detalhe |
 |---|---|---|
-| Autenticação do painel | Implementado | Cognito (AWS) / token estático (local) — ADR-0008 |
+| Autenticação do painel | Implementado | Token estático `SDR_PAINEL_TOKEN` na API e no WebSocket, fail-closed fora do perfil `local` — ADR-0008 |
 | Autorização por área | Implementado | Rotas separadas (público/corretor/admin/operação) |
-| Validação de webhook (HMAC) | Implementado | Canal WhatsApp valida assinatura do provedor |
 | Sessão assinada do chat do site | Implementado | `SDR_SESSAO_SECRET` impede sequestro de sessão |
 | Sanitização de entrada | Implementado | Contrato `MensagemNormalizada`: trunca tamanho, remove controles/invisíveis |
 | Guardrail de escopo (prompt injection) | Implementado | `guardrails/escopo.py`: recusa reprogramação, homóglifos e off-topic sem chamar o LLM |
@@ -675,25 +717,26 @@ sistema seja seguro para produção — esta é uma POC.
 | Rate limiting | Implementado | Por lead (rajada e hora) — `guardrails/vazao.py` |
 | Auditoria | Implementado | Middleware registra tudo que altera o sistema |
 | CORS | Implementado | `SDR_CORS_ORIGINS` (vazio = `*`, só em dev) |
-| Gerenciamento de secrets | Implementado (AWS) | Secrets Manager em produção; `.env` em dev |
-| Criptografia em trânsito | Parcial | HTTPS/WSS providos pela AWS (API Gateway/CloudFront); no local é HTTP |
+| Separação de segredos do CRM | Implementado | `CRM_MCP_TOKEN` (agente → servidor MCP) e `CRM_API_TOKEN` (servidor MCP → REST) são distintos; o servidor MCP recusa subir sem o seu |
+| Gerenciamento de secrets | Parcial | `.env` fora do versionamento; `scripts/check_env.py` recusa valores de exemplo. Não há cofre |
+| Criptografia em trânsito | Parcial | Tudo roda em `localhost`, em HTTP. Expor este ambiente exigiria TLS na frente |
 | Tratamento de PII / LGPD | Parcial | Mascaramento na saída; página de privacidade no site. Política de retenção formal: recomendada |
 | Análise de dependências | Recomendado | Não há varredura automatizada no CI |
-| Moderação/guardrails do provedor (Bedrock Guardrails) | Parcial | Previsto no CDK (perfil AWS), não testado |
 
 **Riscos conhecidos.** Rate limiting é por processo (não distribuído entre múltiplos workers);
-transcrição de áudio como vetor de injeção não tem teste específico; controles dependentes de AWS
-(Guardrails, criptografia gerenciada) não são exercitados no perfil local. Ver os comentários em
+transcrição de áudio como vetor de injeção não tem teste específico — a transcrição entra no prompt
+pela mesma blindagem do texto do cliente, mas sem caso dedicado. Ver os comentários em
 `services/agent/src/agent/guardrails/`.
 
 ---
 
 ## 15. Testes e qualidade
 
-- **Tipos de teste.** Testes de integração de backend com Postgres real (pgvector) e LLM falso
-  (grafo do agente, API, canais, governança, segurança); build com TypeScript estrito nos front-ends;
-  `cdk synth` da infraestrutura; análise estática (`ruff` no Python, `eslint` nos front-ends) e
-  cobertura combinada com piso.
+- **Tipos de teste.** Sete suítes de integração de backend com Postgres real (pgvector) e LLM falso
+  (grafo do agente, API, canais, CRM, governança, segurança); build com TypeScript estrito nos
+  front-ends; análise estática (`ruff` no Python, `eslint` nos front-ends) e cobertura combinada com
+  piso. O harness de avaliação (`make eval`, `make eval-rag`) mede o **modelo** e fica fora do CI de
+  propósito: custa dinheiro e varia entre execuções.
 - **Executar backend:**
 
   ```bash
@@ -701,9 +744,9 @@ transcrição de áudio como vetor de injeção não tem teste específico; cont
   make test-docker     # dentro do container do agente
   ```
 
-  Ambos usam o banco **`sdr_test`**: as suítes apagam tabelas e uma trava recusa rodar contra um banco
-  sem "test" no nome (`SDR_TEST_ALLOW_WIPE=1` ignora a trava). A suíte roda em Python 3.12 sem avisos
-  de depreciação.
+  Os bancos são **`sdr_test`** e **`crm_test`** (o CRM é sistema à parte também na suíte): as suítes
+  apagam tabelas e uma trava recusa rodar contra um banco sem "test" no nome
+  (`SDR_TEST_ALLOW_WIPE=1` ignora a trava). A suíte roda em Python 3.12 sem avisos de depreciação.
 
 - **Front-ends:**
 
@@ -723,14 +766,16 @@ transcrição de áudio como vetor de injeção não tem teste específico; cont
   ```bash
   make lint            # ruff em todo o Python; a régua e o porquê de cada regra desligada em ruff.toml
   make cobertura       # as mesmas sete suítes, medindo cobertura; falha abaixo do piso (.coveragerc)
+  make eval-fake       # valida o HARNESS com LLM falso e embedder de trigramas (não mede qualidade)
+  make eval-rag        # qualidade do RAG institucional com o embedder de verdade (exige ollama-pull)
   ```
 
-  O piso é **75%** e o estado atual é ~81%. Ele existe para uma queda brusca aparecer na CI, não para
+  O piso é **75%** e o estado atual é 81%. Ele existe para uma queda brusca aparecer na CI, não para
   virar corrida por porcentagem — teste escrito para subir número não testa nada.
 
-- **CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os três jobs a cada push/PR:
-  `python` (`make lint` → `make cobertura` → conferência do `openapi.json`), `frontend` (build estrito
-  + `eslint` em `web` e `dashboard`) e `infra` (`cdk synth`). O estático vem antes do teste: nome
+- **CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda dois jobs a cada push/PR:
+  `python` (`make lint` → `make cobertura` → `make eval-fake` → conferência do `openapi.json`) e
+  `frontend` (build estrito + `eslint` em `web` e `dashboard`). O estático vem antes do teste: nome
   indefinido aparece em segundos, sem esperar o banco subir.
 
 ---
@@ -765,20 +810,24 @@ revogada (ADR-0005). O **Langfuse** é opcional (`--profile observability`) para
 agent-sdr-morai/
 ├── apps/
 │   ├── web/          Site vitrine (React + Vite + PWA) com widget de chat
-│   └── dashboard/    Painel do corretor (funil, conversas, governança, auditoria)
+│   ├── dashboard/    Painel do corretor (funil, conversas, governança, auditoria)
+│   └── crm/          Painel do CRM da imobiliária (React)
 ├── services/
 │   ├── agent/        Grafo multiagente (LangGraph) — o cérebro; único que fala com o LLM
-│   ├── channels/     Adaptadores de canal (telegram, web, whatsapp, local)
+│   ├── channels/
+│   │   ├── local/    Chat do site: HTTP + WebSocket
+│   │   └── telegram/ Long polling de entrada e worker de saída
 │   ├── api/          API REST (FastAPI): imóveis, leads, dashboard, handoff, governança
+│   ├── crm/          CRM da imobiliária: REST, servidor MCP e banco próprios
 │   ├── scheduler/    Follow-up automático
-│   └── ingestion/    Carga de imóveis + embeddings
+│   └── ingestion/    Carga de imóveis e documentos + embeddings
 ├── shared/           Pacote Python comum: modelos, contratos, DB, config, ports/adapters
-├── infra/            AWS CDK (Python) — uma stack por domínio
-├── local/            Perfil local: docker compose (Postgres+pgvector, Redis, canais, apps)
+├── local/            docker compose (Postgres+pgvector, Redis, workers, canais, apps) + Dockerfile.python
 ├── data/             Base simulada de imóveis e documentos institucionais
-├── scripts/          Utilitários de dev (seed, check_env, simular webhook, aplicar schema)
-├── docs/             Arquitetura, ADRs e observabilidade
-└── .github/          CI/CD (GitHub Actions)
+├── scripts/          Utilitários de dev (check_env, gerar_imoveis, gerar_openapi)
+├── tests/            Suíte de integração da raiz
+├── docs/             Arquitetura, ADRs e o portal MkDocs
+└── .github/          CI (GitHub Actions)
 ```
 
 **Regras de dependência.** `shared/` é a única ponte entre serviços. Canais só traduzem mensagens e
@@ -786,10 +835,11 @@ nunca chamam o LLM. O agente produz respostas neutras (`texto`, `opcoes`, `imove
 sabe qual canal respondeu. Detalhes em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 **Convenções relevantes.**
-- Cada serviço expõe um pacote com nome próprio (`agent`, `api`, `canal_whatsapp`, `canal_telegram`,
-  `sdr_scheduler`, `sdr_ingestion`) — nunca `src` — para evitar colisão no `sys.path`.
-- As imagens Docker são construídas **a partir da raiz do repositório** (dependem de `shared/`):
-  `docker build -f services/<serviço>/Dockerfile .`.
+- Cada serviço expõe um pacote com nome próprio (`agent`, `api`, `canal_telegram`, `sdr_scheduler`,
+  `sdr_ingestion`, `sdr_crm`) — nunca `src` — para evitar colisão no `sys.path`.
+- Os serviços Python compartilham **uma única imagem**, construída a partir da raiz do repositório
+  (todos dependem de `shared/`): `local/Dockerfile.python`, com o código montado por volume. O que
+  muda entre containers é o comando, não a imagem.
 
 > A pasta `_to_delete/` e os arquivos `*.tgz` na raiz são material de trabalho descartável e não fazem
 > parte da aplicação.
@@ -801,20 +851,26 @@ sabe qual canal respondeu. Detalhes em [`docs/ARCHITECTURE.md`](docs/ARCHITECTUR
 Esta seção lista o que **não** está pronto — separada das funcionalidades implementadas.
 
 **Limitações conhecidas.**
-- Canal WhatsApp implementado mas desativado (depende de número de negócio verificado — ADR-0007).
-- Knowledge Base e transcrição de áudio escritas, mas não testadas (exigem AWS).
+- Nada está implantado: o sistema só existe rodando no `docker compose` de quem o subir. É escolha
+  de escopo, não pendência — mas significa que não há ambiente público para demonstrar.
+- O único canal externo é o Telegram. O WhatsApp foi removido do código (exigia número de negócio
+  verificado e webhook com URL pública — ADR-0007); voltar significa escrever o adaptador de novo.
+- A fusão léxica (RRF) do RAG institucional está pronta e desligada: falta medi-la com um embedder
+  semântico de verdade (`SDR_RAG_LEXICO=1 make eval-rag`).
 - Rate limiting é por processo, não distribuído entre múltiplos workers.
 - Sem benchmarks de performance versionados.
-- CRM é simulado (`/leads/crm/sync`), não integrado a um sistema real.
+- Tudo trafega em HTTP no `localhost`; expor este ambiente exigiria TLS e revisão de CORS.
 
 **Débitos técnicos / itens em aberto.**
-- Análise de dependências e cobertura de testes não estão no CI.
+- Não há varredura automatizada de dependências no CI (a cobertura, essa está: `make cobertura`).
 - Instrumentação de observabilidade de sistema (OTel/Grafana) foi revogada; existe apenas a leve.
 - Papéis/permissões granulares por usuário no painel: a definir.
 
 **Riscos e dependências externas.**
-- Disponibilidade e cota do provedor de LLM (Bedrock/Anthropic).
-- Custo de infraestrutura AWS dominado pelo NAT Gateway (ver estimativas em `docs/ARCHITECTURE.md`).
+- Disponibilidade e cota do provedor de LLM (mitigadas por `SDR_LLM_PROVIDER_FALLBACK`).
+- API do Telegram e, quando configurado, o Google Agenda do corretor.
+- O custo variável do sistema é só o do modelo — e cai a zero com o Ollama, em troca de qualidade
+  de conversa menor.
 
 ---
 
@@ -826,8 +882,9 @@ das convenções do projeto (marcado como inferência).
 - **Branches (inferido).** Crie uma branch a partir da principal para cada mudança
   (ex.: `feat/nome-curto`, `fix/nome-curto`).
 - **Commits e Pull Requests (inferido).** Descreva o que muda e por quê; mantenha PRs focados.
-- **Validações obrigatórias.** O PR precisa passar na CI: `make test` (backend), `npm run build`
-  (`web` e `dashboard`) e `cdk synth` (infra). Rode-os localmente antes de abrir o PR.
+- **Validações obrigatórias.** O PR precisa passar na CI: `make lint`, `make cobertura` e
+  `make eval-fake` (backend) e `npm run build` + `npm run lint` (`web` e `dashboard`). Rode-os
+  localmente antes de abrir o PR.
 - **Antes de tocar em um serviço.** Leia [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e respeite as
   regras de dependência entre camadas.
 - **Convenção de commits / template de PR / processo de revisão formais:** `A confirmar`.
@@ -849,13 +906,13 @@ das convenções do projeto (marcado como inferência).
 Informações que não puderam ser confirmadas apenas com o conteúdo do repositório:
 
 1. **Canal de suporte** oficial (licença: MIT, ver `LICENSE`; autoria: Marcos Ramos).
-2. **Versões** de `mangum` e das dependências de `infra/requirements.txt` (não inspecionadas em detalhe).
-3. **Requisitos de hardware** mínimo/recomendado para o perfil local (sobretudo com Ollama).
-4. **Papéis e permissões** granulares por usuário no painel (a API separa por área, mas o mapeamento
+2. **Requisitos de hardware** mínimo/recomendado (sobretudo com Ollama e o faster-whisper no mesmo
+   processo).
+3. **Papéis e permissões** granulares por usuário no painel (a API separa por área, mas o mapeamento
    usuário → papel não está documentado).
-5. **Benchmarks de performance** (nenhum número medido versionado).
-6. **Convenção de commits, template de PR e processo de revisão** formais.
-7. **Política de retenção e exclusão de dados** (LGPD) formal.
+4. **Benchmarks de performance** (nenhum número medido versionado).
+5. **Convenção de commits, template de PR e processo de revisão** formais.
+6. **Política de retenção e exclusão de dados** (LGPD) formal.
 
 > Sugestão: converter estas pendências em issues e, quando resolvidas, atualizar as seções
 > correspondentes deste README.

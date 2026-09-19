@@ -112,7 +112,7 @@ def _lead(**kw) -> Lead:
 
 def test_agenda_conforme_a_temperatura(infra):
     _, sched = infra
-    reagendar_followup(_lead(temperatura=Temperatura.QUENTE), Canal.WHATSAPP, "5511999990000")
+    reagendar_followup(_lead(temperatura=Temperatura.QUENTE), Canal.TELEGRAM, "5511999990000")
     assert sched.agendados["l_follow"][0] == 30
 
 
@@ -120,14 +120,14 @@ def test_lead_encerrado_nao_recebe_followup(infra):
     _, sched = infra
     for estagio in (Estagio.HANDOFF, Estagio.AGENDADO, Estagio.FRIO):
         sched.agendados["l_follow"] = (99, "{}")
-        reagendar_followup(_lead(estagio=estagio), Canal.WHATSAPP, "5511999990000")
+        reagendar_followup(_lead(estagio=estagio), Canal.TELEGRAM, "5511999990000")
         assert "l_follow" not in sched.agendados, f"{estagio} não deveria ter follow-up pendente"
 
 
 def test_tentativas_esgotadas_limpam_o_agendamento(infra):
     _, sched = infra
     sched.agendados["l_follow"] = (99, "{}")
-    reagendar_followup(_lead(followups_enviados=3), Canal.WHATSAPP, "5511999990000")
+    reagendar_followup(_lead(followups_enviados=3), Canal.TELEGRAM, "5511999990000")
     assert "l_follow" not in sched.agendados
 
 
@@ -135,7 +135,7 @@ def test_desligado_no_painel_limpa_o_que_estava_armado(infra):
     _, sched = infra
     sched.agendados["l_follow"] = (99, "{}")
     _configurar(ativo=False)
-    reagendar_followup(_lead(), Canal.WHATSAPP, "5511999990000")
+    reagendar_followup(_lead(), Canal.TELEGRAM, "5511999990000")
     assert "l_follow" not in sched.agendados
 
 
@@ -147,7 +147,7 @@ def test_cliente_que_responde_em_handoff_nao_leva_followup_por_cima(infra):
     _, sched = infra
     LeadRepository().upsert(_lead(id="l_hand", estagio=Estagio.HANDOFF))
     sched.agendados["l_hand"] = (99, "{}")
-    processar(MensagemNormalizada(lead_id="l_hand", canal=Canal.WHATSAPP, identificador_canal="5511999990000",
+    processar(MensagemNormalizada(lead_id="l_hand", canal=Canal.TELEGRAM, identificador_canal="5511999990000",
                                   conteudo="e aí, tem novidade?", tipo=TipoMensagem.TEXTO))
     assert "l_hand" not in sched.agendados
 

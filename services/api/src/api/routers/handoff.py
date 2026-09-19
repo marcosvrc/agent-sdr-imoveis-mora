@@ -31,7 +31,7 @@ def assumir(lead_id: str, body: AssumirIn | None = None, corretor=Depends(corret
     por região → ninguém (fila da equipe).
 
     O último caso já foi "o usuário logado", e isso gravava no lead um id que não existe no cadastro
-    de corretores: no perfil local, o literal `corretor-dev`; na AWS, o `sub` do Cognito. Quem está
+    de corretores: hoje o literal `corretor-dev`, vindo do token do painel. Quem está
     logado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead
     ficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é
     deixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).
@@ -55,7 +55,7 @@ def assumir(lead_id: str, body: AssumirIn | None = None, corretor=Depends(corret
 
 @router.post("/{lead_id}/responder")
 def responder(lead_id: str, body: Texto, corretor=Depends(corretor_atual)):
-    """Envia a mensagem do corretor por TODOS os canais do lead (WhatsApp e/ou web), sem passar pelo agente."""
+    """Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente."""
     _lead(lead_id)
     canais = CanalRepository().canais_do_lead(lead_id)
     if not canais:

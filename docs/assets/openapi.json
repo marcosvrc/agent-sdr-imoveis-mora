@@ -561,7 +561,7 @@
     },
     "securitySchemes": {
       "Token do painel": {
-        "description": "Perfil local: o valor de `SDR_PAINEL_TOKEN` (em desenvolvimento, `dev-token`). Perfil AWS: o JWT emitido pelo Cognito.",
+        "description": "O valor de `SDR_PAINEL_TOKEN` (em desenvolvimento, `dev-token`).",
         "scheme": "bearer",
         "type": "http"
       }
@@ -571,7 +571,7 @@
     "contact": {
       "name": "Projeto Mora — Vértice Imóveis (POC acadêmica)"
     },
-    "description": "\nAPI do **Mora**, o agente SDR imobiliário da Vértice Imóveis.\n\nA etiqueta de cada rota diz quem a usa e o que ela exige:\n\n| Etiqueta | Quem usa | Autenticação |\n|---|---|---|\n| `público` | site vitrine e chat | nenhuma |\n| `corretor` | painel do corretor | `Authorization: Bearer …` |\n| `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |\n| `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |\n\n**Como autenticar no perfil local:** clique em **Authorize** e informe o valor de\n`SDR_PAINEL_TOKEN` (no ambiente de desenvolvimento, `dev-token`). No perfil AWS o token é o\nJWT do Cognito, validado pelo authorizer do API Gateway antes de chegar aqui.\n\nToda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).\n",
+    "description": "\nAPI do **Mora**, o agente SDR imobiliário da Vértice Imóveis.\n\nA etiqueta de cada rota diz quem a usa e o que ela exige:\n\n| Etiqueta | Quem usa | Autenticação |\n|---|---|---|\n| `público` | site vitrine e chat | nenhuma |\n| `corretor` | painel do corretor | `Authorization: Bearer …` |\n| `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |\n| `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |\n\n**Como autenticar:** clique em **Authorize** e informe o valor de `SDR_PAINEL_TOKEN` (no\nambiente de desenvolvimento, `dev-token`).\n\nToda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).\n",
     "license": {
       "name": "Uso acadêmico — licença a confirmar"
     },
@@ -2059,7 +2059,7 @@
     },
     "/handoff/{lead_id}/assumir": {
       "post": {
-        "description": "Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento\npor região → ninguém (fila da equipe).\n\nO último caso já foi \"o usuário logado\", e isso gravava no lead um id que não existe no cadastro\nde corretores: no perfil local, o literal `corretor-dev`; na AWS, o `sub` do Cognito. Quem está\nlogado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead\nficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é\ndeixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).",
+        "description": "Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento\npor região → ninguém (fila da equipe).\n\nO último caso já foi \"o usuário logado\", e isso gravava no lead um id que não existe no cadastro\nde corretores: hoje o literal `corretor-dev`, vindo do token do painel. Quem está\nlogado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead\nficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é\ndeixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).",
         "operationId": "assumir_handoff__lead_id__assumir_post",
         "parameters": [
           {
@@ -2167,7 +2167,7 @@
     },
     "/handoff/{lead_id}/responder": {
       "post": {
-        "description": "Envia a mensagem do corretor por TODOS os canais do lead (WhatsApp e/ou web), sem passar pelo agente.",
+        "description": "Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente.",
         "operationId": "responder_handoff__lead_id__responder_post",
         "parameters": [
           {
@@ -2223,7 +2223,7 @@
     },
     "/health": {
       "get": {
-        "description": "Saúde de verdade: banco alcançável e nenhum worker calado (ADR-0011).\n\nDevolve 503 quando algo está degradado — é o que o `healthcheck` do compose e o target group\nda AWS leem. Um /health que devolve 200 sempre não é monitoramento, é decoração.",
+        "description": "Saúde de verdade: banco alcançável e nenhum worker calado (ADR-0011).\n\nDevolve 503 quando algo está degradado — é o que o `healthcheck` do compose lê, e é o que\nfaria um balanceador tirar a instância de rotação. Um /health que devolve 200 sempre não é\nmonitoramento, é decoração.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -3516,13 +3516,13 @@
       "url": "http://localhost:8000"
     },
     {
-      "description": "Perfil AWS — a confirmar no deploy",
+      "description": "Produção — a confirmar no deploy",
       "url": "https://api.exemplo.com.br"
     }
   ],
   "tags": [
     {
-      "description": "Catálogo de imóveis e eventos de navegação. Sem autenticação — é o que a vitrine consome e o que o CloudFront pode cachear.",
+      "description": "Catálogo de imóveis e eventos de navegação. Sem autenticação — é o que a vitrine consome e o que um CDN na frente poderia cachear.",
       "name": "público"
     },
     {

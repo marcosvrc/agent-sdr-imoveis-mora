@@ -1,9 +1,9 @@
 """Tradução Telegram Bot API ⇄ contratos neutros. Zero lógica de negócio (ADR-0003).
 
-Por que Telegram além do WhatsApp: criar uma conta de desenvolvedor Meta para o WhatsApp Cloud API
+Por que Telegram: criar uma conta de desenvolvedor Meta para o WhatsApp Cloud API
 exige verificação de negócio, que trava a demo. Um bot do Telegram é criado na hora, sem aprovação,
 falando com @BotFather — e como usamos *long polling* (`getUpdates`), nem precisa de URL pública
-nem do túnel cloudflared que o WhatsApp exigia. Ver ADR-0007.
+nem de túnel para receber webhook. Ver ADR-0007.
 """
 import re
 from collections.abc import Callable
@@ -14,7 +14,7 @@ CALLBACK_MAX = 64          # limite do Telegram para callback_data
 
 
 def _opcao(o: str) -> tuple[str, str]:
-    """`id|rótulo` → (id, rótulo); `rótulo` → (rótulo, rótulo). Mesmo contrato do site e do WhatsApp."""
+    """`id|rótulo` → (id, rótulo); `rótulo` → (rótulo, rótulo). Mesmo contrato do site."""
     return tuple(o.split("|", 1)) if "|" in o else (o, o)
 
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Dossiê de arquitetura do agente SDR imobiliário Mora: diagramas C4 dos perfis local e AWS, decisões e divergências conhecidas.">
+<meta name="description" content="Dossiê de arquitetura do agente SDR imobiliário Mora: diagramas C4 do sistema em docker compose, decisões e lacunas conhecidas.">
 <title>Arquitetura da Mora</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,6 @@
   --ink:#111A21; --ink-2:#41525E; --ink-3:#6F818D;
   --line:#D3DBE1; --line-2:#E6ECF0;
   --core:#0E6B70; --core-soft:#DCEDED;
-  --aws:#3C51A4; --aws-soft:#E2E6F5;
   --local:#84611F; --local-soft:#F2EADA;
   --gap:#A2372A; --gap-soft:#F7E4E1;
   --display:"Newsreader",Georgia,"Times New Roman",serif;
@@ -28,7 +27,6 @@
     --ink:#E4ECF1; --ink-2:#A6B6C1; --ink-3:#7A8B97;
     --line:#28353D; --line-2:#1F2B32;
     --core:#54C2C6; --core-soft:#123334;
-    --aws:#93A2EC; --aws-soft:#1B2340;
     --local:#D6AB5C; --local-soft:#332913;
     --gap:#E68675; --gap-soft:#3A1E1A;
   }
@@ -38,7 +36,6 @@
   --ink:#E4ECF1; --ink-2:#A6B6C1; --ink-3:#7A8B97;
   --line:#28353D; --line-2:#1F2B32;
   --core:#54C2C6; --core-soft:#123334;
-  --aws:#93A2EC; --aws-soft:#1B2340;
   --local:#D6AB5C; --local-soft:#332913;
   --gap:#E68675; --gap-soft:#3A1E1A;
 }
@@ -110,7 +107,6 @@ a:focus-visible,button:focus-visible{outline:2px solid var(--core); outline-offs
 .dg rect,.dg line,.dg path,.dg polyline,.dg circle{vector-effect:non-scaling-stroke}
 .box{fill:var(--surface-2); stroke:var(--line); stroke-width:1.2}
 .box-core{fill:var(--core-soft); stroke:var(--core); stroke-width:1.4}
-.box-aws{fill:var(--aws-soft); stroke:var(--aws); stroke-width:1.2}
 .box-local{fill:var(--local-soft); stroke:var(--local); stroke-width:1.2}
 .box-ext{fill:none; stroke:var(--line); stroke-width:1.2; stroke-dasharray:5 3}
 .bus{fill:var(--sunken); stroke:var(--line); stroke-width:1.2}
@@ -159,7 +155,6 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 .key i{width:11px; height:11px; border-radius:2px; display:block; border:1px solid}
 .k-core{background:var(--core-soft); border-color:var(--core)}
 .k-local{background:var(--local-soft); border-color:var(--local)}
-.k-aws{background:var(--aws-soft); border-color:var(--aws)}
 .ic-key i{border-radius:50%; border:0; width:12px; height:12px}
 
 /* ---------- ícones de tecnologia ---------- */
@@ -195,15 +190,16 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <header class="top">
   <p class="eyebrow">Dossiê de arquitetura · FIAP fase 5</p>
   <h1>Arquitetura da Mora</h1>
-  <p class="lede">Agente SDR imobiliário com IA generativa. Um mesmo núcleo de domínio roda em dois
-  perfis de implantação — <code>local</code> em Docker Compose e <code>aws</code> serverless — trocando
-  apenas adaptadores de infraestrutura.</p>
+  <p class="lede">Agente SDR imobiliário com IA generativa. O sistema inteiro roda na máquina de
+  quem avalia, por <code>docker compose</code>: banco, fila, workers, canais, API, front-ends e o
+  CRM. <strong>Nada está implantado</strong> — é escolha de escopo, e o efeito é que a avaliação não
+  depende de conta, cota ou crédito em provedor nenhum.</p>
   <ul class="chips">
-    <li><b>2</b> perfis de implantação</li>
-    <li><b>10</b> stacks CDK</li>
-    <li><b>10</b> ADRs</li>
-    <li><b>245</b> testes automatizados</li>
+    <li><b>1</b> ambiente: docker compose</li>
+    <li><b>14</b> ADRs</li>
+    <li><b>7</b> suítes de teste</li>
     <li><b>3</b> canais de atendimento</li>
+    <li><b>0</b> serviços implantados</li>
   </ul>
 </header>
 
@@ -221,7 +217,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   <figure class="fig">
     <div class="fig-scroll">
       <svg class="dg" viewBox="0 0 900 370" role="img"
-           aria-label="Diagrama de contexto: cliente e corretor usam a Mora, que consome modelo de linguagem da Bedrock ou Anthropic, a API do Telegram e o Google Agenda.">
+           aria-label="Diagrama de contexto: cliente e corretor usam a Mora, que consome um modelo de linguagem da Anthropic, da OpenAI ou do Ollama local, a API do Telegram e o Google Agenda.">
         <defs>
 <marker id="c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
 <g id="c-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
@@ -249,7 +245,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <circle class="ic-svc" cx="380" cy="238" r="15"/><use href="#c-svc" x="380" y="238"/><text class="tl" x="380" y="269" text-anchor="middle">agente</text>
         <circle class="ic-infra" cx="460" cy="238" r="15"/><use href="#c-mon" x="460" y="238"/><text class="tl" x="460" y="269" text-anchor="middle">painel</text>
 
-        <circle class="ic-ai" cx="760" cy="80" r="22"/><use href="#c-ai" x="760" y="80"/><text class="tl" x="760" y="118" text-anchor="middle">Bedrock · Anthropic</text><text class="ts" x="760" y="133" text-anchor="middle">modelo e embeddings</text>
+        <circle class="ic-ai" cx="760" cy="80" r="22"/><use href="#c-ai" x="760" y="80"/><text class="tl" x="760" y="118" text-anchor="middle">Anthropic · OpenAI · Ollama</text><text class="ts" x="760" y="133" text-anchor="middle">modelo da conversa</text>
         <circle class="ic-infra" cx="760" cy="190" r="22"/><use href="#c-msg" x="760" y="190"/><text class="tl" x="760" y="228" text-anchor="middle">Telegram Bot API</text><text class="ts" x="760" y="243" text-anchor="middle">canal de mensagem</text>
         <circle class="ic-infra" cx="760" cy="300" r="22"/><use href="#c-clk" x="760" y="300"/><text class="tl" x="760" y="338" text-anchor="middle">Google Agenda</text><text class="ts" x="760" y="353" text-anchor="middle">opcional por corretor</text>
 
@@ -267,7 +263,9 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     </div>
     <figcaption><b>Figura 1.</b> O cliente nunca autentica — a sessão do chat é assinada pelo servidor
     (HMAC) só para provar que aquele identificador de conversa foi emitido por nós. O Google Agenda é
-    opcional por corretor: sem credencial, o sistema usa a agenda do próprio banco.</figcaption>
+    opcional por corretor: sem credencial, o sistema usa a agenda do próprio banco. O CRM da
+    imobiliária é um quarto sistema à parte, falado por MCP sobre HTTP e igualmente opcional: sem
+    <code>CRM_MCP_TOKEN</code>, a Mora roda sozinha.</figcaption>
   </figure>
 </section>
 
@@ -275,106 +273,97 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Decisão estruturante</span>
-    <h2>Um núcleo, dois conjuntos de adaptadores</h2>
+    <h2>Um núcleo que só conhece portas</h2>
   </div>
   <p>É a decisão que sustenta todo o resto. O código de domínio — o grafo do agente, os guardrails, a
-  governança de custo, os modelos — <strong>não sabe em qual perfil está rodando</strong>. Ele fala com
-  portas; <code>ports/factory.py</code> resolve cada porta para um adaptador conforme
-  <code>SDR_PROFILE</code>. É o que torna o perfil local uma réplica funcional da nuvem, e não uma
-  maquete: o mesmo grafo, os mesmos guardrails e a mesma suíte de testes rodam nos dois.</p>
+  governança de custo, os modelos — <strong>não sabe com que infraestrutura está falando</strong>.
+  Ele fala com portas; <code>ports/factory.py</code> resolve cada uma na primeira chamada. Houve aqui
+  uma escolha entre dois conjuntos de adaptadores, um local e um hospedado; o hospedado foi removido
+  do projeto, e hoje broker, scheduler e embeddings têm <strong>uma implementação cada</strong>.</p>
+
+  <p>As portas ficam, e não por simetria: são o ponto onde o teste substitui a infraestrutura, são o
+  contrato escrito de cada dependência, e são onde uma segunda implementação entraria sem tocar em
+  quem chama. <code>Calendario</code> e <code>CRM</code> continuam com duas de verdade — e escolhem
+  por <em>configuração presente</em>, não por perfil.</p>
 
   <ul class="key">
-    <li><i class="k-local"></i> adaptadores do perfil local</li>
-    <li><i class="k-core"></i> núcleo compartilhado</li>
-    <li><i class="k-aws"></i> adaptadores do perfil AWS</li>
+    <li><i class="k-core"></i> núcleo e portas</li>
+    <li><i class="k-local"></i> implementação concreta</li>
   </ul>
 
   <figure class="fig">
     <div class="fig-scroll">
-      <svg class="dg" viewBox="0 0 900 500" role="img"
-           aria-label="Diagrama de portas e adaptadores: o núcleo do agente expõe cinco portas — broker, scheduler, modelo de chat, embedder e calendário — e cada uma é resolvida por um adaptador local (Redis, Postgres, Ollama, agenda no banco) ou AWS (SQS FIFO, EventBridge Scheduler, Bedrock, Titan, Google Agenda).">
+      <svg class="dg" viewBox="0 0 900 470" role="img"
+           aria-label="Diagrama de portas: o núcleo do agente expõe seis portas — broker, scheduler, modelo de chat, embedder, calendário e CRM — e cada uma é resolvida por uma implementação concreta: Redis Streams, scheduler em Postgres, Anthropic ou OpenAI ou Ollama, embeddings bge-m3 no Ollama, Google Agenda ou a agenda do banco, e o CRM por MCP ou o adaptador ausente.">
         <defs>
           <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
           </marker>
         </defs>
 
-        <text class="hd" x="120" y="34" text-anchor="middle" fill="var(--local)">SDR_PROFILE=local</text>
-        <text class="hd" x="450" y="34" text-anchor="middle" fill="var(--core)">NÚCLEO</text>
-        <text class="hd" x="780" y="34" text-anchor="middle" fill="var(--aws)">SDR_PROFILE=aws</text>
+        <text class="hd" x="220" y="30" text-anchor="middle" fill="var(--core)">NÚCLEO E PORTAS</text>
+        <text class="hd" x="680" y="30" text-anchor="middle" fill="var(--local)">IMPLEMENTAÇÃO CONCRETA</text>
 
         <!-- núcleo -->
-        <rect class="box-core" x="300" y="54" width="300" height="392" rx="4"/>
-        <text x="450" y="80" text-anchor="middle" font-weight="600">não muda entre perfis</text>
-        <line x1="320" y1="94" x2="580" y2="94" stroke="var(--core)" stroke-width="1" opacity=".4"/>
+        <rect class="box-core" x="70" y="48" width="300" height="356" rx="4"/>
+        <text x="220" y="74" text-anchor="middle" font-weight="600">não muda quando a borda muda</text>
+        <line x1="90" y1="88" x2="350" y2="88" stroke="var(--core)" stroke-width="1" opacity=".4"/>
 
         <!-- portas -->
-        <text class="m" x="450" y="136" text-anchor="middle">Broker</text>
-        <text class="m" x="450" y="192" text-anchor="middle">Scheduler</text>
-        <text class="m" x="450" y="248" text-anchor="middle">ChatModel</text>
-        <text class="m" x="450" y="304" text-anchor="middle">Embedder</text>
-        <text class="m" x="450" y="360" text-anchor="middle">Calendario</text>
+        <text class="m" x="220" y="122" text-anchor="middle">Broker</text>
+        <text class="m" x="220" y="168" text-anchor="middle">Scheduler</text>
+        <text class="m" x="220" y="214" text-anchor="middle">ChatModel</text>
+        <text class="m" x="220" y="260" text-anchor="middle">Embedder</text>
+        <text class="m" x="220" y="306" text-anchor="middle">Calendario</text>
+        <text class="m" x="220" y="352" text-anchor="middle">CRM</text>
 
-        <line x1="320" y1="386" x2="580" y2="386" stroke="var(--core)" stroke-width="1" opacity=".4"/>
-        <text class="sub" x="450" y="406" text-anchor="middle">grafo LangGraph · guardrails</text>
-        <text class="sub" x="450" y="424" text-anchor="middle">governança de custo · domínio</text>
+        <line x1="90" y1="370" x2="350" y2="370" stroke="var(--core)" stroke-width="1" opacity=".4"/>
+        <text class="sub" x="220" y="390" text-anchor="middle">grafo LangGraph · guardrails · governança de custo</text>
 
-        <!-- adaptadores locais -->
-        <rect class="box-local" x="20" y="111" width="200" height="42" rx="3"/>
-        <text class="m" x="120" y="137" text-anchor="middle">Redis Streams</text>
-        <rect class="box-local" x="20" y="167" width="200" height="42" rx="3"/>
-        <text class="m" x="120" y="193" text-anchor="middle">Postgres + worker</text>
-        <rect class="box-local" x="20" y="223" width="200" height="42" rx="3"/>
-        <text class="m" x="120" y="249" text-anchor="middle">Anthropic · Ollama</text>
-        <rect class="box-local" x="20" y="279" width="200" height="42" rx="3"/>
-        <text class="m" x="120" y="305" text-anchor="middle">Ollama embeddings</text>
-        <rect class="box-local" x="20" y="335" width="200" height="42" rx="3"/>
-        <text class="m" x="120" y="361" text-anchor="middle">agenda no banco</text>
-
-        <!-- adaptadores aws -->
-        <rect class="box-aws" x="680" y="111" width="200" height="42" rx="3"/>
-        <text class="m" x="780" y="137" text-anchor="middle">SQS FIFO</text>
-        <rect class="box-aws" x="680" y="167" width="200" height="42" rx="3"/>
-        <text class="m" x="780" y="193" text-anchor="middle">EventBridge Scheduler</text>
-        <rect class="box-aws" x="680" y="223" width="200" height="42" rx="3"/>
-        <text class="m" x="780" y="249" text-anchor="middle">Bedrock</text>
-        <rect class="box-aws" x="680" y="279" width="200" height="42" rx="3"/>
-        <text class="m" x="780" y="305" text-anchor="middle">Titan Embed v2</text>
-        <rect class="box-aws" x="680" y="335" width="200" height="42" rx="3"/>
-        <text class="m" x="780" y="361" text-anchor="middle">Google Agenda</text>
+        <!-- implementações -->
+        <rect class="box-local" x="510" y="96" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="120" text-anchor="middle">Redis Streams</text>
+        <rect class="box-local" x="510" y="142" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="166" text-anchor="middle">Postgres + worker do scheduler</text>
+        <rect class="box-local" x="510" y="188" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="212" text-anchor="middle">Anthropic · OpenAI · Ollama</text>
+        <rect class="box-local" x="510" y="234" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="258" text-anchor="middle">Ollama bge-m3 (1024 dims)</text>
+        <rect class="box-local" x="510" y="280" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="304" text-anchor="middle">Google Agenda · agenda no banco</text>
+        <rect class="box-local" x="510" y="326" width="330" height="38" rx="3"/>
+        <text class="m" x="675" y="350" text-anchor="middle">servidor MCP do CRM · CRM ausente</text>
 
         <!-- ligações -->
-        <line class="flow" x1="220" y1="132" x2="300" y2="132" stroke="var(--local)"/>
-        <line class="flow" x1="220" y1="188" x2="300" y2="188" stroke="var(--local)"/>
-        <line class="flow" x1="220" y1="244" x2="300" y2="244" stroke="var(--local)"/>
-        <line class="flow" x1="220" y1="300" x2="300" y2="300" stroke="var(--local)"/>
-        <line class="flow" x1="220" y1="356" x2="300" y2="356" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="115" x2="510" y2="115" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="161" x2="510" y2="161" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="207" x2="510" y2="207" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="253" x2="510" y2="253" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="299" x2="510" y2="299" stroke="var(--local)"/>
+        <line class="flow" x1="370" y1="345" x2="510" y2="345" stroke="var(--local)"/>
 
-        <line class="flow" x1="600" y1="132" x2="680" y2="132" stroke="var(--aws)"/>
-        <line class="flow" x1="600" y1="188" x2="680" y2="188" stroke="var(--aws)"/>
-        <line class="flow" x1="600" y1="244" x2="680" y2="244" stroke="var(--aws)"/>
-        <line class="flow" x1="600" y1="300" x2="680" y2="300" stroke="var(--aws)"/>
-        <line class="flow" x1="600" y1="356" x2="680" y2="356" stroke="var(--aws)"/>
-
-        <text class="edge" x="450" y="474" text-anchor="middle">ports/factory.py resolve cada porta na primeira chamada — nenhum nó do grafo consulta SDR_PROFILE</text>
+        <text class="edge" x="450" y="440" text-anchor="middle">ports/factory.py resolve cada porta na primeira chamada — nenhum nó do grafo consulta SDR_PROFILE</text>
       </svg>
     </div>
-    <figcaption><b>Figura 2.</b> A troca é por porta, não por bloco: dá para rodar local com LLM da
-    Anthropic e embeddings do Ollama, ou local apontando para Bedrock. O <code>Calendario</code> é a
-    única porta que não decide pelo perfil, e sim pela existência de credencial do Google.</figcaption>
+    <figcaption><b>Figura 2.</b> As quatro primeiras portas têm hoje uma implementação só — a troca
+    seria escrever um adaptador, não redesenhar o sistema. As duas últimas decidem em tempo de
+    execução, e pela configuração presente: <code>Calendario</code> usa o Google quando há credencial
+    de aplicativo e a agenda do próprio banco quando não há; <code>CRM</code> entra quando
+    <code>CRM_MCP_TOKEN</code> está configurado e, sem ele, devolve o adaptador ausente — rodar sem
+    CRM é um caso normal, não uma falha.</figcaption>
   </figure>
 </section>
 
 <!-- ============================= LOCAL ============================= -->
 <section>
   <div class="sec-head">
-    <span class="lvl">C4 · Nível 2 — Contêineres · perfil local</span>
+    <span class="lvl">C4 · Nível 2 — Contêineres</span>
     <h2>Docker Compose: tudo na máquina, exceto o modelo</h2>
   </div>
-  <p>O perfil local existe para demonstrar e desenvolver o sistema inteiro sem conta AWS. O Redis
-  substitui SQS e EventBridge; o Postgres com <code>pgvector</code> substitui o Aurora e a Knowledge
-  Base; workers Python substituem as Lambdas. Só o LLM é pago por uso — ou roda no Ollama, aceitando
-  qualidade menor.</p>
+  <p>Este é o sistema, não uma maquete dele: um <code>docker compose up</code> sobe o Postgres com
+  <code>pgvector</code>, o Redis que faz de barramento, os workers do agente, os canais, a API, os
+  dois front-ends Vite e o CRM com o seu servidor MCP. Só o modelo de linguagem é pago por uso — e
+  com <code>SDR_LLM_PROVIDER=ollama</code> nem ele, aceitando qualidade de conversa menor.</p>
 
   <ul class="key ic-key">
     <li><i style="background:var(--icu)"></i> cliente</li>
@@ -382,13 +371,12 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <li><i style="background:var(--ics)"></i> serviço de aplicação</li>
     <li><i style="background:var(--icd)"></i> banco e armazenamento</li>
     <li><i style="background:var(--ica)"></i> modelo de IA</li>
-    <li><i style="background:var(--icc)"></i> identidade</li>
   </ul>
 
   <figure class="fig">
     <div class="fig-scroll">
-      <svg class="dg" viewBox="0 0 940 710" role="img"
-           aria-label="Topologia do perfil local em Docker Compose: navegador e Telegram entram pelos serviços channels, api e telegram-in; o Redis é o barramento central de filas; os workers agent, resumidor, scheduler e telegram-out consomem dele; Postgres com pgvector e Ollama formam a camada de dados; a API do modelo é o único serviço externo pago.">
+      <svg class="dg" viewBox="0 0 960 920" role="img"
+           aria-label="Topologia do docker compose: o navegador usa os front-ends Vite (site, painel e painel do CRM) e o Telegram entra por long polling no telegram-in; channels, api e telegram-in publicam no Redis, que é o barramento; os workers agent, resumidor, reativador, scheduler e telegram-out consomem dele; Postgres com pgvector e Ollama formam a camada de dados; o CRM tem API e servidor MCP próprios; a API do modelo é o único serviço externo pago.">
         <defs>
 <marker id="l-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
 <g id="l-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
@@ -404,137 +392,69 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <g id="l-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
 <g id="l-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
 </defs>
-        <rect class="zone" x="10" y="10" width="920" height="670" rx="4"/><text class="zone-t" x="28" y="34">AMBIENTE LOCAL · máquina do desenvolvedor</text>
-        <rect class="zone" x="170" y="52" width="650" height="460" rx="4"/><text class="zone-t" x="188" y="76">DOCKER COMPOSE · rede sdr-local</text>
+        <rect class="zone" x="10" y="10" width="940" height="880" rx="4"/><text class="zone-t" x="28" y="34">MÁQUINA DE QUEM AVALIA</text>
+        <rect class="zone" x="150" y="50" width="790" height="620" rx="4"/><text class="zone-t" x="168" y="74">DOCKER COMPOSE · rede sdr-local</text>
 
-        <circle class="ic-user" cx="88" cy="168" r="22"/><use href="#l-mon" x="88" y="168"/><text class="tl" x="88" y="206" text-anchor="middle">Navegador</text><text class="ts" x="88" y="221" text-anchor="middle">site :5173</text><text class="ts" x="88" y="235" text-anchor="middle">painel :5174</text>
-        <circle class="ic-infra" cx="88" cy="388" r="22"/><use href="#l-msg" x="88" y="388"/><text class="tl" x="88" y="426" text-anchor="middle">Telegram</text><text class="ts" x="88" y="441" text-anchor="middle">nuvem pública</text>
+        <circle class="ic-infra" cx="80" cy="420" r="22"/><use href="#l-msg" x="80" y="420"/><text class="tl" x="80" y="458" text-anchor="middle">Telegram</text><text class="ts" x="80" y="473" text-anchor="middle">nuvem pública</text>
+        <circle class="ic-user" cx="80" cy="560" r="22"/><use href="#l-mon" x="80" y="560"/><text class="tl" x="80" y="598" text-anchor="middle">Navegador</text><text class="ts" x="80" y="613" text-anchor="middle">cliente e corretor</text>
 
-        <rect class="grp" x="188" y="96" width="150" height="380" rx="4"/><text class="grp-t" x="263.0" y="118" text-anchor="middle">SERVIÇOS DE ENTRADA</text>
-        <circle class="ic-infra" cx="263" cy="168" r="22"/><use href="#l-gate" x="263" y="168"/><text class="tl" x="263" y="206" text-anchor="middle">channels</text><text class="ts" x="263" y="221" text-anchor="middle">:8001 · WebSocket</text>
-        <circle class="ic-infra" cx="263" cy="278" r="22"/><use href="#l-gate" x="263" y="278"/><text class="tl" x="263" y="316" text-anchor="middle">api</text><text class="ts" x="263" y="331" text-anchor="middle">:8000 · REST</text>
-        <circle class="ic-svc" cx="263" cy="388" r="22"/><use href="#l-svc" x="263" y="388"/><text class="tl" x="263" y="426" text-anchor="middle">telegram-in</text><text class="ts" x="263" y="441" text-anchor="middle">long polling</text>
+        <rect class="grp" x="180" y="110" width="140" height="370" rx="4"/><text class="grp-t" x="250" y="132" text-anchor="middle">ENTRADA</text>
+        <circle class="ic-infra" cx="250" cy="180" r="22"/><use href="#l-gate" x="250" y="180"/><text class="tl" x="250" y="218" text-anchor="middle">channels</text><text class="ts" x="250" y="233" text-anchor="middle">:8001 · HTTP + WS</text>
+        <circle class="ic-infra" cx="250" cy="300" r="22"/><use href="#l-gate" x="250" y="300"/><text class="tl" x="250" y="338" text-anchor="middle">api</text><text class="ts" x="250" y="353" text-anchor="middle">:8000 · REST</text>
+        <circle class="ic-svc" cx="250" cy="420" r="22"/><use href="#l-svc" x="250" y="420"/><text class="tl" x="250" y="458" text-anchor="middle">telegram-in</text><text class="ts" x="250" y="473" text-anchor="middle">long polling</text>
 
         <circle class="ic-infra" cx="400" cy="250" r="26"/><use href="#l-q" x="400" y="250"/><text class="tl" x="400" y="292" text-anchor="middle">redis</text><text class="ts" x="400" y="307" text-anchor="middle">Streams · locks</text>
 
-        <rect class="grp" x="458" y="96" width="196" height="270" rx="4"/><text class="grp-t" x="556.0" y="118" text-anchor="middle">WORKERS DO AGENTE</text>
-        <circle class="ic-svc" cx="506" cy="168" r="22"/><use href="#l-svc" x="506" y="168"/><text class="tl" x="506" y="206" text-anchor="middle">agent</text><text class="ts" x="506" y="221" text-anchor="middle">grafo LangGraph</text>
-        <circle class="ic-svc" cx="606" cy="168" r="22"/><use href="#l-svc" x="606" y="168"/><text class="tl" x="606" y="206" text-anchor="middle">resumidor</text><text class="ts" x="606" y="221" text-anchor="middle">briefing</text>
-        <circle class="ic-svc" cx="506" cy="278" r="22"/><use href="#l-clk" x="506" y="278"/><text class="tl" x="506" y="316" text-anchor="middle">scheduler</text><text class="ts" x="506" y="331" text-anchor="middle">follow-up</text>
-        <circle class="ic-svc" cx="606" cy="278" r="22"/><use href="#l-svc" x="606" y="278"/><text class="tl" x="606" y="316" text-anchor="middle">telegram-out</text><text class="ts" x="606" y="331" text-anchor="middle">envio</text>
+        <rect class="grp" x="490" y="110" width="230" height="370" rx="4"/><text class="grp-t" x="605" y="132" text-anchor="middle">WORKERS</text>
+        <circle class="ic-svc" cx="545" cy="180" r="22"/><use href="#l-svc" x="545" y="180"/><text class="tl" x="545" y="218" text-anchor="middle">agent</text><text class="ts" x="545" y="233" text-anchor="middle">grafo LangGraph</text>
+        <circle class="ic-svc" cx="665" cy="180" r="22"/><use href="#l-svc" x="665" y="180"/><text class="tl" x="665" y="218" text-anchor="middle">resumidor</text><text class="ts" x="665" y="233" text-anchor="middle">briefing</text>
+        <circle class="ic-svc" cx="545" cy="300" r="22"/><use href="#l-clk" x="545" y="300"/><text class="tl" x="545" y="338" text-anchor="middle">scheduler</text><text class="ts" x="545" y="353" text-anchor="middle">follow-up</text>
+        <circle class="ic-svc" cx="665" cy="300" r="22"/><use href="#l-svc" x="665" y="300"/><text class="tl" x="665" y="338" text-anchor="middle">reativador</text><text class="ts" x="665" y="353" text-anchor="middle">imóvel novo</text>
+        <circle class="ic-svc" cx="605" cy="420" r="22"/><use href="#l-svc" x="605" y="420"/><text class="tl" x="605" y="458" text-anchor="middle">telegram-out</text><text class="ts" x="605" y="473" text-anchor="middle">envio</text>
 
-        <rect class="grp" x="676" y="96" width="128" height="270" rx="4"/><text class="grp-t" x="740.0" y="118" text-anchor="middle">DADOS</text>
-        <circle class="ic-data" cx="740" cy="168" r="22"/><use href="#l-db" x="740" y="168"/><text class="tl" x="740" y="206" text-anchor="middle">Postgres 16</text><text class="ts" x="740" y="221" text-anchor="middle">+ pgvector</text>
-        <circle class="ic-ai" cx="740" cy="278" r="22"/><use href="#l-ai" x="740" y="278"/><text class="tl" x="740" y="316" text-anchor="middle">ollama</text><text class="ts" x="740" y="331" text-anchor="middle">embeddings</text>
+        <rect class="grp" x="750" y="110" width="170" height="250" rx="4"/><text class="grp-t" x="835" y="132" text-anchor="middle">DADOS</text>
+        <circle class="ic-data" cx="835" cy="180" r="22"/><use href="#l-db" x="835" y="180"/><text class="tl" x="835" y="218" text-anchor="middle">Postgres 16</text><text class="ts" x="835" y="233" text-anchor="middle">+ pgvector · sdr e crm</text>
+        <circle class="ic-ai" cx="835" cy="290" r="22"/><use href="#l-ai" x="835" y="290"/><text class="tl" x="835" y="328" text-anchor="middle">ollama</text><text class="ts" x="835" y="343" text-anchor="middle">embeddings bge-m3</text>
 
-        <rect class="grp" x="300" y="548" width="390" height="124" rx="4"/><text class="grp-t" x="495.0" y="570" text-anchor="middle">SERVIÇO EXTERNO · pago por uso</text>
-        <circle class="ic-ai" cx="495" cy="600" r="22"/><use href="#l-ai" x="495" y="600"/><text class="tl" x="495" y="638" text-anchor="middle">Anthropic API · Bedrock</text><text class="ts" x="495" y="653" text-anchor="middle">único custo variável do sistema</text>
+        <rect class="grp" x="170" y="500" width="310" height="150" rx="4"/><text class="grp-t" x="325" y="522" text-anchor="middle">FRONT-ENDS (VITE)</text>
+        <circle class="ic-infra" cx="240" cy="570" r="20"/><use href="#l-mon" x="240" y="570"/><text class="tl" x="240" y="606" text-anchor="middle">web</text><text class="ts" x="240" y="621" text-anchor="middle">:5173</text>
+        <circle class="ic-infra" cx="330" cy="570" r="20"/><use href="#l-mon" x="330" y="570"/><text class="tl" x="330" y="606" text-anchor="middle">dashboard</text><text class="ts" x="330" y="621" text-anchor="middle">:5174</text>
+        <circle class="ic-infra" cx="420" cy="570" r="20"/><use href="#l-mon" x="420" y="570"/><text class="tl" x="420" y="606" text-anchor="middle">crm-web</text><text class="ts" x="420" y="621" text-anchor="middle">:3000</text>
 
-        <path class="flow" d="M114,168 L188,168" marker-end="url(#l-ar)"/>
-        <path class="flow" d="M114,388 L237,388" marker-end="url(#l-ar)"/>
-        <path class="flow-core" d="M338,250 L372,250" marker-end="url(#l-ar)"/>
-        <path class="flow-core" d="M428,250 L458,250" marker-end="url(#l-ar)"/>
-        <path class="flow" d="M654,240 L676,240" marker-end="url(#l-ar)"/>
-        <path class="flow" d="M338,300 L420,300 L420,424 L740,424 L740,370" marker-end="url(#l-ar)"/>
-        <text class="edge" x="560" y="418" text-anchor="middle">api → banco</text>
-        <path class="flow-core" d="M556,366 L556,528 L495,528 L495,564" marker-end="url(#l-ar)"/>
-        <text class="edge" x="600" y="524" text-anchor="middle">chamada ao modelo</text>
+        <rect class="grp" x="490" y="500" width="430" height="150" rx="4"/><text class="grp-t" x="705" y="522" text-anchor="middle">CRM · SISTEMA À PARTE</text>
+        <circle class="ic-svc" cx="590" cy="570" r="22"/><use href="#l-svc" x="590" y="570"/><text class="tl" x="590" y="608" text-anchor="middle">crm-api</text><text class="ts" x="590" y="623" text-anchor="middle">:8100 · REST</text>
+        <circle class="ic-infra" cx="790" cy="570" r="22"/><use href="#l-gate" x="790" y="570"/><text class="tl" x="790" y="608" text-anchor="middle">crm-mcp</text><text class="ts" x="790" y="623" text-anchor="middle">:8200 · MCP sobre HTTP</text>
+
+        <rect class="grp" x="290" y="700" width="400" height="150" rx="4"/><text class="grp-t" x="490" y="722" text-anchor="middle">SERVIÇO EXTERNO · pago por uso</text>
+        <circle class="ic-ai" cx="490" cy="770" r="22"/><use href="#l-ai" x="490" y="770"/><text class="tl" x="490" y="808" text-anchor="middle">Anthropic · OpenAI</text><text class="ts" x="490" y="823" text-anchor="middle">único custo variável — ou Ollama, e nenhum</text>
+
+        <path class="flow" d="M106,420 L224,420" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M106,560 L170,560" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M220,556 L200,556 L200,486" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M440,560 L490,560" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M272,190 L400,190 L400,222" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M272,420 L400,420 L400,278" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M426,250 L490,250" marker-end="url(#l-ar)" marker-start="url(#l-ar)"/>
+        <text class="edge" x="458" y="236" text-anchor="middle">fila</text>
+        <path class="flow" d="M720,200 L750,200" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M720,290 L750,290" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M272,300 L330,300 L330,492 L835,492 L835,364" marker-end="url(#l-ar)"/>
+        <text class="edge" x="560" y="486" text-anchor="middle">api → banco</text>
+        <path class="flow" d="M705,480 L790,480 L790,544" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M768,570 L616,570" marker-end="url(#l-ar)"/>
+        <text class="edge" x="692" y="560" text-anchor="middle">REST do CRM</text>
+        <path class="flow" d="M590,592 L590,660 L930,660 L930,180 L859,180" marker-end="url(#l-ar)"/>
+        <path class="flow-core" d="M490,440 L460,440 L460,744" marker-end="url(#l-ar)"/>
+        <text class="edge" x="395" y="640" text-anchor="middle">chamada ao modelo</text>
       </svg>
     </div>
-    <figcaption><b>Figura 3.</b> O Redis ocupa o papel de barramento — é ele que substitui SQS e
-    EventBridge do perfil de nuvem. O Telegram entra por <em>long polling</em>, não por webhook, o que
-    eliminou a necessidade de túnel público e de conta de negócio verificada (ADR-0007). A conexão
-    WebSocket do painel é somente leitura: o corretor responde ao cliente pelo <code>/handoff</code>
-    da API, que é auditado (ADR-0008).</figcaption>
-  </figure>
-</section>
-
-<!-- ============================= AWS ============================= -->
-<section>
-  <div class="sec-head">
-    <span class="lvl">C4 · Nível 2 — Contêineres · perfil aws</span>
-    <h2>Serverless: nada ligado sem conversa acontecendo</h2>
-  </div>
-  <p>O alvo da arquitetura. Dez stacks CDK, uma por domínio, com ordem de dependência explícita.
-  A premissa de custo é escala a zero: Aurora Serverless v2 com capacidade mínima <code>0</code>,
-  Lambdas sob demanda, filas cobradas por mensagem. O único gasto fixo é o NAT Gateway da VPC.</p>
-
-  <figure class="fig">
-    <div class="fig-scroll">
-      <svg class="dg" viewBox="0 0 1000 668" role="img"
-           aria-label="Topologia do perfil AWS: CloudFront e S3 entregam os frontends; API Gateway HTTP e WebSocket recebem as requisições; filas SQS FIFO ligam a entrada às Lambdas do agente dentro da VPC; Aurora Serverless v2 guarda os dados; Bedrock, Cognito, S3, DynamoDB e EventBridge Scheduler são os serviços gerenciados.">
-        <defs>
-<marker id="a-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
-<g id="a-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
-<g id="a-db" class="glyph"><ellipse cy="-5.5" rx="7.2" ry="2.9"/><path d="M-7.2-5.5v11c0 1.6 3.2 2.9 7.2 2.9s7.2-1.3 7.2-2.9v-11"/><path d="M-7.2 0c0 1.6 3.2 2.9 7.2 2.9S7.2 1.6 7.2 0"/></g>
-<g id="a-q" class="glyph"><rect x="-8.5" y="-5" width="4.2" height="10" rx="1"/><rect x="-2.1" y="-5" width="4.2" height="10" rx="1"/><rect x="4.3" y="-5" width="4.2" height="10" rx="1"/></g>
-<g id="a-fn" class="glyph"><path d="M1.5-9L-6 1.5h5l-1 7.5 7.5-10.5h-5z"/></g>
-<g id="a-mon" class="glyph"><rect x="-8.5" y="-7" width="17" height="11.5" rx="1.5"/><path d="M-3 9h6"/><path d="M0 4.5v4.5"/></g>
-<g id="a-msg" class="glyph"><rect x="-8.5" y="-7.5" width="17" height="11" rx="2"/><path d="M-4 3.5l-1.5 4.5 4.5-4.5"/></g>
-<g id="a-cdn" class="glyph"><circle r="8.2"/><path d="M-8.2 0h16.4"/><path d="M0-8.2c2.5 2.6 2.5 13.8 0 16.4"/><path d="M0-8.2c-2.5 2.6-2.5 13.8 0 16.4"/></g>
-<g id="a-gate" class="glyph"><path d="M-6.5-8v16"/><path d="M6.5-8v16"/><path d="M-3.5 0h6"/><path d="M1.2-3l3 3-3 3"/></g>
-<g id="a-sh" class="glyph"><path d="M0-9l6.8 2.7v5.8c0 4.5-2.9 7.8-6.8 9.3-3.9-1.5-6.8-4.8-6.8-9.3v-5.8z"/><path d="M-2.9 0l2.1 2.1L3.4-2"/></g>
-<g id="a-ai" class="glyph"><path d="M-1.5-9l1.8 4.9 4.9 1.8-4.9 1.8L-1.5 4.4-3.3-.5-8.2-2.3l4.9-1.8z"/><path d="M5.2 3.2l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></g>
-<g id="a-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
-<g id="a-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
-</defs>
-        <rect class="zone" x="170" y="10" width="820" height="618" rx="4"/><text class="zone-t" x="188" y="34">AWS · us-east-1</text>
-
-        <circle class="ic-user" cx="88" cy="130" r="22"/><use href="#a-mon" x="88" y="130"/><text class="tl" x="88" y="168" text-anchor="middle">Navegador</text><text class="ts" x="88" y="183" text-anchor="middle">site e painel</text>
-        <circle class="ic-infra" cx="88" cy="370" r="22"/><use href="#a-msg" x="88" y="370"/><text class="tl" x="88" y="408" text-anchor="middle">WhatsApp</text><text class="ts" x="88" y="423" text-anchor="middle">Cloud API</text>
-
-        <rect class="grp" x="188" y="52" width="137" height="270" rx="4"/><text class="grp-t" x="256.5" y="74" text-anchor="middle">ENTREGA</text>
-        <circle class="ic-infra" cx="256" cy="130" r="22"/><use href="#a-cdn" x="256" y="130"/><text class="tl" x="256" y="168" text-anchor="middle">CloudFront</text><text class="ts" x="256" y="183" text-anchor="middle">+ S3 · vitrine</text>
-        <circle class="ic-infra" cx="256" cy="250" r="22"/><use href="#a-cdn" x="256" y="250"/><text class="tl" x="256" y="288" text-anchor="middle">CloudFront</text><text class="ts" x="256" y="303" text-anchor="middle">+ S3 · painel</text>
-
-        <rect class="grp" x="341" y="52" width="132" height="490" rx="4"/><text class="grp-t" x="410.5" y="74" text-anchor="middle">ENTRADA</text>
-        <circle class="ic-infra" cx="410" cy="130" r="22"/><use href="#a-gate" x="410" y="130"/><text class="tl" x="410" y="168" text-anchor="middle">API GW HTTP</text><text class="ts" x="410" y="183" text-anchor="middle">sdr-api</text>
-        <circle class="ic-infra" cx="410" cy="250" r="22"/><use href="#a-gate" x="410" y="250"/><text class="tl" x="410" y="288" text-anchor="middle">API GW WS</text><text class="ts" x="410" y="303" text-anchor="middle">chat do site</text>
-        <circle class="ic-infra" cx="410" cy="370" r="22"/><use href="#a-gate" x="410" y="370"/><text class="tl" x="410" y="408" text-anchor="middle">API GW HTTP</text><text class="ts" x="410" y="423" text-anchor="middle">webhook</text>
-        <circle class="ic-svc" cx="410" cy="490" r="22"/><use href="#a-fn" x="410" y="490"/><text class="tl" x="410" y="528" text-anchor="middle">λ canal web</text><text class="ts" x="410" y="543" text-anchor="middle">fora da VPC</text>
-
-        <circle class="ic-infra" cx="538" cy="300" r="26"/><use href="#a-q" x="538" y="300"/><text class="tl" x="538" y="342" text-anchor="middle">SQS FIFO</text><text class="ts" x="538" y="357" text-anchor="middle">inbound · outbound · DLQ</text>
-
-        <rect class="zone" x="606" y="52" width="204" height="490" rx="4"/><text class="zone-t" x="622" y="76">VPC · 2 AZ</text>
-        <rect class="grp" x="608" y="92" width="190" height="270" rx="4"/><text class="grp-t" x="703.0" y="114" text-anchor="middle">COMPUTE</text>
-        <circle class="ic-svc" cx="655" cy="164" r="22"/><use href="#a-fn" x="655" y="164"/><text class="tl" x="655" y="202" text-anchor="middle">λ agente</text><text class="ts" x="655" y="217" text-anchor="middle">container ARM64</text>
-        <circle class="ic-svc" cx="751" cy="164" r="22"/><use href="#a-fn" x="751" y="164"/><text class="tl" x="751" y="202" text-anchor="middle">λ resumidor</text><text class="ts" x="751" y="217" text-anchor="middle">fora do turno</text>
-        <circle class="ic-svc" cx="655" cy="274" r="22"/><use href="#a-fn" x="655" y="274"/><text class="tl" x="655" y="312" text-anchor="middle">λ API</text><text class="ts" x="655" y="327" text-anchor="middle">FastAPI</text>
-        <circle class="ic-svc" cx="751" cy="274" r="22"/><use href="#a-fn" x="751" y="274"/><text class="tl" x="751" y="312" text-anchor="middle">λ canal WA</text><text class="ts" x="751" y="327" text-anchor="middle">na VPC</text>
-        <rect class="grp" x="608" y="392" width="190" height="130" rx="4"/><text class="grp-t" x="703.0" y="414" text-anchor="middle">DADOS NA VPC</text>
-        <circle class="ic-data" cx="703" cy="452" r="22"/><use href="#a-db" x="703" y="452"/><text class="tl" x="703" y="490" text-anchor="middle">Aurora Serverless v2</text><text class="ts" x="703" y="505" text-anchor="middle">Postgres 16 + pgvector</text>
-
-        <rect class="grp" x="826" y="52" width="150" height="545" rx="4"/><text class="grp-t" x="901.0" y="74" text-anchor="middle">GERENCIADOS</text>
-        <circle class="ic-ai" cx="901" cy="120" r="22"/><use href="#a-ai" x="901" y="120"/><text class="tl" x="901" y="158" text-anchor="middle">Bedrock</text><text class="ts" x="901" y="173" text-anchor="middle">Claude · Titan · KB</text>
-        <circle class="ic-sec" cx="901" cy="220" r="22"/><use href="#a-sh" x="901" y="220"/><text class="tl" x="901" y="258" text-anchor="middle">Cognito</text><text class="ts" x="901" y="273" text-anchor="middle">JWT do painel</text>
-        <circle class="ic-data" cx="901" cy="320" r="22"/><use href="#a-st" x="901" y="320"/><text class="tl" x="901" y="358" text-anchor="middle">S3</text><text class="ts" x="901" y="373" text-anchor="middle">imóveis · documentos</text>
-        <circle class="ic-data" cx="901" cy="420" r="22"/><use href="#a-db" x="901" y="420"/><text class="tl" x="901" y="458" text-anchor="middle">DynamoDB</text><text class="ts" x="901" y="473" text-anchor="middle">conexões do λ web</text>
-        <circle class="ic-infra" cx="901" cy="520" r="22"/><use href="#a-clk" x="901" y="520"/><text class="tl" x="901" y="558" text-anchor="middle">EventBridge</text><text class="ts" x="901" y="573" text-anchor="middle">Scheduler</text>
-
-        <path class="flow" d="M114,130 L188,130" marker-end="url(#a-ar)"/>
-        <path class="flow" d="M114,370 L384,370" marker-end="url(#a-ar)"/>
-        <path class="flow" d="M325,190 L339,190" marker-end="url(#a-ar)"/>
-        <path class="flow-core" d="M429,262 L508,292" marker-end="url(#a-ar)"/>
-        <path class="flow-core" d="M433,490 L505,490 L505,318" marker-end="url(#a-ar)"/>
-        <text class="edge" x="472" y="482" text-anchor="middle">publica inbound</text>
-        <path class="flow" d="M429,130 L606,130" marker-end="url(#a-ar)"/>
-        <text class="edge" x="516" y="122" text-anchor="middle">invoca λ API</text>
-        <path class="flow-core" d="M566,300 L618,300" marker-end="url(#a-ar)" marker-start="url(#a-ar)"/>
-        <text class="edge" x="590" y="284" text-anchor="middle">fila</text>
-        <path class="flow" d="M703,362 L703,392" marker-end="url(#a-ar)"/>
-        <path class="flow" d="M810,200 L845,200 L845,138 L877,138" marker-end="url(#a-ar)"/>
-        <text class="edge" x="843" y="216" text-anchor="middle">infere</text>
-        <path class="flow" d="M879,220 L818,220 L818,36 L407,36 L407,106" marker-end="url(#a-ar)"/>
-        <text class="edge" x="618" y="30" text-anchor="middle">autoriza as rotas privadas</text>
-        <path class="flow" d="M877,520 L818,520 L818,612 L538,612 L538,332" marker-end="url(#a-ar)"/>
-        <text class="edge" x="688" y="606" text-anchor="middle">reinjeta o follow-up na fila</text>
-      </svg>
-    </div>
-    <figcaption><b>Figura 4.</b> Duas decisões finas ficam visíveis no desenho: a Lambda do canal web
-    está <em>fora</em> da VPC de propósito — não toca o banco, fala só com DynamoDB e SQS, e evita o
-    custo de ENI —, enquanto a do canal WhatsApp está dentro porque precisa do Aurora. E a Lambda do
-    agente consome a fila com <code>batch_size=1</code>: a fila é FIFO por lead, e processar em lote
-    quebraria a ordem da conversa.</figcaption>
+    <figcaption><b>Figura 3.</b> O Redis ocupa o papel de barramento: os canais publicam, os workers
+    consomem, e é o lock por lead que mantém a ordem da conversa. O Telegram entra por <em>long
+    polling</em>, não por webhook — sem túnel público e sem conta de negócio verificada (ADR-0007).
+    O CRM é sistema à parte com banco próprio (<code>crm</code>, no mesmo Postgres) e a Mora só fala
+    com ele pelo servidor MCP. A conexão WebSocket do painel é somente leitura: o corretor responde
+    ao cliente pelo <code>/handoff</code> da API, que é auditado (ADR-0008). O Ollama e o Langfuse
+    ficam atrás de <em>profiles</em> do compose, e por isso não sobem no <code>up</code> padrão.</figcaption>
   </figure>
 </section>
 
@@ -612,7 +532,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <path class="flow" d="M780,173 L812,173" marker-end="url(#a5)"/>
       </svg>
     </div>
-    <figcaption><b>Figura 5.</b> O estado do grafo é persistido em checkpoint no Postgres com
+    <figcaption><b>Figura 4.</b> O estado do grafo é persistido em checkpoint no Postgres com
     <code>thread_id = lead_id</code>, então a conversa sobrevive a reinício de worker e a troca de
     canal. O limite de quatro saltos existe para impedir laço entre especialistas.</figcaption>
   </figure>
@@ -691,7 +611,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <text class="edge" x="516" y="216" text-anchor="middle">falha em qualquer ponto → o cliente recebe uma resposta de contorno; o turno nunca termina em silêncio</text>
       </svg>
     </div>
-    <figcaption><b>Figura 6.</b> A guarda de orçamento é a única que muda o comportamento em vez de
+    <figcaption><b>Figura 5.</b> A guarda de orçamento é a única que muda o comportamento em vez de
     barrar: ao estourar o teto, o agente troca o modelo caro pelo econômico e segue atendendo; passando
     de 150%, entrega a conversa a um corretor. Recusar o cliente é sempre o último recurso.</figcaption>
   </figure>
@@ -701,34 +621,38 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Correspondência</span>
-    <h2>O mesmo papel, dois serviços</h2>
+    <h2>Cada papel, uma implementação — e onde a troca entraria</h2>
   </div>
   <div class="tbl-scroll">
     <table>
       <thead>
-        <tr><th>Papel na arquitetura</th><th>Perfil local</th><th>Perfil aws</th><th>Onde a troca acontece</th></tr>
+        <tr><th>Papel na arquitetura</th><th>Implementação hoje</th><th>Onde a troca entraria</th></tr>
       </thead>
       <tbody>
-        <tr><td>Fila de mensagens</td><td>Redis Streams</td><td>SQS FIFO + DLQ</td><td class="m">ports/factory.get_broker</td></tr>
-        <tr><td>Agendamento de follow-up</td><td>Postgres + worker</td><td>EventBridge Scheduler</td><td class="m">ports/factory.get_scheduler</td></tr>
-        <tr><td>Modelo de linguagem</td><td>Anthropic API ou Ollama</td><td>Bedrock</td><td class="m">ports/factory.get_chat_model</td></tr>
-        <tr><td>Embeddings</td><td>Ollama</td><td>Titan Embed v2</td><td class="m">ports/factory.get_embedder</td></tr>
-        <tr><td>Busca semântica</td><td>pgvector direto</td><td>Bedrock Knowledge Base</td><td class="m">tools/buscar_imoveis</td></tr>
-        <tr><td>Banco de dados</td><td>Postgres 16 em container</td><td>Aurora Serverless v2</td><td class="m">SDR_DATABASE_DSN</td></tr>
-        <tr><td>Autenticação do painel</td><td>token estático configurável</td><td>Cognito JWT no authorizer</td><td class="m">api/auth.corretor_atual</td></tr>
-        <tr><td>Canal de mensagem</td><td>Telegram (long polling)</td><td>WhatsApp (webhook)</td><td class="m">services/channels/*</td></tr>
-        <tr><td>Hospedagem do front</td><td>Vite dev server</td><td>S3 + CloudFront</td><td class="m">FrontendStack</td></tr>
+        <tr><td>Fila de mensagens</td><td>Redis Streams + lock por lead</td><td class="m">ports/factory.get_broker</td></tr>
+        <tr><td>Agendamento de follow-up</td><td>Postgres + worker do scheduler</td><td class="m">ports/factory.get_scheduler</td></tr>
+        <tr><td>Modelo de linguagem</td><td>Anthropic (padrão), OpenAI ou Ollama, com reserva</td><td class="m">ports/factory.get_chat_model</td></tr>
+        <tr><td>Embeddings</td><td>Ollama bge-m3 — as 1024 dimensões que o schema espera</td><td class="m">ports/factory.get_embedder</td></tr>
+        <tr><td>Busca semântica</td><td>pgvector, no mesmo banco que o painel consulta</td><td class="m">tools/buscar_imoveis</td></tr>
+        <tr><td>Banco de dados</td><td>Postgres 16 + pgvector em container</td><td class="m">SDR_DATABASE_DSN</td></tr>
+        <tr><td>Transcrição de voz</td><td>faster-whisper, no próprio processo</td><td class="m">SDR_TRANSCRICAO_PROVIDER</td></tr>
+        <tr><td>Autenticação do painel</td><td>token estático, fail-closed fora do perfil local</td><td class="m">api/auth.corretor_atual</td></tr>
+        <tr><td>Canal externo</td><td>Telegram, por long polling</td><td class="m">services/channels/*</td></tr>
+        <tr><td>Agenda do corretor</td><td>Google quando há credencial; senão, a agenda do banco</td><td class="m">ports/factory.get_calendario</td></tr>
+        <tr><td>CRM</td><td>servidor MCP quando configurado; senão, CRM ausente</td><td class="m">ports/factory.get_crm</td></tr>
+        <tr><td>Hospedagem do front</td><td>Vite em modo dev, em container</td><td class="m">local/docker-compose.yml</td></tr>
       </tbody>
     </table>
   </div>
-  <p>A última linha é uma divergência real, não uma equivalência — está detalhada abaixo.</p>
+  <p>A última linha é a que mais denuncia o escopo: os front-ends rodam em modo de desenvolvimento,
+  porque a entrega é feita para ser executada e lida, não servida a usuários finais.</p>
 </section>
 
 <!-- ============================= DECISÕES ============================= -->
 <section>
   <div class="sec-head">
     <span class="lvl">Registro de decisões</span>
-    <h2>Dez ADRs, incluindo as revertidas</h2>
+    <h2>Catorze ADRs, incluindo as revertidas</h2>
   </div>
   <p>Decisões revogadas foram mantidas com o motivo da reversão em vez de apagadas — para uma banca,
   o caminho percorrido diz mais que o estado final.</p>
@@ -736,16 +660,20 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <table>
       <thead><tr><th>#</th><th>Decisão</th><th>Situação</th></tr></thead>
       <tbody>
-        <tr><td class="num">0001</td><td>RAG com Knowledge Base sobre Aurora pgvector</td><td>aceita</td></tr>
-        <tr><td class="num">0002</td><td>Agente em Lambda container</td><td>aceita</td></tr>
-        <tr><td class="num">0003</td><td>Canais como adaptadores</td><td>aceita</td></tr>
-        <tr><td class="num">0004</td><td>Aurora em vez de DynamoDB</td><td>aceita</td></tr>
-        <tr><td class="num">0005</td><td>Observabilidade com OpenTelemetry + Grafana</td><td><b>revogada</b> — os sete containers competiam por CPU com o Ollama na máquina de desenvolvimento</td></tr>
-        <tr><td class="num">0006</td><td>Site vitrine com agente embutido</td><td>aceita</td></tr>
-        <tr><td class="num">0007</td><td>Telegram em vez de WhatsApp</td><td>aceita — sem verificação de negócio, sem túnel</td></tr>
-        <tr><td class="num">0008</td><td>Portões de autenticação fora do API Gateway</td><td>aceita — fechou WebSocket que expunha todas as conversas</td></tr>
-        <tr><td class="num">0009</td><td>Gateway de LLM: LiteLLM, OpenRouter ou camada própria</td><td>aceita — nenhum dos dois; fallback entre provedores feito na camada existente</td></tr>
+        <tr><td class="num">0001</td><td>RAG sobre Postgres + pgvector, com fusão de ranking</td><td>aceita — a fusão léxica fica desligada por padrão: o A/B piorou o recall (31,9% → 29,8%)</td></tr>
+        <tr><td class="num">0002</td><td>Runtime do agente: container local consumindo uma fila</td><td>aceita — um turno leva de 20 a 40 s e não cabe no fio do HTTP</td></tr>
+        <tr><td class="num">0003</td><td>Canais são adaptadores sem lógica de negócio</td><td>aceita</td></tr>
+        <tr><td class="num">0004</td><td>Um Postgres para tudo, em vez de um banco por finalidade</td><td>aceita</td></tr>
+        <tr><td class="num">0005</td><td>Observabilidade com OpenTelemetry + Grafana</td><td><b>revogada</b> — os containers competiam por CPU com o Ollama na máquina de desenvolvimento</td></tr>
+        <tr><td class="num">0006</td><td>Site vitrine com o agente embutido, ao lado do Telegram</td><td>aceita</td></tr>
+        <tr><td class="num">0007</td><td>Telegram substitui WhatsApp como canal externo</td><td>aceita — sem verificação de negócio, sem webhook e sem túnel</td></tr>
+        <tr><td class="num">0008</td><td>Cada porta privada carrega o seu próprio portão</td><td>aceita — fechou WebSocket que expunha todas as conversas</td></tr>
+        <tr><td class="num">0009</td><td>Gateway de LLM: LiteLLM, OpenRouter ou a camada própria</td><td>aceita — nenhum dos dois; o fallback entre provedores ficou na camada existente</td></tr>
         <tr><td class="num">0010</td><td>Modelo por nível, editável no painel</td><td>aceita</td></tr>
+        <tr><td class="num">0011</td><td>Observabilidade leve: três tabelas no Postgres</td><td>aceita — substituiu a ADR-0005</td></tr>
+        <tr><td class="num">0012</td><td>Vitrine encontrável, pesquisável e acessível</td><td>aceita</td></tr>
+        <tr><td class="num">0013</td><td>Reativação proativa de leads adormecidos</td><td>aceita — com motivo verificável, cadência e opt-out</td></tr>
+        <tr><td class="num">0014</td><td>Tema claro e escuro no painel</td><td>aceita</td></tr>
       </tbody>
     </table>
   </div>
@@ -755,44 +683,61 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Honestidade arquitetural</span>
-    <h2>Divergências conhecidas entre o desenho e o código</h2>
+    <h2>Lacunas conhecidas entre o desenho e o código</h2>
   </div>
-  <p>Estas são as lacunas que uma banca encontraria lendo a IaC. Estão listadas com o motivo e o
-  impacto, porque nenhuma delas é acidente de implementação — são consequência de o perfil local ter
-  evoluído mais rápido que o perfil de nuvem durante a POC.</p>
+  <p>Estas são as lacunas que uma banca encontraria lendo o repositório. Estão listadas com o motivo
+  e o impacto, porque nenhuma delas é acidente de implementação — são limites de escopo assumidos.</p>
 
   <ul class="gaps">
     <li>
-      <span class="tag">canal · IaC desatualizada</span>
-      <h4>A stack AWS ainda provisiona WhatsApp, não Telegram</h4>
-      <p>A ADR-0007 trocou o canal no perfil local, mas <code>channels_stack.py</code> segue criando as
-      Lambdas e o webhook do WhatsApp, e <code>messaging_stack.py</code> cria a fila
-      <code>outbound-whatsapp</code>. O adapter do Telegram existe e é testado; falta portá-lo para a
-      stack. Impacto: um <code>cdk deploy</code> hoje sobe o canal errado.</p>
+      <span class="tag">implantação · escolha de escopo</span>
+      <h4>Não há ambiente implantado</h4>
+      <p>O sistema só existe rodando no <code>docker compose</code> de quem o subir: não há URL para
+      mandar a alguém nem ambiente em pé fora dessa máquina. O que existiu de infraestrutura como
+      código foi removido do repositório junto com os adaptadores hospedados (ADR-0002). O ganho é a
+      avaliação não depender de conta, cota ou crédito em provedor nenhum; o preço é este.</p>
     </li>
     <li>
-      <span class="tag">api · rotas ausentes</span>
-      <h4>Sete dos doze routers não têm rota no API Gateway</h4>
-      <p><code>api_stack.py</code> registra apenas <code>/imoveis</code>, <code>/eventos</code>,
-      <code>/leads</code>, <code>/dashboard</code> e <code>/handoff</code>. Configurações, governança,
-      auditoria, corretores, clientes, notificações e calendário responderiam 404 na nuvem. O risco não
-      é o 404 — é a correção apressada: adicionar um catch-all sem o <code>authorizer</code> publicaria
-      rotas administrativas sem autenticação.</p>
+      <span class="tag">canal · uma porta só para fora</span>
+      <h4>O único canal externo é o Telegram</h4>
+      <p>O WhatsApp exigia número de negócio verificado e webhook com URL pública, e saiu do código
+      (ADR-0007) — adaptador e worker foram removidos, não desativados. Voltar significa escrevê-los
+      de novo. Impacto prático: quem avalia precisa de um bot do <code>@BotFather</code> para
+      exercitar o canal externo, ou fica com o chat do site e a CLI.</p>
+    </li>
+    <li>
+      <span class="tag">rag · medição pendente</span>
+      <h4>A fusão léxica está pronta e desligada</h4>
+      <p>Coluna <code>tsvector</code>, índice GIN e fusão RRF existem e são testados, mas ficam atrás
+      de <code>SDR_RAG_LEXICO</code>: no único ambiente em que deu para medir, o embedder é de
+      trigramas — ele próprio já léxico — e a fusão piorou o recall, de 31,9% para 29,8%. Com um
+      embedder semântico a expectativa é a oposta; expectativa não é medição, e quem tiver o bge-m3
+      no ar decide em dois comandos.</p>
     </li>
     <li>
       <span class="tag">autorização · modelo de permissão</span>
       <h4>Não há separação entre corretores</h4>
-      <p>Qualquer corretor autenticado lê e altera leads, clientes, visitas e configurações de todos;
-      <code>/config</code> e <code>/governanca</code> não distinguem administrador de corretor comum.
-      Defensável para uma imobiliária de escritório único, que é a premissa da POC, mas é o próximo
-      passo antes de qualquer operação com mais de uma equipe.</p>
+      <p>A credencial do painel é um token estático só: quem o tem lê e altera leads, clientes,
+      visitas e configurações de todos, e <code>/config</code> e <code>/governanca</code> não
+      distinguem administrador de corretor comum. Defensável para uma imobiliária de escritório
+      único, que é a premissa da POC, mas é o próximo passo antes de qualquer operação com mais de
+      uma equipe.</p>
     </li>
     <li>
       <span class="tag">observabilidade · lacuna aceita</span>
-      <h4>Saúde de sistema só existe em produção</h4>
-      <p>Com a ADR-0005 revogada, o perfil local não tem métrica de latência, fila ou erro além dos
-      logs. Na nuvem existe o painel CloudWatch da <code>ObservabilityStack</code>. A observabilidade de
-      negócio — custo por lead, tokens por nó do grafo, funil — é própria e funciona nos dois perfis.</p>
+      <h4>Métrica de sistema, só o que cabe no Postgres</h4>
+      <p>Com a ADR-0005 revogada, não há stack de métricas nem tracing distribuído: o que existe são
+      as três tabelas do Postgres (<code>turnos</code>, <code>saude</code>, <code>batimentos</code>),
+      o <code>/health</code> que devolve 503 de verdade e os logs JSON (ADR-0011). A observabilidade
+      de negócio — custo por lead, tokens por nó do grafo, funil — é própria e está no painel. Para
+      prompt e LLM há o Langfuse, opcional, atrás de <code>--profile observability</code>.</p>
+    </li>
+    <li>
+      <span class="tag">transporte · só localhost</span>
+      <h4>Tudo trafega em HTTP</h4>
+      <p>Não há TLS em lugar nenhum, e o CORS aceita <code>*</code> quando
+      <code>SDR_CORS_ORIGINS</code> está vazio. É aceitável porque nada disso sai da máquina de quem
+      roda; expor este ambiente a uma rede exigiria TLS na frente e a lista de origens preenchida.</p>
     </li>
   </ul>
 </section>
@@ -813,10 +758,11 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <table>
       <thead><tr><th>Malha</th><th>Escopo</th><th>Sinal</th></tr></thead>
       <tbody>
-        <tr><td>Testes de integração</td><td class="num">245 testes · Postgres real · LLM falso</td><td>grafo, persistência, despacho, guardrails, autenticação</td></tr>
+        <tr><td>Testes de integração</td><td class="num">7 suítes · Postgres real · LLM falso</td><td>grafo, persistência, despacho, guardrails, autenticação, CRM</td></tr>
         <tr><td>Harness · extração</td><td class="num">15 casos</td><td>acerto por campo do cartão e <b>campos inventados</b></td></tr>
         <tr><td>Harness · roteamento</td><td class="num">15 casos</td><td>acurácia e matriz de confusão do supervisor</td></tr>
         <tr><td>Harness · adversarial</td><td class="num">18 casos</td><td>taxa de escape, separando o que a regra barrou do que só o modelo segurou</td></tr>
+        <tr><td>Harness · RAG institucional</td><td class="num">57 casos · embedder de verdade</td><td>recall dos trechos certos e abstenção no que o corpus não cobre</td></tr>
       </tbody>
     </table>
   </div>

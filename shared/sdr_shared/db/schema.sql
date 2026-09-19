@@ -57,16 +57,6 @@ CREATE TABLE IF NOT EXISTS imoveis (
 CREATE INDEX IF NOT EXISTS imoveis_embedding_idx ON imoveis USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS imoveis_filtro_idx ON imoveis (operacao, regiao, quartos, preco);
 
--- Tabela usada pela Bedrock Knowledge Base quando Aurora é o vector store (ADR-0001)
-CREATE SCHEMA IF NOT EXISTS bedrock_integration;
-CREATE TABLE IF NOT EXISTS bedrock_integration.bedrock_kb (
-  id        UUID PRIMARY KEY,
-  embedding vector(1024),
-  chunks    TEXT,
-  metadata  JSON
-);
-CREATE INDEX IF NOT EXISTS bedrock_kb_embedding_idx ON bedrock_integration.bedrock_kb USING hnsw (embedding vector_cosine_ops);
-
 CREATE TABLE IF NOT EXISTS visitas (
   id          TEXT PRIMARY KEY,
   lead_id     TEXT REFERENCES leads(id),
@@ -85,7 +75,7 @@ CREATE TABLE IF NOT EXISTS eventos_navegacao (
   em         TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Perfil local: substitui o EventBridge Scheduler (adapters/local/scheduler.py)
+-- Follow-up one-shot por lead; o worker de services/scheduler consulta esta tabela.
 CREATE TABLE IF NOT EXISTS followups_agendados (
   lead_id     TEXT PRIMARY KEY REFERENCES leads(id),
   disparar_em TIMESTAMPTZ NOT NULL,
@@ -113,7 +103,7 @@ CREATE TABLE IF NOT EXISTS configuracoes (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-ALTER TABLE corretores ADD COLUMN IF NOT EXISTS foto TEXT;   -- data URL (perfil local); na AWS vira chave no S3
+ALTER TABLE corretores ADD COLUMN IF NOT EXISTS foto TEXT;   -- data URL
 
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS analise JSONB;           -- AnaliseLead (sentimento/perfil), gerada pelo Resumidor
 ALTER TABLE leads ADD COLUMN IF NOT EXISTS analisado_em TIMESTAMPTZ;

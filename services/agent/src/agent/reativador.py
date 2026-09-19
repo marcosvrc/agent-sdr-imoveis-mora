@@ -26,7 +26,11 @@ MAX_AVISOS = 20          # teto por imóvel — um cadastro em massa não pode v
 
 # Por onde falar, quando o lead tem mais de um canal. Web fica de fora de propósito: o widget do
 # site só existe enquanto a aba está aberta, então "avisar" ali é escrever para uma sala vazia.
-PREFERENCIA = (Canal.TELEGRAM, Canal.WHATSAPP)
+#
+# Hoje só há um canal assíncrono, então a tupla tem um elemento — e continua sendo uma tupla porque
+# a ORDEM é a regra: quando entrar outro, o que decide é a posição aqui, não a ordem em que o lead
+# se cadastrou nos canais.
+PREFERENCIA = (Canal.TELEGRAM,)
 
 
 def _melhor_canal(lead_id: str) -> tuple[Canal, str] | None:
@@ -80,13 +84,7 @@ def publicar_imovel_novo(imovel_id: str) -> None:
     get_broker().publish("imovel-novo", json.dumps({"imovel_id": imovel_id}), key=imovel_id)
 
 
-def handler(event, _ctx):                       # perfil aws: SQS sdr-imovel-novo → Lambda
-    for rec in event["Records"]:
-        anunciar(json.loads(rec["body"])["imovel_id"])
-    return {"batchItemFailures": []}
-
-
-def local_worker():                             # perfil local
+def local_worker():
     from sdr_shared.db import iniciar_batimento
 
     iniciar_batimento("reativador")

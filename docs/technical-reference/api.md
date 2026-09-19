@@ -9,9 +9,10 @@ description: Referência dos endpoints essenciais da API REST do Mora, autentica
 - **Especificação completa:** [Swagger (OpenAPI)](openapi.md) — navegável aqui no portal,
   sem precisar subir o backend. Com o ambiente local no ar, o mesmo Swagger fica em
   <http://localhost:8000/docs> e a versão em leitura contínua em <http://localhost:8000/redoc>.
-- **Autenticação:** rotas de corretor/admin exigem Cognito JWT (perfil AWS) ou
-  `Authorization: Bearer <SDR_PAINEL_TOKEN>` (perfil local). Rotas públicas (`/imoveis`, `/eventos`)
-  não exigem autenticação.
+- **Autenticação:** rotas de corretor/admin exigem `Authorization: Bearer <SDR_PAINEL_TOKEN>`.
+  No perfil local, sem token configurado, vale `dev-token`; fora dele, sem segredo configurado nada
+  é aceito. Rotas públicas (`/imoveis`, `/eventos`) não exigem autenticação. Veja
+  [Segurança](../quality/seguranca.md).
 
 !!! note "Fonte da verdade"
     Esta página é um resumo de orientação. A lista completa e sempre atualizada está no

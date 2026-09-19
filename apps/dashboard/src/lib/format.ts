@@ -34,7 +34,7 @@ export const variacao = (atual: number, anterior: number) => anterior === 0 ? (a
 
 export const REGIAO: Record<string, string> = { zona_sul: "Zona Sul", zona_oeste: "Zona Oeste", zona_norte: "Zona Norte", zona_leste: "Zona Leste", centro: "Centro", indefinida: "Não informada" };
 export const INTENCAO: Record<string, string> = { compra: "Compra", aluguel: "Aluguel", investimento: "Investimento", indefinida: "Indefinida" };
-export const CANAL: Record<string, string> = { telegram: "Telegram", whatsapp: "WhatsApp", web: "Site", sistema: "Sistema" };
+export const CANAL: Record<string, string> = { telegram: "Telegram", web: "Site", sistema: "Sistema" };
 export const rotulo = (m: Record<string, string>, k?: string | null) => (k && m[k]) || (k ? k.replace(/_/g, " ") : "—");
 
 /** Tokens em escala legível: 980, 12,4 mil, 3,2 mi. */

@@ -6,8 +6,8 @@ description: Stack completa do Mora por categoria, com versões obtidas dos arqu
 # Tecnologias
 
 Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `settings.py`,
-`docker-compose.yml`, `.github/workflows/ci.yml`). Onde a versão não está fixada no repositório, consta
-`A confirmar`.
+`docker-compose.yml`, `.github/workflows/ci.yml`). Onde a versão não está fixada no repositório, a
+coluna traz `—`.
 
 ## Frontend
 
@@ -20,8 +20,11 @@ Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `set
 | Frontend | TanStack React Query | ^5.51.0 | Cache e sincronização de dados |
 | Frontend | Zustand | ^4.5.0 | Estado do chat (site) |
 | Frontend | Recharts | ^2.12.0 | Gráficos do painel |
-| Frontend | AWS Amplify | ^6.5.0 | Autenticação Cognito no painel (perfil AWS) |
+| Frontend | React Router | ^6.26.0 | Rotas do site e do painel |
 | Frontend | vite-plugin-pwa | ^0.20.0 | PWA do site |
+
+O painel não tem SDK de autenticação: a credencial é um token estático enviado no cabeçalho
+`Authorization` (ADR-0008). O pacote de autenticação gerenciada que existia aqui saiu com a nuvem.
 
 ## Backend
 
@@ -29,7 +32,10 @@ Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `set
 |---|---|---:|---|
 | Backend | Python | 3.12 | Linguagem dos serviços |
 | Backend | FastAPI | >=0.115 | API REST e apps de canal |
-| Backend | Mangum | A confirmar | Adaptador FastAPI → AWS Lambda |
+| Backend | Uvicorn | — | Servidor ASGI da API e dos canais |
+| Backend | psycopg | >=3.2 | Acesso ao Postgres (com pool) |
+| Backend | Redis (cliente) | >=5.0 | Fila entre os workers (Streams) |
+| Backend | SDK MCP (`mcp`) | >=1.2 | Servidor MCP do CRM; é por onde a Mora fala com ele |
 
 ## IA / LLM
 
@@ -37,36 +43,38 @@ Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `set
 |---|---|---:|---|
 | LLM/IA | LangGraph | >=0.2 | Orquestração do grafo multiagente |
 | LLM/IA | LangChain Core | >=0.3 | Abstrações de mensagens / modelos |
-| LLM/IA | Bedrock — Claude Sonnet | `anthropic.claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
-| LLM/IA | Bedrock — Claude Haiku | `anthropic.claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
-| LLM/IA | Provedores alternativos | — | `anthropic` (API) e `ollama` (local), via `SDR_LLM_PROVIDER` |
+| LLM/IA | Claude Sonnet (API da Anthropic) | `claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
+| LLM/IA | Claude Haiku (API da Anthropic) | `claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
+| LLM/IA | Provedores aceitos | — | `anthropic` (padrão), `openai` e `ollama`, via `SDR_LLM_PROVIDER` |
+| LLM/IA | faster-whisper | >=1.0 | Transcrição de voz in-process (extra `local`) |
 
 ## RAG / Embeddings
 
 | Categoria | Tecnologia | Versão | Finalidade |
 |---|---|---:|---|
-| RAG | Amazon Titan Embeddings v2 | `amazon.titan-embed-text-v2:0` | Embeddings (perfil AWS) |
-| RAG | Ollama bge-m3 | 1024 dims | Embeddings locais (opcional) |
-| RAG | Bedrock Knowledge Base | — | RAG gerenciado; fallback pgvector direto (ADR-0001) |
+| RAG | Ollama `bge-m3` | 1024 dims | Embeddings — o único motor do projeto |
+| RAG | pgvector (HNSW, cosseno) | — | Recuperação vetorial no mesmo Postgres (ADR-0001) |
+| RAG | `tsvector` do Postgres (`portuguese`) | — | Fusão léxica (RRF), implementada e desligada por padrão (`SDR_RAG_LEXICO`) |
 
 ## Dados
 
 | Categoria | Tecnologia | Versão | Finalidade |
 |---|---|---:|---|
-| Dados | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | Dados relacionais + vetores |
-| Dados (AWS) | Aurora Serverless v2 (Postgres 16) | — | Mesma base, gerenciada (ADR-0004) |
-| Fila (AWS) | Amazon SQS + EventBridge Scheduler | — | Mensageria e follow-up |
-| Fila (local) | Redis Streams | `redis:7-alpine` | Substitui SQS/EventBridge no compose |
-| Armazenamento (AWS) | Amazon S3 + CloudFront | — | Fotos e documentos |
+| Dados | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | Dados relacionais + vetores, um banco para tudo (ADR-0004) |
+| Fila | Redis Streams | `redis:7-alpine` | Mensageria entre os workers |
+| Agendamento | Tabela `followups_agendados` + worker `scheduler` | — | Follow-up automático, sem serviço externo |
+| Armazenamento de fotos | Disco, servido pela API em `/fotos/...` | — | Diretório `SDR_FOTOS_DIR` |
 
 ## Infraestrutura
 
 | Categoria | Tecnologia | Versão | Finalidade |
 |---|---|---:|---|
-| Autenticação | Amazon Cognito (AWS) / token estático (local) | — | Acesso ao painel (ADR-0008) |
-| Infraestrutura | AWS CDK (Python) | ver `infra/requirements.txt` | IaC, 10 stacks |
-| Containers | Docker + Docker Compose | — | Perfil local e imagens de deploy |
-| CI/CD | GitHub Actions | — | Testes, build de front-ends, `cdk synth` |
+| Autenticação | Token estático `SDR_PAINEL_TOKEN` | — | Acesso ao painel, fail-closed (ADR-0008) |
+| Containers | Docker + Docker Compose | — | `local/docker-compose.yml` é a entrega inteira |
+| CI | GitHub Actions | — | Dois jobs: `python` (ruff, cobertura, OpenAPI) e `frontend` (build e lint) |
+
+Não há infraestrutura como código: as stacks em nuvem foram removidas do repositório, e nada está
+implantado — a entrega roda na máquina de quem avalia.
 
 ## Observabilidade e testes
 

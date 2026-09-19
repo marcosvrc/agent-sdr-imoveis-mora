@@ -76,7 +76,7 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
     setTexto("");
     limparTimers();
     setDigitando(true); setDemorando(false); setResgate(false);
-    // botao=true: o canal marca a mensagem como TipoMensagem.BOTAO (mesmo contrato do WhatsApp)
+    // botao=true: o canal marca a mensagem como TipoMensagem.BOTAO (mesmo contrato do Telegram)
     conn.current?.enviar(t, { ...(imovelOrigem ? { imovel_origem: imovelOrigem } : {}), ...(botao ? { botao: true } : {}) });
     timers.current.push(window.setTimeout(() => setDemorando(true), AVISO_MS));
     timers.current.push(window.setTimeout(() => { setDemorando(false); setResgate(true); }, RESGATE_MS));

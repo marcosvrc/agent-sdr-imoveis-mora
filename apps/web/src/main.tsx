@@ -16,7 +16,7 @@ const NaoEncontrada = lazy(() => import("./pages/NaoEncontrada").then((m) => ({ 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } } });
 
 /** Endereço antigo (/imoveis/SP-0001) continua funcionando: redireciona para a URL com slug.
- *  Link compartilhado no WhatsApp meses atrás não pode virar 404 por causa de um redesenho. */
+ *  Link compartilhado meses atrás não pode virar 404 por causa de um redesenho. */
 function RedirecionaFichaAntiga() {
   const { id = "" } = useParams();
   return <Navigate to={`/imovel/${id.toLowerCase()}`} replace />;

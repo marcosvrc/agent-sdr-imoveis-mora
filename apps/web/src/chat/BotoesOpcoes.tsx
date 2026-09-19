@@ -1,4 +1,4 @@
-// opcoes: "rótulo" ou "id|rótulo" (ex.: "slot:2026-09-10T13:00:00|qui 10/09 às 10h") — mesmo contrato do WhatsApp.
+// opcoes: "rótulo" ou "id|rótulo" (ex.: "slot:2026-09-10T13:00:00|qui 10/09 às 10h") — mesmo contrato do Telegram.
 // Horários (id slot:) são agrupados por dia para caber na tela do celular.
 export function BotoesOpcoes({ opcoes, onEscolher }: { opcoes: string[]; onEscolher: (id: string, rotulo: string) => void }) {
   const itens = opcoes.map((o) => { const [id, rotulo] = o.includes("|") ? o.split("|", 2) : [o, o]; return { id, rotulo }; });

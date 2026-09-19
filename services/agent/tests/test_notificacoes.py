@@ -23,7 +23,7 @@ def limpa():
 
 
 def _msg(lead_id: str, texto: str) -> MensagemNormalizada:
-    return MensagemNormalizada(lead_id=lead_id, canal=Canal.WHATSAPP, identificador_canal="5511999990000",
+    return MensagemNormalizada(lead_id=lead_id, canal=Canal.TELEGRAM, identificador_canal="5511999990000",
                                conteudo=texto, tipo=TipoMensagem.TEXTO)
 
 

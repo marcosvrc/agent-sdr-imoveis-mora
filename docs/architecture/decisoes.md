@@ -11,30 +11,37 @@ arquitetural) em `docs/adr`. Os ADRs completos estão disponíveis neste portal,
 
 ## Principais decisões
 
-### RAG com Knowledge Base + Aurora pgvector, com fallback pgvector direto
-- **Problema.** RAG confiável sem amarrar a POC a um serviço gerenciado indisponível no local.
-- **Decisão.** Usar Knowledge Base quando disponível; se `SDR_KNOWLEDGE_BASE_ID` estiver vazio, cair
-  para busca vetorial direta no Postgres.
-- **Trade-off.** O caminho gerenciado não é testado localmente.
-- [ADR-0001](../adr/0001-rag-knowledge-base-com-aurora-pgvector.md)
+### RAG sobre Postgres + pgvector, com fusão de ranking
+- **Problema.** RAG confiável sem depender de um serviço gerenciado que não roda na máquina de quem
+  avalia.
+- **Decisão.** Um Postgres com pgvector serve imóvel e documento institucional, no mesmo banco que o
+  painel consulta, com piso de similaridade e reescrita de consulta.
+- **Trade-off.** A fusão léxica (RRF) está implementada mas desligada por padrão
+  (`SDR_RAG_LEXICO`): o A/B piorou o recall (31,9% → 29,8%).
+- [ADR-0001](../adr/0001-rag-com-postgres-pgvector.md)
 
-### Agente em Lambda container consumindo SQS
-- **Justificativa.** Maximiza serverless; as Lambdas são imagens de container porque dependem de
-  `shared`, `psycopg` e `httpx`.
-- [ADR-0002](../adr/0002-agente-em-lambda-container.md)
+### Runtime do agente: container local consumindo uma fila
+- **Justificativa.** Um turno leva de 20 a 40 segundos e não cabe no fio da requisição HTTP; o
+  agente é um worker que consome o tópico `inbound` e publica na saída do canal.
+- **Trade-off.** Não há nada implantado: agente, resumidor, scheduler e canais são containers do
+  `local/docker-compose.yml`, com Redis fazendo a fila.
+- [ADR-0002](../adr/0002-runtime-do-agente-em-container.md)
 
 ### Canais como adaptadores sem lógica
 - **Benefício.** Permite trocar ou adicionar canal sem tocar no agente.
 - [ADR-0003](../adr/0003-canais-como-adaptadores.md)
 
-### Aurora Serverless v2 (Postgres) em vez de DynamoDB
-- **Justificativa.** SQL para o painel e vetores na mesma base; escala a zero.
-- **Trade-off.** Exige VPC / NAT (custo).
-- [ADR-0004](../adr/0004-aurora-em-vez-de-dynamodb.md)
+### Um Postgres para tudo, em vez de um banco por finalidade
+- **Justificativa.** Registro transacional, busca vetorial, agregação do painel e estado do grafo
+  cabem no mesmo PostgreSQL com pgvector.
+- **Trade-off.** Um banco só concentra cargas de perfis diferentes.
+- [ADR-0004](../adr/0004-postgres-como-banco-unico.md)
 
-### Telegram em vez de WhatsApp como canal ativo
-- **Justificativa.** Bot criado sem verificação de negócio; o adapter de WhatsApp fica pronto para
-  religar.
+### Telegram em vez de WhatsApp como canal externo
+- **Justificativa.** Bot criado na hora pelo @BotFather, sem verificação de negócio, e por long
+  polling (`getUpdates`) — sem webhook e sem URL pública.
+- **Trade-off.** O WhatsApp saiu do código: adaptador e worker foram removidos, e voltar significa
+  escrevê-los de novo.
 - [ADR-0007](../adr/0007-telegram-em-vez-de-whatsapp.md)
 
 ### Modelo por nível, editável no painel
@@ -50,14 +57,14 @@ arquitetural) em `docs/adr`. Os ADRs completos estão disponíveis neste portal,
 
 | ADR | Assunto |
 |---|---|
-| [0001](../adr/0001-rag-knowledge-base-com-aurora-pgvector.md) | RAG com Knowledge Base + Aurora pgvector |
-| [0002](../adr/0002-agente-em-lambda-container.md) | Agente em Lambda container |
+| [0001](../adr/0001-rag-com-postgres-pgvector.md) | RAG sobre Postgres + pgvector, com fusão de ranking |
+| [0002](../adr/0002-runtime-do-agente-em-container.md) | Runtime do agente: container local consumindo uma fila |
 | [0003](../adr/0003-canais-como-adaptadores.md) | Canais como adaptadores |
-| [0004](../adr/0004-aurora-em-vez-de-dynamodb.md) | Aurora em vez de DynamoDB |
+| [0004](../adr/0004-postgres-como-banco-unico.md) | Um Postgres para tudo, em vez de um banco por finalidade |
 | [0005](../adr/0005-observabilidade-com-opentelemetry-e-grafana.md) | Observabilidade com OpenTelemetry + Grafana (revogado) |
 | [0006](../adr/0006-site-vitrine-com-agente-embutido.md) | Site vitrine com agente embutido |
 | [0007](../adr/0007-telegram-em-vez-de-whatsapp.md) | Telegram em vez de WhatsApp |
-| [0008](../adr/0008-portoes-de-autenticacao-fora-do-api-gateway.md) | Portões de autenticação fora do API Gateway |
+| [0008](../adr/0008-portoes-de-autenticacao-proprios.md) | Cada porta privada carrega o seu próprio portão |
 | [0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md) | Gateway de LLM: LiteLLM, OpenRouter ou nada |
 | [0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md) | Modelo por nível e troca pelo painel |
 | [0011](../adr/0011-observabilidade-leve-no-postgres.md) | Observabilidade leve no Postgres |

@@ -37,7 +37,7 @@ Quatro travas, que são o real conteúdo desta decisão (a tela em si é trivial
 2. **Testar antes de salvar.** `POST /config/modelos/testar` faz uma chamada real e curta e devolve
    se respondeu, em quanto tempo e se há preço. Lista fixa de modelos envelhece; campo livre derruba
    o agente no turno seguinte. O teste responde o que a lista não responde: esse ID existe *neste
-   provedor* e *nesta região*?
+   provedor*?
 3. **Invalidar o cache.** `agent/llm.py` cacheia a instância do modelo. A escolha do painel entrou na
    chave do cache, e `PUT`/`DELETE` chamam `invalidar_cache_modelos()` — sem isso um worker de vida
    longa seguiria com o modelo antigo para sempre. O `DELETE` só ganhou a invalidação porque um teste
@@ -45,40 +45,43 @@ Quatro travas, que são o real conteúdo desta decisão (a tela em si é trivial
 4. **Mostrar o efetivo, não a intenção.** `GET /config` devolve, por nível, o que o agente vai usar no
    próximo turno e se veio do painel ou do ambiente.
 
-Junto, dois consertos que a mudança exigiu: `normalizar_modelo` prefixava `anthropic.` em qualquer
-modelo no Bedrock, o que geraria `anthropic.amazon.nova-lite-v1:0` — agora só prefixa modelo Claude; e
-a tabela de preços ganhou o catálogo atual (Sonnet 5, Opus 5, família Nova).
+Junto, um conserto que a mudança exigiu: a tabela de preços ganhou o catálogo atual (Sonnet 5,
+Opus 5). A normalização de ID de modelo também foi revista, e hoje `normalizar_modelo` só tira os
+prefixos de provedor hospedado que um `.env` antigo possa carregar — nenhum provedor do projeto
+adiciona prefixo.
 
 ## Modelo recomendado por nível
-Preços de setembro/2026, por milhão de tokens (Anthropic direto; Bedrock cobra por região).
+Preços por milhão de tokens, conforme `PRECOS_PADRAO` em `shared/sdr_shared/governanca/precos.py`
+(consultados em setembro/2026 — preço de modelo muda mais rápido que código; confira antes de confiar
+no número do painel). Os provedores aceitos são `anthropic`, `openai` e `ollama`.
 
 | Nível | Recomendado | Racional |
 |---|---|---|
-| `conversa` | **Sonnet 5** ($2/$10) | Substitui o Sonnet 4.5 ($3/$15) que estava configurado: mais novo e 33% mais barato. Nesse patamar o Claude já é competitivo com Gemini 3.1 Pro ($2/$12) e mais barato que GPT-5.4 ($2,50/$15) — não há argumento de preço para trocar de família aqui. |
-| `roteamento` | Haiku 4.5 ($1/$5), avaliar **Nova Lite** (~$0,06/$0,24) | Roda em toda mensagem: é onde o preço pesa. Gemini Flash-Lite e GPT nano são 10-20x mais baratos que o Haiku, mas ficam fora da AWS; o Nova entrega ganho parecido **dentro do Bedrock**, sem cloud nova, sem operador de dados novo e sem perder o Guardrail. Decidir medindo, com o harness de `evals/`. |
+| `conversa` | **Sonnet 5** ($2/$10) | Substitui o Sonnet 4.5 ($3/$15) que estava configurado: mais novo e 33% mais barato. O equivalente de conversa na OpenAI, `gpt-5.6-terra` ($2/$12), custa o mesmo na entrada e mais na saída — não há argumento de preço para trocar de família aqui. |
+| `roteamento` | Haiku 4.5 ($1/$5) | Roda em toda mensagem: é onde o preço pesa. O equivalente barato da OpenAI, `gpt-5.6-luna` ($0,20/$1,20), é 5x mais barato na entrada e ~4x na saída; o Ollama é custo zero, mas disputa CPU e RAM com os embeddings na mesma máquina. Decidir medindo, com o harness de `services/agent/evals/`. |
 | `analise` | Sonnet 5 | Roda fora do turno e é lido por um humano que decide como abordar o lead. Candidato natural a Batch (50% de desconto) e o único lugar onde pagar mais por um modelo melhor pode se justificar. |
 
 Sobre Gemini e OpenAI: os dois têm modo de schema estrito nativo, tecnicamente melhor que o
-tool-calling do Anthropic para a extração do cartão. O que os derruba não é qualidade nem preço, é que
+tool-calling do Anthropic para a extração do cartão. O que pesa contra não é qualidade nem preço, é que
 **toda chamada de LLM aqui vê o texto cru do cliente** — inclusive extração e roteamento. Não existe
-nível "menos sensível" onde caiba um terceiro sem envolver PII, então adotá-los é adicionar um operador
-de dados (LGPD), como no OpenRouter da ADR-0009. A diferença é que Vertex AI e Azure OpenAI são
-relacionamentos gerenciáveis, com DPA e região — se um dia for necessário, é por ali, não por chave
-avulsa.
+nível "menos sensível" onde caiba um terceiro sem envolver PII, então cada provedor adicionado é um
+operador de dados a mais (LGPD), como no OpenRouter da ADR-0009. A OpenAI entrou mesmo assim, como
+reserva, pela razão registrada na atualização da ADR-0009 — e com a consequência de subprocessador
+que está anotada lá. O Gemini continua fora: não há motivo que justifique um terceiro operador.
 
 ## Consequências
 - (+) Trocar modelo virou operação de painel, auditada (o `AuditoriaMiddleware` já registra `PUT /config`),
   reversível e válida no próximo turno.
 - (+) O guardrail de orçamento não pode mais ser desligado por acidente ao trocar de modelo.
-- (+) Adicionar provedor é uma função (`_construir`), então avaliar Nova ou qualquer outro é barato.
+- (+) Adicionar provedor é uma função (`_construir`), então avaliar outro modelo é barato.
 - (−) Mais uma superfície de configuração: um modelo caro escolhido por engano custa dinheiro de
   verdade. Mitigado pelo teste antes de salvar e pelo teto de orçamento que volta a funcionar.
-- (−) Os preços do Nova na tabela são aproximados e o Bedrock cobra por região — conferir e ajustar
-  pelo painel antes de confiar no custo exibido.
+- (−) A tabela de preços é uma cópia da documentação dos fornecedores num dado dia, não uma consulta
+  ao vivo. Conferir e ajustar pelo painel (configuração `precos`) antes de confiar no custo exibido.
 
 ## O que fica de fora, deliberadamente
-**Cache de prompt** é o maior ganho disponível e não entrou aqui: as três famílias cobram 10% em
-leitura de cache, e o prefixo repetido a cada turno (blindagem + persona + prompt do nó) é o custo
+**Cache de prompt** é o maior ganho disponível e não entrou aqui: as duas famílias pagas da tabela
+(Anthropic e OpenAI) cobram 10% da entrada em leitura de cache, e o prefixo repetido a cada turno (blindagem + persona + prompt do nó) é o custo
 dominante de entrada numa conversa de várias mensagens. A contabilidade já está pronta —
 `RegistradorUso._tokens()` extrai `cache_escrita`/`cache_leitura` e `custo_usd` os precifica — só falta
 ligar. Provavelmente rende mais que qualquer troca de modelo desta ADR. Fica como próximo passo, junto

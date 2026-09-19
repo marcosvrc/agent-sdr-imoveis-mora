@@ -8,9 +8,9 @@ O [ADR-0006](0006-site-vitrine-com-agente-embutido.md) decidiu manter `apps/web`
 captação. Uma auditoria de UX, acessibilidade, SEO e conversão sobre o site como estava encontrou
 quatro problemas estruturais — não de estilo:
 
-1. **Invisível para busca.** SPA servida por S3 + CloudFront, com um único `<title>` e uma única
-   description para todas as rotas. As 200 fichas eram a mesma página para o buscador e para quem
-   colava o link no WhatsApp. Sem sitemap, sem robots.txt, sem dado estruturado, sem favicon, e o
+1. **Invisível para busca.** SPA com um único `<title>` e uma única description para todas as
+   rotas, qualquer que seja o servidor. As 200 fichas eram a mesma página para o buscador e para
+   quem colava o link num mensageiro. Sem sitemap, sem robots.txt, sem dado estruturado, sem favicon, e o
    manifest do PWA declarava `icons: []` (inválido).
 2. **Busca rasa.** A base tem 18 bairros, três tipos, suítes, vagas e área; o filtro oferecia
    operação, região, quartos e preço máximo — e a API pública aceitava só esses quatro. Quem
@@ -83,9 +83,11 @@ legível por máquina.
 - **Não é SSR.** O corpo continua sendo o shell hidratado; só o `<head>` é pré-gerado. Rastreador
   que não executa JS vê metadados corretos e conteúdo vazio. Se indexação de conteúdo virar
   requisito, o caminho é SSG/SSR de verdade, não mais remendo no script.
-- **O prerender depende de infraestrutura.** `FrontendStack` ganhou uma CloudFront Function que
-  reescreve `/rota` para `/rota/index.html`; sem ela, o S3 devolve 404, a regra de SPA entrega o
-  shell genérico e o pré-render não serve para nada. É um acoplamento novo entre build e infra.
+- **O prerender depende de quem serve o site.** `gerar-paginas.mjs` grava `/rota/index.html`, então
+  o servidor precisa mapear `/rota` para esse arquivo em vez de devolver o shell genérico. Na entrega
+  de hoje o container `web` do compose roda o Vite em modo de desenvolvimento e serve o shell: o
+  pré-render só vale para um `npm run build` publicado em algum servidor estático — e não há nada
+  publicado. É um acoplamento entre o build e o servidor, não uma garantia do site.
 - **O build agora depende da API.** `gerar-paginas.mjs` lê o catálogo para montar sitemap e fichas.
   Sem API no ar ele degrada para as rotas fixas e avisa — não quebra o build, mas publica menos.
 - **Sitemap estático.** Imóvel cadastrado depois do build só entra no próximo deploy.
@@ -96,10 +98,10 @@ legível por máquina.
 
 ## Alternativas consideradas
 
-**Next.js (SSR/SSG).** Resolveria indexação de conteúdo de uma vez. Custa trocar hospedagem
-estática (S3 + CloudFront, ADR-0006) por runtime — Lambda@Edge, Amplify ou container —, muda o
-modelo de custo e contradiz "em produção é hospedagem estática, não mais um serviço rodando". Para
-um catálogo de 200 imóveis, o meta-prerender entrega a maior parte do ganho sem essa troca.
+**Next.js (SSR/SSG).** Resolveria indexação de conteúdo de uma vez. Custa trocar um site que é só
+arquivo estático por um runtime que precisa ficar de pé, com o servidor Node no caminho de cada
+página. Para um catálogo de 200 imóveis, o meta-prerender entrega a maior parte do ganho sem essa
+troca.
 
 **react-helmet-async para metadados.** Faz o mesmo que `lib/seo.ts` em ~60 linhas nossas, com uma
 dependência a mais e sem resolver o caso do rastreador sem JS — que é justamente o problema.

@@ -25,10 +25,11 @@ As tabelas refletem o estado descrito no repositório. Legenda:
 | Scoring de temperatura do lead (quente / morno / frio) | Concluída | `test_cenarios.py` |
 | Guardrails de escopo, saneamento de saída e rate limiting | Concluída | `tests/test_seguranca.py` |
 | Governança de LLM: registro por chamada, custo por modelo, orçamento com degradação | Concluída | `tests/test_governanca.py` |
-| Transcrição de áudio — motor local (faster-whisper) no perfil local | Concluída | `tools/transcricao.py`, `tests/test_transcricao.py` |
-| Transcrição de áudio — Amazon Transcribe (perfil AWS) | Parcial | escrita, não testada (exige AWS) |
+| Transcrição de áudio — faster-whisper in-process, motor único | Concluída | `tools/transcricao.py`, `tests/test_transcricao.py` |
 | Download de voz do Telegram para transcrição (getFile + download) | Concluída | `tools/transcricao.py`, `tests/test_transcricao.py` |
-| RAG via Bedrock Knowledge Base | Parcial | escrita, não testada (exige AWS); fallback pgvector é o testado |
+| Busca institucional sobre Postgres + pgvector, com piso de similaridade e reescrita de consulta | Concluída | ADR-0001, `tools/conhecimento.py` |
+| Fusão léxica (RRF) na busca institucional | Parcial | implementada e **desligada** por padrão (`SDR_RAG_LEXICO`): no A/B o recall@3 caiu de 31,9% para 29,8% |
+| Harness de avaliação com dataset e métricas de RAG | Concluída | `services/agent/evals/`, `make eval-rag` |
 
 ## Site (`apps/web`)
 
@@ -54,12 +55,11 @@ As tabelas refletem o estado descrito no repositório. Legenda:
 | Funcionalidade | Estado | Evidência |
 |---|---|---|
 | API REST (imóveis públicos, leads, dashboard, handoff, eventos, config, governança, auditoria) | Concluída | `services/api`, `tests/test_api.py` |
-| Canal Telegram (long polling no local) | Concluída | `services/channels/telegram` |
-| Canal Web (WebSocket) | Concluída | `services/channels/local`, `services/channels/web` |
-| Canal WhatsApp (webhook HMAC, cards, template 24h) | Parcial | `tests/test_adapter.py`; **desativado** no compose (ADR-0007) |
+| Canal Telegram — long polling (`getUpdates`), sem webhook e sem URL pública | Concluída | ADR-0007, `services/channels/telegram` |
+| Canal Web (WebSocket) | Concluída | `services/channels/local` |
 | Follow-up automático e ingestão de imóveis | Concluída | `services/scheduler`, `services/ingestion` |
-| Ingestão de documentos institucionais para a Knowledge Base (FAQ, políticas) | Concluída | `ingest_documentos.py`, `tests/test_ingestao.py`; a pasta `data/documentos/` começa vazia de propósito |
+| Ingestão de documentos institucionais (FAQ, políticas, taxas) para a tabela `documentos` do pgvector | Concluída | `sdr_ingestion/ingest_documentos.py`, `make docs-kb`, `shared/tests/test_conhecimento.py` |
 | Integração Google Agenda do corretor | Parcial | `tools/agenda.py`; opcional, degrada para agenda interna |
-| Infraestrutura como código (AWS CDK, 10 stacks) | Concluída | `cdk synth` na CI |
+| Ambiente completo em `docker compose` (Postgres+pgvector, Redis, workers, front-ends, CRM) | Concluída | `local/docker-compose.yml` |
 
 Para o que **não** está pronto e os débitos técnicos, veja [Roadmap e limitações](../project/roadmap.md).

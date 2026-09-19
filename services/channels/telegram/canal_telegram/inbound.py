@@ -1,8 +1,11 @@
-"""Entrada do Telegram. Dois modos, mesma tradução (adapter.parse_inbound):
+"""Entrada do Telegram, por long polling (`getUpdates`).
 
-  * `handler()`     — webhook (perfil aws): a Bot API chama esta URL a cada mensagem.
-  * `local_worker()`— long polling (perfil local): puxa updates com `getUpdates`, sem precisar de
-    URL pública nem de túnel — só um `SDR_TELEGRAM_BOT_TOKEN` no `.env` (ver ADR-0007)."""
+Havia aqui também um `handler()` de webhook, para a Bot API chamar uma URL pública. Saiu com a AWS:
+sem função hospedada não há URL pública, e o long polling não precisa de uma — basta um
+`SDR_TELEGRAM_BOT_TOKEN` no `.env` (ver ADR-0007), o que é justamente o que torna a entrega
+reproduzível na máquina de quem avalia.
+
+A tradução do update é do `adapter.parse_inbound`, compartilhada com o resto do canal."""
 import logging
 import time
 
@@ -31,17 +34,8 @@ def _publicar(update: dict) -> None:
         get_broker().publish("inbound", msg.model_dump_json(), key=msg.lead_id)   # ordem por lead garantida
 
 
-def handler(event, _ctx):
-    """Perfil aws: `setWebhook` aponta para esta função. Telegram não assina o corpo — a segurança
-    vem de a própria URL do webhook conter um segredo (`.../webhook/<token-secreto>`), configurado
-    no CDK; não reaproveita `whatsapp_app_secret`, que é HMAC de outro provedor."""
-    import json
-    _publicar(json.loads(event["body"]))
-    return {"statusCode": 200}
-
-
 def local_worker():
-    """Perfil local: um processo dedicado (ver `telegram-in` no compose). Sem fila própria — cada
+    """Um processo dedicado (ver `telegram-in` no compose). Sem fila própria — cada
     update processado avança o `offset`, então nada é entregue duas vezes mesmo se o processo cair
     e reiniciar (o Telegram guarda os updates não confirmados por até 24h)."""
     s = get_settings()

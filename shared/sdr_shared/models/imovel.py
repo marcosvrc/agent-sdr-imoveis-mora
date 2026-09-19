@@ -39,17 +39,9 @@ class Imovel(BaseModel):
             f"{self.vagas} vaga(s). {self.descricao}{perto} Preço: R$ {self.preco:,.0f}."
         )
 
-    def metadata(self) -> dict:
-        """Metadados para filtro na Knowledge Base (arquivo .metadata.json)."""
-        return {"metadataAttributes": {
-            "tipo": self.tipo, "operacao": self.operacao, "regiao": self.regiao,
-            "bairro": self.bairro, "quartos": self.quartos, "preco": self.preco, "area_m2": self.area_m2,
-            "cidade": self.cidade,
-        }}
-
 
 class ImovelCard(BaseModel):
-    """Forma neutra que o agente devolve; o canal renderiza (card WhatsApp, componente React)."""
+    """Forma neutra que o agente devolve; o canal renderiza (card do Telegram, componente React)."""
     id: str
     titulo: str
     preco: float

@@ -1,8 +1,8 @@
 """Log estruturado (ADR-0011). Uma linha JSON por evento quando ligado; texto legível quando não.
 
-Por que JSON: no perfil local dá para fatiar com `jq` (`docker compose logs agent | jq 'select(.no)'`)
-e na AWS o CloudWatch Logs Insights consulta campo por campo sem regex. É a metade "eventos" da
-observabilidade — a outra metade (números agregados) vive nas tabelas `turnos`/`saude`.
+Por que JSON: dá para fatiar com `jq` (`docker compose logs agent | jq 'select(.no)'`), e qualquer
+coletor de log consulta campo por campo sem regex. É a metade "eventos" da observabilidade — a
+outra metade (números agregados) vive nas tabelas `turnos`/`saude`.
 
 Uso:
     from sdr_shared.log import configurar, contexto
@@ -56,7 +56,7 @@ def json_ligado() -> bool:
     v = os.getenv("SDR_LOG_JSON")
     if v is not None:
         return v.strip().lower() in ("1", "true", "sim")
-    return os.getenv("SDR_PROFILE", "aws").strip().lower() != "local"
+    return os.getenv("SDR_PROFILE", "producao").strip().lower() != "local"
 
 
 def configurar(servico: str, nivel: int = logging.INFO) -> None:

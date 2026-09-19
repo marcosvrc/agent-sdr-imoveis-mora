@@ -117,9 +117,15 @@ combinação em que ninguém é enganado.
 
 Duas ressalvas que é melhor dizer antes de alguém perguntar:
 
-- **A qualidade semântica do RAG não foi medida.** Os testes provam o encanamento — fatiamento,
-  busca vetorial, ordenação, piso, caminho do "não sei" —, não que a recuperação escolhe sempre o
-  melhor trecho. Isso depende do modelo de embeddings e precisa de avaliação própria.
-- **Nada disso está implantado.** A solução foi desenhada para nuvem (`infra/`, com os stacks CDK)
-  e a entrega roda local. "Deploy em cloud" é diferencial no enunciado, não requisito — e o desenho
-  está escrito mesmo sem o deploy.
+- **A qualidade do RAG é medida, mas o número não vem de graça.** Existe uma suíte própria em
+  `services/agent/evals/`, com 57 perguntas institucionais em `datasets/rag.jsonl` — escritas do
+  jeito que o cliente escreveria, sem repetir o cabeçalho do documento — e métricas de recall@3,
+  acerto no topo, abstenção e separação entre o menor score de acerto e o maior score de engano.
+  O que roda no CI é `make eval-fake`, com LLM falso e embedder de trigramas: prova o encanamento e
+  **não diz nada sobre qualidade**. O número honesto sai de `make eval-rag`, com o `bge-m3` de
+  verdade, na máquina de quem avalia. Se perguntarem pela fusão léxica: está implementada,
+  desligada por padrão (`SDR_RAG_LEXICO`) e o A/B disponível piorou o recall, de 31,9% para 29,8%.
+- **Nada disso está implantado.** Não existe ambiente no ar, nem endereço público: a entrega roda
+  inteira na máquina de quem avalia, por `docker compose`. Houve um desenho para nuvem, com stacks
+  CDK, e ele foi removido do repositório — o que está documentado é o que dá para levantar e ver
+  funcionando aqui.

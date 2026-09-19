@@ -129,7 +129,6 @@ nav:
       - Contexto do projeto: overview/contexto.md
       - Funcionalidades: overview/funcionalidades.md
       - Quick Start: overview/quick-start.md
-      - Roteiro de demonstração: overview/roteiro-demonstracao.md
   - Primeiros passos:
       - Pré-requisitos: getting-started/pre-requisitos.md
       - Configuração e variáveis de ambiente: getting-started/configuracao.md
@@ -145,14 +144,14 @@ nav:
       - Referência completa (ARCHITECTURE.md): ARCHITECTURE.md
       - Decisões arquiteturais (ADRs):
           - Índice: architecture/decisoes.md
-          - ADR-0001 — RAG com Knowledge Base + Aurora pgvector: adr/0001-rag-knowledge-base-com-aurora-pgvector.md
-          - ADR-0002 — Agente em Lambda container: adr/0002-agente-em-lambda-container.md
+          - ADR-0001 — RAG sobre Postgres + pgvector: adr/0001-rag-com-postgres-pgvector.md
+          - ADR-0002 — Runtime do agente em container: adr/0002-runtime-do-agente-em-container.md
           - ADR-0003 — Canais como adaptadores: adr/0003-canais-como-adaptadores.md
-          - ADR-0004 — Aurora em vez de DynamoDB: adr/0004-aurora-em-vez-de-dynamodb.md
+          - ADR-0004 — Um Postgres para tudo: adr/0004-postgres-como-banco-unico.md
           - ADR-0005 — Observabilidade com OpenTelemetry + Grafana (revogado): adr/0005-observabilidade-com-opentelemetry-e-grafana.md
           - ADR-0006 — Site vitrine com agente embutido: adr/0006-site-vitrine-com-agente-embutido.md
           - ADR-0007 — Telegram em vez de WhatsApp: adr/0007-telegram-em-vez-de-whatsapp.md
-          - ADR-0008 — Portões de autenticação fora do API Gateway: adr/0008-portoes-de-autenticacao-fora-do-api-gateway.md
+          - ADR-0008 — Cada porta com o seu próprio portão: adr/0008-portoes-de-autenticacao-proprios.md
           - ADR-0009 — Gateway de LLM (LiteLLM/OpenRouter/nada): adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md
           - ADR-0010 — Modelo por nível e troca pelo painel: adr/0010-modelo-por-nivel-e-troca-pelo-painel.md
           - ADR-0011 — Observabilidade leve no Postgres: adr/0011-observabilidade-leve-no-postgres.md

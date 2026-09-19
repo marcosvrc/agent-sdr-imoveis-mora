@@ -20,7 +20,7 @@ Estratégias observadas no código e na configuração:
 - **Cache de dados no front-end.** TanStack React Query.
 - **Cache HTTP de imagens.** `Cache-Control: public, max-age=86400` nas fotos.
 - **Paginação / limite.** Endpoints de listagem aceitam `limite` com teto (ex.: imóveis até 200).
-- **Aurora Serverless v2** escala a zero quando ocioso (perfil AWS).
+- **Ollama para embeddings.** `bge-m3` roda na máquina: indexar catálogo e documentos não gasta chamada a provedor externo nem entra no caminho da conversa.
 
 ## Benchmarks
 
@@ -30,7 +30,7 @@ Estratégias observadas no código e na configuração:
 Procedimento reprodutível sugerido para obtê-los:
 
 1. Subir o perfil local e popular o catálogo (`make local && make seed`).
-2. Medir a latência ponta a ponta de um turno com um provedor fixo (ex.: Anthropic API), capturando o
+2. Medir a latência ponta a ponta de um turno com um provedor fixo (ex.: a API da Anthropic), capturando o
    `duracao_ms` já registrado nos logs do agente e na tabela de saúde (ADR-0011).
 3. Repetir por cenário (qualificação, consulta com RAG, agendamento) e registrar p50 / p95.
 

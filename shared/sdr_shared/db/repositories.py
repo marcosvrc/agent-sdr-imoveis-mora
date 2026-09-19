@@ -143,7 +143,7 @@ class CanalRepository:
             return [dict(r) for r in c.execute("SELECT canal, identificador FROM canais WHERE lead_id = %s", (lead_id,)).fetchall()]
 
     def migrar(self, de_lead_id: str, para_lead_id: str) -> None:
-        """Lead anônimo da web virou lead de WhatsApp: move canais e mensagens, apaga o antigo."""
+        """Lead anônimo da web virou lead de canal externo: move canais e mensagens, apaga o antigo."""
         with _conn() as c:
             c.execute("UPDATE canais SET lead_id = %s WHERE lead_id = %s", (para_lead_id, de_lead_id))
             c.execute("UPDATE mensagens SET lead_id = %s WHERE lead_id = %s", (para_lead_id, de_lead_id))

@@ -1,4 +1,4 @@
-"""Teste local do agente sem SQS/WhatsApp: `python cli.py` e converse no terminal."""
+"""Teste local do agente sem canal externo: `python cli.py` e converse no terminal."""
 import uuid
 from sdr_shared.messaging import MensagemNormalizada, Canal
 from agent.handler import processar

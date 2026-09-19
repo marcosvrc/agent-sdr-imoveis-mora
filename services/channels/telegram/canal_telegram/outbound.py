@@ -18,12 +18,7 @@ def enviar(body_json: str) -> None:
             http.post(f"{base}/{metodo}", json=p).raise_for_status()
 
 
-def handler(event, _ctx):                       # perfil aws
-    for rec in event["Records"]:
-        enviar(rec["body"])
-
-
-def local_worker():                             # perfil local
+def local_worker():
     from sdr_shared.db import iniciar_batimento
     from sdr_shared.ports import get_broker
     iniciar_batimento("telegram-out")

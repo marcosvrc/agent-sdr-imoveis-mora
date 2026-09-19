@@ -21,7 +21,7 @@ está hoje no código ou no `docker-compose.yml` — foi todo desfeito.
 Dar visibilidade de **saúde de sistema** — coisa que o painel de negócio (Governança, Auditoria) não
 mostra — respondendo, a qualquer momento, a três perguntas:
 
-1. Está tudo no ar? (`api`, `channels`, `agent`, `resumidor`, `reativador`, `whatsapp-out`, `scheduler`, `db`, `redis`)
+1. Está tudo no ar? (`api`, `channels`, `agent`, `resumidor`, `reativador`, `telegram-in`, `telegram-out`, `scheduler`, `db`, `redis`)
 2. Está rápido? (latência por rota HTTP, por nó do grafo, por chamada externa — LLM, Google Calendar)
 3. Está enfileirando/acumulando? (streams do Redis crescendo, workers atrasados, rate limit disparando)
 
@@ -37,8 +37,7 @@ lê a métrica agregada e linka de volta para o painel de negócio para o detalh
  channels ──┐                               │                │
  agent ──────┼─→ OTLP/gRPC → OTel Collector ─┼─→ Tempo ───────┼─→ Grafana
  resumidor ──┤                               │                │
- whatsapp-out┤                               └─→ (Loki, fase2)┘
- scheduler ──┘
+ scheduler ──┘                               └─→ (Loki, fase2)┘
                 postgres_exporter ──→ Prometheus ─┘
                 redis_exporter ─────→ Prometheus ─┘
                 cAdvisor + node-exporter → Prometheus ─┘
@@ -64,7 +63,7 @@ lê a métrica agregada e linka de volta para o painel de negócio para o detalh
 | `channels/local` (FastAPI + WebSocket, porta 8001) | `iniciar("channels")` chamado, **sem** `instrumentar_fastapi` **(deliberado)** | Este app também serve WebSocket (`/ws`) — a auto-instrumentação HTTP do FastAPI quebra o handshake em silêncio nesse caso (chat cai com "sem conexão"). RED automático fica só na `api`, que é REST puro. Métrica manual de conexões WebSocket ativas e mensagens por canal: **não implementada** ainda. |
 | `agent` (worker LangGraph, sem HTTP) | instrumentação manual **(chegou a ser implementado; removido na revogação)** | 1 span (`agente.grafo`) por turno de conversa processado, mais o span de I/O do LangGraph dentro dele. Métricas implementadas: `agente.turno.duracao_ms` (histograma, label `canal`/`estagio`), `agente.mensagens_processadas` (counter, label `resultado=ok\|vazao\|handoff\|orcamento\|erro`), `agente.guardrail_escopo_recusas` (counter, label `categoria`), `agente.guardrail_vazao_ativacoes` (counter, label `janela=rajada\|hora`). Ainda não implementado: 1 span por nó do grafo e histograma de latência de LLM/Google Calendar isolados (ficam para uma fase futura — hoje entram dentro do span único do turno). |
 | `resumidor` (worker) | `iniciar("resumidor")` chamado **(chegou a ser implementado; removido na revogação)** — reusa o mesmo processador (`handler.resumir`) do agente, então já herda o que for instrumentado em `graph.py`. Counter dedicado de itens processados/falhos: **não implementado**. |
-| `whatsapp-out`, `scheduler`, `telegram-in`, `telegram-out` (workers) | **não implementado** | ficam para uma fase futura; hoje não chamam `iniciar()`. |
+| `scheduler`, `telegram-in`, `telegram-out`, `reativador` (workers) | **não implementado** | ficam para uma fase futura; hoje não chamam `iniciar()`. |
 | Adapter `CalendarioGoogle` | instrumentação manual no adapter | histograma de latência da chamada à API do Google, counter de falhas — hoje essas falhas degradam silenciosamente para a agenda interna (por design), o que é ótimo para o cliente e péssimo para quem opera: sem essa métrica ninguém percebe que a integração caiu. |
 | `db` (Postgres) | `postgres_exporter` (sidecar) | conexões ativas/máx, duração de query (`pg_stat_statements`), tamanho de tabelas, locks. |
 | `redis` (streams = fila) | `redis_exporter` (sidecar) | memória usada, clientes conectados, ops/seg, **profundidade de cada stream** (equivalente a "mensagens na fila SQS") e consumer lag — é o sinal mais direto de "o agente está atrasado processando leads". |
@@ -99,7 +98,7 @@ direto), `no`, `resultado`, contadores. O mesmo cuidado que motivou o mascaramen
 - Latência e falhas da chamada ao Google Calendar
 
 **Filas / workers**
-- Itens processados/falhos por worker (`resumidor`, `whatsapp-out`, `scheduler`)
+- Itens processados/falhos por worker (`resumidor`, `scheduler`)
 - Tempo de processamento por item
 
 ## 5. Dashboards Grafana propostos
@@ -146,7 +145,7 @@ O dashboard de **negócio** (funil, temperatura, custo de LLM) continua sendo o 
 - **Fase 3 — agente e guardrails (feito, com escopo reduzido):** span por turno e métricas manuais em
   `agent/handler.py`, `guardrails/escopo.py` e `guardrails/vazao.py` (ver tabela do §3). **Não feito
   ainda**, deliberadamente adiado: 1 span por nó do grafo, histograma de latência isolado de LLM e de
-  `CalendarioGoogle`, métricas de `whatsapp-out`/`scheduler`/`telegram-in`/`telegram-out`.
+  `CalendarioGoogle`, métricas de `scheduler`/`telegram-in`/`telegram-out`.
 - **Fase 4 — infra externa (feito):** `postgres_exporter`, `redis_exporter`, `cAdvisor` no compose
   (incluídos já na Fase 1 acima, já que o compose é um arquivo só).
 - **Fase 5 — dashboards (feito, alertas pendentes):** três dashboards versionados em
@@ -174,6 +173,9 @@ Cada fase foi entregue de forma independente, como planejado — dá para rodar 
 (RED de API/canais) ou com tudo, via o mesmo `--profile observability`.
 
 ## 8. Onde cada peça entrou no repo
+
+Caminhos de então, todos removidos na revogação — `infra/`, inclusive, deixou de existir por inteiro
+quando as stacks em nuvem saíram do repositório. A lista fica para quem quiser refazer o caminho.
 
 ```
 shared/sdr_shared/observabilidade/otel.py   # setup do SDK OTel: iniciar(), tracer(), contador(), histograma(), instrumentar_fastapi()

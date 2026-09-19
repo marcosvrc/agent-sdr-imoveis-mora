@@ -18,8 +18,8 @@ catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
 <div class="mora-badges" markdown>
 <span class="mora-badge">Status: POC</span>
 <span class="mora-badge">PT-BR</span>
-<span class="mora-badge">Perfis: local &amp; AWS</span>
-<span class="mora-badge">Licença: a confirmar</span>
+<span class="mora-badge">Roda 100% local (docker compose)</span>
+<span class="mora-badge">Licença: MIT</span>
 </div>
 
 <div class="mora-actions" markdown>
@@ -82,19 +82,21 @@ canal a mensagem chegou: cada canal traduz o evento do provedor para um formato 
 
 ```mermaid
 flowchart LR
-    U[Usuário] --> SITE[Site ou Telegram]
-    SITE --> CH[Canais]
-    CH --> Q[[Fila]]
-    Q --> AGENT[Agente de IA]
-    AGENT --> LLM[LLM]
+    U[Usuário] --> SITE[Site :5173 ou Telegram]
+    SITE --> CH[Canais<br/>channels :8001 · telegram-in/out]
+    CH --> Q[[Redis Streams]]
+    Q --> AGENT[Agente de IA<br/>worker em container]
+    AGENT --> LLM[LLM<br/>Anthropic · OpenAI · Ollama]
     AGENT --> DATA[(Postgres + pgvector)]
-    AGENT -->|resposta neutra| CH
-    DASH[Painel do corretor] --> API[API REST]
+    AGENT -->|resposta neutra| Q
+    Q --> CH
+    DASH[Painel do corretor :5174] --> API[API REST :8000]
     API --> DATA
 ```
 
-O mesmo código roda em dois perfis, escolhidos por `SDR_PROFILE`: **local** (Docker Compose) e **aws**
-(serverless). A troca acontece apenas nos adaptadores. Detalhes em [Arquitetura](architecture/index.md).
+Tudo isso são containers de um único `docker compose`: o sistema roda inteiro na máquina de quem
+avalia, e **nada está implantado** — é escolha de escopo, não pendência. Detalhes em
+[Arquitetura](architecture/index.md).
 
 ## Links rápidos
 
@@ -106,6 +108,6 @@ O mesmo código roda em dois perfis, escolhidos por `SDR_PROFILE`: **local** (Do
 - :material-source-pull: [Contribuir](project/contribuir.md)
 
 !!! note "Sobre esta POC"
-    O Mora é uma prova de conceito. O núcleo está implementado e testado nos perfis local e AWS, mas
-    alguns itens dependentes de serviços AWS estão escritos e não testados. Veja o estado real em
+    O Mora é uma prova de conceito. A entrega roda inteira por `docker compose` na máquina de quem
+    avalia, sem conta em provedor nenhum e sem nada implantado. Veja o estado real em
     [Funcionalidades](overview/funcionalidades.md).

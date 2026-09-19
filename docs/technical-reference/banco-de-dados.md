@@ -1,16 +1,20 @@
 ---
 title: Banco de dados
-description: PostgreSQL + pgvector, schema, migrations e o mesmo esquema em local e AWS.
+description: PostgreSQL + pgvector, schema, migrations e o banco único que atende dados e vetores.
 ---
 
 # Banco de dados
 
 ## Motor
 
-**PostgreSQL com a extensão pgvector**, armazenando dados relacionais e vetores na mesma base:
+**PostgreSQL com a extensão pgvector**, armazenando dados relacionais e vetores na mesma base
+(ADR-0004): container `pgvector/pgvector:pg16` do `local/docker-compose.yml`, porta host 5433 → 5432
+(ajustável por `DB_HOST_PORT`).
 
-- **Local** — container `pgvector/pgvector:pg16` (porta host 5433 → 5432).
-- **AWS** — Aurora Serverless v2 (Postgres 16), que escala a zero quando ocioso (ADR-0004).
+Há um servidor só, o do compose. Não existe variante gerenciada: o que havia de banco hospedado saiu
+do projeto junto com a infraestrutura em nuvem. Dentro dele, o CRM tem **banco próprio** (`crm`),
+separado do `sdr` — é o que faz a regra de que nada da Mora escreve direto no CRM ser estrutural, e
+não só combinada (ver [decisões](../decisions.md) D-02).
 
 ## Schema e migrations
 
@@ -18,7 +22,7 @@ O schema vive em `shared/sdr_shared/db/schema.sql` e é idempotente
 (`CREATE`/`ALTER ... IF NOT EXISTS`).
 
 ```bash
-# Perfil local: aplicado automaticamente ao subir o container db; para reaplicar:
+# Aplicado automaticamente na PRIMEIRA subida do container db (initdb.d); para reaplicar:
 make migrate
 
 # Execução manual:
@@ -37,8 +41,11 @@ A observabilidade leve grava três tabelas no próprio Postgres — `turnos`, `s
 
 ## Vetores e RAG
 
-Os embeddings de imóveis (Titan v2 na AWS ou `bge-m3` local) ficam no pgvector e alimentam o RAG com
-cascata por localidade. Reindexe com `make seed` após alterar bairros ou descrições. Veja
+Os embeddings ficam no pgvector, em duas tabelas: `imoveis.embedding` (catálogo, com cascata por
+localidade) e `documentos.embedding` (documentos institucionais fatiados, com a coluna gerada `busca`
+em `tsvector` para a fusão léxica). Ambas são `vector(1024)` — a dimensão do `bge-m3`, o único modelo
+de embeddings do projeto, servido pelo Ollama. Reindexe o catálogo com `make seed` após alterar
+bairros ou descrições, e os documentos com `make docs-kb`. Veja
 [Dados e persistência](../architecture/dados.md).
 
 !!! info "Ingestão"

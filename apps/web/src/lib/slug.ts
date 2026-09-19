@@ -1,6 +1,6 @@
 /** URLs legíveis (etapa 2 do redesenho).
  *
- *  Antes: /imoveis/SP-0001 — não diz nada a quem vê o link no WhatsApp nem ao buscador.
+ *  Antes: /imoveis/SP-0001 — não diz nada a quem vê o link compartilhado nem ao buscador.
  *  Agora: /imovel/apartamento-2-quartos-brooklin-sp-0001
  *
  *  O id continua no fim: é ele que a rota lê. Assim o slug pode mudar (o corretor corrige o bairro)

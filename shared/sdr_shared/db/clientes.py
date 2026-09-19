@@ -1,8 +1,8 @@
 """Cliente = a pessoa; Lead = a oportunidade dela.
 
 Duas coisas acontecem aqui, e as duas existem para o corretor não perder contexto:
-  1. Deduplicação — o visitante anônimo da web que informa o WhatsApp é a mesma pessoa que já falou
-     com a gente pelo WhatsApp no mês passado. Assim que há um contato, os dois viram um cliente só.
+  1. Deduplicação — o visitante anônimo da web que informa o telefone é a mesma pessoa que já falou
+     com a gente pelo Telegram no mês passado. Assim que há um contato, os dois viram um cliente só.
   2. Nova oportunidade — quem comprou ano passado e volta querendo alugar não é a mesma negociação.
      A oportunidade anterior é encerrada (não apagada) e uma nova começa, ligada ao mesmo cliente.
 """
@@ -137,7 +137,7 @@ def nova_oportunidade_se_mudou_intencao(lead: Lead, nova: Intencao) -> Lead | No
         corretor_id=lead.corretor_id)
     repo.upsert(sucessora)
     with _conn() as c:
-        # o WhatsApp do cliente passa a entregar na oportunidade nova; a antiga guarda seu histórico
+        # o canal do cliente passa a entregar na oportunidade nova; a antiga guarda seu histórico
         c.execute("UPDATE canais SET lead_id = %s WHERE lead_id = %s", (nova_id, lead.id))
     lead.encerrado_em = datetime.now(timezone.utc)
     lead.sucessora_id = nova_id

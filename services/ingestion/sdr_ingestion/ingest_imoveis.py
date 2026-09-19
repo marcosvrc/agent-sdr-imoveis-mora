@@ -1,19 +1,16 @@
 """
-Um chunk por imóvel (ADR-0001):
-  1. grava o registro relacional no Postgres/Aurora (dashboard, filtros, API pública) COM embedding (busca híbrida pgvector);
-  2. perfil aws: escreve `imoveis/<id>.txt` + `<id>.txt.metadata.json` no S3 e dispara sync da Knowledge Base.
-Uso: python -m sdr_ingestion.ingest_imoveis data/imoveis/imoveis.json [bucket] [kb_id] [ds_id]
+Um chunk por imóvel (ADR-0001): grava o registro relacional no Postgres (painel, filtros, API
+pública) COM embedding, que é o que faz a busca híbrida do pgvector funcionar.
+Uso: python -m sdr_ingestion.ingest_imoveis data/imoveis/imoveis.json
 
 Com CRM configurado o registro comercial vem de lá e o arquivo entra só com os dados de vitrine
 (ver `acervo.py`). Nesse caso a ingestão também PURGA o que o CRM não lista mais — é o que impede
 o agente de continuar oferecendo um imóvel vendido.
 """
-import json
 import sys
 import time
 
 from sdr_shared.db import ImovelRepository
-from sdr_shared.models import Imovel
 
 from .acervo import carregar
 
@@ -27,21 +24,6 @@ LIMITE_AVISOS_POR_LOTE = 5
 def embed(texto: str) -> list[float]:
     from sdr_shared.ports import get_embedder
     return get_embedder().embed(texto)
-
-
-def para_s3(bucket: str, im: Imovel) -> None:
-    import boto3
-    s3 = boto3.client("s3")
-    meta = im.metadata()
-    meta["metadataAttributes"] |= {"imovel_id": im.id, "titulo": f"{im.tipo.capitalize()} {im.quartos}q em {im.bairro}",
-                                   "foto": im.fotos[0] if im.fotos else ""}
-    s3.put_object(Bucket=bucket, Key=f"imoveis/{im.id}.txt", Body=im.texto_canonico().encode())
-    s3.put_object(Bucket=bucket, Key=f"imoveis/{im.id}.txt.metadata.json", Body=json.dumps(meta).encode())
-
-
-def sync_kb(kb_id: str, ds_id: str) -> None:
-    import boto3
-    boto3.client("bedrock-agent").start_ingestion_job(knowledgeBaseId=kb_id, dataSourceId=ds_id)
 
 
 def anunciar(novos: list[str]) -> None:
@@ -64,8 +46,7 @@ def anunciar(novos: list[str]) -> None:
     print(f"  {len(novos)} imóvel(is) novo(s) anunciado(s) para a reativação: {', '.join(novos)}")
 
 
-def main(caminho: str, bucket: str | None = None, kb_id: str | None = None, ds_id: str | None = None,
-         avisar: bool = True) -> int:
+def main(caminho: str, avisar: bool = True) -> int:
     imoveis, do_crm = carregar(caminho)
     repo, t0, erros = ImovelRepository(), time.perf_counter(), 0
     novos: list[str] = []
@@ -78,8 +59,6 @@ def main(caminho: str, bucket: str | None = None, kb_id: str | None = None, ds_i
             vec = None
         if repo.upsert(im, vec):
             novos.append(im.id)
-        if bucket:
-            para_s3(bucket, im)
         if i % 25 == 0 or i == len(imoveis):
             print(f"  {i}/{len(imoveis)} imóveis gravados ({time.perf_counter() - t0:.0f}s)")
     # Purga só quando a fonte é autoritativa: o CRM acabou de listar o acervo inteiro, então o que
@@ -90,8 +69,6 @@ def main(caminho: str, bucket: str | None = None, kb_id: str | None = None, ds_i
         if saidos:
             print(f"  {saidos} imóvel(is) saíram do índice (não estão mais disponíveis no CRM)")
 
-    if kb_id and ds_id:
-        sync_kb(kb_id, ds_id)
     if avisar:
         anunciar(novos)
     total, com_vetor = repo.contar(), repo.contar_com_embedding()

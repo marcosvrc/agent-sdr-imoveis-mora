@@ -1,9 +1,9 @@
 [project]
 name = "sdr-ingestion"
 version = "0.1.0"
-description = "Carga da base simulada: Aurora (relacional + embeddings) e S3 (Knowledge Base)"
+description = "Carga da base simulada no Postgres: registro relacional + embeddings"
 requires-python = ">=3.12"
-dependencies = ["sdr-shared", "boto3>=1.35"]
+dependencies = ["sdr-shared"]
 [tool.uv.sources]
 sdr-shared = { path = "../../shared", editable = true }
 

@@ -206,7 +206,7 @@ function AbaPrecos({ cotacao }: { cotacao: number }) {
   if (!data) return <Skeleton className="h-64" />;
   return (
     <div className="space-y-3">
-      <p className="text-xs text-ink-muted">Preços por 1 milhão de tokens, em dólares, usados para calcular o custo de cada chamada. Os valores padrão seguem a tabela pública da Anthropic; ajuste se você usa Bedrock (que cobra por região) ou tem preço negociado.</p>
+      <p className="text-xs text-ink-muted">Preços por 1 milhão de tokens, em dólares, usados para calcular o custo de cada chamada. Os valores padrão seguem a tabela pública da Anthropic; ajuste se você tem preço negociado ou usa outro provedor.</p>
       <Table colunas={["Modelo", { h: "Entrada / 1M", cls: "text-right" }, { h: "Saída / 1M", cls: "text-right" }, { h: "Leitura de cache", cls: "text-right" }, { h: "", cls: "w-16" }, { h: " ", cls: "w-16" }]}>
         {pgPrecos.fatia.map(([m, p]) => {
           const custom = data.personalizados.includes(m);

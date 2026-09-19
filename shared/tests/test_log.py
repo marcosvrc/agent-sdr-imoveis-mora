@@ -52,11 +52,11 @@ def test_excecao_vira_campo_erro_e_nao_quebra_a_linha():
 
 
 def test_json_desligado_no_perfil_local_e_ligado_fora(monkeypatch):
-    """Local é para o olho humano; na AWS ninguém lê log com o olho."""
+    """Local é para o olho humano; em produção ninguém lê log com o olho."""
     monkeypatch.delenv("SDR_LOG_JSON", raising=False)
     monkeypatch.setenv("SDR_PROFILE", "local")
     assert slog.json_ligado() is False
-    monkeypatch.setenv("SDR_PROFILE", "aws")
+    monkeypatch.setenv("SDR_PROFILE", "producao")
     assert slog.json_ligado() is True
     monkeypatch.setenv("SDR_LOG_JSON", "1")         # a variável tem a última palavra
     monkeypatch.setenv("SDR_PROFILE", "local")

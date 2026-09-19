@@ -7,6 +7,18 @@ def parse_inbound(evento_bruto) -> list[MensagemNormalizada]
 def render(resposta: RespostaAgente) -> payload do provedor
 ```
 
-Fluxo: provedor → `inbound` (Lambda) → SQS `sdr-inbound` → agent → SQS `sdr-outbound-<canal>` → `outbound` (Lambda) → provedor.
-Cada canal tem um pacote com nome próprio (`canal_whatsapp`, `canal_web`) — nunca `src`, que colidiria entre eles.
-Canais não chamam Bedrock, não leem o cartão do lead, não têm regra de negócio.
+Fluxo: provedor → entrada → tópico Redis `inbound` → agent → tópico `outbound-<canal>` → saída →
+provedor. Entrada e saída são **workers** (`local_worker()`) do `local/docker-compose.yml`, não
+funções hospedadas.
+
+- `telegram/` — canal externo. Entrada por long polling (`getUpdates`), sem webhook e sem URL
+  pública (ADR-0007); saída pela Bot API. Pacote `canal_telegram`, workers `telegram-in` e
+  `telegram-out`.
+- `local/` — canal web: um processo FastAPI com o WebSocket `/ws` (widget do site com `papel=lead`,
+  painel com `papel=dashboard`) e o worker que consome `outbound-web`.
+
+Havia aqui um canal `whatsapp/`, pela Cloud API da Meta; foi removido, porque o webhook exige URL
+pública e conta de negócio verificada.
+
+Um canal nunca tem nome de pacote genérico (`src`), que colidiria com o dos outros. Canais não
+chamam o LLM, não leem o cartão do lead e não têm regra de negócio.

@@ -1,7 +1,7 @@
 /** Metadados por rota, sem biblioteca.
  *
  *  O site é uma SPA: sem isto, as 200 fichas compartilham o mesmo <title> e a mesma description do
- *  index.html — para o buscador e para quem cola o link no WhatsApp, são todas a mesma página.
+ *  index.html — para o buscador e para quem cola o link em qualquer lugar, são todas a mesma página.
  *
  *  Cobre o que muda por rota: title, description, canonical, Open Graph, Twitter e JSON-LD.
  *  Escrever direto no `document` (em vez de react-helmet) evita uma dependência para ~60 linhas e

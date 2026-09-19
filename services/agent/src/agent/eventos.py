@@ -3,12 +3,7 @@ import json
 from .handler import resumir
 
 
-def handler(event, _ctx):                       # perfil aws: SQS sdr-resumir → Lambda
-    for rec in event["Records"]:
-        resumir(json.loads(rec["body"])["lead_id"])
-
-
-def local_worker():                             # perfil local
+def local_worker():
     from sdr_shared.db import iniciar_batimento
     from sdr_shared.ports import get_broker
 

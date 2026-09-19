@@ -6,6 +6,7 @@ comportamento: a Mora chega sabendo o que o corretor já anotou, e não pergunta
 Contra o CRM de verdade, atrás do MCP. Um dublê provaria que eu chamo o que eu mesmo mandei
 chamar — inútil para uma integração cujo risco é justamente o encontro dos dois vocabulários.
 """
+import os
 import uuid
 
 import httpx
@@ -13,6 +14,10 @@ import pytest
 
 from sdr_shared.crm import reconhecer, vinculo
 from sdr_shared.models import Estagio, Intencao, Lead
+
+# Com padrão, e não `os.environ[...]`: o teste passava a depender de a variável estar exportada, e
+# falhava com KeyError — que não diz que o problema é ambiente, e não código.
+DSN_CRM = os.environ.get("CRM_TEST_DSN", "postgresql://sdr:sdr@127.0.0.1:5432/crm_test")
 
 
 def _criar_no_crm(base: str, token: str, *, email: str, prefs: dict, purpose: str = "rent",
@@ -160,10 +165,8 @@ def test_oportunidade_fechada_nao_vira_contexto(ligado, crm_api, token_crm, novo
     # O fechamento é escrito direto no banco do CRM porque marcar `lost` é ação HUMANA e a
     # credencial de serviço é recusada — com razão, e isso já tem teste próprio lá. Aqui o
     # fechamento é o cenário, não o comportamento sob prova.
-    import os
-
     import psycopg
-    with psycopg.connect(os.environ["CRM_TEST_DSN"], autocommit=True) as conn:
+    with psycopg.connect(DSN_CRM, autocommit=True) as conn:
         # `closed_at` junto: o schema do CRM exige coerência entre estágio final e fechamento, e
         # burlar isso deixaria a linha num estado que a aplicação nunca produz.
         conn.execute("UPDATE opportunities SET stage = 'lost', lost_reason = 'cenário de teste', "

@@ -42,7 +42,6 @@ export const Ic = {
   check: (p: P) => <I {...p}><path d="M20 6L9 17l-5-5" /></I>,
   bolt: (p: P) => <I {...p}><path d="M13 2L3 14h9l-1 8 10-12h-9z" /></I>,
   handoff: (p: P) => <I {...p}><path d="M12 5v14M5 12l7-7 7 7" transform="rotate(90 12 12)" /><path d="M4 21h16" /></I>,
-  whatsapp: (p: P) => <I {...p}><path d="M20.5 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.6A8.5 8.5 0 1 1 20.5 11.5z" /><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z" /></I>,
   telegram: (p: P) => <I {...p}><path d="M21 3 2 10.5l6 2.2M21 3l-3 17-8-6.3M21 3l-12.7 11.4M9 13.4V19l3-3.4" /></I>,
   globe: (p: P) => <I {...p}><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" /></I>,
   eye: (p: P) => <I {...p}><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" /><circle cx="12" cy="12" r="3" /></I>,

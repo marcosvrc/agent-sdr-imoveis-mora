@@ -9,7 +9,7 @@ const NIVEIS = [
   { k: "analise", r: "Briefing e análise", d: "Resumo para o corretor. Roda fora da conversa, então latência não importa. Vazio = usa o de conversa." },
 ] as const;
 
-const PROVIDERS = ["", "bedrock", "anthropic", "openai", "ollama"];
+const PROVIDERS = ["", "anthropic", "openai", "ollama"];
 
 type Teste = { ok: boolean; latencia_ms: number; resposta?: string; erro?: string; tem_preco: boolean };
 

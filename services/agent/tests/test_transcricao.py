@@ -1,7 +1,7 @@
-"""Transcrição de áudio: roteia o download por canal (Telegram vs WhatsApp), escolhe o motor por
-perfil/config, e degrada com uma mensagem ao cliente quando algo falha.
+"""Transcrição de áudio: roteia o download pelo `meta` do canal, escolhe o motor por
+configuração, e degrada com uma mensagem ao cliente quando algo falha.
 
-Sem rede e sem AWS: o download e o motor são substituídos por fakes (padrão monkeypatch do repo).
+Sem rede: o download e o motor são substituídos por fakes (padrão monkeypatch do repo).
 """
 import pytest
 
@@ -13,26 +13,27 @@ from agent import handler
 
 # ------------------------------------------------------------ motor efetivo
 
-def test_motor_auto_local_usa_whisper(monkeypatch):
-    monkeypatch.setattr(transcricao.get_settings, "cache_clear", lambda: None, raising=False)
+def test_motor_auto_usa_whisper(monkeypatch):
+    """`auto` tem um motor só desde que o motor hospedado saiu. Vale continuar testando:
+    é o padrão, e um `auto` que caísse em "desconhecido" derrubaria todo áudio recebido."""
     s = transcricao.get_settings()
     monkeypatch.setattr(s, "transcricao_provider", "auto", raising=False)
-    monkeypatch.setattr(s, "profile", "local", raising=False)
     assert transcricao._motor_efetivo() == "whisper_local"
 
 
-def test_motor_auto_aws_usa_transcribe(monkeypatch):
+def test_motor_desligado_e_respeitado(monkeypatch):
     s = transcricao.get_settings()
-    monkeypatch.setattr(s, "transcricao_provider", "auto", raising=False)
-    monkeypatch.setattr(s, "profile", "aws", raising=False)
-    assert transcricao._motor_efetivo() == "transcribe"
+    monkeypatch.setattr(s, "transcricao_provider", "off", raising=False)
+    assert transcricao._motor_efetivo() == "off"
 
 
-def test_motor_forcado_ignora_perfil(monkeypatch):
-    s = transcricao.get_settings()
-    monkeypatch.setattr(s, "transcricao_provider", "whisper_local", raising=False)
-    monkeypatch.setattr(s, "profile", "aws", raising=False)
-    assert transcricao._motor_efetivo() == "whisper_local"
+def test_motor_desconhecido_falha_claro(monkeypatch):
+    """Errar o nome no .env não pode virar silêncio: sem motor não há transcrição, e o cliente
+    precisa ouvir isso do agente em vez de esperar por uma resposta que nunca vem."""
+    monkeypatch.setattr(transcricao, "_motor_efetivo", lambda: "transcribe")
+    monkeypatch.setattr(transcricao, "_baixar_audio", lambda meta: b"AUDIO")
+    with pytest.raises(RuntimeError, match="motor de transcrição desconhecido"):
+        transcricao.transcrever({"telegram_file_id": "x"})
 
 
 # --------------------------------------------------------- roteamento do download
@@ -41,7 +42,6 @@ def test_transcrever_roteia_telegram(monkeypatch):
     chamou = {}
     monkeypatch.setattr(transcricao, "_motor_efetivo", lambda: "whisper_local")
     monkeypatch.setattr(transcricao, "_baixar_telegram", lambda meta: chamou.setdefault("tg", meta) or b"AUDIO")
-    monkeypatch.setattr(transcricao, "_baixar_whatsapp", lambda meta: pytest.fail("não deveria baixar do WhatsApp"))
     monkeypatch.setattr(transcricao, "_transcrever_whisper_local", lambda audio: "quero apartamento em pinheiros")
 
     texto = transcricao.transcrever({"telegram_file_id": "file-1", "telegram_chat_id": "555"})
@@ -49,14 +49,12 @@ def test_transcrever_roteia_telegram(monkeypatch):
     assert chamou["tg"]["telegram_file_id"] == "file-1"
 
 
-def test_transcrever_roteia_whatsapp(monkeypatch):
-    monkeypatch.setattr(transcricao, "_motor_efetivo", lambda: "transcribe")
-    monkeypatch.setattr(transcricao, "_baixar_whatsapp", lambda meta: b"AUDIO")
-    monkeypatch.setattr(transcricao, "_baixar_telegram", lambda meta: pytest.fail("não deveria baixar do Telegram"))
-    monkeypatch.setattr(transcricao, "_transcrever_transcribe", lambda audio, meta: "tem casa para alugar")
-
-    assert transcricao.transcrever({"media_id": "media-1"}) == "tem casa para alugar"
-
+def test_meta_sem_origem_conhecida_falha_claro(monkeypatch):
+    """Antes havia dois caminhos de download (Telegram e Meta) e este teste cobria o segundo. Com o
+    WhatsApp fora, o que resta a garantir é que um `meta` sem origem reconhecida falhe DIZENDO isso,
+    em vez de devolver áudio vazio e virar uma transcrição em branco."""
+    with pytest.raises(RuntimeError, match="telegram_file_id"):
+        transcricao._baixar_audio({"media_id": "antigo"})
 
 def test_meta_sem_audio_levanta(monkeypatch):
     monkeypatch.setattr(transcricao, "_motor_efetivo", lambda: "whisper_local")

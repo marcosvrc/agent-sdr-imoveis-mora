@@ -31,9 +31,16 @@ Se vier vazio, rode `make seed` para popular o catálogo.
 ## Testes de backend
 
 ```bash
+make lint            # análise estática (ruff)
 make test            # host, Python 3.12 (cria e usa o banco sdr_test)
 make test-docker     # dentro do container do agente
+make eval-fake       # valida o harness de avaliação com dublês, sem gastar token
 ```
+
+!!! note "O que `make eval-fake` mede"
+    O encanamento do harness, não a qualidade: o LLM é falso e o embedder é de trigramas. Os
+    números de RAG só significam algo em `make eval-rag`, com o `bge-m3` de verdade
+    (exige `make ollama-pull`).
 
 !!! warning "Trava de segurança dos testes"
     As suítes apagam tabelas e uma trava recusa rodar contra um banco sem "test" no nome. Use sempre o

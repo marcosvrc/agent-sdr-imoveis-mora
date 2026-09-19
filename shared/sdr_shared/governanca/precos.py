@@ -2,7 +2,6 @@
 
 Fonte: documentação de preços da Anthropic (platform.claude.com/docs/en/about-claude/pricing).
 Preços mudam: a tabela é o padrão do código e pode ser sobrescrita pelo painel (configuração `precos`).
-O Bedrock cobra valores próprios por região — ajuste pelo painel se usar `SDR_LLM_PROVIDER=bedrock`.
 """
 import re
 
@@ -18,12 +17,6 @@ PRECOS_PADRAO: dict[str, tuple[float, float, float, float]] = {
     "claude-sonnet-4":   (3.0, 15.0, 3.75, 0.30),
     "claude-haiku-4-5":  (1.0, 5.0, 1.25, 0.10),
     "claude-haiku-3-5":  (0.80, 4.0, 1.0, 0.08),
-    # Amazon Nova (Bedrock): alternativa barata para roteamento/extração sem sair da AWS (ADR-0010).
-    # Valores de cache aproximados — o Bedrock cobra por região; confirme e ajuste pelo painel.
-    "amazon.nova-premier-v1:0": (2.50, 12.50, 3.125, 0.25),
-    "amazon.nova-pro-v1:0":     (0.80, 3.20, 1.0, 0.08),
-    "amazon.nova-lite-v1:0":    (0.06, 0.24, 0.075, 0.006),
-    "amazon.nova-micro-v1:0":   (0.035, 0.14, 0.044, 0.0035),
     # OpenAI (provedor de reserva — ADR-0009). A OpenAI não cobra ESCRITA de cache, só desconta a
     # leitura: por isso o terceiro valor é zero e o quarto é o preço de "cached input".
     # Fonte: developers.openai.com/api/docs/pricing (consultado em 2026-09). Confira antes de confiar
@@ -34,8 +27,7 @@ PRECOS_PADRAO: dict[str, tuple[float, float, float, float]] = {
     "gpt-5.6-luna":  (0.20, 1.20, 0.0, 0.02),
     "gpt-5-mini":    (0.25, 2.0, 0.0, 0.025),
     "gpt-5-nano":    (0.05, 0.40, 0.0, 0.005),
-    # Embeddings (Bedrock Titan v2: só entrada). Ollama roda local: custo zero.
-    "amazon.titan-embed-text-v2:0": (0.02, 0.0, 0.0, 0.0),
+    # Embeddings e modelos locais: o Ollama roda na máquina, custo zero.
     "bge-m3": (0.0, 0.0, 0.0, 0.0),
     "llama3.1:8b": (0.0, 0.0, 0.0, 0.0),
 }

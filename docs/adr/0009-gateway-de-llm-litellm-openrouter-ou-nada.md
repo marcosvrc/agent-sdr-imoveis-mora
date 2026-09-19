@@ -7,9 +7,10 @@ A pergunta era se vale adotar um gateway de LLM — LiteLLM ou OpenRouter — pa
 controlando o uso da IA". A resposta depende de reconhecer que essa camada **já existe** aqui, feita
 à mão e acoplada ao negócio:
 
-- `ports/factory.get_chat_model()` é o ponto único: escolhe o provedor (Bedrock, Anthropic, Ollama),
-  traduz o ID do modelo entre eles (`normalizar_modelo` — no Bedrock é `anthropic.claude-sonnet-4-5`,
-  na API da Anthropic é `claude-sonnet-4-5`), aplica timeout e retry e pluga o Guardrail do Bedrock.
+- `ports/factory.get_chat_model()` é o ponto único: escolhe o provedor (`anthropic`, `openai`,
+  `ollama`), resolve o ID do modelo para o que existe naquele provedor (`modelo_do_provedor` e
+  `normalizar_modelo`), aplica timeout e retry e pluga os callbacks de governança. Os guardrails são
+  nossos, em `agent/guardrails/` — não há guardrail de provedor no caminho.
 - `governanca/uso.py` registra **toda** chamada — tokens de entrada/saída/cache, custo, latência,
   erro, modelo — etiquetada por lead, por nó do grafo e por papel.
 - `db/governanca.estado_do_orcamento()` impõe teto mensal em dólar e teto diário de tokens.
@@ -42,10 +43,10 @@ As features que interessam (fallback entre provedores, cache, custo unificado) v
 não no SDK — o SDK entrega abstração de provedor, que já temos. E o Proxy é um serviço sempre ligado,
 com Postgres e Redis próprios, no caminho de toda chamada:
 
-- No perfil `aws` tudo é Lambda; o proxy vira ECS/Fargate permanente, custo fixo e ponto único de
-  falha na frente de cada conversa — contra a postura serverless das ADR-0002 e 0004.
-- No perfil local, é mais um container com banco e cache logo depois de termos removido sete
-  containers de observabilidade (ADR-0005) porque a máquina de desenvolvimento não aguentava.
+- Tudo aqui roda em `docker compose` na máquina de quem avalia: o proxy seria mais um container
+  residente, com Postgres e Redis próprios, logo depois de termos removido sete containers de
+  observabilidade (ADR-0005) porque a máquina de desenvolvimento não aguentava.
+- E seria ponto único de falha na frente de cada conversa, no caminho de toda chamada.
 - Segurança: em 2026 o projeto teve a conta PyPI de um mantenedor comprometida (v1.82.7/1.82.8
   publicaram um ladrão de credenciais que exfiltrava variáveis de ambiente e credenciais de nuvem),
   além do CVE-2026-42208 (SQL injection **não autenticado** no caminho de validação do header
@@ -57,20 +58,21 @@ com Postgres e Redis próprios, no caminho de toda chamada:
   entrega significaria rodar versão fora de suporte com esse histórico.
 
 ## Por que não o OpenRouter (em produção)
-Ele resolve a objeção de infraestrutura — é hospedado, não há nada para operar, funciona de dentro
-de uma Lambda, e fallback é a feature principal. Os preços de token passam sem markup; a cobrança é
-~5,5% na compra de créditos. Mesmo assim:
+Ele resolve a objeção de infraestrutura — é hospedado, não há nada para operar, e fallback é a
+feature principal. Os preços de token passam sem markup; a cobrança é ~5,5% na compra de créditos.
+Mesmo assim:
 
 - **PII de cliente sairia da nossa fronteira.** Toda conversa — nome, telefone, orçamento — passaria
   por um terceiro. O opt-out de treinamento que eles oferecem vale para os *provedores*: a
   documentação diz que a configuração "não tem relação com as políticas do próprio OpenRouter e com
   o que fazemos com seus prompts". Para LGPD isso é contrato e mais um operador a documentar, não um
-  toggle. Hoje, com Bedrock, o dado não sai da conta AWS.
+  toggle. Hoje o texto do cliente vai direto ao fornecedor do modelo, sem intermediário no meio — e
+  com `ollama` como provedor não sai nem da máquina.
 - **Mudança de controle recente:** a Stripe fechou a compra do OpenRouter por mais de US$ 7 bi em
   agosto de 2026. Termos comerciais e política de dados de empresa recém-adquirida são exatamente o
   que se renegocia; assumir esse risco no meio do projeto não se paga.
-- Sair do Bedrock custaria a integração com o Guardrail (`guardrail_id`, já ligada) e enfraqueceria a
-  tese cloud-native AWS das ADR-0001 e 0002.
+- E acrescentaria um intermediário exatamente onde hoje não há nenhum, sem resolver nada que a
+  camada própria já não resolva.
 
 **Mas ele entra como bancada.** `_construir` aceita `provider="openrouter"` (dependência opcional,
 import tardio) para o harness de `evals/` comparar modelos alternativos sobre os datasets sintéticos.
@@ -104,7 +106,7 @@ como reserva de **produção** — e é diferente do OpenRouter recusado acima: 
 
 Isso obrigou a resolver uma coisa que a decisão original não previa: **o reserva pode ser de outra
 família**. `_construir(reserva, model, …)` recebe o mesmo ID do primário, e isso só funcionava entre
-Anthropic e Bedrock, que servem o mesmo modelo com prefixo diferente. Mandar `claude-sonnet-4-5` para
+provedores que servem o mesmo modelo, variando só o prefixo do ID. Mandar `claude-sonnet-4-5` para
 a OpenAI devolveria 404 — o reserva falharia exatamente no momento em que existe para servir. Daí a
 tabela `_EQUIVALENTE`, que troca o modelo pelo par **do mesmo papel**: conversa ↔ modelo bom,
 roteamento ↔ modelo barato. A tradução é nos dois sentidos, porque quem escolher OpenAI como primário

@@ -67,7 +67,7 @@ def run(state: AgentState) -> dict:
     txt = entrada.conteudo or ""
 
     inicio = None
-    if txt.startswith("slot:"):                                   # botão (web ou WhatsApp) — independe do tipo
+    if txt.startswith("slot:"):                                   # botão (web ou Telegram) — independe do tipo
         inicio = datetime.fromisoformat(txt[5:])
     elif state.get("horarios_oferecidos"):                        # texto livre depois de uma oferta
         inicio = _resolver_horario(txt, state["horarios_oferecidos"])
@@ -94,7 +94,7 @@ def run(state: AgentState) -> dict:
                      observacao=f"Pedido pela Mora no canal {entrada.canal.value}.")
         # Visita marcada sem telefone é visita perdida: é o momento natural de pedir o contato.
         pedir = ("" if lead.telefone or lead.cartao.tem_contato() else
-                 "IMPORTANTE: ainda não temos o contato deste cliente. Ao confirmar, peça o WhatsApp dele numa "
+                 "IMPORTANTE: ainda não temos o contato deste cliente. Ao confirmar, peça o telefone dele numa "
                  "frase, explicando o motivo (o corretor confirma a visita e manda a localização por lá).")
         msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente", imovel=imovel_id or "a definir",
                                               horarios="", confirmado=True, escolhido=formatar(inicio),

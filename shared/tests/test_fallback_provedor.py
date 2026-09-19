@@ -79,10 +79,10 @@ def test_sem_fallback_configurado_devolve_o_modelo_puro(monkeypatch):
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
     monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
-    monkeypatch.setenv("SDR_LLM_PROVIDER", "bedrock")
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "")
     get_settings.cache_clear()
-    assert f.get_chat_model("conversa") == "modelo:bedrock"
+    assert f.get_chat_model("conversa") == "modelo:anthropic"
 
 
 def test_fallback_configurado_envolve_os_dois_provedores(monkeypatch):
@@ -90,12 +90,12 @@ def test_fallback_configurado_envolve_os_dois_provedores(monkeypatch):
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
     monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
-    monkeypatch.setenv("SDR_LLM_PROVIDER", "bedrock")
-    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
     get_settings.cache_clear()
     m = f.get_chat_model("conversa")
     assert isinstance(m, ModeloComFallback)
-    assert m._primario == "modelo:bedrock" and m._reserva == "modelo:anthropic"
+    assert m._primario == "modelo:anthropic" and m._reserva == "modelo:openai"
     get_settings.cache_clear()
 
 
@@ -105,10 +105,10 @@ def test_reserva_igual_ao_primario_e_ignorada(monkeypatch):
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
     monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
-    monkeypatch.setenv("SDR_LLM_PROVIDER", "bedrock")
-    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "bedrock")
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "anthropic")
     get_settings.cache_clear()
-    assert f.get_chat_model("conversa") == "modelo:bedrock"
+    assert f.get_chat_model("conversa") == "modelo:anthropic"
     get_settings.cache_clear()
 
 

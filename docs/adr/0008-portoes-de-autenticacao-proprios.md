@@ -1,11 +1,14 @@
-# ADR-0008 — Portões de autenticação fora do API Gateway
+# ADR-0008 — Cada porta privada carrega o seu próprio portão
 
 **Status:** aceito · **Data:** 2026-09-12
 
 ## Contexto
 Uma varredura de segurança do repositório encontrou um furo grave e alguns menores, todos com a
-mesma raiz: **o desenho assume que o API Gateway (com o authorizer do Cognito) está na frente de
-tudo que é privado** — e há portas que não passam por ele.
+mesma raiz: **o desenho assumia que havia um portão único na frente de tudo que é privado** — um
+gateway com autenticação centralizada, herdado do tempo em que a entrega tinha alvo de nuvem — e
+havia portas que não passavam por ele. Com a infraestrutura hospedada removida
+([ADR-0002](0002-runtime-do-agente-em-container.md)), esse portão único não existe mais em lugar
+nenhum, o que transforma a premissa errada em premissa impossível.
 
 O caso concreto: o WebSocket do perfil local (`services/channels/local/app.py`) atende dois papéis
 na mesma rota. `papel=lead` é o widget do site, autenticado pela sessão assinada
@@ -27,8 +30,7 @@ Dois outros achados na mesma família:
   público.
 
 ## Decisão
-**Toda porta que não tem o authorizer do API Gateway na frente carrega o seu próprio portão, e ele
-nega por padrão.**
+**Toda porta privada carrega o seu próprio portão, e ele nega por padrão.**
 
 1. `papel` no WebSocket vira lista fechada (`{"lead", "dashboard"}`). Valor desconhecido fecha a
    conexão em vez de escorregar para um ramo permissivo. A guarda de escrita passou a ser
@@ -52,7 +54,8 @@ linha ali faz o texto do cliente parecer uma instrução nova.
 ## Consequências
 - (+) O painel deixa de ser uma porta aberta na rede local; em uma demo com o serviço exposto (o
   compose publica em `0.0.0.0`), isso era vazamento de dado pessoal de todos os leads.
-- (+) O perfil `aws` fica fail-closed por construção: sem `SDR_PAINEL_TOKEN`, nada entra.
+- (+) Fora do perfil local, fica fail-closed por construção: sem `SDR_PAINEL_TOKEN`, nada entra.
+  É a única coisa que `SDR_PROFILE` ainda decide, e é por isso que ele continua no código.
 - (−) O painel agora precisa do token na conexão WebSocket (`apps/dashboard/src/lib/ws.ts` manda o
   mesmo token do `localStorage`). Quem subir o ambiente com o `local/.env` antigo não precisa mudar
   nada: sem `SDR_PAINEL_TOKEN`, o perfil local continua aceitando `dev-token`.

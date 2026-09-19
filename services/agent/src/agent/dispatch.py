@@ -1,5 +1,5 @@
 """Saída do agente: entrega ao canal (tópico outbound-<canal>), agenda follow-up, publica evento de estágio.
-Usa só as portas do shared — funciona igual nos perfis aws e local."""
+Usa só as portas do shared — não conhece qual adaptador está por trás."""
 import json
 import logging
 

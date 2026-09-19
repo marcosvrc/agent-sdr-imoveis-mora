@@ -47,7 +47,7 @@ decoração, não monitoramento. Agora a `api` verifica o banco e lê `batimento
 serviço está calado há mais de 120s) e o `channels` faz ping no Redis (503 se o barramento caiu,
 porque um canal sem barramento aceita o WebSocket e some com a mensagem). O `docker-compose.yml`
 usa os dois como `healthcheck`, então `docker compose ps` passa a mostrar `(unhealthy)` em vez de
-`Up` com o chat mudo. Na AWS, o mesmo endpoint serve de health check de target group sem alteração.
+`Up` com o chat mudo. É também o gancho pronto para qualquer monitor externo, se um dia houver um.
 
 **Detecção de morte por terceiro.** Cada worker sobe uma thread daemon que carimba `batimentos` a
 cada 30s. Daemon de propósito: se o processo principal morre, a thread morre junto e o carimbo
@@ -57,8 +57,8 @@ processo (a `api`, no `/health`, e a tela de saúde).
 **Log estruturado** (`shared/sdr_shared/log.py`): uma linha JSON por evento, com `lead_id` e
 `canal` do turno em toda linha via `ContextVar`. Ligado por padrão fora do perfil `local` (onde o
 formato legível continua sendo o padrão, porque ali quem lê é uma pessoa). Isso cobre a metade
-"eventos" da observabilidade — `docker compose logs agent | jq 'select(.duracao_ms > 10000)'` no
-local, CloudWatch Logs Insights na AWS, sem regex nos dois casos.
+"eventos" da observabilidade — `docker compose logs agent | jq 'select(.duracao_ms > 10000)'`, sem
+regex.
 
 **Uma tela** (`/saude` no painel): espera típica e ruim, taxa de falha, barras por hora, filas,
 serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de operação não é público.
@@ -71,8 +71,8 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
 - O sinal que faltava no episódio do Ollama passa a ser visível em três lugares independentes:
   `docker compose ps` (unhealthy), a tela de saúde (serviço em vermelho) e o p95 do período.
 - O p95 do turno é medido de ponta a ponta, do jeito que o cliente sente — não por componente.
-- Roda igual nos dois perfis: no `local` é a tela; na AWS as mesmas tabelas continuam gravando e o
-  `/health` vira health check de target group, sem código específico de nuvem.
+- Nada aqui é específico de ambiente: as tabelas, o `/health` e a tela funcionam onde o compose
+  subir, que hoje é a máquina de quem avalia — nada está implantado.
 - Sobrevive à revogação do ADR-0005: nada aqui depende de OTel, e nada aqui impede adotá-lo depois.
 
 **Contra, e assumido**
@@ -86,7 +86,7 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
   pool. Medido, é ruído diante de uma chamada de LLM; mas é uma dependência a mais no caminho
   quente — mitigada por ser best-effort.
 - **Sem alerta ativo.** Ninguém é avisado; alguém precisa olhar (a tela, ou o `docker compose ps`).
-  Para a POC é aceitável. Em produção o `/health` já é o gancho pronto para um alarme externo.
+  Para a POC é aceitável, e o `/health` já é o gancho pronto para um alarme externo.
 - **Sem retenção longa.** 7 dias. Análise de tendência mensal não é possível — e não é o objetivo.
 
 ## Alternativas consideradas
@@ -100,10 +100,6 @@ aqui — cardinalidade e retenção — não é o que a POC precisa.
 introduz credencial, egress de dados de conversa para terceiro e uma dependência externa em um
 projeto cujo argumento é rodar inteiro na máquina. Descartado pelo mesmo motivo que o LiteLLM
 hospedado no [ADR-0009](0009-gateway-de-llm-litellm-openrouter-ou-nada.md).
-
-**Só CloudWatch, no perfil `aws`.** Resolve produção e não resolve nada no `local`, que é onde a
-POC é demonstrada e onde o problema aconteceu. O log estruturado adotado aqui é justamente o que
-torna o CloudWatch útil quando a hora chegar, sem código extra.
 
 **Só log estruturado, sem tabelas.** Barato e suficiente para investigar um incidente pontual, mas
 não responde "o p95 piorou esta semana?" sem alguém rodar uma consulta ad hoc, e não coloca nada na

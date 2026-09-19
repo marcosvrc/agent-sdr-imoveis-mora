@@ -6,7 +6,6 @@ from ..models.imovel import ImovelCard
 
 
 class Canal(StrEnum):
-    WHATSAPP = "whatsapp"    # adapter mantido no repo, mas fora do compose local (ver ADR-0007)
     TELEGRAM = "telegram"
     WEB = "web"
     SISTEMA = "sistema"      # follow-up, eventos internos
@@ -46,7 +45,7 @@ class MensagemNormalizada(BaseModel):
     """Entrada do agente. Todo canal produz isto; o agente nunca vê o payload bruto.
 
     Os limites ficam aqui, no contrato, e não em cada canal: é o único ponto por onde toda
-    mensagem passa, venha do WhatsApp, da web ou de um teste.
+    mensagem passa, venha do Telegram, da web ou de um teste.
     """
     lead_id: str = Field(max_length=MAX_ID)
     canal: Canal
@@ -86,14 +85,14 @@ class RespostaAgente(BaseModel):
     """Saída do agente. Neutra: o canal decide como renderizar."""
     lead_id: str
     texto: str
-    opcoes: list[str] = Field(default_factory=list)       # ≤3 → botões WhatsApp; >3 → lista
+    opcoes: list[str] = Field(default_factory=list)       # ≤3 → botões do canal; >3 → lista
     imoveis: list[ImovelCard] = Field(default_factory=list)
     acao: Acao = Acao.NENHUMA
     dados: dict = Field(default_factory=dict)             # detalhes da ação (ex.: visita confirmada) — o canal renderiza
 
 
 class EventoDominio(BaseModel):
-    """Publicado no EventBridge (`sdr-events`)."""
+    """Evento de domínio publicado no broker (`sdr-events`)."""
     tipo: str            # lead.created | lead.stage_changed | lead.inactive | visit.scheduled
     lead_id: str
     dados: dict = Field(default_factory=dict)

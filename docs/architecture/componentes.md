@@ -5,20 +5,23 @@ description: Papel e responsabilidade de cada componente do monorepo Mora.
 
 # Componentes
 
-Cada componente vive na sua pasta, com dependências, testes e deploy independentes, comunicando-se
-apenas por contratos definidos em `shared/`.
+Cada componente vive na sua pasta, com dependências e testes independentes, comunicando-se apenas
+por contratos definidos em `shared/`.
 
 | Componente | Pasta | Responsabilidade |
 |---|---|---|
 | Site vitrine | `apps/web` | Catálogo e widget de chat; porta de entrada do cliente (PWA). |
 | Painel do corretor | `apps/dashboard` | Funil, conversas, agenda, imóveis, governança e auditoria. |
-| Canais | `services/channels` | Adaptadores de canal, **sem regra de negócio**. |
+| Painel do CRM | `apps/crm` | Interface do CRM da imobiliária (sistema à parte). |
+| Canal do site | `services/channels/local` | Chat do site: HTTP + WebSocket, **sem regra de negócio**. |
+| Canal Telegram | `services/channels/telegram` | Long polling de entrada (`getUpdates`) e worker de saída. |
 | Agente | `services/agent` | Grafo multiagente; **único componente que fala com o LLM**. |
-| API REST | `services/api` | Imóveis públicos, leads, dashboard, handoff, config, governança. |
+| API REST | `services/api` | Imóveis públicos, leads, dashboard, handoff, config, governança; serve as fotos em `/fotos/...`. |
 | Scheduler | `services/scheduler` | Follow-up automático (agenda e cancela por lead). |
-| Ingestão | `services/ingestion` | Carga de imóveis e geração de embeddings. |
+| Ingestão | `services/ingestion` | Carga de imóveis e de documentos institucionais, com embeddings. |
+| CRM | `services/crm` | REST, servidor MCP e banco próprios; a Mora entra por MCP sobre HTTP. |
 | Compartilhado | `shared/` | Modelos, contratos, repositórios (SQL + pgvector), portas e adaptadores. |
-| Infraestrutura | `infra/` | AWS CDK (só deploy; sem lógica). |
+| Ambiente | `local/` | `docker-compose.yml` e a imagem única dos serviços Python. |
 
 ## Regras de dependência
 
@@ -29,10 +32,11 @@ apenas por contratos definidos em `shared/`.
 
 ## Convenções relevantes
 
-- Cada serviço expõe um pacote com nome próprio (`agent`, `api`, `canal_whatsapp`, `canal_telegram`,
-  `sdr_scheduler`, `sdr_ingestion`) — nunca `src` — para evitar colisão no `sys.path`.
-- As imagens Docker são construídas a partir da raiz do repositório (dependem de `shared/`):
-  `docker build -f services/<serviço>/Dockerfile .`.
+- Cada serviço expõe um pacote com nome próprio (`agent`, `api`, `canal_telegram`, `sdr_scheduler`,
+  `sdr_ingestion`, `sdr_crm`) — nunca `src` — para evitar colisão no `sys.path`.
+- Os serviços Python compartilham **uma única imagem** (`local/Dockerfile.python`), construída a
+  partir da raiz do repositório porque todos dependem de `shared/`. O que muda entre containers é o
+  comando, não a imagem; o código do host entra por volume, e a edição vale na hora.
 
 ## O grafo multiagente
 

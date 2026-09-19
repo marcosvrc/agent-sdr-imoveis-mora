@@ -1,6 +1,6 @@
 ---
 title: Executando manualmente
-description: Rodar o Mora sem Docker, processo a processo, para desenvolvimento. Inclui a CLI e o deploy AWS.
+description: Rodar o Mora sem Docker, processo a processo, para desenvolvimento. Inclui a CLI.
 ---
 
 # Executando manualmente (desenvolvimento)
@@ -26,6 +26,10 @@ cd services/channels/local && uvicorn app:app --port 8001 --reload
 # Agente (worker)
 cd services/agent/src && python -c "from agent.handler import local_worker; local_worker()"
 
+# Canal Telegram (opcional: entrada por long polling e saída)
+cd services/channels/telegram && python -c "from canal_telegram.inbound import local_worker; local_worker()"
+cd services/channels/telegram && python -c "from canal_telegram.outbound import local_worker; local_worker()"
+
 # Front-ends
 cd apps/web && npm run dev
 cd apps/dashboard && npm run dev -- --port 5174
@@ -39,13 +43,11 @@ Uma alternativa via linha de comando, sem canais externos:
 make cli                                  # conversa com a Mora no terminal (perfil local)
 ```
 
-## Deploy AWS (referência)
-
-```bash
-make deploy ENV=dev                       # build dos front-ends + cdk deploy --all (perfil aws)
-```
-
 !!! info "Regras de dependência"
-    As imagens Docker são construídas **a partir da raiz do repositório** porque dependem de `shared/`:
-    `docker build -f services/<serviço>/Dockerfile .`. Veja
+    Há uma imagem Python só (`local/Dockerfile.python`), construída **a partir da raiz do
+    repositório** porque todos os serviços dependem de `shared/`. Veja
     [Estrutura do repositório](../technical-reference/estrutura.md).
+
+!!! note "Não há deploy"
+    A entrega roda inteira na máquina de quem avalia. As stacks CDK e os alvos `make synth` /
+    `make deploy` foram removidos junto com a AWS; nada está implantado em servidor.

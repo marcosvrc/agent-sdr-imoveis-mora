@@ -24,11 +24,15 @@ description: Fluxo de contribuição inferido do CI e das convenções do Mora, 
 O PR precisa passar na CI. Rode localmente antes de abrir:
 
 ```bash
-make test                       # backend
-cd apps/web && npm run build     # front-end web
+make lint                            # ruff (o CI roda o estático antes dos testes)
+make test                            # backend — as sete suítes, no banco sdr_test
+make eval-fake                       # harness de avaliação com dublês
+cd apps/web && npm run build         # front-end web
 cd apps/dashboard && npm run build   # front-end painel
-cd infra && cdk synth            # infraestrutura
 ```
+
+São os mesmos passos dos dois jobs do CI (`python` e `frontend`) — veja
+[Testes](../quality/testes.md#integracao-continua).
 
 ## Contribuir com a documentação
 

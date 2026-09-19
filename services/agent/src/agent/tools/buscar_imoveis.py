@@ -1,4 +1,4 @@
-"""RAG híbrido de imóveis. Abstrai Knowledge Base (padrão na AWS) e pgvector direto (fallback/local) — ADR-0001.
+"""RAG híbrido de imóveis sobre pgvector — ADR-0001.
 
 Calibragem da busca por local: o cliente fala um lugar de qualquer jeito ("Pinheiros", "pinheiro",
 "Vila Madalena", "perto da Faria Lima", "zona sul", "SP"). O `sdr_shared.geo` resolve isso para
@@ -20,7 +20,7 @@ def _filtros(cartao: CartaoQualificacao, bairros: list[str] | None = None, regia
 
 
 def montar_card(i: Imovel, motivo: str | None = None) -> ImovelCard:
-    # `motivo` vem da descrição do anúncio (banco/Knowledge Base): fonte externa que entra no prompt
+    # `motivo` vem da descrição do anúncio (cadastro do CRM ou do acervo): fonte externa que entra no prompt
     # do consultor. Neutralizamos aqui, na origem, para que um cadastro malicioso não injete instrução
     # (injeção de segunda ordem via RAG) em nenhum consumidor deste card.
     from ..util import neutralizar_texto_externo
@@ -28,28 +28,6 @@ def montar_card(i: Imovel, motivo: str | None = None) -> ImovelCard:
     return ImovelCard(id=i.id, titulo=f"{i.tipo.capitalize()} {i.quartos}q · {i.bairro}", preco=i.preco,
                       foto=(i.fotos_absolutas(get_settings().public_api_url) or [None])[0],
                       motivo=neutralizar_texto_externo(bruto, limite=200))
-
-
-def _via_knowledge_base(consulta: str, filtros: dict, limite: int) -> list[ImovelCard]:
-    import boto3
-    s = get_settings()
-    f = [{"equals": {"key": "operacao", "value": filtros["operacao"]}}]
-    if filtros.get("bairros"):
-        f.append({"in": {"key": "bairro", "value": filtros["bairros"]}})
-    elif filtros.get("regiao"):
-        f.append({"equals": {"key": "regiao", "value": filtros["regiao"]}})
-    if filtros["preco_max"]:
-        f.append({"lessThanOrEquals": {"key": "preco", "value": float(filtros["preco_max"]) * 1.15}})
-    if filtros["quartos"]:
-        f.append({"greaterThanOrEquals": {"key": "quartos", "value": int(filtros["quartos"])}})
-    r = boto3.client("bedrock-agent-runtime", region_name=s.aws_region).retrieve(
-        knowledgeBaseId=s.knowledge_base_id, retrievalQuery={"text": consulta},
-        retrievalConfiguration={"vectorSearchConfiguration": {"numberOfResults": limite, "filter": {"andAll": f}}})
-    repo, cards = ImovelRepository(), []
-    for x in r["retrievalResults"]:
-        if (im := repo.get(x["metadata"].get("imovel_id", ""))):
-            cards.append(montar_card(im))
-    return cards
 
 
 def _consulta(cartao: CartaoQualificacao, preferencia: str, local: Local | None) -> str:
@@ -60,8 +38,6 @@ def _consulta(cartao: CartaoQualificacao, preferencia: str, local: Local | None)
 
 
 def _executar(consulta: str, filtros: dict, limite: int) -> list[ImovelCard]:
-    if get_settings().knowledge_base_id:
-        return _via_knowledge_base(consulta, filtros, limite)
     from sdr_shared.ports import get_embedder
     return [montar_card(i) for i in ImovelRepository().buscar_hibrido(get_embedder().embed(consulta), filtros, limite)]
 

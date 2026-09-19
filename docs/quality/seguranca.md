@@ -14,9 +14,9 @@ Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 
 | Controle | Estado | Detalhe |
 |---|---|---|
-| Autenticação do painel | Implementado | Cognito (AWS) / token estático (local) — ADR-0008 |
+| Autenticação do painel | Implementado | Token estático `SDR_PAINEL_TOKEN`, comparado em tempo constante; **fail-closed** fora do perfil local — ADR-0008 |
 | Autorização por área | Implementado | Rotas separadas (público / corretor / admin / operação) |
-| Validação de webhook (HMAC) | Implementado | Canal WhatsApp valida assinatura do provedor |
+| Estado OAuth assinado (HMAC) | Implementado | `seguranca/oauth.py` protege o retorno do Google Agenda |
 | Sessão assinada do chat do site | Implementado | `SDR_SESSAO_SECRET` impede sequestro de sessão |
 | Sanitização de entrada | Implementado | `MensagemNormalizada`: trunca tamanho, remove controles / invisíveis |
 | Guardrail de escopo (prompt injection) | Implementado | `guardrails/escopo.py`: recusa reprogramação, homóglifos e off-topic sem chamar o LLM |
@@ -26,11 +26,11 @@ Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 | Rate limiting | Implementado | Por lead (rajada e hora) — `guardrails/vazao.py` |
 | Auditoria | Implementado | Middleware registra tudo que altera o sistema |
 | CORS | Implementado | `SDR_CORS_ORIGINS` (vazio = `*`, só em dev) |
-| Gerenciamento de secrets | Implementado (AWS) | Secrets Manager em produção; `.env` em dev |
-| Criptografia em trânsito | Parcial | HTTPS / WSS providos pela AWS (API Gateway / CloudFront); no local é HTTP |
+| Gerenciamento de secrets | Parcial | Só `.env` (`local/.env`, fora do versionamento). Não há cofre de segredos — a entrega roda na máquina de quem avalia |
+| Criptografia em trânsito | Parcial | Tudo é HTTP/WS em `localhost`; nada está exposto na rede. Chamadas de saída (LLM, Telegram, Google) são HTTPS |
 | Tratamento de PII / LGPD | Parcial | Mascaramento na saída; página de privacidade no site. Política de retenção formal: recomendada |
 | Análise de dependências | Recomendado | Não há varredura automatizada no CI |
-| Moderação / guardrails do provedor (Bedrock Guardrails) | Parcial | Previsto no CDK (perfil AWS), não testado |
+| Moderação do provedor de LLM | Recomendado | Só os guardrails próprios do projeto; nenhum filtro do fornecedor é configurado |
 
 PII = Personally Identifiable Information (informação pessoal identificável).
 LGPD = Lei Geral de Proteção de Dados.
@@ -46,8 +46,8 @@ saída passa por saneamento antes de virar mensagem. Veja [Fluxo do agente e LLM
 - Rate limiting é **por processo** (não distribuído entre múltiplos workers).
 - Transcrição de áudio: já é tratada como **entrada não confiável** (entra blindada, como o texto do
   cliente), mas **não há teste adversarial específico** de injeção via áudio transcrito.
-- Controles dependentes de AWS (Guardrails, criptografia gerenciada) **não são exercitados** no perfil
-  local.
+- Não há TLS: a entrega é local e nada é servido fora da máquina. Publicar isto em rede exigiria um
+  proxy com certificado na frente, que não existe no repositório.
 
 Os comentários em `services/agent/src/agent/guardrails/` detalham cada ponto.
 

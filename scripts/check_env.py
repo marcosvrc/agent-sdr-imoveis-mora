@@ -11,7 +11,7 @@ RAIZ = Path(__file__).resolve().parents[1]
 # Marcadores que costumam ser colados por engano no lugar do valor real
 # Provedores de LLM aceitos. `openrouter` fica de fora de propósito: é bancada de avaliação, não
 # caminho de produção (ADR-0009).
-PROVEDORES = {"bedrock", "anthropic", "openai", "ollama"}
+PROVEDORES = {"anthropic", "openai", "ollama"}
 PLACEHOLDERS = re.compile(r"(COLE_|SEU_ID|SEU_|CHANGE_?ME|<.*>|xxx+|placeholder|preencher)", re.I)
 
 
@@ -33,12 +33,14 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
         if v and PLACEHOLDERS.search(v):
             erros.append(f"{k} ainda está com um texto de exemplo, não com o valor real.")
 
-    llm = env.get("SDR_LLM_PROVIDER", "bedrock")
-    emb = env.get("SDR_EMBEDDINGS_PROVIDER", "bedrock")
+    llm = env.get("SDR_LLM_PROVIDER", "anthropic")
+    emb = env.get("SDR_EMBEDDINGS_PROVIDER", "ollama")
     if llm not in PROVEDORES:
         erros.append(f"SDR_LLM_PROVIDER='{llm}' é inválido — use {', '.join(sorted(PROVEDORES))}.")
-    if emb not in {"bedrock", "ollama"}:
-        erros.append(f"SDR_EMBEDDINGS_PROVIDER='{emb}' é inválido — use bedrock ou ollama.")
+    if emb != "ollama":
+        # Único provedor de embeddings que sobrou: o schema espera 1024 dimensões (bge-m3), e
+        # aceitar outro nome aqui só adiaria a falha para a hora de gravar o vetor.
+        erros.append(f"SDR_EMBEDDINGS_PROVIDER='{emb}' é inválido — use ollama.")
 
     if llm == "anthropic":
         chave = env.get("ANTHROPIC_API_KEY", "")
@@ -51,12 +53,6 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
         if ws and not ws.startswith("wrkspc_"):
             erros.append("SDR_ANTHROPIC_WORKSPACE_ID deve começar com 'wrkspc_' "
                          "(copie da URL do workspace no Console) ou ficar vazio.")
-
-    if llm == "bedrock" or emb == "bedrock":
-        falta = [k for k in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY") if not env.get(k)]
-        if falta and not env.get("AWS_PROFILE"):
-            quem = "LLM" if llm == "bedrock" else "embeddings"
-            erros.append(f"{quem} usa Bedrock, mas faltam credenciais AWS ({', '.join(falta)}).")
 
     # Reserva: mesmo conjunto de provedores, e só serve para alguma coisa se for OUTRO provedor.
     reserva = env.get("SDR_LLM_PROVIDER_FALLBACK", "").strip()
@@ -75,11 +71,6 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
                          "biblioteca procura no ambiente).")
         elif not chave.startswith("sk-"):
             erros.append("OPENAI_API_KEY não tem cara de chave da OpenAI (esperado sk-…).")
-
-    if llm in {"anthropic", "ollama", "openai"} and emb == "bedrock":
-        erros.append("Nenhum destes provedores serve embeddings: com SDR_LLM_PROVIDER="
-                     f"{llm}, use SDR_EMBEDDINGS_PROVIDER=ollama (bge-m3, 1024 dimensões — é o que o "
-                     "schema espera).")
 
     if emb == "ollama":
         modelo = env.get("SDR_OLLAMA_EMBEDDING_MODEL", "bge-m3")
@@ -104,9 +95,6 @@ def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
     if not mcp_token and not api_token:
         avisos.append("CRM não configurado — a Mora roda normalmente sozinha. Para ligar, veja a "
                       "seção do CRM em local/.env.example.")
-
-    if not env.get("SDR_WHATSAPP_TOKEN"):
-        avisos.append("WhatsApp não configurado — a Mora ainda funciona pelo chat do site e por `make cli`.")
 
     return erros, avisos
 

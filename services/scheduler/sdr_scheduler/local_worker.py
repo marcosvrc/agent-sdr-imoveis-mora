@@ -1,4 +1,4 @@
-"""Perfil local: substitui EventBridge Scheduler. Polling a cada 30 s na tabela followups_agendados.
+"""Worker de follow-up: polling a cada 30 s na tabela followups_agendados.
 
 O mesmo laço carrega a amostragem de saúde (ADR-0011): já acorda de 30 em 30 segundos, então não
 custa nada e evita subir um processo só para observar.

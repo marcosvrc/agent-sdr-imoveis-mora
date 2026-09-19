@@ -8,7 +8,7 @@ router = APIRouter(dependencies=[Depends(corretor_atual)])
 
 def _quem(ator: dict) -> str | None:
     """No perfil local há um login único que representa a equipe: vê os avisos de todos.
-    Com Cognito, o `sub` é o corretor e cada um vê os seus (mais os sem dono)."""
+    Com autenticação por corretor, cada um veria os seus (mais os sem dono)."""
     ident = ator.get("id")
     return None if ident == "corretor-dev" else ident
 

@@ -48,7 +48,7 @@ def setup_module(m):
     for x in json.load(open(data, encoding="utf-8")):
         ImovelRepository().upsert(Imovel(**x))
     LeadRepository().upsert(Lead(id="l1", nome="Marcos", telefone="5511999990000"))
-    CanalRepository().vincular("l1", "whatsapp", "5511999990000")
+    CanalRepository().vincular("l1", "telegram", "5511999990000")
     h.get_broker, h.get_scheduler = lambda: MemBroker(), lambda: MemSched()
 
 
@@ -71,7 +71,7 @@ def test_corretor_auth_e_handoff():
     # usuário logado ("corretor-dev"), que não existe em `corretores` — lead atribuído a um fantasma.
     assert r["estagio"] == "handoff" and r["corretor_id"] is None
     r = c.post("/handoff/l1/responder", headers=H, json={"texto": "Oi Marcos, aqui é o corretor"})
-    assert r.json()["canais"] == ["whatsapp"] and MemBroker.msgs[-1][0] == "outbound-whatsapp"
+    assert r.json()["canais"] == ["telegram"] and MemBroker.msgs[-1][0] == "outbound-telegram"
     assert c.get("/leads/l1/mensagens", headers=H).json()[-1]["direcao"] == "corretor"
     assert c.post("/handoff/l1/devolver", headers=H).json()["estagio"] == "qualificando"
     assert c.post("/leads/crm/sync", headers=H).json()["exportados"] == 0
@@ -87,7 +87,7 @@ def test_painel_admin():
     m = c.get("/dashboard/metricas", headers=H, params={"dias": 7}).json()
     assert m["periodo_dias"] == 7 and set(m["kpis"]) >= {"leads", "qualificados", "visitas", "handoffs", "msgs_in", "msgs_out", "resposta_seg"}
     assert m["kpis"]["leads"]["atual"] == 1 and len(m["serie"]) == 7 and m["totais"]["imoveis"] == 3
-    assert "por_canal" in m and m["por_canal"].get("whatsapp") == 1
+    assert "por_canal" in m and m["por_canal"].get("telegram") == 1
     assert c.get("/dashboard/metricas", headers=H, params={"dias": 0}).status_code == 422
 
     # corretores: CRUD + carga
@@ -218,7 +218,7 @@ def test_modelos_aceita_modelo_com_preco_e_muda_o_efetivo():
     r = c.put("/config/modelos", headers=H, json={"conversa": "claude-sonnet-5"})
     assert r.status_code == 200
     efetivo = c.get("/config", headers=H).json()["canais"]["llm"]["efetivo"]
-    assert efetivo["conversa"] == {"modelo": "claude-sonnet-5", "provider": "bedrock", "origem": "painel"}
+    assert efetivo["conversa"] == {"modelo": "claude-sonnet-5", "provider": "anthropic", "origem": "painel"}
     # `analise` não configurado herda a conversa — não obriga preencher três níveis para mudar um
     assert efetivo["analise"]["modelo"] == "claude-sonnet-5"
     assert efetivo["roteamento"]["origem"] == "ambiente", "mexer num nível não mexe nos outros"
@@ -249,10 +249,10 @@ def test_testar_modelo_reporta_falha_sem_derrubar():
     """O botão Testar existe para descobrir ID errado ANTES de salvar; ele reporta, não estoura."""
     c = TestClient(app)
     r = c.post("/config/modelos/testar", headers=H,
-               json={"modelo": "claude-sonnet-5", "provider": "bedrock"})
+               json={"modelo": "claude-sonnet-5", "provider": "anthropic"})
     assert r.status_code == 200
     corpo = r.json()
-    assert corpo["ok"] is False, "sem credencial de Bedrock no teste, a chamada real falha"
+    assert corpo["ok"] is False, "sem credencial válida no teste, a chamada real falha"
     assert corpo["tem_preco"] is True and "erro" in corpo
     assert c.post("/config/modelos/testar", headers=H, json={"modelo": ""}).status_code == 422
 

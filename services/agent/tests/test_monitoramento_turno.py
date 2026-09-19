@@ -10,7 +10,7 @@ from sdr_shared.db import LeadRepository
 from agent.handler import processar
 
 
-def msg(lead, texto, canal=Canal.WHATSAPP):
+def msg(lead, texto, canal=Canal.TELEGRAM):
     return MensagemNormalizada(lead_id=lead, canal=canal, identificador_canal="5511999990000",
                                tipo=TipoMensagem.TEXTO, conteudo=texto, meta={})
 
@@ -31,7 +31,7 @@ def test_turno_normal_grava_duracao_estagio_e_caminho(infra):
     limpar()
     processar(msg("l1", "quero um apartamento na zona sul"))
     (t,) = turnos()
-    assert t["resultado"] == "ok" and t["canal"] == "whatsapp" and t["lead_id"] == "l1"
+    assert t["resultado"] == "ok" and t["canal"] == "telegram" and t["lead_id"] == "l1"
     assert t["duracao_ms"] >= 0
     assert t["estagio"] == str(Estagio.QUALIFICANDO.value)
     assert "supervisor" in t["nos"], "o caminho pelo grafo é o que explica um turno lento"

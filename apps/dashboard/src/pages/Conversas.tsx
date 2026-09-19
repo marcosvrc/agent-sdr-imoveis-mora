@@ -35,7 +35,7 @@ export function Conversas() {
                   <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-medium">{l.nome ?? l.id}</span><span className="shrink-0 text-[11px] text-ink-faint">{relativo(l.ultima_mensagem_em)}</span></span>
                     <span className="mt-0.5 flex items-center gap-1.5"><Estagio e={l.estagio} /><Temperatura t={l.temperatura} /><span className="text-[11px] text-ink-muted">{l.canais?.map((c) => CANAL[c.canal] ?? c.canal).join(", ")}</span></span></span>
                 </button></li>))}
-              {!isLoading && lista.length === 0 && <li><EmptyState icone="chat" titulo="Nenhuma conversa" descricao="Assim que um lead escrever no site ou no WhatsApp, ele aparece aqui." /></li>}
+              {!isLoading && lista.length === 0 && <li><EmptyState icone="chat" titulo="Nenhuma conversa" descricao="Assim que um lead escrever no site ou no Telegram, ele aparece aqui." /></li>}
             </ul>
           </aside>
           <section className="flex min-h-0 min-w-0 flex-col">

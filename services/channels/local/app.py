@@ -1,21 +1,19 @@
-"""Perfil local: substitui API Gateway HTTP + WebSocket. Um processo FastAPI com:
-  POST/GET /webhook  → mesmo adapter do WhatsApp (channels/whatsapp/canal_whatsapp/adapter.py)
+"""Canal web do perfil local. Um processo FastAPI com:
   WS  /ws            → widget do site (papel=lead) e dashboard (papel=dashboard)
   worker de saída    → consome outbound-web do Redis e faz push nas conexões abertas
-Exposto para a Meta via túnel (cloudflared) — ver local/docker-compose.yml."""
+
+Havia aqui um `/webhook` que reaproveitava o adaptador do WhatsApp para simular a entrega da Meta.
+Saiu com o WhatsApp: o Telegram tem canal próprio (`services/channels/telegram`), e um endpoint que
+traduzia Request em evento de API Gateway não servia a mais ninguém."""
 import asyncio
 import json
 import logging
-import sys
 import time
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
-from pathlib import Path
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-sys.path.append(str(Path(__file__).parents[1] / "whatsapp"))
-from canal_whatsapp.inbound import handler as wa_handler   # noqa: E402
 from sdr_shared.config import get_settings                # noqa: E402
 from sdr_shared.log import configurar as configurar_log  # noqa: E402
 from sdr_shared.ports import get_broker                  # noqa: E402
@@ -82,15 +80,6 @@ def abrir_sessao():
     """O widget pede a sessão aqui. O id é emitido pelo servidor e vem assinado — assim ninguém
     entra na conversa de outro visitante só por saber (ou chutar) o id dele."""
     return emitir()
-
-
-@app.api_route("/webhook", methods=["GET", "POST"])
-async def webhook(req: Request):
-    """Reaproveita o handler Lambda traduzindo Request → evento API Gateway v2."""
-    event = {"requestContext": {"http": {"method": req.method}}, "queryStringParameters": dict(req.query_params),
-             "headers": dict(req.headers), "body": (await req.body()).decode()}
-    r = wa_handler(event, None)
-    return Response(content=r.get("body", ""), status_code=r["statusCode"])
 
 
 # `papel` é uma lista fechada: qualquer outro valor cai fora em vez de escorregar para o ramo

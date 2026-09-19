@@ -36,16 +36,17 @@ def test_contato_existente_nao_e_sobrescrito():
     assert lead.nome == "Marcos" and lead.telefone == "11911112222"
 
 
-def test_whatsapp_nunca_pede_contato():
-    lead = _lead(id="wa_5511", cartao=CartaoQualificacao(intencao=Intencao.COMPRA))
-    assert _contexto_contato(lead, _state(lead, Canal.WHATSAPP)) == "", "o número já veio do perfil da Meta"
+def test_canal_externo_nunca_pede_contato():
+    """No Telegram o identificador e o nome já vieram do perfil; pedir de novo é burocracia."""
+    lead = _lead(id="tg_5511", cartao=CartaoQualificacao(intencao=Intencao.COMPRA))
+    assert _contexto_contato(lead, _state(lead, Canal.TELEGRAM)) == ""
 
 
 def test_no_web_pede_o_nome_antes_de_qualquer_contato():
     lead = _lead()
     ctx = _contexto_contato(lead, _state(lead))
     assert "nome" in ctx.lower()
-    assert "whatsapp" not in ctx.lower() and "telefone" not in ctx.lower(), "nunca os três de uma vez"
+    assert "telefone" not in ctx.lower() and "e-mail" not in ctx.lower(), "nunca os três de uma vez"
 
 
 def test_pede_um_contato_so_quando_ha_compromisso():
@@ -55,7 +56,7 @@ def test_pede_um_contato_so_quando_ha_compromisso():
     sem_contato = _lead(nome="Marcos", cartao=cheio)
     if cheio.completo():
         ctx = _contexto_contato(sem_contato, _state(sem_contato))
-        assert ctx and "whatsapp" in ctx.lower()
+        assert ctx and "telefone" in ctx.lower()
         assert "cpf" not in ctx.lower() and "renda" not in ctx.lower()
 
     com_contato = _lead(nome="Marcos", telefone="11988887777",

@@ -241,15 +241,8 @@ def resumir(lead_id: str) -> str | None:
     return out["lead"].resumo
 
 
-def handler(event, _ctx):
-    """Perfil aws: event source SQS → Lambda."""
-    for record in event["Records"]:
-        processar(MensagemNormalizada.model_validate_json(record["body"]))
-    return {"batchItemFailures": []}
-
-
 def local_worker():
-    """Perfil local: worker consumindo o tópico inbound do Redis."""
+    """Worker consumindo o tópico inbound do Redis."""
     from sdr_shared.db import iniciar_batimento
     from sdr_shared.ports import get_broker
 

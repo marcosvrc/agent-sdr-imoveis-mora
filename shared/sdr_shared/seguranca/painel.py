@@ -1,11 +1,13 @@
-"""Credencial do painel (corretor) para portas que não têm o authorizer do API Gateway na frente.
+"""Credencial do painel (corretor).
 
-Hoje isso é o WebSocket do perfil local (`services/channels/local/app.py`): o canal `papel=dashboard`
-recebe o espelho de TODAS as conversas de TODOS os leads, então não pode ser aberto sem prova de que
-quem conecta é da equipe. No perfil `aws` o WebSocket é outro serviço (Lambda + API Gateway, ver
-infra/stacks/channels_stack.py) e a autorização é feita lá.
+Quem precisa dela: o WebSocket de `services/channels/local/app.py` — o canal `papel=dashboard`
+recebe o espelho de TODAS as conversas de TODOS os leads, então não pode ser aberto sem prova de
+que quem conecta é da equipe — e as rotas de corretor da API (`services/api/src/api/auth.py`).
 
 Fail-closed de propósito: fora do perfil local, sem `SDR_PAINEL_TOKEN` configurado, nada é aceito.
+É a única coisa que `SDR_PROFILE` ainda decide, e é por isso que ele continua existindo: rodar a
+entrega com `SDR_PROFILE=local` é o que libera o `dev-token`, e qualquer outro valor exige o
+segredo de verdade.
 """
 import hmac
 

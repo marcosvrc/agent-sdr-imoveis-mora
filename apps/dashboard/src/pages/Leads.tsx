@@ -50,7 +50,7 @@ export function Leads() {
               <td className="px-4 py-2.5"><Temperatura t={l.temperatura} /></td>
               <td className="px-4 py-2.5 text-right"><span className={cx("inline-block min-w-[2.2rem] rounded-md px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums", l.score >= 70 ? "bg-bad-soft text-bad-strong" : l.score >= 40 ? "bg-warn-soft text-warn-strong" : "bg-surface-2 text-ink-muted")}>{l.score}</span></td>
               <td className="px-4 py-2.5 text-xs">{l.corretor_nome ? <span className="inline-flex items-center gap-1.5"><Avatar nome={l.corretor_nome} tamanho={20} />{l.corretor_nome}</span> : l.estagio === "handoff" ? <span className="text-warn-strong">sem corretor</span> : <span className="text-ink-faint">—</span>}</td>
-              <td className="px-4 py-2.5 text-xs text-ink-muted">{l.canais?.length ? l.canais.map((c) => CANAL[c.canal] ?? c.canal).join(", ") : l.id.startsWith("web_") ? CANAL.web : l.id.startsWith("tg_") ? CANAL.telegram : l.telefone ? CANAL.whatsapp : "—"}</td>
+              <td className="px-4 py-2.5 text-xs text-ink-muted">{l.canais?.length ? l.canais.map((c) => CANAL[c.canal] ?? c.canal).join(", ") : l.id.startsWith("web_") ? CANAL.web : l.id.startsWith("tg_") ? CANAL.telegram : "—"}</td>
               <td className="px-4 py-2.5 text-xs text-ink-muted" title={l.ultima_mensagem_em ?? ""}>{relativo(l.ultima_mensagem_em)}</td>
             </tr>
           ))}

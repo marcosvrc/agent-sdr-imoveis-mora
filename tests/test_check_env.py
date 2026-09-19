@@ -38,21 +38,12 @@ def test_chave_truncada():
     assert any("cara de chave" in e for e in erros(ANTHROPIC_API_KEY="sk-ant-api03-curta"))
 
 
-def test_anthropic_com_embeddings_bedrock_sem_credencial():
-    e = erros(SDR_EMBEDDINGS_PROVIDER="bedrock")
-    assert any("serve embeddings" in x for x in e)
-    assert any("credenciais AWS" in x for x in e)
-
-
-def test_bedrock_sem_credenciais():
-    e = checar({"SDR_LLM_PROVIDER": "bedrock", "SDR_EMBEDDINGS_PROVIDER": "bedrock"})[0]
-    assert any("credenciais AWS" in x for x in e)
-
-
-def test_bedrock_com_credenciais_passa():
-    e = checar({"SDR_LLM_PROVIDER": "bedrock", "SDR_EMBEDDINGS_PROVIDER": "bedrock",
-                "AWS_ACCESS_KEY_ID": "AKIA...", "AWS_SECRET_ACCESS_KEY": "segredo"})[0]
-    assert e == []
+def test_embeddings_fora_do_ollama_e_recusado():
+    """Sobrou um provedor de embeddings só, e o schema depende disso: a tabela guarda vetor de 1024
+    dimensões (bge-m3). Aceitar outro nome aqui adiaria a falha para a hora de gravar o vetor, que
+    é tarde — a ingestão já teria rodado."""
+    assert any("SDR_EMBEDDINGS_PROVIDER" in x for x in erros(SDR_EMBEDDINGS_PROVIDER="bedrock"))
+    assert any("SDR_EMBEDDINGS_PROVIDER" in x for x in erros(SDR_EMBEDDINGS_PROVIDER="openai"))
 
 
 def test_provedor_inexistente():

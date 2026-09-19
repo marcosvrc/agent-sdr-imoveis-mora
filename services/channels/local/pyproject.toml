@@ -3,7 +3,6 @@ name = "sdr-channels-local"
 version = "0.1.0"
 description = "Perfil local: webhook WhatsApp + WebSocket num único FastAPI (substitui API Gateway)"
 requires-python = ">=3.12"
-dependencies = ["sdr-shared[local]", "sdr-channel-whatsapp", "fastapi>=0.115", "uvicorn[standard]>=0.30", "websockets>=12"]
+dependencies = ["sdr-shared[local]", "fastapi>=0.115", "uvicorn[standard]>=0.30", "websockets>=12"]
 [tool.uv.sources]
 sdr-shared = { path = "../../../shared", editable = true }
-sdr-channel-whatsapp = { path = "../whatsapp", editable = true }

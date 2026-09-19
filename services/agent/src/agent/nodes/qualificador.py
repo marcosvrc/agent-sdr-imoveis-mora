@@ -43,7 +43,7 @@ def _absorver_contato(lead) -> None:
         auditar(acao="lead.contato_capturado", entidade="lead", entidade_id=lead.id, ator_tipo="agente",
                 ator_nome="Mora", dados={"campos": capturado})
     if ("telefone" in capturado or "email" in capturado) and not lead.cliente_id:
-        # com um contato na mão dá para dizer que esta conversa e a do WhatsApp são a mesma pessoa
+        # com um contato na mão dá para dizer que esta conversa e a do Telegram são a mesma pessoa
         anterior = ClienteRepository().por_contato(lead.telefone, lead.email)
         if ClienteRepository().vincular(lead) and anterior:
             auditar(acao="cliente.reconhecido", entidade="cliente", entidade_id=lead.cliente_id,
@@ -72,13 +72,13 @@ def _contexto_contato(lead, state) -> str:
     """Pedir contato cedo demais derruba a conversa; tarde demais perde o lead. A regra está aqui."""
     from sdr_shared.messaging import Canal
     if state["entrada"].canal != Canal.WEB:
-        return ""                                   # no WhatsApp já temos telefone e nome do perfil
+        return ""                                   # no Telegram já temos identificador e nome do perfil
     if not lead.nome:
         return ("Se ainda não souber o nome do cliente, pergunte-o de forma leve numa das próximas mensagens "
                 "(ex.: 'como posso te chamar?') — apenas o primeiro nome, nunca junto com outros dados.")
     if not lead.cartao.tem_contato() and lead.cartao.completo():
         return ("O cliente já disse o que procura. Ao apresentar as opções ou marcar algo, peça UM contato "
-                "(WhatsApp de preferência) explicando para quê: 'me passa seu WhatsApp que te mando as fotos "
+                "(telefone de preferência) explicando para quê: 'me passa seu telefone que te mando as fotos "
                 "e o corretor confirma a visita'. Não insista se ele não quiser, e não peça e-mail junto.")
     return ""
 

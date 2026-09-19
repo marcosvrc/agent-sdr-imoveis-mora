@@ -9,7 +9,7 @@ Três decisões vivem aqui, e todas são configuráveis pelo painel (chave `foll
   3. a janela civilizada — ninguém recebe mensagem de imobiliária às duas da manhã.
 
 O cálculo devolve SEMPRE minutos a partir de agora, porque é o que as duas implementações de
-scheduler (Postgres local e EventBridge na AWS) entendem.
+scheduler entende.
 """
 import time
 from datetime import datetime, timedelta

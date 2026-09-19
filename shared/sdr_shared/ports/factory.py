@@ -1,4 +1,16 @@
-"""Único lugar que conhece o perfil. `SDR_PROFILE=aws` (padrão) ou `local`."""
+"""Resolve cada porta na implementação concreta.
+
+Houve aqui uma escolha por `SDR_PROFILE` entre dois conjuntos de adaptadores, hospedados e
+locais. Os hospedados foram removidos do projeto, então broker, scheduler e embeddings têm UMA
+implementação cada e não há o que escolher.
+
+As portas (os `Protocol` ao lado) ficam, e não por simetria: são o ponto onde o teste substitui a
+infraestrutura, são o contrato escrito de cada dependência, e são onde uma segunda implementação
+entraria sem tocar em quem chama. `get_calendario` e `get_crm` continuam com duas de verdade.
+
+`SDR_PROFILE` continua existindo, com outro papel: é ele que decide se o token estático de
+desenvolvimento vale (ver `seguranca/painel.py` e `api/auth.py`). O padrão passou a ser `local`.
+"""
 import logging
 from functools import lru_cache
 from ..config import get_settings
@@ -8,20 +20,14 @@ log = logging.getLogger("ports")
 
 @lru_cache
 def get_broker():
-    if get_settings().profile == "local":
-        from ..adapters.local.broker import RedisBroker
-        return RedisBroker()
-    from ..adapters.aws.broker import SqsBroker
-    return SqsBroker()
+    from ..adapters.local.broker import RedisBroker
+    return RedisBroker()
 
 
 @lru_cache
 def get_scheduler():
-    if get_settings().profile == "local":
-        from ..adapters.local.scheduler import PostgresScheduler
-        return PostgresScheduler()
-    from ..adapters.aws.scheduler import EventBridgeScheduler
-    return EventBridgeScheduler()
+    from ..adapters.local.scheduler import PostgresScheduler
+    return PostgresScheduler()
 
 
 @lru_cache
@@ -56,21 +62,19 @@ def get_crm():
 @lru_cache
 def get_embedder():
     s = get_settings()
-    if s.embeddings_provider == "ollama":
-        from ..adapters.local.embeddings import OllamaEmbedder
-        return OllamaEmbedder(s.ollama_url, s.ollama_embedding_model)
-    from ..adapters.aws.embeddings import BedrockEmbedder
-    return BedrockEmbedder()
+    from ..adapters.local.embeddings import OllamaEmbedder
+    return OllamaEmbedder(s.ollama_url, s.ollama_embedding_model)
 
 
-_PREFIXOS_BEDROCK = ("anthropic.", "us.", "eu.", "apac.")
+# Prefixos que os IDs de modelo da Anthropic carregam em alguns provedores hospedados. Nenhum
+# deles está no projeto hoje, mas o repertório fica: um `.env` antigo pode ter `anthropic.claude-…`
+# gravado, e mandar isso para a API direta da Anthropic dá 404 num lugar que não explica a causa.
+_PREFIXOS_HOSPEDADOS = ("anthropic.", "us.", "eu.", "apac.")
 
-# Famílias de modelo por provedor. Anthropic e Bedrock servem o MESMO modelo com prefixo diferente —
-# `normalizar_modelo` dá conta. OpenAI é outra família: não existe `claude-sonnet-4-5` lá.
+# Famílias de modelo por provedor. OpenAI é outra família: não existe `claude-sonnet-4-5` lá.
 _FAMILIA = {
     "openai": ("gpt-", "o1", "o3", "o4"),
     "anthropic": ("claude",),
-    "bedrock": ("claude", "anthropic.", "us.", "eu.", "apac.", "amazon.", "meta.", "mistral."),
 }
 
 # Equivalente por PAPEL quando o modelo configurado não existe no provedor — o caso do fallback
@@ -80,16 +84,14 @@ _FAMILIA = {
 _EQUIVALENTE = {
     "openai":    {"conversa": "gpt-5.6-terra", "analise": "gpt-5.6-terra", "roteamento": "gpt-5.6-luna"},
     "anthropic": {"conversa": "claude-sonnet-4-5", "analise": "claude-sonnet-4-5", "roteamento": "claude-haiku-4-5"},
-    "bedrock":   {"conversa": "anthropic.claude-sonnet-4-5", "analise": "anthropic.claude-sonnet-4-5",
-                  "roteamento": "anthropic.claude-haiku-4-5"},
 }
 
 
 def modelo_do_provedor(model: str, provider: str, papel: str = "conversa") -> str:
     """Devolve um ID que EXISTE no provedor pedido.
 
-    Mesma família (Anthropic ↔ Bedrock): só ajusta o prefixo. Família diferente (qualquer coisa ↔
-    OpenAI): troca pelo equivalente do papel, porque traduzir o nome não faria o modelo existir lá.
+    Mesma família: só ajusta o prefixo. Família diferente (Anthropic ↔ OpenAI): troca pelo
+    equivalente do papel, porque traduzir o nome não faria o modelo existir lá.
     """
     familia = _FAMILIA.get(provider)
     if familia and model and model.lower().startswith(familia):
@@ -99,20 +101,18 @@ def modelo_do_provedor(model: str, provider: str, papel: str = "conversa") -> st
 
 
 def normalizar_modelo(model: str, provider: str) -> str:
-    """O MESMO modelo tem IDs diferentes por provedor: no Bedrock é `anthropic.claude-sonnet-4-5`,
-    na API da Anthropic é `claude-sonnet-4-5`. Trocar de provedor no .env não deve exigir trocar o ID."""
+    """Tira os prefixos de provedor hospedado de um ID da Anthropic.
+
+    `us.anthropic.claude-sonnet-4-5` e `claude-sonnet-4-5` são o MESMO modelo; só a API direta não
+    aceita o primeiro. Continuar limpando isso protege quem tem um `.env` herdado."""
     if provider == "anthropic":
         mudou = True
         while mudou:                      # `us.anthropic.claude-…` tem dois prefixos empilhados
             mudou = False
-            for p in _PREFIXOS_BEDROCK:
+            for p in _PREFIXOS_HOSPEDADOS:
                 if model.startswith(p):
                     model, mudou = model[len(p):], True
         return model
-    # Só modelo da Anthropic leva o prefixo `anthropic.`. O Bedrock serve outras famílias com
-    # namespace próprio (`amazon.nova-…`, `meta.llama…`) e prefixar aquilo geraria um ID inexistente.
-    if provider == "bedrock" and model.startswith("claude") and not model.startswith(_PREFIXOS_BEDROCK):
-        return f"anthropic.{model}"
     return model
 
 
@@ -162,12 +162,10 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         return ChatOpenAI(model=model, temperature=temp, max_tokens=600, callbacks=cb,
                           base_url="https://openrouter.ai/api/v1", api_key=s.openrouter_api_key,
                           timeout=s.llm_timeout_s, max_retries=2)
-    from langchain_aws import ChatBedrockConverse
-    gr = {"guardrailIdentifier": s.guardrail_id, "guardrailVersion": "DRAFT"} if s.guardrail_id else None
-    from botocore.config import Config
-    cfg = Config(read_timeout=s.llm_timeout_s, connect_timeout=10, retries={"max_attempts": 2})
-    return ChatBedrockConverse(model=model, region_name=s.aws_region, temperature=temp, max_tokens=600,
-                               guardrail_config=gr, callbacks=cb, config=cfg)
+    raise RuntimeError(
+        f"SDR_LLM_PROVIDER='{provider}' não é suportado. Use anthropic, openai ou ollama.\n"
+        "Levantar aqui é melhor que escolher um provedor por conta própria e o cliente descobrir "
+        "pelo texto da resposta.")
 
 
 class ModeloComFallback:
@@ -209,7 +207,7 @@ def _escolha_do_painel(papel: str) -> tuple[str | None, str | None]:
 
 
 def get_chat_model(papel: str = "conversa"):
-    """papel: conversa | roteamento | analise. Provedor: bedrock | anthropic | openai | ollama.
+    """papel: conversa | roteamento | analise. Provedor: anthropic | openai | ollama.
     Modelo e provedor saem do painel quando configurados lá, senão do .env (ADR-0010).
     Toda chamada é registrada para governança; se o orçamento estourou, `conversa` cai para o barato.
     Com fallback definido, a queda de um provedor não vira turno perdido."""

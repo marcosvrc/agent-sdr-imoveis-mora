@@ -10,7 +10,6 @@ description: Tipos de teste do Mora, como executar backend e front-ends, CI e o 
 - **Backend** — testes de integração com Postgres real (pgvector) e LLM falso: grafo do agente, API,
   canais, governança e segurança.
 - **Front-ends** — build com TypeScript estrito (`web` e `dashboard`).
-- **Infraestrutura** — `cdk synth`.
 - **Análise estática** — `ruff` no Python, `eslint` (com `react-hooks`) nos front-ends.
 - **Cobertura** — combinada das sete suítes, com piso na CI.
 
@@ -66,13 +65,14 @@ make eval-fake       # valida o harness sem gastar token
 ## Integração contínua
 
 O workflow [`.github/workflows/ci.yml`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/.github/workflows/ci.yml)
-roda três jobs a cada push / pull request:
+roda dois jobs a cada push / pull request:
 
 | Job | Passos |
 | --- | --- |
-| `python` | `make lint` (ruff) → `make cobertura` (pytest com pgvector + piso de cobertura) → conferência do `openapi.json` |
+| `python` | `make lint` (ruff) → `make cobertura` (pytest com pgvector + piso de cobertura) → `make eval-fake` (harness com dublês) → conferência do `openapi.json` |
 | `frontend` | `npm ci && npm run build` (TypeScript estrito) → `npm run lint` (eslint) para `web` e `dashboard` |
-| `infra` | `cdk synth` |
+
+Havia um terceiro job, de infraestrutura (`cdk synth`); saiu com as stacks em nuvem.
 
 O estático roda **antes** dos testes: um nome indefinido ou import quebrado aparece em segundos, sem
 esperar o banco subir.

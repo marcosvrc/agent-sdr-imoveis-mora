@@ -1,11 +1,9 @@
 import os
 import json
-import hmac
-import hashlib
 import pytest
 os.environ.setdefault("SDR_DATABASE_DSN", "postgresql://sdr:sdr@localhost:5433/sdr_test")
 from sdr_shared.db.guarda_teste import exigir_banco_de_teste; exigir_banco_de_teste()   # nunca rodar contra o banco de dev
-os.environ["SDR_PROFILE"] = "local"; os.environ["SDR_WHATSAPP_APP_SECRET"] = "s3cret"
+os.environ["SDR_PROFILE"] = "local"
 from fastapi.testclient import TestClient
 import app as local_app
 
@@ -18,25 +16,10 @@ class MemBroker:
 
 def setup_module(m):
     local_app.get_broker = lambda: MemBroker()
-    import canal_whatsapp.inbound as wa
-    wa.get_broker = lambda: MemBroker()
     from sdr_shared.db import get_pool
     with get_pool().connection() as c:
         for t in ("mensagens", "canais", "leads"):
             c.execute(f"DELETE FROM {t}")
-
-
-def test_webhook_verificacao_e_mensagem():
-    c = TestClient(local_app.app)
-    r = c.get("/webhook", params={"hub.mode": "subscribe", "hub.verify_token": "sdr-verify", "hub.challenge": "42"})
-    assert r.status_code == 200 and r.text == "42"
-    body = json.dumps({"entry": [{"changes": [{"value": {"contacts": [{"wa_id": "5511999990000", "profile": {"name": "Marcos"}}],
-                       "messages": [{"id": "w1", "from": "5511999990000", "type": "text", "text": {"body": "oi"}}]}}]}]})
-    assert c.post("/webhook", content=body, headers={"x-hub-signature-256": "sha256=errado"}).status_code == 401
-    sig = "sha256=" + hmac.new(b"s3cret", body.encode(), hashlib.sha256).hexdigest()
-    assert c.post("/webhook", content=body, headers={"x-hub-signature-256": sig}).status_code == 200
-    t, m, k = MemBroker.msgs[-1]
-    assert t == "inbound" and m["canal"] == "whatsapp" and m["meta"]["nome"] == "Marcos" and k == m["lead_id"]
 
 
 def test_websocket_widget():

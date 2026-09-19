@@ -1,4 +1,4 @@
-SERVICES = shared services/agent services/channels/whatsapp services/channels/web services/api services/scheduler services/ingestion
+SERVICES = shared services/agent services/channels/telegram services/api services/scheduler services/ingestion
 
 # Nada aqui ganha com paralelismo, e vários alvos disputam o mesmo Postgres. Sem isto, um `make -j`
 # rodaria `crm-reset` antes de `crm-migrate` e a falha não apontaria para a causa.
@@ -6,7 +6,7 @@ SERVICES = shared services/agent services/channels/whatsapp services/channels/we
 
 .PHONY: ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura eval eval-fake eval-rag test-docker synth deploy openapi docs
+        cobertura eval eval-fake eval-rag test-docker openapi docs
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -57,7 +57,6 @@ crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
 setup:
 	for s in $(SERVICES); do (cd $$s && uv sync --all-extras 2>/dev/null || pip install -e .); done
 	cd apps/web && npm install; cd ../dashboard && npm install
-	cd infra && pip install -r requirements.txt
 
 check-env:
 	python3 scripts/check_env.py
@@ -73,10 +72,10 @@ seed:
 	cd local && docker compose exec -w /app/services/ingestion agent python -m sdr_ingestion.ingest_imoveis /app/data/imoveis/imoveis.json
 	@echo "✓ acervo indexado. Com CRM configurado ele veio de lá; sem CRM, do arquivo."
 
-# Documentos institucionais (FAQ, política de visita, taxas) → base que a Mora consulta.
-# Com BUCKET, sobe para o S3 e dispara o job da Knowledge Base. SEM BUCKET (perfil local) indexa
-# no pgvector, na tabela `documentos` — exige `make migrate` e `make ollama-pull` antes, porque
-# gera embeddings de verdade. Para só conferir a pasta sem indexar nada, use `make docs-secos`.
+# Documentos institucionais (FAQ, política de visita, taxas) → base de conhecimento que a Mora
+# consulta: fatia, gera embeddings e grava na tabela `documentos` do pgvector. Exige `make migrate`
+# e `make ollama-pull` antes, porque gera embeddings de verdade. Para só conferir a pasta sem
+# indexar nada, use `make docs-secos`.
 #
 # Roda DENTRO do container, como `make seed`. Rodava no host, e ali os padrões de conexão são
 # localhost:5432 e localhost:11434 — enquanto o compose publica em 5433 e 11435. O melhor desfecho
@@ -84,7 +83,7 @@ seed:
 # errado, em silêncio, e o agente nunca os ver.
 docs-kb:
 	cd local && docker compose exec -w /app/services/ingestion agent \
-	  python -m sdr_ingestion.ingest_documentos /app/data/documentos $(BUCKET) $(KB_ID) $(DS_ID)
+	  python -m sdr_ingestion.ingest_documentos /app/data/documentos
 	@echo "✓ documentos institucionais indexados na tabela \`documentos\` — a Mora já consulta daqui."
 
 docs-secos:    # lista o que seria indexado, sem tocar no banco nem gerar embedding
@@ -173,10 +172,9 @@ test: test-db
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd shared && PYTHONPATH=. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/api && PYTHONPATH=../../shared:src python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/whatsapp && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
 	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/telegram && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/local && PYTHONPATH=../../../shared:.:../whatsapp python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/local && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
 
 lint:          # análise estática do Python; a régua e os porquês estão em ruff.toml
 	ruff check .
@@ -191,9 +189,8 @@ cobertura: test-db
 	cd shared && PYTHONPATH=. coverage run -m pytest -q tests; cd ..; \
 	cd services/agent && PYTHONPATH=../../shared:src:. coverage run -m pytest -q tests; cd ../..; \
 	cd services/api && PYTHONPATH=../../shared:src coverage run -m pytest -q tests; cd ../..; \
-	cd services/channels/whatsapp && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
 	cd services/channels/telegram && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
-	cd services/channels/local && PYTHONPATH=../../../shared:.:../whatsapp coverage run -m pytest -q tests; cd ../../..; \
+	cd services/channels/local && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
 	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. coverage run -m pytest -q tests; cd ../..; \
 	coverage combine -q && coverage report && coverage xml -o coverage.xml
 
@@ -214,24 +211,9 @@ test-docker: test-db   # mesma suíte, rodando dentro do container do agente (n�
 	cd local && docker compose exec -T -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test agent sh -c '\
 	  cd /app/services/agent && PYTHONPATH=/app/shared:src:. python -m pytest -q tests && \
 	  cd /app/services/api && PYTHONPATH=/app/shared:src python -m pytest -q tests && \
-	  cd /app/services/channels/whatsapp && PYTHONPATH=/app/shared:. python -m pytest -q tests && \
 	  cd /app/services/channels/telegram && PYTHONPATH=/app/shared:. python -m pytest -q tests && \
-	  cd /app/services/channels/local && PYTHONPATH=/app/shared:.:../whatsapp python -m pytest -q tests'
+	  cd /app/services/channels/local && PYTHONPATH=/app/shared:. python -m pytest -q tests'
 
-
-synth:
-	cd infra && cdk synth --all --context env=dev
-
-# As VITE_* entram no bundle no momento do BUILD, não em tempo de execução: sem as duas do Cognito
-# aqui, o painel publicado cai no login de desenvolvimento (token estático) SEM AVISAR — a stack sobe
-# inteira e o erro só aparece quando alguém entra sem senha. Por isso o deploy para antes.
-deploy:
-	@test -n "$(VITE_COGNITO_USER_POOL_ID)" && test -n "$(VITE_COGNITO_CLIENT_ID)" || \
-	  { echo "ERRO: defina VITE_COGNITO_USER_POOL_ID e VITE_COGNITO_CLIENT_ID antes do deploy"; \
-	    echo "      (sem elas o painel publicado aceita qualquer login — ver docs/getting-started/configuracao.md)"; \
-	    echo "      para publicar mesmo assim, use: make deploy SEM_COGNITO=1"; test -n "$(SEM_COGNITO)"; }
-	cd apps/web && npm run build; cd ../dashboard && npm run build
-	cd infra && cdk deploy --all --context env=$(ENV) --require-approval never
 
 openapi:       # regera docs/assets/openapi.json a partir do código da API (a CI confere se está em dia)
 	python3 scripts/gerar_openapi.py

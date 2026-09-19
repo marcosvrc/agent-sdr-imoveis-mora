@@ -9,13 +9,21 @@ description: Acesso, autenticação, dashboards, gestão de dados, governança d
 
 <http://localhost:5174>.
 
-- **Perfil local** — autenticação por token estático (`SDR_PAINEL_TOKEN`, que vira `dev-token` quando
-  vazio).
-- **Perfil AWS** — Amazon Cognito.
+A tela de login pede um **token do painel** — não há cadastro, nem provedor de identidade. O campo de
+senha é o próprio `SDR_PAINEL_TOKEN`, e o painel o valida contra a API antes de guardá-lo (um token
+errado é recusado ali, em vez de virar 401 na primeira tela). O campo de e-mail é só rótulo.
+
+- **Perfil local** (`SDR_PROFILE=local`) — com `SDR_PAINEL_TOKEN` vazio, vale `dev-token`. É o que o
+  campo em branco envia.
+- **Fora do perfil local** — vazio não aceita nada: sem segredo configurado, ninguém entra.
+
+O mesmo token vale para o header `Authorization` da API e para a conexão WebSocket `papel=dashboard`.
+Havia aqui um login por Amazon Cognito, via `aws-amplify`; saiu junto com o resto da AWS.
 
 !!! danger "Não use credenciais reais"
-    Nunca utilize credenciais reais no repositório ou em exemplos. Em produção, gere o primeiro acesso
-    pelo mecanismo do Cognito e mantenha os segredos no AWS Secrets Manager.
+    Nunca utilize credenciais reais no repositório ou em exemplos. Gere o `SDR_PAINEL_TOKEN` como
+    qualquer segredo forte (`python3 -c "import secrets; print(secrets.token_urlsafe(32))"`) e
+    mantenha-o apenas no `local/.env`, que não vai para o repositório.
 
 ## Perfis e permissões
 
@@ -60,5 +68,6 @@ temperatura e os avisos acompanham o tema; o contraste foi verificado nos dois
 
 ## Logout
 
-Encerre a sessão pelo próprio painel. No perfil local, o token estático permanece válido enquanto
-configurado; no perfil AWS, a sessão segue o ciclo do Cognito.
+Encerre a sessão pelo próprio painel: o token guardado no navegador é apagado. Não há expiração — o
+token continua válido enquanto estiver configurado, então revogar o acesso significa trocar o
+`SDR_PAINEL_TOKEN` e reiniciar os serviços.

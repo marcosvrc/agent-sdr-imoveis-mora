@@ -26,7 +26,7 @@ DEFAULTS: dict[str, dict] = {
                 "analise": "", "analise_provider": ""},
 }
 
-PROVIDERS = ("", "bedrock", "anthropic", "openai", "ollama")
+PROVIDERS = ("", "anthropic", "openai", "ollama")
 
 
 def _modelos_efetivos() -> dict:
@@ -48,14 +48,13 @@ def _modelos_efetivos() -> dict:
 def _status_canais() -> dict:
     s = get_settings()
     return {"telegram": {"configurado": bool(getattr(s, "telegram_bot_token", "")), "usuario": getattr(s, "telegram_bot_username", "") or None},
-            "whatsapp": {"configurado": bool(getattr(s, "whatsapp_token", "")), "numero": getattr(s, "whatsapp_phone_number_id", "") or None},
             "web": {"configurado": True},
-            "llm": {"provider": getattr(s, "llm_provider", "bedrock"), "modelo_conversa": getattr(s, "model_conversa", ""),
+            "llm": {"provider": getattr(s, "llm_provider", "anthropic"), "modelo_conversa": getattr(s, "model_conversa", ""),
                     "modelo_roteamento": getattr(s, "model_roteamento", ""),
                     "fallback": getattr(s, "llm_provider_fallback", "") or None,
                     # o que está valendo de fato: painel quando preenchido, .env quando não
                     "efetivo": _modelos_efetivos()},
-            "embeddings": {"provider": getattr(s, "embeddings_provider", "bedrock")}}
+            "embeddings": {"provider": getattr(s, "embeddings_provider", "ollama")}}
 
 
 @router.get("")

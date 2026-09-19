@@ -8,7 +8,8 @@ description: Como acessar a Mora, iniciar uma conversa, o que ela faz, exemplos 
 ## Como iniciar
 
 - Abra o site (<http://localhost:5173>) e clique em **"Falar com a Mora"**, ou
-- Envie uma mensagem ao bot do Telegram configurado.
+- Envie uma mensagem ao bot do Telegram configurado (é o único canal externo), ou
+- Converse pelo terminal, com `make cli`.
 
 A Mora se apresenta na primeira mensagem.
 
@@ -24,12 +25,12 @@ A Mora se apresenta na primeira mensagem.
 ## Mensagens de voz
 
 A Mora é **multimodal na entrada**: o cliente pode mandar um **áudio** (mensagem de voz) no Telegram
-(ou no WhatsApp, quando o canal estiver ativo) que o agente transcreve e responde normalmente.
+que o agente transcreve e responde normalmente.
 
-- No **perfil local**, a transcrição roda 100% na máquina com o faster-whisper — sem AWS e sem custo.
-- No **perfil AWS**, usa o Amazon Transcribe.
-- Se a transcrição falhar, a Mora pede educadamente para o cliente **escrever** a mensagem — a conversa
-  não trava.
+- A transcrição roda 100% na máquina, com o faster-whisper no próprio processo do agente — sem
+  serviço externo e sem custo por minuto.
+- Se a transcrição falhar, ou se ela estiver desligada (`SDR_TRANSCRICAO_PROVIDER=off`), a Mora pede
+  educadamente para o cliente **escrever** a mensagem — a conversa não trava.
 
 O conteúdo transcrito é tratado com o mesmo cuidado de segurança do texto digitado (entra blindado, não
 como instrução ao modelo). Configuração em

@@ -22,7 +22,7 @@ ctx_papel: contextvars.ContextVar[str | None] = contextvars.ContextVar("sdr_pape
 
 
 def _tokens(resposta: Any) -> dict:
-    """Extrai tokens do retorno, cobrindo os formatos de Anthropic, Bedrock e Ollama."""
+    """Extrai tokens do retorno, cobrindo os formatos de Anthropic, OpenAI e Ollama."""
     saida = {"entrada": 0, "saida": 0, "cache_escrita": 0, "cache_leitura": 0}
     gen = (resposta.generations or [[]])[0] if getattr(resposta, "generations", None) else []
     msg = getattr(gen[0], "message", None) if gen else None

@@ -85,8 +85,8 @@ def infra(monkeypatch):
     monkeypatch.setattr(llm, "llm_roteamento", lambda: FakeLLM())
     monkeypatch.setattr(llm, "llm_analise", lambda: FakeLLM())
     # Derivada de ESPECIALISTAS, e não escrita à mão: com a lista fixa, um nó novo ficava de fora
-    # do dublê e o teste batia no modelo de verdade — falhando com "ModuleNotFoundError:
-    # langchain_aws" em vez de dizer o que faltava. Mesma armadilha que o `strict=True` do grafo
+    # do dublê e o teste batia no modelo de verdade — falhando com um "ModuleNotFoundError" do
+    # pacote do provedor em vez de dizer o que faltava. Mesma armadilha que o `strict=True` do grafo
     # resolve lá.
     from agent.graph import ESPECIALISTAS
     for mod in [f"agent.nodes.{n}" for n in (*ESPECIALISTAS, "supervisor")]:

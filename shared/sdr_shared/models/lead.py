@@ -113,7 +113,7 @@ class AnaliseLead(BaseModel):
 
 
 class Cliente(BaseModel):
-    """A PESSOA. Uma por telefone/e-mail, a mesma no WhatsApp e na web.
+    """A PESSOA. Uma por telefone/e-mail, a mesma no Telegram e na web.
     O Lead é a oportunidade dela — um cliente pode ter várias ao longo do tempo."""
     id: str
     nome: str | None = None
