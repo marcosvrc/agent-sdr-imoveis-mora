@@ -19,6 +19,7 @@ class _Nada:
     def consultar_lead(self, crm_lead_id): return None
     def consultar_oportunidade(self, crm_opportunity_id): return None
     def imovel_por_codigo(self, codigo): return None
+    def listar_imoveis(self, **k): return [], None
     def horarios_livres(self, crm_property_id, **k): return []
     def solicitar_visita(self, **k): return None
     def registrar_interesse(self, **k): return None

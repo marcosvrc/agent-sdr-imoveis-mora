@@ -182,6 +182,16 @@ class _Sessao:
             return None
         return itens[0]
 
+    def listar_imoveis(self, *, limite: int = 100,
+                       cursor: str | None = None) -> tuple[list[dict], str | None]:
+        r = self._ferramenta("buscar_imoveis", {"limit": limite, "cursor": cursor})
+        if r is None:
+            # Falha no meio da paginação não pode virar "acabou": quem consome usaria a lista
+            # parcial como se fosse o acervo inteiro e apagaria o resto do índice.
+            raise RuntimeError("o CRM não respondeu durante a listagem do acervo")
+        itens = r.get("items")
+        return (itens if isinstance(itens, list) else []), r.get("next_cursor")
+
     def horarios_livres(self, crm_property_id: str, *, limite: int = 20) -> list[dict]:
         r = self._ferramenta("consultar_horarios", {"property_id": crm_property_id,
                                                     "limit": limite})
@@ -225,6 +235,7 @@ class _Inerte:
     def consultar_lead(self, crm_lead_id): return None
     def consultar_oportunidade(self, crm_opportunity_id): return None
     def imovel_por_codigo(self, codigo): return None
+    def listar_imoveis(self, **k): return [], None
     def horarios_livres(self, crm_property_id, **k): return []
     def solicitar_visita(self, **k): return None
     def registrar_interesse(self, **k): return None

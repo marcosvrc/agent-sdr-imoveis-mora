@@ -358,6 +358,22 @@ class ImovelRepository:
         with _conn() as c:
             c.execute("UPDATE imoveis SET fotos = %s WHERE id = %s", (json.dumps(fotos), imovel_id))
 
+    def apagar_fora_de(self, ids: list[str]) -> int:
+        """Remove do índice os imóveis que a fonte não lista mais. Devolve quantos saíram.
+
+        Recusa lista vazia, e a recusa é o ponto: uma leitura que falhou devolve vazio igual a um
+        acervo que esvaziou, e a diferença entre as duas é o catálogo inteiro. O mesmo defeito já
+        apareceu na ingestão de documentos — esvaziar tem de ser ato explícito, nunca efeito
+        colateral de uma fonte que não respondeu.
+
+        Sem isso, um imóvel vendido continua sendo oferecido pelo agente: é o pior tipo de dado
+        velho, o que ninguém sabe que ficou.
+        """
+        if not ids:
+            raise ValueError("apagar_fora_de recusa lista vazia: seria esvaziar o catálogo")
+        with get_pool().connection() as conn:
+            return conn.execute("DELETE FROM imoveis WHERE id <> ALL(%s)", (list(ids),)).rowcount
+
     def contar(self) -> int:
         with _conn() as c:
             return c.execute("SELECT count(*) AS n FROM imoveis").fetchone()["n"]

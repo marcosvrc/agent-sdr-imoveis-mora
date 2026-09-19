@@ -13,7 +13,8 @@ from sdr_shared.adapters.crm.via_mcp import CRMviaMCP, _versao
 OPERACOES = ("garantir_lead", "garantir_oportunidade", "registrar_interacao",
              "atualizar_preferencias", "mover_estagio", "encaminhar", "consultar_historico",
              "buscar_lead_por_contato", "consultar_lead", "consultar_oportunidade",
-             "imovel_por_codigo", "horarios_livres", "solicitar_visita", "registrar_interesse")
+             "imovel_por_codigo", "horarios_livres", "solicitar_visita", "registrar_interesse",
+             "listar_imoveis")
 
 
 @pytest.fixture(autouse=True)

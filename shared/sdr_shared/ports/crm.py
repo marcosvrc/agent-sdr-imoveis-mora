@@ -84,6 +84,11 @@ class SessaoCRM(Protocol):
         """
         ...
 
+    def listar_imoveis(self, *, limite: int = 100,
+                       cursor: str | None = None) -> tuple[list[dict], str | None]:
+        """Uma página do acervo e o cursor da próxima. `(itens, None)` na última."""
+        ...
+
     def horarios_livres(self, crm_property_id: str, *, limite: int = 20) -> list[dict]:
         """Horários sem visita confirmada para aquele imóvel. Solicitação não ocupa horário — duas
         pessoas podem pedir o mesmo, e só uma será confirmada pelo corretor."""

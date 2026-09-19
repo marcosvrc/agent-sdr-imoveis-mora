@@ -3,6 +3,10 @@ Um chunk por imóvel (ADR-0001):
   1. grava o registro relacional no Postgres/Aurora (dashboard, filtros, API pública) COM embedding (busca híbrida pgvector);
   2. perfil aws: escreve `imoveis/<id>.txt` + `<id>.txt.metadata.json` no S3 e dispara sync da Knowledge Base.
 Uso: python -m sdr_ingestion.ingest_imoveis data/imoveis/imoveis.json [bucket] [kb_id] [ds_id]
+
+Com CRM configurado o registro comercial vem de lá e o arquivo entra só com os dados de vitrine
+(ver `acervo.py`). Nesse caso a ingestão também PURGA o que o CRM não lista mais — é o que impede
+o agente de continuar oferecendo um imóvel vendido.
 """
 import json
 import sys
@@ -10,6 +14,8 @@ import time
 
 from sdr_shared.db import ImovelRepository
 from sdr_shared.models import Imovel
+
+from .acervo import carregar
 
 # Um imóvel que ENTRA agora pode virar aviso para quem estava esperando por algo assim (fase 3 da
 # reativação). Mas só um punhado por execução: uma rodada que insere dezenas é carga de catálogo,
@@ -60,7 +66,7 @@ def anunciar(novos: list[str]) -> None:
 
 def main(caminho: str, bucket: str | None = None, kb_id: str | None = None, ds_id: str | None = None,
          avisar: bool = True) -> int:
-    imoveis = [Imovel(**x) for x in json.load(open(caminho, encoding="utf-8"))]
+    imoveis, do_crm = carregar(caminho)
     repo, t0, erros = ImovelRepository(), time.perf_counter(), 0
     novos: list[str] = []
     for i, im in enumerate(imoveis, 1):
@@ -76,6 +82,14 @@ def main(caminho: str, bucket: str | None = None, kb_id: str | None = None, ds_i
             para_s3(bucket, im)
         if i % 25 == 0 or i == len(imoveis):
             print(f"  {i}/{len(imoveis)} imóveis gravados ({time.perf_counter() - t0:.0f}s)")
+    # Purga só quando a fonte é autoritativa: o CRM acabou de listar o acervo inteiro, então o que
+    # não está nele saiu de circulação. Com o arquivo como fonte não se apaga nada — ele pode ser um
+    # recorte, e um recorte não autoriza esvaziar o catálogo.
+    if do_crm and imoveis:
+        saidos = repo.apagar_fora_de([im.id for im in imoveis])
+        if saidos:
+            print(f"  {saidos} imóvel(is) saíram do índice (não estão mais disponíveis no CRM)")
+
     if kb_id and ds_id:
         sync_kb(kb_id, ds_id)
     if avisar:
