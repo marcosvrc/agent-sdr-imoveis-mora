@@ -95,6 +95,16 @@ class SessaoCRM(Protocol):
         a `visit_scheduled`. Chamar isto não autoriza dizer "agendado" ao cliente."""
         ...
 
+    def registrar_interesse(self, *, crm_opportunity_id: str, crm_property_id: str, situacao: str,
+                            versao: int, motivo: str | None = None) -> int | None:
+        """O que aconteceu com um imóvel nesta oportunidade. Devolve a nova versão.
+
+        Descarte é ato EXPLÍCITO do cliente: pedir mais opções não é recusar as anteriores, e
+        marcar como recusado o que ele só não escolheu ainda tiraria do corretor um imóvel que
+        continua valendo.
+        """
+        ...
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         """Interações anteriores. É o que deixa a Mora saber o que já foi conversado com o cliente
         antes dela — inclusive por outro corretor, em outro canal.

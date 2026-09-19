@@ -56,4 +56,11 @@ def atualizar(lead_id: str, imovel_id: str, body: SituacaoIn):
         raise HTTPException(404, "imóvel não encontrado")
     repo = InteresseRepository()
     repo.registrar(lead_id, imovel_id, situacao=body.situacao, origem="corretor")
+    # O CRM é o registro comercial: um descarte que o corretor anota aqui e não aparece lá faz os
+    # dois painéis discordarem sobre o mesmo imóvel, justamente na ficha que alguém vai ler antes
+    # de ligar. Best-effort — a correção local já foi gravada e vale por si.
+    from sdr_shared.crm import publicar_interesses
+    lead = LeadRepository().get(lead_id)
+    if lead:
+        publicar_interesses(lead, [(imovel_id, body.situacao)])
     return next((i for i in repo.do_lead(lead_id) if i["imovel_id"] == imovel_id), None)

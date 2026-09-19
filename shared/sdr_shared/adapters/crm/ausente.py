@@ -21,6 +21,7 @@ class _Nada:
     def imovel_por_codigo(self, codigo): return None
     def horarios_livres(self, crm_property_id, **k): return []
     def solicitar_visita(self, **k): return None
+    def registrar_interesse(self, **k): return None
     def consultar_historico(self, crm_lead_id, **k): return []
 
 

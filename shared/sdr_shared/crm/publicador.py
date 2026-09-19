@@ -30,11 +30,15 @@ def habilitado() -> bool:
 
 def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str | None = None,
                    estagio_antes: Estagio | None = None, id_entrada: int | None = None,
-                   id_saida: int | None = None) -> None:
+                   id_saida: int | None = None, imoveis: list | None = None) -> None:
     """Ponto único de entrada. Nunca levanta exceção.
 
     `id_entrada` e `id_saida` são os ids das mensagens no banco da Mora; viram o
     `external_event_id` no CRM.
+
+    `imoveis` são os que a Mora MOSTROU neste turno — e só eles. A lista cumulativa da conversa
+    republicaria tudo a cada mensagem; o que interessa ao corretor é o que acabou de ser
+    apresentado.
     """
     crm = get_crm()
     if not crm.habilitado():
@@ -44,6 +48,13 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
             _publicar(s, lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
     except Exception:
         log.warning("falha ao publicar o lead %s no CRM — a conversa segue", lead.id, exc_info=True)
+
+    # Depois do turno, e em sessão própria: o interesse depende do vínculo que o bloco acima pode
+    # ter acabado de criar, e o primeiro turno de um lead novo não teria onde pendurá-lo.
+    if imoveis:
+        from .interesses import publicar_interesses
+        publicar_interesses(lead, [(c.id, "sugerido") for c in imoveis],
+                            motivos={c.id: getattr(c, "motivo", None) for c in imoveis})
 
 
 def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | None,

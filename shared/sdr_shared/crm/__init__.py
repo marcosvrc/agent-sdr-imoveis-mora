@@ -19,8 +19,9 @@ sem resposta por causa disso: toda função aqui engole a própria falha, regist
 controle. É a diferença entre um CRM indisponível e um atendimento indisponível.
 """
 from .publicador import habilitado, publicar_encaminhamento, publicar_turno
+from .interesses import publicar_interesses
 from .reconhecimento import reconhecer
 from .visitas import Horario, horarios_do_imovel, pedir_visita
 
 __all__ = ["Horario", "habilitado", "horarios_do_imovel", "pedir_visita",
-           "publicar_encaminhamento", "publicar_turno", "reconhecer"]
+           "publicar_encaminhamento", "publicar_interesses", "publicar_turno", "reconhecer"]

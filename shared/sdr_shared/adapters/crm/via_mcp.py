@@ -195,6 +195,14 @@ class _Sessao:
             "slot_id": slot_id, "notes": observacao,
             "operation_id": _op(crm_opportunity_id, "visita", slot_id)})
 
+    def registrar_interesse(self, *, crm_opportunity_id: str, crm_property_id: str, situacao: str,
+                            versao: int, motivo: str | None = None) -> int | None:
+        r = self._ferramenta("registrar_interesse", {
+            "opportunity_id": crm_opportunity_id, "property_id": crm_property_id,
+            "status": situacao, "notes": motivo, "expected_version": versao,
+            "operation_id": _op(crm_opportunity_id, f"interesse-{situacao}", crm_property_id)})
+        return _versao(r)
+
     def consultar_historico(self, crm_lead_id: str, *, limite: int = 20) -> list[dict]:
         r = self._ferramenta("consultar_historico", {"lead_id": crm_lead_id, "limit": limite})
         if not r:
@@ -219,6 +227,7 @@ class _Inerte:
     def imovel_por_codigo(self, codigo): return None
     def horarios_livres(self, crm_property_id, **k): return []
     def solicitar_visita(self, **k): return None
+    def registrar_interesse(self, **k): return None
     def consultar_historico(self, crm_lead_id, **k): return []
 
 

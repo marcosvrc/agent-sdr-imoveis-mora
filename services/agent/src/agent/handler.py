@@ -150,7 +150,8 @@ def processar(entrada: MensagemNormalizada) -> None:
     # propósito: o cliente já recebeu a resposta, então nada aqui atrasa o atendimento — e a função
     # engole a própria falha, porque um CRM fora do ar não pode virar um atendimento fora do ar.
     publicar_no_crm(lead, entrada, texto_saida=resposta.texto if resposta else None,
-                    estagio_antes=estagio_antes, id_entrada=id_entrada, id_saida=id_saida)
+                    estagio_antes=estagio_antes, id_entrada=id_entrada, id_saida=id_saida,
+                    imoveis=resposta.imoveis if resposta else None)
     reagendar_followup(lead, entrada.canal, entrada.identificador_canal)
     # Reativação sai separada em `turnos`: é a métrica da fase 4 (quantos avisos viraram conversa),
     # e misturada com "ok" ela seria indistinguível de um turno pedido pelo cliente.
