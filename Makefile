@@ -35,7 +35,13 @@ migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CRE
 # Sistema à parte, com banco próprio. A Mora publica nele o que a conversa descobre; nada daqui
 # escreve no banco dela.
 
-crm-migrate:   # aplica o schema do CRM no banco `crm` — idempotente, como o da Mora
+crm-migrate:   # cria o banco `crm` se não existir e aplica o schema — idempotente, como o da Mora
+               # Criar aqui, e não só em `local/00-crm.sql`: aquele arquivo é script de inicialização
+               # do Postgres, e o Postgres só roda esses scripts quando o VOLUME é novo. Num volume
+               # que já existia antes de o CRM entrar no projeto, ele nunca rodou — e o erro que
+               # aparecia era `FATAL: database "crm" does not exist`, sem nada dizendo por quê.
+	cd local && docker compose exec -T db psql -q -U sdr -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='crm'" | grep -q 1 || \
+	  (cd local && docker compose exec -T db psql -q -U sdr -d postgres -c "CREATE DATABASE crm")
 	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
 
 crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs

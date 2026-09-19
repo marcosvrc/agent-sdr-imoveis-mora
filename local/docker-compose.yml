@@ -184,6 +184,10 @@ services:
   #   depends_on: [channels]
 
   langfuse:                    # opcional: observabilidade de LLM local (substitui CloudWatch/X-Ray para prompts)
+    # ATENÇÃO: publica a MESMA porta 3000 do painel do CRM. Os dois não sobem juntos — com o profile
+    # `observability` ligado, um dos dois falha ao vincular a porta. Quem precisar dos dois ao mesmo
+    # tempo troca a porta aqui. (O banco `langfuse` é criado por 00-langfuse.sql, que só roda em
+    # volume novo; num volume antigo, crie à mão como o `crm-migrate` faz.)
     image: langfuse/langfuse:2
     profiles: [observability]
     environment:
