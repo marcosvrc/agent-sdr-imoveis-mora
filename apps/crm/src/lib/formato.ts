@@ -95,6 +95,18 @@ export const POLITICA_CONTATO: Record<string, { r: string; tom: "neutro" | "bom"
   blocked: { r: "Pediu para não ser contatado", tom: "ruim" },
 };
 
+/** Situação do imóvel no acervo, e o que cada uma significa para quem opera.
+ *
+ *  `reserved` não é "meio disponível": para a Mora, reservado e indisponível são a mesma coisa —
+ *  nenhum dos dois chega ao índice. A diferença é humana, e é o que distingue "proposta aceita,
+ *  pode cair" de "acabou". */
+export const SITUACAO_IMOVEL: Record<string, { r: string; tom: "bom" | "alerta" | "ruim"; ajuda: string }> = {
+  available: { r: "Disponível", tom: "bom", ajuda: "No catálogo. A Mora oferece." },
+  reserved: { r: "Reservado", tom: "alerta",
+              ajuda: "Proposta aceita, antes da assinatura. Sai do catálogo e pode voltar." },
+  unavailable: { r: "Indisponível", tom: "ruim", ajuda: "Vendido ou alugado. Fora do catálogo." },
+};
+
 export const STATUS_VISITA: Record<string, { r: string; tom: "neutro" | "bom" | "alerta" | "ruim" }> = {
   requested: { r: "Solicitada", tom: "alerta" },
   confirmed: { r: "Confirmada", tom: "bom" },

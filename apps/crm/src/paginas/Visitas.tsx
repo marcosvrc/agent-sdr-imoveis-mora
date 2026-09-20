@@ -113,8 +113,10 @@ function Linha({ v, aoMover, ocupado }: {
   v: Visita; aoMover: (alvo: string, motivo: string | null) => void; ocupado: boolean;
 }) {
   const [cancelando, setCancelando] = useState(false);
+  const [remarcando, setRemarcando] = useState(false);
   const [motivo, setMotivo] = useState("");
   const proximas = PROXIMAS_VISITA[v.status] ?? [];
+  const podeRemarcar = v.status === "requested" || v.status === "confirmed";
 
   return (
     <li className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 text-sm">
@@ -123,10 +125,18 @@ function Linha({ v, aoMover, ocupado }: {
       <Link to={`/oportunidades/${v.opportunity_id}`} className="text-inkMuted hover:text-acento hover:underline">
         oportunidade {v.opportunity_id.slice(0, 8)}
       </Link>
-      {v.cancellation_reason && <span className="text-[11px] text-inkFaint">motivo: {v.cancellation_reason}</span>}
+      {v.cancellation_reason && (
+        /* Cancelada POR REMARCAÇÃO não é cliente perdido, e a lista precisa dizer qual das duas
+           foi — era exatamente o que se perdia quando remarcar era cancelar e pedir de novo. */
+        <span className="text-[11px] text-inkFaint">
+          {v.rescheduled_to ? "remarcada — " : "motivo: "}{v.cancellation_reason}
+        </span>
+      )}
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        {cancelando ? (
+        {remarcando ? (
+          <Remarcar v={v} aoSair={() => setRemarcando(false)} />
+        ) : cancelando ? (
           <>
             <input className={cx(entradaCls, "w-48 text-xs")} autoFocus placeholder="Motivo do cancelamento"
                    aria-label="Motivo do cancelamento" value={motivo}
@@ -136,18 +146,80 @@ function Linha({ v, aoMover, ocupado }: {
             <Botao onClick={() => { setCancelando(false); setMotivo(""); }}>Voltar</Botao>
           </>
         ) : (
-          proximas.map((p) => (
-            <Botao key={p.alvo} ocupado={ocupado}
-                   variante={p.alvo === "confirmed" ? "primario" : p.alvo === "cancelled" ? "perigo" : "normal"}
-                   onClick={() => (p.pedeMotivo ? setCancelando(true) : aoMover(p.alvo, null))}>
-              {p.r}
-            </Botao>
-          ))
+          <>
+            {proximas.map((p) => (
+              <Botao key={p.alvo} ocupado={ocupado}
+                     variante={p.alvo === "confirmed" ? "primario" : p.alvo === "cancelled" ? "perigo" : "normal"}
+                     onClick={() => (p.pedeMotivo ? setCancelando(true) : aoMover(p.alvo, null))}>
+                {p.r}
+              </Botao>
+            ))}
+            {podeRemarcar && <Botao onClick={() => setRemarcando(true)}>Remarcar</Botao>}
+          </>
         )}
-        {proximas.length === 0 && !cancelando && (
-          <span className="text-[11px] text-inkFaint">encerrada — reagendar cria uma nova solicitação</span>
+        {proximas.length === 0 && !cancelando && !remarcando && (
+          /* O texto anterior dizia "reagendar cria uma nova solicitação". Deixou de ser verdade
+             quando a remarcação virou operação própria — e uma visita remarcada tem para onde
+             apontar, que é mais útil do que dizer o que não dá para fazer. */
+          <span className="text-[11px] text-inkFaint">
+            {v.rescheduled_to ? "remarcada — a visita seguinte está na lista" : "encerrada"}
+          </span>
         )}
       </div>
     </li>
+  );
+}
+
+
+/** Remarcar: escolher outro horário do MESMO imóvel, numa operação só.
+ *
+ *  Oferece apenas horários livres — `only_free` é o padrão da rota. Horário livre ainda pode ter
+ *  solicitação pendente de outra pessoa; quem chega primeiro na confirmação leva, e o índice único
+ *  do banco decide. Se perder, o servidor recusa e a visita atual continua de pé.
+ */
+function Remarcar({ v, aoSair }: { v: Visita; aoSair: () => void }) {
+  const qc = useQueryClient();
+  const [slot, setSlot] = useState("");
+  const [motivo, setMotivo] = useState("");
+
+  const livres = useQuery({
+    queryKey: ["horarios", v.property_id],
+    queryFn: () => api.horarios({ property_id: v.property_id, limit: "50" }),
+  });
+  const remarcar = useMutation({
+    mutationFn: () => api.remarcarVisita(v.id, slot, motivo.trim()),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["visitas"] }); aoSair(); },
+  });
+
+  const opcoes = (livres.data?.items ?? []).filter((s) => s.id !== v.slot_id);
+
+  return (
+    <div className="flex w-full flex-wrap items-center gap-2">
+      {remarcar.error ? <div className="w-full"><Erro erro={remarcar.error} /></div> : null}
+      {livres.isLoading ? <span className="text-xs text-inkMuted">buscando horários…</span>
+        : opcoes.length === 0 ? (
+          <span className="text-xs text-alerta">
+            Não há outro horário livre para este imóvel — abra um na agenda antes de remarcar.
+          </span>
+        ) : (
+          <>
+            <select className={cx(entradaCls, "w-auto text-xs")} value={slot} aria-label="Novo horário"
+                    onChange={(e) => setSlot(e.target.value)}>
+              <option value="">Novo horário…</option>
+              {opcoes.map((s) => (
+                <option key={s.id} value={s.id}>{dataHora(s.starts_at)} · {s.broker_name}</option>
+              ))}
+            </select>
+            <input className={cx(entradaCls, "w-48 text-xs")} placeholder="Motivo (obrigatório)"
+                   aria-label="Motivo da remarcação" value={motivo}
+                   onChange={(e) => setMotivo(e.target.value)} />
+            <Botao variante="primario" ocupado={remarcar.isPending}
+                   disabled={!slot || !motivo.trim()} onClick={() => remarcar.mutate()}>
+              Confirmar remarcação
+            </Botao>
+          </>
+        )}
+      <Botao onClick={aoSair}>Voltar</Botao>
+    </div>
   );
 }

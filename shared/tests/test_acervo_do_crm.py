@@ -252,3 +252,34 @@ def test_imovel_sem_foto_nenhuma_nao_inventa_capa(ligado, acervo_no_crm, arquivo
     from sdr_ingestion.acervo import carregar
     porId = {im.id: im for im in carregar(arquivo_de_vitrine)[0]}
     assert porId[acervo_no_crm[2]].fotos == []
+
+
+def test_a_foto_do_painel_vence_o_crm_no_indice(ligado, acervo_no_crm, arquivo_de_vitrine):
+    """A ordem de precedência das fotos, fixada em teste porque hoje ela é EMERGENTE.
+
+    Ela nasce de duas regras escritas em lugares diferentes — o `CASE` do `ImovelRepository.upsert`
+    e o `fotos or extra` do `acervo.py` — e eu cheguei a afirmar que o resultado dependia de qual
+    rodasse primeiro. Medido, não depende: **painel > CRM > arquivo**, sempre. O `CASE` é o último
+    a falar, e ele protege o que foi enviado pelo painel.
+
+    Enquanto a dona das fotos não for uma só, este teste é o que impede a ordem mudar sem ninguém
+    perceber — e ela mudar em silêncio significa foto de imóvel sumindo da vitrine.
+    """
+    from sdr_ingestion.acervo import carregar
+    from sdr_shared.db import ImovelRepository
+
+    codigo = acervo_no_crm[0]
+    with psycopg.connect(DSN_CRM, autocommit=True, row_factory=psycopg.rows.dict_row) as conn:
+        pid = conn.execute("SELECT id FROM properties WHERE code = %s", (codigo,)).fetchone()["id"]
+        conn.execute("INSERT INTO property_photos (property_id, url, position) VALUES (%s,%s,0)",
+                     (pid, "https://cdn.exemplo/do-crm.jpg"))
+
+    repo = ImovelRepository()
+    do_crm = next(im for im in carregar(arquivo_de_vitrine)[0] if im.id == codigo)
+    assert do_crm.fotos == ["https://cdn.exemplo/do-crm.jpg"], "o CRM vence o arquivo"
+
+    # o painel gravou uma foto própria no índice; a reindexação seguinte NÃO pode apagá-la
+    repo.upsert(do_crm.model_copy(update={"fotos": [f"/fotos/{codigo}/enviada.jpg"]}), [0.0] * 1024)
+    repo.upsert(do_crm, None)
+    assert repo.get(codigo).fotos == [f"/fotos/{codigo}/enviada.jpg"], \
+        "foto enviada pelo painel sobrevive à sincronização — é o que o CASE do upsert garante"

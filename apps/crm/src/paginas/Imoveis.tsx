@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AvisoOrdemParcial, Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Paginacao,
          Vazio, cx, entradaCls, foco, usePaginaCursor } from "../componentes/ui";
 import { Link } from "react-router-dom";
 import { Ic } from "../componentes/Icones";
-import { api } from "../lib/api";
+import { api, type Imovel } from "../lib/api";
 import { ordenar, useAtraso, useFiltrosNaUrl, type Ordem } from "../lib/filtros";
-import { PROPOSITO, brl } from "../lib/formato";
+import { PROPOSITO, SITUACAO_IMOVEL, brl } from "../lib/formato";
 
 const POR_PAGINA = "24";
 type Campo = "preco" | "quartos" | "bairro";
@@ -133,8 +133,8 @@ export function Imoveis() {
                 <div className="flex items-start justify-between gap-2">
                   <h2 className="text-sm font-medium text-ink">{im.title}</h2>
                   {im.status !== "available" && (
-                    <Etiqueta tom={im.status === "unavailable" ? "ruim" : "alerta"}>
-                      {im.status === "unavailable" ? "indisponível" : "reservado"}
+                    <Etiqueta tom={SITUACAO_IMOVEL[im.status]?.tom ?? "alerta"}>
+                      {SITUACAO_IMOVEL[im.status]?.r ?? im.status}
                     </Etiqueta>
                   )}
                 </div>
@@ -160,7 +160,15 @@ export function Imoveis() {
                     <p className="text-lg font-semibold tabular-nums text-ink">{brl(im.base_price_cents, true)}</p>
                   )}
                 </div>
-                <p className="mt-1 text-[11px] text-inkFaint">{PROPOSITO[im.purpose]}</p>
+                <p className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-inkFaint">
+                  {PROPOSITO[im.purpose]}
+                  {/* Procura: dois clientes no mesmo imóvel é normal, e saber disso muda a
+                      prioridade do corretor. Some quando é um só — "1 cliente" não é notícia. */}
+                  {(im.interested_count ?? 0) > 1 && (
+                    <Etiqueta tom="info">{im.interested_count} clientes de olho</Etiqueta>
+                  )}
+                </p>
+                <Situacao im={im} />
               </article>
             ))}
           </div>
@@ -172,6 +180,69 @@ export function Imoveis() {
           </div>
           </>
         )}
+    </div>
+  );
+}
+
+/** Tirar do catálogo e devolver.
+ *
+ *  O controle mora no CARTÃO do imóvel, e não numa tela de edição separada: a decisão acontece
+ *  olhando preço e bairro, e obrigar a abrir outra tela é o que faz alguém deixar para depois — e
+ *  "depois" é a Mora oferecendo por mais uma semana um imóvel que já tem dono.
+ *
+ *  Sair do catálogo pede motivo; voltar, não. É a assimetria do próprio servidor, repetida aqui
+ *  para o campo aparecer antes de o botão falhar.
+ */
+function Situacao({ im }: { im: Imovel }) {
+  const qc = useQueryClient();
+  const [abrindo, setAbrindo] = useState(false);
+  const [alvo, setAlvo] = useState("");
+  const [motivo, setMotivo] = useState("");
+
+  const mudar = useMutation({
+    mutationFn: () => api.mudarSituacao(im.id, alvo, motivo.trim() || null),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["imoveis"] });
+      setAbrindo(false); setAlvo(""); setMotivo("");
+    },
+  });
+
+  const opcoes = Object.keys(SITUACAO_IMOVEL).filter((k) => k !== im.status);
+  const pedeMotivo = alvo !== "" && alvo !== "available";
+
+  if (!abrindo) {
+    return (
+      <div className="mt-2 flex gap-1.5 border-t border-line pt-2">
+        <Botao type="button" className="flex-1 justify-center text-xs" onClick={() => setAbrindo(true)}>
+          Mudar situação
+        </Botao>
+        <Link to={`/imoveis/${im.id}/agenda`}
+              className={cx("inline-flex items-center rounded-md border border-line bg-surface px-2.5 py-1.5 text-xs font-medium text-inkSoft hover:bg-surface2", foco)}>
+          Agenda
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="mt-2 space-y-1.5 border-t border-line pt-2">
+      {mudar.error ? <Erro erro={mudar.error} /> : null}
+      <select className={cx(entradaCls, "text-xs")} value={alvo} aria-label={`Nova situação de ${im.code}`}
+              onChange={(e) => setAlvo(e.target.value)}>
+        <option value="">Para…</option>
+        {opcoes.map((k) => <option key={k} value={k}>{SITUACAO_IMOVEL[k].r}</option>)}
+      </select>
+      {alvo && <p className="text-[11px] text-inkMuted">{SITUACAO_IMOVEL[alvo].ajuda}</p>}
+      {pedeMotivo && (
+        <input className={cx(entradaCls, "text-xs")} placeholder="Motivo (obrigatório)"
+               aria-label="Motivo" value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+      )}
+      <div className="flex gap-1.5">
+        <Botao type="button" variante="primario" className="flex-1 justify-center text-xs"
+               ocupado={mudar.isPending} disabled={!alvo || (pedeMotivo && !motivo.trim())}
+               onClick={() => mudar.mutate()}>Confirmar</Botao>
+        <Botao type="button" className="text-xs"
+               onClick={() => { setAbrindo(false); setAlvo(""); setMotivo(""); }}>Cancelar</Botao>
+      </div>
     </div>
   );
 }

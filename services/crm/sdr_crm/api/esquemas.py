@@ -146,6 +146,23 @@ class ImovelNovo(Corpo):
     _sem_repetida = model_validator(mode="after")(lambda self: _conferir_fotos(self))
 
 
+class SituacaoImovel(Corpo):
+    """Mudança de situação do imóvel no acervo.
+
+    `reason` é obrigatório para SAIR do catálogo e opcional para voltar: tirar um imóvel de
+    circulação é a decisão que alguém vai querer justificar daqui a um mês ("por que a Mora parou
+    de oferecer o SP-0042?"). Devolver ao catálogo se explica sozinha.
+    """
+    status: Literal["available", "reserved", "unavailable"]
+    reason: str | None = Field(default=None, max_length=500)
+
+    @model_validator(mode="after")
+    def motivo_para_sair(self):
+        if self.status != "available" and not (self.reason or "").strip():
+            raise ValueError("tirar o imóvel do catálogo exige motivo")
+        return self
+
+
 class FotosImovel(Corpo):
     photos: list[FotoImovel] = Field(default_factory=list, max_length=20)
 
@@ -169,6 +186,17 @@ class VisitaNova(Corpo):
     opportunity_id: str
     property_id: str
     slot_id: str
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class Remarcacao(Corpo):
+    """Remarcar é uma operação só, e não cancelar + pedir de novo.
+
+    `reason` é obrigatório pelo mesmo motivo do cancelamento: alguém já tinha reservado aquela
+    tarde, e "por que mudou" é a informação que o histórico não reconstrói sozinho depois.
+    """
+    slot_id: str
+    reason: str = Field(min_length=1, max_length=500)
     notes: str | None = Field(default=None, max_length=1000)
 
 

@@ -90,11 +90,22 @@ export const api = {
   imoveis: (q: Record<string, string | undefined>) => chamar<Pagina<Imovel>>(`/v1/properties${consulta(q)}`),
   criarImovel: (corpo: ImovelNovo) =>
     chamar<Envelope<Imovel>>("/v1/properties", { metodo: "POST", corpo, chave: crypto.randomUUID() }),
+  mudarSituacao: (id: string, status: string, reason: string | null) =>
+    chamar<Envelope<Imovel>>(`/v1/properties/${id}/status`,
+      { metodo: "PUT", corpo: { status, reason }, chave: crypto.randomUUID() }),
   trocarFotos: (id: string, photos: FotoImovel[]) =>
     chamar<Envelope<Imovel>>(`/v1/properties/${id}/photos`,
       { metodo: "PUT", corpo: { photos }, chave: crypto.randomUUID() }),
 
+  corretores: () => chamar<Pagina<Corretor>>("/v1/brokers"),
+  horarios: (q: Record<string, string | undefined>) => chamar<Pagina<Slot>>(`/v1/availability-slots${consulta(q)}`),
+  abrirHorario: (corpo: { property_id: string; broker_id: string; starts_at: string; ends_at: string }) =>
+    chamar<Envelope<Slot>>("/v1/availability-slots", { metodo: "POST", corpo, chave: crypto.randomUUID() }),
+
   visitas: (q: Record<string, string | undefined>) => chamar<Pagina<Visita>>(`/v1/visits${consulta(q)}`),
+  remarcarVisita: (id: string, slot_id: string, reason: string) =>
+    chamar<Envelope<Visita>>(`/v1/visits/${id}/reschedule`,
+      { metodo: "POST", corpo: { slot_id, reason }, chave: crypto.randomUUID() }),
   moverVisita: (id: string, target_status: string, reason: string | null, versao: number) =>
     chamar<Envelope<Visita>>(`/v1/visits/${id}/transitions`,
       { metodo: "POST", corpo: { target_status, reason }, versao, chave: crypto.randomUUID() }),
@@ -163,6 +174,8 @@ export type Imovel = {
   status: string; base_price_cents: number; monthly_total_cents: number | null;
   monthly_total_incomplete: boolean; monthly_missing: string[];
   photos?: FotoImovel[];
+  /** Clientes distintos com interesse vivo (`presented` ou `interested`). Descartado não conta. */
+  interested_count?: number;
 };
 export type ImovelNovo = {
   code: string; title: string; description?: string | null; city: string; neighborhood: string;
@@ -171,10 +184,18 @@ export type ImovelNovo = {
   other_monthly_cents?: number | null; bedrooms: number; parking: number;
   area_m2?: number | null; status?: string; photos?: FotoImovel[];
 };
+export type Corretor = { id: string; name: string; role: string };
+/** `taken` só vem preenchido quando a consulta pede os ocupados também (`only_free=false`) — é a
+ *  tela de agenda que precisa ver o horário já combinado, para não abrir outro em cima. */
+export type Slot = { id: string; property_id: string; broker_id: string; broker_name: string;
+  starts_at: string; ends_at: string; taken?: boolean };
 export type Visita = {
   id: string; opportunity_id: string; property_id: string; slot_id: string;
   status: "requested" | "confirmed" | "completed" | "cancelled" | "no_show";
   starts_at: string; ends_at: string; cancellation_reason: string | null; version: number;
+  /** Preenchido quando esta visita foi REMARCADA: aponta para a que a substituiu. É o que impede
+   *  uma visita cancelada por remarcação de parecer cliente perdido no histórico. */
+  rescheduled_to?: string | null;
 };
 export type Tarefa = {
   id: string; opportunity_id: string; title: string; kind: "follow_up" | "internal";

@@ -6,7 +6,7 @@ from ...dominio import funil
 from ...erros import AtendimentoHumano, ErroDeNegocio, NaoEncontrado, SlotIndisponivel
 from .. import auditoria, protocolo
 from ..contexto import Contexto, Ctx, envelope, executar
-from ..esquemas import TransicaoVisita, VisitaNova
+from ..esquemas import Remarcacao, TransicaoVisita, VisitaNova
 
 router = APIRouter(tags=["visitas"])
 
@@ -118,6 +118,66 @@ def solicitar(corpo: VisitaNova, ctx: Contexto = Ctx):
         return 201, envelope(linha, ctx.request_id)
 
     return executar(ctx, "POST", "/v1/visits", corpo.model_dump(mode="json"), acao)
+
+
+@router.post("/visits/{vid}/reschedule")
+def remarcar(vid: str, corpo: Remarcacao, ctx: Contexto = Ctx):
+    """Cancela a visita e cria a nova, ligadas, numa transação só.
+
+    **Por que não basta cancelar e pedir de novo**, que é o que dava para fazer antes: no histórico
+    ficavam dois eventos soltos, ninguém sabia que era a mesma visita que andou, e a cancelada
+    parecia cliente perdido. Aqui a antiga aponta para a nova.
+
+    **Quem remarca uma visita CONFIRMADA já é quem confirma**, então a nova nasce confirmada — é a
+    fricção que a remarcação existia para tirar. Vindo do agente, ou de uma visita que ainda era só
+    solicitação, a nova nasce solicitada como qualquer outra: confirmar continua sendo ato humano.
+
+    Se o horário novo já tiver visita confirmada, o índice único do banco recusa e nada acontece —
+    nem o cancelamento da antiga. É a razão de ser uma transação só.
+    """
+    ctx.ator.exigir("visits:request")
+
+    def acao(conn):
+        visita = _visita(conn, vid, para_alterar=True)
+        if visita["status"] not in {"requested", "confirmed"}:
+            raise ErroDeNegocio("Só visita solicitada ou confirmada pode ser remarcada.",
+                                status=visita["status"])
+        era_confirmada = visita["status"] == "confirmed"
+        if era_confirmada and not ctx.ator.humano:
+            # Mesma regra do cancelamento: quebrar compromisso já combinado é ato de gente.
+            raise ErroDeNegocio("O agente não remarca visita já confirmada.", status=visita["status"])
+
+        slot = conn.execute("SELECT * FROM availability_slots WHERE id = %s",
+                            (corpo.slot_id,)).fetchone()
+        if slot is None or str(slot["property_id"]) != str(visita["property_id"]):
+            raise NaoEncontrado("Horário não pertence a este imóvel.", slot_id=corpo.slot_id)
+        if str(slot["id"]) == str(visita["slot_id"]):
+            raise ErroDeNegocio("O horário novo é o mesmo da visita atual.", slot_id=corpo.slot_id)
+        if not conn.execute("SELECT %s > now() AS ok", (slot["starts_at"],)).fetchone()["ok"]:
+            raise ErroDeNegocio("Horário no passado.", slot_id=corpo.slot_id)
+
+        try:
+            nova = conn.execute(
+                """INSERT INTO visits (opportunity_id, property_id, slot_id, status, notes)
+                   VALUES (%s, %s, %s, %s, %s) RETURNING *""",
+                (visita["opportunity_id"], visita["property_id"], corpo.slot_id,
+                 "confirmed" if era_confirmada else "requested", corpo.notes)).fetchone()
+        except Exception as exc:
+            if "visits_slot_confirmado_uk" in str(exc):
+                raise SlotIndisponivel("O horário já foi reservado.", slot_id=corpo.slot_id)
+            raise
+
+        conn.execute(
+            """UPDATE visits SET status = 'cancelled', cancellation_reason = %s,
+                   rescheduled_to = %s, updated_at = now(), version = version + 1
+                WHERE id = %s""", (corpo.reason, nova["id"], vid))
+        auditoria.registrar(conn, ator=ctx.ator, action="visit.rescheduled", entity_type="visit",
+                            entity_id=vid, request_id=ctx.request_id,
+                            changes={"para_visita": str(nova["id"]), "slot_id": corpo.slot_id,
+                                     "reason": corpo.reason, "status_novo": nova["status"]})
+        return 201, envelope(nova, ctx.request_id)
+
+    return executar(ctx, "POST", f"/v1/visits/{vid}/reschedule", corpo.model_dump(mode="json"), acao)
 
 
 @router.post("/visits/{vid}/transitions")

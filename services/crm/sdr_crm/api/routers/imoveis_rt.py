@@ -6,7 +6,7 @@ from ...dominio import custos
 from ...erros import ErroDeNegocio, NaoEncontrado
 from .. import auditoria, protocolo
 from ..contexto import Contexto, Ctx, envelope, executar
-from ..esquemas import FotosImovel, ImovelNovo, SlotNovo
+from ..esquemas import FotosImovel, ImovelNovo, SituacaoImovel, SlotNovo
 
 router = APIRouter(tags=["imoveis"])
 
@@ -29,6 +29,24 @@ def _fotos(conn, ids: list[str]) -> dict[str, list[dict]]:
         saida.setdefault(str(r["property_id"]), []).append(
             {"url": r["url"], "alt": r["alt"], "position": r["position"]})
     return saida
+
+
+def _procura(conn, ids: list[str]) -> dict[str, int]:
+    """Quantos clientes DIFERENTES demonstraram interesse em cada imóvel.
+
+    Dois clientes no mesmo imóvel é normal e permitido — interesse não é posse, e a disputa real
+    acontece só no horário, resolvida pelo índice único das visitas. Mas ninguém avisa o corretor
+    de que três pessoas estão de olho no mesmo lugar, e isso muda a conversa e a prioridade.
+
+    Conta só `presented` e `interested`: quem descartou o imóvel não é procura, é o contrário.
+    """
+    if not ids:
+        return {}
+    linhas = conn.execute(
+        """SELECT property_id, count(DISTINCT opportunity_id) AS n FROM property_interests
+            WHERE property_id = ANY(%s) AND status IN ('presented', 'interested')
+            GROUP BY property_id""", (ids,)).fetchall()
+    return {str(r["property_id"]): int(r["n"]) for r in linhas}
 
 
 def _com_custos(linha: dict) -> dict:
@@ -87,9 +105,11 @@ def listar(ctx: Contexto = Ctx, code: str | None = None,
         linhas = conn.execute(
             f"SELECT * FROM properties WHERE {' AND '.join(onde)} "
             f"ORDER BY created_at DESC, id DESC LIMIT %s", [*valores, n + 1]).fetchall()
-        fotos = _fotos(conn, [str(x["id"]) for x in linhas])
+        ids = [str(x["id"]) for x in linhas]
+        fotos, procura = _fotos(conn, ids), _procura(conn, ids)
 
-    itens = [{**_com_custos(x), "photos": fotos.get(str(x["id"]), [])} for x in linhas]
+    itens = [{**_com_custos(x), "photos": fotos.get(str(x["id"]), []),
+              "interested_count": procura.get(str(x["id"]), 0)} for x in linhas]
     if max_price_cents is not None and budget_basis == "monthly_total":
         itens = [x for x in itens
                  if custos.cabe_no_orcamento(x, max_price_cents, "monthly_total") is not False]
@@ -106,10 +126,12 @@ def detalhe(pid: str, resposta: Response, ctx: Contexto = Ctx):
     with leitura() as conn:
         linha = conn.execute("SELECT * FROM properties WHERE id = %s", (pid,)).fetchone()
         fotos = _fotos(conn, [pid]) if linha is not None else {}
+        procura = _procura(conn, [pid]) if linha is not None else {}
     if linha is None:
         raise NaoEncontrado("Imóvel não encontrado.", property_id=pid)
     resposta.headers["ETag"] = protocolo.etag(linha["version"])
-    return envelope({**_com_custos(linha), "photos": fotos.get(pid, [])}, ctx.request_id)
+    return envelope({**_com_custos(linha), "photos": fotos.get(pid, []),
+                     "interested_count": procura.get(pid, 0)}, ctx.request_id)
 
 
 @router.post("/properties", status_code=201)
@@ -154,6 +176,58 @@ def _gravar_fotos(conn, pid: str, fotos) -> None:
             (pid, f.url, f.alt, posicao))
 
 
+@router.put("/properties/{pid}/status")
+def mudar_situacao(pid: str, corpo: SituacaoImovel, ctx: Contexto = Ctx):
+    """Tira o imóvel de circulação, ou devolve ao catálogo.
+
+    **Por que não é automático a partir do `won` da oportunidade.** São sistemas diferentes: a
+    oportunidade é do cliente, o imóvel é do acervo — e um imóvel pode receber proposta de quem não
+    tem oportunidade nenhuma no CRM. Amarrar os dois erra no primeiro caso fora do padrão, e erra
+    para o lado ruim: sumindo com imóvel que ainda está à venda.
+
+    **Os dois momentos.** `reserved` é a proposta aceita, antes da assinatura — é o que impede a
+    Mora seguir oferecendo por semanas um imóvel que já tem dono definido. `unavailable` é a
+    assinatura. E `reserved` VOLTA para `available` quando a proposta cai: situação que só anda
+    para a frente faz o acervo minguar sozinho.
+
+    **O efeito do outro lado é automático e não precisa de nada aqui.** `GET /v1/properties` filtra
+    por `available`, então o imóvel deixa de chegar na reindexação e sai do índice da Mora no
+    próximo ciclo. O agente não tem campo de situação: indisponível, para ele, é não existir.
+    """
+    ctx.ator.exigir_humano("mudar a situação do imóvel")
+
+    def acao(conn):
+        antes = conn.execute("SELECT * FROM properties WHERE id = %s FOR UPDATE", (pid,)).fetchone()
+        if antes is None:
+            raise NaoEncontrado("Imóvel não encontrado.", property_id=pid)
+        if antes["status"] == corpo.status:
+            raise ErroDeNegocio("O imóvel já está nesta situação.", status=corpo.status)
+        # Visita CONFIRMADA no futuro é compromisso com uma pessoa que já reservou a tarde. Tirar o
+        # imóvel do catálogo por baixo dela deixaria o corretor indo a um endereço para mostrar o
+        # que não está mais à venda — e ninguém seria avisado. Cancelar primeiro é ato consciente.
+        if corpo.status != "available":
+            presas = conn.execute(
+                """SELECT count(*) AS n FROM visits v JOIN availability_slots s ON s.id = v.slot_id
+                    WHERE v.property_id = %s AND v.status = 'confirmed' AND s.starts_at > now()""",
+                (pid,)).fetchone()["n"]
+            if presas:
+                raise ErroDeNegocio(
+                    "Há visita confirmada no futuro para este imóvel. Cancele antes de tirá-lo do "
+                    "catálogo.", visitas_confirmadas=int(presas))
+
+        linha = conn.execute(
+            """UPDATE properties SET status = %s, updated_at = now(), version = version + 1
+                WHERE id = %s RETURNING *""", (corpo.status, pid)).fetchone()
+        auditoria.registrar(conn, ator=ctx.ator, action="property.status_changed",
+                            entity_type="property", entity_id=pid, request_id=ctx.request_id,
+                            changes={"de": antes["status"], "para": corpo.status,
+                                     "reason": corpo.reason})
+        return 200, envelope({**_com_custos(linha), "photos": _fotos(conn, [pid]).get(pid, [])},
+                             ctx.request_id)
+
+    return executar(ctx, "PUT", f"/v1/properties/{pid}/status", corpo.model_dump(mode="json"), acao)
+
+
 @router.put("/properties/{pid}/photos")
 def substituir_fotos(pid: str, corpo: FotosImovel, ctx: Contexto = Ctx):
     """Substitui a galeria inteira — humano, como o cadastro.
@@ -176,6 +250,25 @@ def substituir_fotos(pid: str, corpo: FotosImovel, ctx: Contexto = Ctx):
                              ctx.request_id)
 
     return executar(ctx, "PUT", f"/v1/properties/{pid}/photos", corpo.model_dump(mode="json"), acao)
+
+
+@router.get("/brokers")
+def listar_corretores(ctx: Contexto = Ctx):
+    """Quem pode receber um horário na agenda.
+
+    Existe para a tela poder oferecer uma LISTA: sem ela, abrir horário exigiria digitar o uuid do
+    corretor à mão, e um uuid digitado errado é um horário na agenda da pessoa errada.
+
+    Só ativos e só quem o `POST /availability-slots` aceita (admin ou broker) — oferecer alguém que
+    o servidor vai recusar é convidar o erro que a lista existia para evitar. Devolve nome e papel,
+    nunca e-mail: é uma lista para escolher, não um diretório de contatos.
+    """
+    ctx.ator.exigir("crm:read")
+    with leitura() as conn:
+        linhas = conn.execute(
+            """SELECT id, name, role FROM users
+                WHERE active AND role IN ('admin', 'broker') ORDER BY name""").fetchall()
+    return {"items": linhas, "next_cursor": None}
 
 
 @router.get("/availability-slots")
@@ -203,10 +296,17 @@ def listar_slots(ctx: Contexto = Ctx, property_id: str | None = None, from_: str
                                     WHERE v.slot_id = s.id AND v.status IN ('confirmed','completed'))""")
     with leitura() as conn:
         linhas = conn.execute(
-            f"""SELECT s.*, u.name AS broker_name FROM availability_slots s
+            f"""SELECT s.*, u.name AS broker_name,
+                       EXISTS (SELECT 1 FROM visits v
+                                WHERE v.slot_id = s.id AND v.status IN ('confirmed','completed'))
+                           AS taken
+                  FROM availability_slots s
                   JOIN users u ON u.id = s.broker_id
                  WHERE {' AND '.join(onde)} ORDER BY s.starts_at LIMIT %s""",
             [*valores, protocolo.limite(limit)]).fetchall()
+    # `taken` só é informação quando `only_free` está desligado — e é aí que ele importa: a tela de
+    # agenda precisa mostrar o horário ocupado, senão quem administra a agenda não vê o que
+    # combinou e abre outro em cima.
     return {"items": linhas, "next_cursor": None}
 
 

@@ -283,6 +283,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS visits_slot_confirmado_uk ON visits (slot_id)
     WHERE status IN ('confirmed', 'completed');
 CREATE INDEX IF NOT EXISTS visits_oportunidade_idx ON visits (opportunity_id);
 
+-- Remarcação: a visita antiga aponta para a que a substituiu.
+--
+-- `ALTER ... IF NOT EXISTS` e não coluna no CREATE acima: este arquivo é reaplicado a cada
+-- `docker compose up` sobre bancos que JÁ EXISTEM, e `CREATE TABLE IF NOT EXISTS` não acrescenta
+-- coluna nenhuma numa tabela que já está lá — ele simplesmente não faz nada. Coluna nova em tabela
+-- antiga só entra por ALTER. (Descoberto por um teste que ficou vermelho, e não por leitura.)
+--
+-- A seta vai da ANTIGA para a NOVA porque é essa a pergunta que se faz olhando a lista: "esta caiu
+-- ou foi remarcada?". Sem ela, remarcar deixa dois eventos soltos e a cancelada parece cliente
+-- perdido. O caminho inverso é uma consulta, e é raro.
+ALTER TABLE visits ADD COLUMN IF NOT EXISTS rescheduled_to uuid REFERENCES visits (id);
+CREATE INDEX IF NOT EXISTS visits_remarcada_idx ON visits (rescheduled_to)
+    WHERE rescheduled_to IS NOT NULL;
+
 -- ============================================================================
 -- Trabalho do corretor
 -- ============================================================================

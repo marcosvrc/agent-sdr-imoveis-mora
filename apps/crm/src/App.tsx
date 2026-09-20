@@ -5,6 +5,7 @@ import { Botao, Carregando, FaixaSintetica, SeletorTema, cx, foco } from "./comp
 import { Ic } from "./componentes/Icones";
 import { ErroApi, api } from "./lib/api";
 import { aplicar, temaSalvo } from "./lib/tema";
+import { AgendaImovel } from "./paginas/AgendaImovel";
 import { Auditoria } from "./paginas/Auditoria";
 import { Clientes } from "./paginas/Clientes";
 import { Encaminhamentos } from "./paginas/Encaminhamentos";
@@ -67,6 +68,7 @@ export function App() {
             {/* Cadastro é ação humana na API (`exigir_humano`); esconder a rota não é controle de
                 acesso — quem recusa é o servidor. A rota fica para os dois papéis humanos. */}
             <Route path="/imoveis/novo" element={<NovoImovel />} />
+            <Route path="/imoveis/:id/agenda" element={<AgendaImovel />} />
             <Route path="/visitas" element={<Visitas />} />
             <Route path="/encaminhamentos" element={<Encaminhamentos />} />
             {admin && <Route path="/auditoria" element={<Auditoria />} />}
