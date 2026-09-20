@@ -6,10 +6,15 @@ bairro/região/cidade e a busca desce uma cascata — bairro → vizinhos → re
 em `nivel` até onde precisou ir. O agente usa esse sinal para falar a verdade sobre o que encontrou,
 em vez de deduzir indisponibilidade a partir de uma lista filtrada.
 """
+import logging
+
 from sdr_shared.config import get_settings
 from sdr_shared.db import ImovelRepository
 from sdr_shared.geo import Local, resolver, resolver_varios, vizinhos
 from sdr_shared.models import CartaoQualificacao, ImovelCard, Intencao, Imovel
+
+
+log = logging.getLogger("agent.busca")
 
 
 def _filtros(cartao: CartaoQualificacao, bairros: list[str] | None = None, regiao: str | None = "=") -> dict:
@@ -37,16 +42,27 @@ def _consulta(cartao: CartaoQualificacao, preferencia: str, local: Local | None)
     return " ".join(filter(None, partes)).strip() or "imóvel"
 
 
-def _vetor(consulta: str) -> list[float]:
+def _vetor(consulta: str) -> list[float] | None:
     """Um embedding por busca. A cascata abaixo chama `_executar` até seis vezes com a MESMA
     consulta (bairro, vizinhos, região, cidade, mais as alternativas) — e cada chamada ia ao
-    Ollama de novo pelo mesmo vetor: seis viagens de ~100 ms para calcular seis vezes o mesmo número."""
+    Ollama de novo pelo mesmo vetor: seis viagens de ~100 ms para calcular seis vezes o mesmo número.
+
+    `None` quando não há embedder (Ollama fora do ar, provedor sem chave): a busca segue só com os
+    filtros SQL. Antes, a exceção subia até o consultor e o turno inteiro caía no fallback de
+    handoff — o cliente era mandado ao corretor porque um serviço auxiliar tossiu."""
     from sdr_shared.ports import get_embedder
-    return get_embedder().embed(consulta)
+    try:
+        return get_embedder().embed(consulta)
+    except Exception:
+        log.warning("sem embedding para a busca; seguindo só com filtros", exc_info=True)
+        return None
 
 
-def _executar(vetor: list[float], filtros: dict, limite: int) -> list[ImovelCard]:
-    return [montar_card(i) for i in ImovelRepository().buscar_hibrido(vetor, filtros, limite)]
+def _executar(vetor: list[float] | None, filtros: dict, limite: int) -> list[ImovelCard]:
+    repo = ImovelRepository()
+    if vetor is None:
+        return [montar_card(i) for i in repo.buscar_por_filtros(filtros, limite)]
+    return [montar_card(i) for i in repo.buscar_hibrido(vetor, filtros, limite)]
 
 
 def local_do_cartao(cartao: CartaoQualificacao) -> Local | None:
@@ -91,7 +107,7 @@ def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limit
                 "ampliou": True, "alternativa_no_bairro": []}
 
     def resposta(cards: list[ImovelCard], nivel: str, alternativa: list[ImovelCard] | None = None) -> dict:
-        return {"cards": cards, "nivel": nivel, "local": local, "bairros_pedidos": pedidos,
+        return {"cards": cards, "nivel": nivel, "local": local, "bairros_pedidos": pedidos, "sem_embedding": vetor is None,
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
                 "ampliou": bool(pedidos) and nivel not in ("bairro", "vazio"),
                 "alternativa_no_bairro": alternativa or []}

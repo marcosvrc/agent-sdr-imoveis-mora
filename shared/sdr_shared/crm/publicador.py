@@ -45,9 +45,19 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
         return
     try:
         with crm.sessao() as s:
-            _publicar(s, lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
-    except Exception:
+            completo = _publicar(s, lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
+        erro = None if completo else "publicação incompleta (lead ou oportunidade não criados)"
+    except Exception as e:
         log.warning("falha ao publicar o lead %s no CRM — a conversa segue", lead.id, exc_info=True)
+        erro = f"{type(e).__name__}: {e}"
+    if erro:
+        # A promessa da porta, cumprida: o turno fica na fila e o scheduler republica quando o CRM
+        # voltar (`pendencias.drenar`). Antes, um log era tudo o que restava do turno. Repare que o
+        # caminho comum NÃO é a exceção: `sessao()` entrega uma sessão inerte quando o CRM está
+        # fora, e o que denuncia isso é `_publicar` voltar sem lead criado.
+        from . import pendencias
+        pendencias.registrar(lead.id, entrada, texto_saida=texto_saida, estagio_antes=estagio_antes,
+                             id_entrada=id_entrada, id_saida=id_saida, erro=erro)
 
     # Depois do turno, e em sessão própria: o interesse depende do vínculo que o bloco acima pode
     # ter acabado de criar, e o primeiro turno de um lead novo não teria onde pendurá-lo.
@@ -59,10 +69,14 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
 
 def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | None,
               estagio_antes: Estagio | None, id_entrada: int | None = None,
-              id_saida: int | None = None) -> None:
+              id_saida: int | None = None) -> bool:
+    """Devolve se o turno foi publicado por inteiro. `False` só quando o CRM não criou o lead ou a
+    oportunidade — o que vai para a fila. Intenção indefinida é `True`: não havia o que publicar."""
+    if traducao.proposito(lead) is None and vinculo.buscar(lead.id) is None:
+        return True     # intenção ainda indefinida: não há oportunidade a abrir
     v = vinculo.buscar(lead.id) or _abrir(s, lead)
     if v is None:
-        return          # intenção ainda indefinida: não há oportunidade a abrir
+        return False    # o CRM não criou lead/oportunidade: falha, não ausência de dado
 
     _registrar_conversa(s, v, lead, entrada, texto_saida, id_entrada, id_saida)
     versao = _atualizar_preferencias(s, v, lead)
@@ -73,6 +87,7 @@ def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | No
     # resposta que o cliente está esperando.
     if lead.estagio == Estagio.HANDOFF and estagio_antes != Estagio.HANDOFF:
         _encaminhar(s, v, lead)
+    return True
 
 
 def _abrir(s, lead: Lead) -> vinculo.Vinculo | None:

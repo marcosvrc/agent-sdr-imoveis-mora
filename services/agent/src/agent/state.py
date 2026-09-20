@@ -12,6 +12,7 @@ class AgentState(TypedDict, total=False):
     entrada: MensagemNormalizada
     primeira_interacao: bool
     proximo: str                              # decisão do supervisor
+    ultimo_no: str | None                     # especialista que acabou de rodar (guarda de repetição)
     saltos: int                               # guarda contra pingue-pongue (máx. 4)
     veredito: object                          # resultado do porteiro de escopo (guardrails.escopo)
     recusas: int                              # quantas vezes este lead já foi recusado (persiste no checkpoint)

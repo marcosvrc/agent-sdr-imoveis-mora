@@ -1,4 +1,5 @@
 """O cliente nunca pode ficar esperando em silêncio: falha do modelo/grafo vira resposta + handoff."""
+import pytest
 from sdr_shared.db import LeadRepository, MensagemRepository
 from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
 from sdr_shared.models import Estagio
@@ -76,3 +77,21 @@ def test_broker_confirma_mensagem_com_erro(monkeypatch):
         pass
     assert ("falha", "corpo", "falhou") in eventos
     assert any(e[0] == "ack" for e in eventos)
+
+
+def test_sem_barramento_o_turno_falha_antes_de_comecar(infra, monkeypatch):
+    """Sem Redis, o despacho estourava no FIM: modelo chamado, lead gravado, histórico registrado —
+    e a resposta perdida em silêncio. Agora um PING no início recusa o turno, alto e barato."""
+    import agent.dispatch as d
+    from agent.handler import processar
+    from sdr_shared.db import LeadRepository, MensagemRepository
+    from sdr_shared.messaging import Canal, MensagemNormalizada
+
+    class Morto:
+        def publish(self, *a, **k): raise AssertionError("não devia chegar ao despacho")
+        def ping(self): raise ConnectionError("redis fora")
+    monkeypatch.setattr(d, "get_broker", lambda: Morto())
+    with pytest.raises(RuntimeError, match="barramento"):
+        processar(MensagemNormalizada(lead_id="l-sem-redis", canal=Canal.WEB, identificador_canal="s",
+                                      conteudo="oi"))
+    assert LeadRepository().get("l-sem-redis") is None, "nada foi gravado para um turno que não aconteceu"

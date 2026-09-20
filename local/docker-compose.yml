@@ -32,7 +32,10 @@ services:
   db:
     image: pgvector/pgvector:pg16
     environment: { POSTGRES_USER: sdr, POSTGRES_PASSWORD: sdr, POSTGRES_DB: sdr }
-    ports: ["${DB_HOST_PORT:-5433}:5432"]      # host: 5433 (5432 costuma estar ocupado por um Postgres nativo)
+    # Só o loopback: a porta existe para psql e ferramentas na PRÓPRIA máquina. Sem o `127.0.0.1`,
+    # o Docker publica em 0.0.0.0 e furava o firewall do host — o banco com senha `sdr` ficava
+    # visível na rede local. Host 5433 porque 5432 costuma estar ocupado por um Postgres nativo.
+    ports: ["127.0.0.1:${DB_HOST_PORT:-5433}:5432"]
     volumes:
       - ./00-langfuse.sql:/docker-entrypoint-initdb.d/00-langfuse.sql
       - ./00-crm.sql:/docker-entrypoint-initdb.d/00-crm.sql
@@ -78,7 +81,7 @@ services:
 
   redis:                       # Streams + locks: é a fila entre os canais e o agente
     image: redis:7-alpine
-    ports: ["${REDIS_HOST_PORT:-6380}:6379"]   # host: 6380 (6379 costuma estar ocupado por um Redis nativo)
+    ports: ["127.0.0.1:${REDIS_HOST_PORT:-6380}:6379"]   # loopback, pelo mesmo motivo do db. Host 6380 (6379 costuma estar ocupado)
 
   ollama:                      # opcional: LLM e embeddings 100% locais
     image: ollama/ollama

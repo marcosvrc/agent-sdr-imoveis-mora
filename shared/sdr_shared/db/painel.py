@@ -149,16 +149,20 @@ class CorretorRepository:
             return c.execute("DELETE FROM corretores WHERE id = %s", (corretor_id,)).rowcount > 0
 
     def credencial_calendario(self, corretor_id: str) -> str | None:
+        from ..seguranca import cofre
         with _conn() as c:
             r = c.execute("SELECT calendario_refresh_token FROM corretores WHERE id = %s", (corretor_id,)).fetchone()
-        return (r or {}).get("calendario_refresh_token")
+        return cofre.decifrar((r or {}).get("calendario_refresh_token"))
 
     def salvar_credencial_calendario(self, corretor_id: str, refresh_token: str | None) -> None:
-        """None desconecta. O token nunca sai daqui — nem para a API, nem para o painel."""
+        """None desconecta. O token nunca sai daqui — nem para a API, nem para o painel — e fica
+        cifrado em repouso (`seguranca/cofre.py`): um dump do banco não carrega a agenda de ninguém."""
+        from ..seguranca import cofre
+        guardado = cofre.cifrar(refresh_token)
         with _conn() as c:
             c.execute("""UPDATE corretores SET calendario_refresh_token = %s,
                                 calendario_conectado_em = CASE WHEN %s::text IS NULL THEN NULL ELSE now() END
-                         WHERE id = %s""", (refresh_token, refresh_token, corretor_id))
+                         WHERE id = %s""", (guardado, guardado, corretor_id))
 
     def escolher(self, regiao: str | None) -> Corretor | None:
         """Roteamento: corretor ATIVO que atende a região (ou atende todas), com menor carga

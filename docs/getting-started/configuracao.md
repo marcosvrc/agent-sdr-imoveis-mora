@@ -41,7 +41,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_REDIS_URL` | Não | `redis://localhost:6379/0` | Fila entre a API, os canais e os workers. |
 | `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot, emitido pelo @BotFather. É o único canal externo. |
 | `SDR_TELEGRAM_BOT_USERNAME` | Não | `mora_vertice_bot` | Usuário do bot, para montar o link `t.me/<usuario>`. |
-| `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site. Sem valor, as sessões caem a cada reinício. |
+| `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site e deriva a chave que cifra o refresh token do calendário no banco. Sem valor, as sessões caem a cada reinício e a credencial fica em claro (com aviso). **Trocar o valor invalida as credenciais de calendário já guardadas.** |
 | `SDR_PAINEL_TOKEN` | Sim (fora do perfil local) | `exemplo-token-painel` | Credencial única do painel: header `Authorization` da API e WebSocket `papel=dashboard`. No perfil local, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. |
 | `SDR_CORS_ORIGINS` | Recomendada | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
 | `SDR_GOOGLE_CLIENT_ID` | Não | `exemplo.apps.googleusercontent.com` | OAuth do Google Agenda (opcional). |

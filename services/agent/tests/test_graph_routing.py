@@ -70,3 +70,17 @@ def test_modelo_nao_devolve_visita_reservada_ao_agendador(monkeypatch):
     lead.cartao.pediu_visita = False          # força a decisão a cair no modelo
     destino = supervisor.run(_estado("prefiro na Vila Madalena", lead))["proximo"]
     assert destino != "agendador"
+
+
+def test_especialista_que_nao_responde_nem_reencaminha_roda_uma_vez_so(infra, monkeypatch):
+    """Nó sem `resposta` e sem mudar `proximo` voltava a rodar até MAX_SALTOS: três execuções do
+    mesmo nó para o mesmo silêncio. Hoje é leitura de banco; com um LLM no caminho triplicaria o
+    custo do turno."""
+    import agent.nodes.reativador as reativador
+    from agent.handler import processar
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    execucoes = []
+    monkeypatch.setattr(reativador, "run", lambda state: execucoes.append(1) or {})
+    processar(MensagemNormalizada(lead_id="l-rep", canal=Canal.TELEGRAM, identificador_canal="5511999990000",
+                                  tipo=TipoMensagem.REATIVACAO, conteudo="reativar"))
+    assert len(execucoes) == 1, execucoes

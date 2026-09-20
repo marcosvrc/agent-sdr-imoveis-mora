@@ -315,6 +315,23 @@ CREATE TABLE IF NOT EXISTS crm_vinculo (
   atualizado_em      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Fila do que NÃO conseguiu ser publicado no CRM. A porta promete ("a transcrição continua na
+-- Mora para ser publicada depois") desde a primeira versão; até setembro/2026 nada cumpria a
+-- promessa — o turno publicado com o CRM fora do ar virava uma linha de log e sumia. Uma linha por
+-- turno, com o que basta para republicar: o lead é relido do banco na hora de drenar, porque o
+-- estado atual é o que interessa ao CRM. `chave` impede o mesmo turno duas vezes na fila.
+CREATE TABLE IF NOT EXISTS crm_pendencias (
+  id          BIGSERIAL PRIMARY KEY,
+  lead_id     TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  chave       TEXT NOT NULL UNIQUE,
+  turno       JSONB NOT NULL,
+  tentativas  INT NOT NULL DEFAULT 0,
+  proxima_em  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  ultimo_erro TEXT,
+  criado_em   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS crm_pendencias_proxima ON crm_pendencias (proxima_em);
+
 -- Marca de que já procuramos este lead no CRM. Sem ela, um cliente que o CRM não conhece custaria
 -- uma busca por turno, para sempre. `marca_contato` é o hash do e-mail/telefone usados: quando o
 -- cliente informa um contato novo, a marca muda e vale procurar de novo — que é justamente o caso

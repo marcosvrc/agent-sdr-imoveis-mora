@@ -1,8 +1,8 @@
 """Worker de follow-up: polling a cada 30 s na tabela followups_agendados.
 
-O mesmo laço carrega mais duas coisas que já cabiam no intervalo: a amostragem de saúde (ADR-0011)
-e a reindexação do acervo do CRM. Nenhuma das duas justificaria um processo próprio, e as três
-acordam no mesmo ritmo.
+O mesmo laço carrega mais três coisas que já cabiam no intervalo: a amostragem de saúde (ADR-0011),
+a drenagem do que não conseguiu ser publicado no CRM e a reindexação do acervo do CRM. Nenhuma
+delas justificaria um processo próprio, e todas acordam no mesmo ritmo.
 """
 import logging
 import os
@@ -52,6 +52,18 @@ def _sincronizar_acervo() -> None:
         log.warning("reindexação do acervo falhou; o índice continua como estava", exc_info=True)
 
 
+def _drenar_pendencias_do_crm() -> None:
+    """O que o publicador não conseguiu mandar ao CRM no fim do turno (CRM fora do ar) fica em
+    `crm_pendencias`; aqui é republicado quando ele volta. Best-effort, como o resto do laço."""
+    try:
+        from sdr_shared.crm import pendencias
+        r = pendencias.drenar()
+        if any(r.values()):
+            log.info("pendências do CRM drenadas", extra={"crm_pendencias": r})
+    except Exception:
+        log.warning("drenagem das pendências do CRM falhou; tento de novo no próximo ciclo", exc_info=True)
+
+
 def main():
     configurar_log("scheduler")
     sch, broker = get_scheduler(), get_broker()
@@ -62,6 +74,7 @@ def main():
             broker.publish("inbound", payload, key=lead_id)
         filas = broker.profundidade(list(TOPICOS)) if hasattr(broker, "profundidade") else {}
         amostrar(filas)
+        _drenar_pendencias_do_crm()
         intervalo = _intervalo_acervo()
         if intervalo and time.monotonic() >= proxima_sincronia:
             _sincronizar_acervo()

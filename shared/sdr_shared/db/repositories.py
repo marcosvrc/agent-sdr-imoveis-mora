@@ -354,6 +354,26 @@ class ImovelRepository:
                   "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos")}).fetchall()
         return [self._row(r) for r in rows]
 
+    def buscar_por_filtros(self, filtros: dict, limite: int = 5) -> list[Imovel]:
+        """A mesma busca sem o vetor: reserva para quando não há embedder (Ollama fora, chave da
+        OpenAI ausente). Mesmos filtros, ordem por preço crescente dentro do perfil — pior que a
+        semântica, muito melhor que derrubar o turno e mandar o cliente ao corretor por causa de
+        um serviço auxiliar. Não exige `embedding IS NOT NULL`: imóvel recém-cadastrado, ainda
+        sem vetor, também aparece aqui."""
+        with _conn() as c:
+            rows = c.execute(f"""
+                SELECT {self.COLS} FROM imoveis
+                WHERE (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
+                  AND (%(regiao)s::text IS NULL OR regiao = %(regiao)s)
+                  AND (%(bairros)s::text[] IS NULL OR bairro = ANY(%(bairros)s))
+                  AND (%(preco_max)s::numeric IS NULL OR preco <= %(preco_max)s * 1.15)
+                  AND (%(quartos)s::int IS NULL OR quartos >= %(quartos)s)
+                ORDER BY preco ASC, id LIMIT %(limite)s
+            """, {"limite": limite, "operacao": filtros.get("operacao"), "regiao": filtros.get("regiao"),
+                  "bairros": filtros.get("bairros") or None,
+                  "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos")}).fetchall()
+        return [self._row(r) for r in rows]
+
     def atualizar_fotos(self, imovel_id: str, fotos: list[str]) -> None:
         with _conn() as c:
             c.execute("UPDATE imoveis SET fotos = %s WHERE id = %s", (json.dumps(fotos), imovel_id))

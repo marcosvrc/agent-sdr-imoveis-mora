@@ -355,3 +355,63 @@ def test_corretor_guarda_o_id_do_crm():
     salvo = repo.get("cor_ponte")
     repo.upsert(salvo.model_copy(update={"nome": "Ana Ponte Silva"}))
     assert repo.get("cor_ponte").crm_user_id == "u-999"
+
+
+def test_turno_com_crm_fora_do_ar_fica_na_fila_e_e_publicado_quando_ele_volta(
+        lead, monkeypatch, porta_livre, ligado, crm_api, token_crm):
+    """A promessa da porta — "a transcrição continua na Mora para ser publicada depois" — ficou
+    sem código por meses: o turno virava log e sumia. Agora fica em `crm_pendencias` e o
+    scheduler republica quando o CRM volta."""
+    from sdr_shared.crm import pendencias, publicar_turno, vinculo
+    from sdr_shared.db.connection import get_pool
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    from sdr_shared.ports import get_crm
+
+    with get_pool().connection() as conn:
+        conn.execute("DELETE FROM crm_pendencias WHERE lead_id = %s", (lead.id,))
+    entrada = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, tipo=TipoMensagem.TEXTO,
+                                  identificador_canal="s", conteudo="quero alugar no Brooklin")
+    # ids únicos por execução: o banco do CRM de teste persiste entre rodadas, e o
+    # `external_event_id` é único por canal — um id fixo devolveria a interação da rodada anterior.
+    id_in = int(uuid.uuid4().int % 10**9); id_out = id_in + 1
+
+    # 1. CRM fora do ar: o turno não levanta e vai para a fila
+    url_viva = ligado
+    monkeypatch.setenv("SDR_CRM_URL", f"http://127.0.0.1:{porta_livre()}/mcp")
+    get_crm.cache_clear()
+    publicar_turno(lead, entrada, texto_saida="claro, vamos lá", id_entrada=id_in, id_saida=id_out)
+    assert vinculo.buscar(lead.id) is None
+    with get_pool().connection() as conn:
+        fila = conn.execute("SELECT chave, tentativas, ultimo_erro FROM crm_pendencias WHERE lead_id = %s",
+                            (lead.id,)).fetchall()
+    assert len(fila) == 1 and fila[0]["chave"] == f"{lead.id}:msg:{id_in}" and fila[0]["ultimo_erro"]
+    # republicar o mesmo turno não duplica a linha
+    publicar_turno(lead, entrada, texto_saida="claro, vamos lá", id_entrada=id_in, id_saida=id_out)
+    assert pendentes_do(lead.id) == 1
+
+    # 2. ainda fora: drenar adia com backoff, sem apagar
+    r = pendencias.drenar()
+    assert r["adiadas"] >= 1 and pendentes_do(lead.id) == 1
+    with get_pool().connection() as conn:
+        linha = conn.execute("SELECT tentativas, proxima_em > now() AS futuro FROM crm_pendencias "
+                             "WHERE lead_id = %s", (lead.id,)).fetchone()
+    assert linha["tentativas"] == 1 and linha["futuro"] is True
+
+    # 3. CRM volta: a linha vence e é publicada — cliente, oportunidade e as duas interações
+    monkeypatch.setenv("SDR_CRM_URL", url_viva)
+    get_crm.cache_clear()
+    with get_pool().connection() as conn:
+        conn.execute("UPDATE crm_pendencias SET proxima_em = now() WHERE lead_id = %s", (lead.id,))
+    r = pendencias.drenar()
+    assert r["publicadas"] >= 1 and pendentes_do(lead.id) == 0
+    v = vinculo.buscar(lead.id)
+    assert v is not None
+    interacoes = _consultar(crm_api, token_crm, f"/v1/leads/{v.crm_lead_id}/interactions")["items"]
+    assert {i["external_event_id"] for i in interacoes} >= {f"mora-msg-{id_in}", f"mora-msg-{id_out}"}
+
+
+def pendentes_do(lead_id: str) -> int:
+    from sdr_shared.db.connection import get_pool
+    with get_pool().connection() as conn:
+        return conn.execute("SELECT count(*) AS n FROM crm_pendencias WHERE lead_id = %s",
+                            (lead_id,)).fetchone()["n"]

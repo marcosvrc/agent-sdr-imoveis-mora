@@ -65,7 +65,20 @@ ESPECIALISTAS = ("qualificador", "consultor", "agendador", "followup", "resumido
 def _rotear(state: AgentState) -> str:
     if state.get("resposta") or state.get("saltos", 0) >= MAX_SALTOS:
         return END
-    return state.get("proximo") or "qualificador"
+    proximo = state.get("proximo") or "qualificador"
+    # Um especialista que devolve sem `resposta` e sem mudar `proximo` (reativador sem imóvel para
+    # oferecer, por exemplo) voltaria a rodar até bater em MAX_SALTOS — três execuções do mesmo nó
+    # para o mesmo silêncio. Repetição sem mudança de decisão é fim de turno, não nova tentativa.
+    if state.get("saltos", 0) > 1 and proximo == state.get("ultimo_no"):
+        return END
+    return proximo
+
+
+def _marcando(nome: str, fn):
+    """Cada especialista deixa o nome no estado: é o que `_rotear` compara com `proximo`."""
+    def run(state: AgentState) -> dict:
+        return {**fn(state), "ultimo_no": nome}
+    return run
 
 
 def build_graph(checkpointer=None):
@@ -75,7 +88,7 @@ def build_graph(checkpointer=None):
     # em silêncio e o especialista simplesmente não existiria no grafo.
     for nome, mod in zip(ESPECIALISTAS, (qualificador, consultor, agendador, followup, resumidor,
                                          handoff, recusa, reativador, informacoes), strict=True):
-        g.add_node(nome, _cronometrado(nome, mod.run))
+        g.add_node(nome, _cronometrado(nome, _marcando(nome, mod.run)))
 
     g.set_entry_point("supervisor")
     g.add_conditional_edges("supervisor", _rotear, {**{n: n for n in ESPECIALISTAS}, END: END})

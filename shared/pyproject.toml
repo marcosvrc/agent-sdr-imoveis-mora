@@ -3,7 +3,8 @@ name = "sdr-shared"
 version = "0.1.0"
 description = "Contratos, modelos e acesso a dados compartilhados entre os serviços"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.7", "pydantic-settings>=2.3", "psycopg[binary,pool]>=3.2", "pgvector>=0.3", "numpy>=1.26", "httpx>=0.27"]
+dependencies = ["pydantic>=2.7", "pydantic-settings>=2.3", "psycopg[binary,pool]>=3.2", "pgvector>=0.3", "numpy>=1.26", "httpx>=0.27",
+                "cryptography>=42"]   # cifra do refresh token do calendário (seguranca/cofre.py)
 
 [project.optional-dependencies]
 local = ["redis>=5.0", "langchain-ollama>=0.2", "langchain-anthropic>=0.2"]

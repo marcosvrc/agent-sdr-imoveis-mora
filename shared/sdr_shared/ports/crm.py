@@ -19,7 +19,9 @@ vocabulário da Mora e fecha no fim do turno.
 **Falha do CRM não derruba a conversa.** Nenhum método aqui levanta exceção para quem chama: em
 falha, devolvem `None` e registram no log. Um CRM indisponível não pode virar um atendimento
 indisponível — o cliente não tem culpa de o sistema comercial estar fora do ar, e a transcrição
-continua na Mora para ser publicada depois.
+continua na Mora para ser publicada depois: o turno vai para `crm_pendencias` e o scheduler o
+republica quando o CRM volta (`crm/pendencias.py`). Essa frase ficou meses sem código atrás;
+desde setembro/2026 tem.
 """
 from contextlib import contextmanager
 from typing import Protocol

@@ -93,3 +93,41 @@ def test_a_cascata_inteira_calcula_um_embedding_so(infra, monkeypatch):
     r = bi.buscar_com_contexto(sem, limite=5)
     assert r["nivel"] != "bairro", "o cenário precisa descer a cascata"
     assert len(vezes) == 1, vezes
+
+
+def test_sem_embedder_a_busca_cai_para_os_filtros_em_vez_de_derrubar_o_turno(infra, monkeypatch):
+    """Ollama fora do ar ou provedor sem chave: a exceção subia até o consultor e o turno inteiro
+    caía no fallback de handoff — o cliente era mandado ao corretor por causa de um serviço
+    auxiliar. Agora a busca segue só com os filtros SQL, e diz que seguiu assim."""
+    import agent.tools.buscar_imoveis as bi
+    import sdr_shared.ports as ports
+
+    class SemServico:
+        dimensoes = 1024
+        def embed(self, texto): raise ConnectionError("ollama fora do ar")
+    monkeypatch.setattr(ports, "get_embedder", lambda: SemServico())
+    exato = CartaoQualificacao(intencao=Intencao.ALUGUEL, bairros=["pinheiro"], preco_max=5000, quartos=1)
+    r = bi.buscar_com_contexto(exato, limite=5)
+    assert r["sem_embedding"] is True
+    assert r["nivel"] == "bairro" and all("Pinheiros" in c.titulo for c in r["cards"]), "os filtros continuam valendo"
+
+
+def test_turno_inteiro_sobrevive_sem_embedder(infra, monkeypatch):
+    import sdr_shared.ports as ports
+    from agent.handler import processar
+    from sdr_shared.db import LeadRepository
+    from sdr_shared.messaging import Canal, MensagemNormalizada
+    from sdr_shared.models import Estagio
+
+    class SemServico:
+        dimensoes = 1024
+        def embed(self, texto): raise ConnectionError("ollama fora do ar")
+    monkeypatch.setattr(ports, "get_embedder", lambda: SemServico())
+    broker, _ = infra
+    def msg(t): return MensagemNormalizada(lead_id="l-sememb", canal=Canal.TELEGRAM, identificador_canal="5511999990000", conteudo=t)
+    processar(msg("Estou procurando apartamento na zona sul"))
+    processar(msg("até 800 mil, 2 quartos, é urgente"))
+    lead = LeadRepository().get("l-sememb")
+    assert lead.estagio == Estagio.QUALIFICADO, "o consultor respondeu; nada de handoff por falha auxiliar"
+    ultima = [b for t, b, _ in broker.msgs if t == "outbound-telegram"][-1]["resposta"]
+    assert ultima["imoveis"], "e ofereceu imóveis"

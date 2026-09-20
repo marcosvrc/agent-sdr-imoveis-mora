@@ -106,6 +106,14 @@ def processar(entrada: MensagemNormalizada) -> None:
                         estagio=str(lead_.estagio.value) if lead_ is not None else None,
                         nos=caminho_atual())
 
+    # Sem barramento não há como entregar a resposta. Descobrir isso no fim — depois do modelo,
+    # do lead gravado e do histórico registrado — era a pior hora: o trabalho estava feito e a
+    # resposta se perdia em silêncio. Um PING antes de tudo falha alto e barato; a mensagem fica
+    # pendente no stream e é retomada quando o worker volta (ver `_retomar_pendentes`).
+    if not _barramento_responde():
+        _fim("barramento")
+        raise RuntimeError("barramento indisponível: turno não iniciado para não perder a resposta")
+
     # Turno que a Mora começa (follow-up, aviso de imóvel novo) não é o cliente digitando: não
     # passa pela vazão, não entra no histórico como mensagem recebida e não carimba atividade.
     iniciada_pelo_agente = entrada.tipo in INICIADAS_PELO_AGENTE
@@ -150,7 +158,7 @@ def processar(entrada: MensagemNormalizada) -> None:
     # `entrada.conteudo` segue cru para os nós, que é quem precisa do identificador.
     from .nodes.agendador import texto_para_historico
     entrada_grafo = {"lead": lead, "entrada": entrada, "primeira_interacao": novo, "saltos": 0, "resposta": None,
-                     "cartao_extraido_de": None,
+                     "cartao_extraido_de": None, "ultimo_no": None,
                      "messages": [("user", texto_para_historico(entrada.conteudo))] if entrada.conteudo else []}
     try:
         out = get_graph().invoke(entrada_grafo, config={"configurable": {"thread_id": lead.id}})
@@ -193,6 +201,21 @@ def processar(entrada: MensagemNormalizada) -> None:
         "duracao_ms": int((time.perf_counter() - t0) * 1000), "estagio": str(lead.estagio.value),
         "nos": caminho_atual(), "cartao_faltam": lead.cartao.campos_faltantes(),
         "temperatura": str(lead.temperatura), "score": lead.score}})
+
+
+def _barramento_responde() -> bool:
+    """`ping` é opcional na porta: dublês de teste e brokers em memória não o têm, e para eles a
+    resposta é sempre sim."""
+    from . import dispatch                       # a mesma porta que o despacho usa (e que os testes trocam)
+    ping = getattr(dispatch.get_broker(), "ping", None)
+    if ping is None:
+        return True
+    try:
+        ping()
+        return True
+    except Exception:
+        log.error("barramento não responde; turno do lead recusado antes de começar", exc_info=True)
+        return False
 
 
 def _dentro_da_vazao(entrada: MensagemNormalizada) -> bool:
