@@ -2,7 +2,87 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Paleta do CRM.
+ *
+ * Dois pontos de projeto, e o segundo é o que importa:
+ *
+ * 1. **Tokens em variáveis, não valores no Tailwind.** É o que permite existir um tema escuro sem
+ *    duplicar classe nenhuma nas páginas: a classe continua `bg-surface`, muda o que `--surface`
+ *    vale. Mesma estrutura do painel (ADR-0014), com dois atributos no <html>: `data-tema` é a
+ *    ESCOLHA da pessoa e `data-tema-efetivo` é o que está pintado; o CSS só olha o segundo.
+ *
+ * 2. **Acento verde-azulado, e não o azul do painel.** Os dois apps nasceram com o mesmo
+ *    `#0f172a` + `#2563eb` e ficaram indistinguíveis numa troca de aba. Não é questão de gosto:
+ *    este CRM roda com dados sintéticos e já carrega uma faixa permanente avisando disso — e a
+ *    faixa é o último aviso, não o primeiro. Um produto idêntico ao outro convida a confundir os
+ *    dois antes de alguém ler qualquer texto.
+ *
+ * Todo par de texto/fundo abaixo foi medido: nenhum fica abaixo de 4,5:1 (texto) ou 3:1 (borda de
+ * controle), nos dois temas. Os números estão anotados nos que passaram mais raspando.
+ */
+:root {
+  --canvas: #f4f7f6;
+  --surface: #ffffff;
+  --surface2: #e9efed;
+  --line: #d7e0dd;
+  --line-forte: #818f8b;      /* borda de campo e caixa de seleção: 3,4:1 no branco (WCAG 1.4.11) */
+
+  --ink: #101614;
+  --ink-soft: #33403c;
+  --ink-muted: #53625d;
+  --ink-faint: #5f6f6a;       /* 5,3:1 no branco — apoio em 11px, nunca informação essencial */
+
+  --marca: #0b3b39;
+  --marca-ink: #ffffff;       /* 12,4:1 sobre a marca */
+  --acento: #0f766e;          /* 5,5:1 no branco */
+  --anel-foco: rgba(15, 118, 110, 0.5);
+
+  --bom: #056608;    --bom-soft: #e8f5e9;
+  --alerta: #8a5a00; --alerta-soft: #fdf6e3;
+  --ruim: #a52322;   --ruim-soft: #fdecec;
+  --info: #12539f;   --info-soft: #eff5fe;
+
+  --sombra-card: 0 1px 2px rgba(11, 59, 57, .05), 0 1px 1px rgba(11, 59, 57, .03);
+  --scroll: #c3d0cc;
+  color-scheme: light;
+}
+
+/* Escuro não é o claro invertido: o fundo não é preto puro, e as cores de status precisam CLAREAR
+ * — vermelho escuro sobre fundo escuro não se lê. A marca também troca de papel: vira o tom claro,
+ * e por isso `--marca-ink` passa a ser escuro. */
+:root[data-tema-efetivo="escuro"] {
+  --canvas: #0d1412;
+  --surface: #141d1b;
+  --surface2: #1d2926;
+  --line: #2a3835;
+  --line-forte: #5f706c;      /* 3,3:1 na superfície escura */
+
+  --ink: #e8efec;
+  --ink-soft: #c2cecb;
+  --ink-muted: #9aa8a4;
+  --ink-faint: #8a9894;
+
+  --marca: #5eead4;
+  --marca-ink: #0d1412;       /* 12,6:1 sobre a marca clara */
+  --acento: #5eead4;
+  --anel-foco: rgba(94, 234, 212, 0.45);
+
+  --bom: #7ee094;    --bom-soft: #10241a;
+  --alerta: #f0c674; --alerta-soft: #241d0f;
+  --ruim: #ff9f99;   --ruim-soft: #26151a;
+  --info: #93c5fd;   --info-soft: #11243d;
+
+  --sombra-card: 0 1px 2px rgba(0, 0, 0, .3), 0 1px 1px rgba(0, 0, 0, .2);
+  --scroll: #33433f;
+  color-scheme: dark;
+}
+
 html { -webkit-font-smoothing: antialiased; }
 body { @apply bg-canvas text-ink; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: #cfd5dd; border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+
+/* Quem pediu menos movimento ao sistema não vê nenhum. Preferência respeitada sem virar opção. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

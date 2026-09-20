@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Botao, Card, Carregando, Erro, Etiqueta, Vazio, cx, entradaCls } from "../componentes/ui";
+import { Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Vazio, cx, entradaCls } from "../componentes/ui";
 import { api, type Handoff } from "../lib/api";
 import { NOME_ESTAGIO, relativo } from "../lib/formato";
 
@@ -34,7 +34,7 @@ export function Encaminhamentos() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold text-ink">Encaminhamentos</h1>
+        <CabecalhoPagina titulo="Encaminhamentos" descricao="Cliente que pediu uma pessoa. Aceitar é assumir o atendimento." />
         <label className="text-sm">
           <span className="sr-only">Filtrar por situação</span>
           <select className={cx(entradaCls, "w-auto")} value={filtro} onChange={(e) => setFiltro(e.target.value)}>

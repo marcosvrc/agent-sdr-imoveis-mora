@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Card, Carregando, Erro, Etiqueta, Vazio, cx, entradaCls } from "../componentes/ui";
+import { CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Vazio, cx, entradaCls } from "../componentes/ui";
 import { api } from "../lib/api";
 import { dataHora, relativo } from "../lib/formato";
 
@@ -19,7 +19,7 @@ export function Auditoria() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold text-ink">Auditoria</h1>
+        <CabecalhoPagina titulo="Auditoria" descricao="Quem fez o quê, quando, e o que mudou." />
         <label className="text-sm">
           <span className="sr-only">Filtrar por entidade</span>
           <select className={cx(entradaCls, "w-auto")} value={entidade} onChange={(e) => setEntidade(e.target.value)}>

@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { Card, Carregando, Erro, Etiqueta, Vazio } from "../componentes/ui";
+import { useParams } from "react-router-dom";
+import { CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Vazio } from "../componentes/ui";
 import { api } from "../lib/api";
 import { ATENDIMENTO, NOME_ESTAGIO, PROPOSITO, STATUS_VISITA, brl, dataHora } from "../lib/formato";
 
@@ -24,15 +24,18 @@ export function OportunidadeDetalhe() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-semibold text-ink">{PROPOSITO[o.purpose]}</h1>
-        <Etiqueta>{NOME_ESTAGIO[o.stage]}</Etiqueta>
-        <Etiqueta tom={ATENDIMENTO[o.atendimento].tom}>{ATENDIMENTO[o.atendimento].r}</Etiqueta>
-        <Link to={`/clientes/${o.lead_id}`} className="text-sm text-acento hover:underline">ver o cliente</Link>
-      </div>
+      {/* A migalha aponta para o cliente, e não para "Oportunidades": não existe lista de
+          oportunidades solta — sempre se chega aqui a partir de alguém ou do funil. */}
+      <CabecalhoPagina titulo={PROPOSITO[o.purpose]} voltar={{ para: `/clientes/${o.lead_id}`, r: "Voltar ao cliente" }}
+        contexto={
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <Etiqueta>{NOME_ESTAGIO[o.stage]}</Etiqueta>
+            <Etiqueta tom={ATENDIMENTO[o.atendimento].tom}>{ATENDIMENTO[o.atendimento].r}</Etiqueta>
+          </div>
+        } />
 
       {o.atendimento !== "agent" && (
-        <div className="rounded-lg border border-info/30 bg-infoSoft px-4 py-2 text-sm text-info">
+        <div className="rounded-lg border border-line bg-infoSoft px-4 py-2 text-sm text-info">
           {o.atendimento === "human_pending"
             ? "Encaminhado: a Mora parou de movimentar esta oportunidade e está só registrando o que o cliente escreve."
             : "Um corretor assumiu. A Mora continua ouvindo, mas não age até alguém devolver o atendimento."}

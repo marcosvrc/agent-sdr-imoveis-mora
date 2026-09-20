@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Botao, Card, Carregando, Erro, Etiqueta, Vazio } from "../componentes/ui";
+import { Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Vazio } from "../componentes/ui";
 import { api } from "../lib/api";
 import { ATENDIMENTO, NOME_ESTAGIO, POLITICA_CONTATO, PROPOSITO, dataHora, relativo } from "../lib/formato";
 
@@ -31,11 +31,13 @@ export function LeadDetalhe() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-semibold text-ink">{l.name}</h1>
-        {l.archived_at && <Etiqueta>arquivado em {dataHora(l.archived_at)}</Etiqueta>}
-        <Etiqueta tom={POLITICA_CONTATO[l.contact_policy].tom}>{POLITICA_CONTATO[l.contact_policy].r}</Etiqueta>
-      </div>
+      <CabecalhoPagina titulo={l.name} voltar={{ para: "/clientes", r: "Clientes" }}
+        contexto={
+          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            {l.archived_at && <Etiqueta>arquivado em {dataHora(l.archived_at)}</Etiqueta>}
+            <Etiqueta tom={POLITICA_CONTATO[l.contact_policy].tom}>{POLITICA_CONTATO[l.contact_policy].r}</Etiqueta>
+          </div>
+        } />
 
       {falha ? <Erro erro={falha} /> : null}
 
@@ -118,7 +120,7 @@ export function LeadDetalhe() {
                  consegue percorrer o histórico — foi um defeito real encontrado por varredura de
                  acessibilidade no outro painel do projeto. */
               <ul tabIndex={0} aria-label="Histórico de interações"
-                  className="max-h-[70vh] divide-y divide-line overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/60">
+                  className="max-h-[70vh] divide-y divide-line overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--anel-foco)]">
                 {historico.data!.items.map((i) => (
                   <li key={i.id} className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-2 text-[11px] text-inkFaint">

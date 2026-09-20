@@ -85,7 +85,7 @@ function Numero({ rotulo, valor, nota, tom = "neutro", para }: {
       </div>
     </div>
   );
-  return para ? <Link to={para} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento/60">{corpo}</Link> : corpo;
+  return para ? <Link to={para} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--anel-foco)]">{corpo}</Link> : corpo;
 }
 
 function Linha({ rotulo, valor }: { rotulo: string; valor: number }) {

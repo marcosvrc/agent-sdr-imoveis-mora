@@ -1,9 +1,20 @@
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Botao, Card, Carregando, Erro, Etiqueta, Vazio, cx, entradaCls } from "../componentes/ui";
+import { AvisoOrdemParcial, Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Paginacao,
+         Vazio, cx, entradaCls, usePaginaCursor } from "../componentes/ui";
 import { ErroApi, api, type Visita } from "../lib/api";
+import { ordenar, useFiltrosNaUrl, type Ordem } from "../lib/filtros";
 import { PROXIMAS_VISITA, STATUS_VISITA, dataHora } from "../lib/formato";
+
+const POR_PAGINA = "50";
+type Campo = "quando" | "situacao";
+const ORDENS = [
+  { k: "", r: "Ordem do servidor (mais recentes)" },
+  { k: "quando", r: "Mais próxima primeiro" },
+  { k: "quando:desc", r: "Mais distante primeiro" },
+  { k: "situacao", r: "Situação" },
+];
 
 /** Agenda de visitas.
  *
@@ -13,12 +24,21 @@ import { PROXIMAS_VISITA, STATUS_VISITA, dataHora } from "../lib/formato";
  */
 export function Visitas() {
   const qc = useQueryClient();
-  const [filtro, setFiltro] = useState("requested");
+  const { valores, definir } = useFiltrosNaUrl({ situacao: "requested", ordem: "" });
+  const filtro = valores.situacao;
   const [falha, setFalha] = useState<unknown>(null);
+  const pag = usePaginaCursor();
+
+  useEffect(() => { pag.reiniciar(); }, [filtro]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["visitas", filtro], queryFn: () => api.visitas({ status: filtro || undefined, limit: "100" }),
+    queryKey: ["visitas", filtro, pag.cursor],
+    queryFn: () => api.visitas({ status: filtro || undefined, limit: POR_PAGINA, cursor: pag.cursor }),
   });
+
+  const [campo, dir] = valores.ordem.split(":");
+  const ordem: Ordem<Campo> | null = campo ? { campo: campo as Campo, desc: dir === "desc" } : null;
+  const itens = ordenar(data?.items ?? [], ordem, (v, c) => (c === "quando" ? v.starts_at : STATUS_VISITA[v.status].r));
 
   const mover = useMutation({
     mutationFn: ({ v, alvo, motivo }: { v: Visita; alvo: string; motivo: string | null }) =>
@@ -35,19 +55,28 @@ export function Visitas() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold text-ink">Visitas</h1>
-        <label className="text-sm">
-          <span className="sr-only">Filtrar por situação</span>
-          <select className={cx(entradaCls, "w-auto")} value={filtro} onChange={(e) => setFiltro(e.target.value)}>
-            <option value="requested">Solicitadas</option>
-            <option value="confirmed">Confirmadas</option>
-            <option value="completed">Concluídas</option>
-            <option value="cancelled">Canceladas</option>
-            <option value="">Todas</option>
-          </select>
-        </label>
-      </div>
+      <CabecalhoPagina titulo="Visitas"
+        descricao="Solicitar não agenda: o agente pede, quem confirma é uma pessoa."
+        acoes={
+          <>
+            <label className="text-sm">
+              <span className="sr-only">Filtrar por situação</span>
+              <select className={cx(entradaCls, "w-auto")} value={filtro} onChange={(e) => definir({ situacao: e.target.value })}>
+                <option value="requested">Solicitadas</option>
+                <option value="confirmed">Confirmadas</option>
+                <option value="completed">Concluídas</option>
+                <option value="cancelled">Canceladas</option>
+                <option value="">Todas</option>
+              </select>
+            </label>
+            <label className="text-sm">
+              <span className="sr-only">Ordenar</span>
+              <select className={cx(entradaCls, "w-auto")} value={valores.ordem} onChange={(e) => definir({ ordem: e.target.value })}>
+                {ORDENS.map((o) => <option key={o.k} value={o.k}>{o.r}</option>)}
+              </select>
+            </label>
+          </>
+        } />
 
       {falha ? <Erro erro={falha} /> : null}
       {disputa && (
@@ -59,17 +88,21 @@ export function Visitas() {
 
       {isLoading ? <Carregando linhas={5} />
         : error ? <Erro erro={error} aoTentar={() => refetch()} />
-        : data!.items.length === 0 ? (
+        : itens.length === 0 ? (
           <Vazio titulo="Nenhuma visita nesta situação"
                  descricao="A Mora solicita visitas quando o cliente pede; a confirmação é sempre de uma pessoa." />
         ) : (
           <Card semPadding>
             <ul className="divide-y divide-line">
-              {data!.items.map((v) => (
+              {itens.map((v) => (
                 <Linha key={v.id} v={v} ocupado={mover.isPending}
                        aoMover={(alvo, motivo) => mover.mutate({ v, alvo, motivo })} />
               ))}
             </ul>
+            <AvisoOrdemParcial mostrar={!!ordem && !!data!.next_cursor} />
+            <Paginacao rotulo="visitas" mostrando={itens.length} pagina={pag.pagina} primeira={pag.primeira}
+                       temProxima={!!data!.next_cursor} aoVoltar={pag.voltar}
+                       aoAvancar={() => data!.next_cursor && pag.avancar(data!.next_cursor)} />
           </Card>
         )}
     </div>

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Botao, Card, Carregando, Erro, Etiqueta, cx, entradaCls, foco } from "../componentes/ui";
+import { Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, cx, entradaCls, foco } from "../componentes/ui";
 import { ErroApi, api, type Oportunidade } from "../lib/api";
 import { ATENDIMENTO, ESTAGIOS, NOME_ESTAGIO, PROPOSITO } from "../lib/formato";
 
@@ -59,11 +59,11 @@ export function Funil() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-baseline gap-2">
-        <h1 className="text-xl font-semibold text-ink">Funil</h1>
+        <CabecalhoPagina titulo="Funil" descricao="Arraste ou use os botões para mover a oportunidade de estágio." />
         <span className="text-xs text-inkFaint">{data!.itens.length} oportunidades</span>
       </div>
       {data!.truncado && (
-        <p className="rounded-lg border border-alerta/30 bg-alertaSoft px-3 py-2 text-xs text-alerta">
+        <p className="rounded-lg border border-line bg-alertaSoft px-3 py-2 text-xs text-alerta">
           Mostrando as {data!.itens.length} mais recentes — há mais no banco do que cabe neste quadro.
         </p>
       )}
