@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Ic } from "./Icons";
 import { ROTULO } from "../lib/api";
-import { pct } from "../lib/format";
+import { pct , nomeDoLead } from "../lib/format";
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
@@ -338,5 +338,63 @@ export function Paginacao({ pagina, total, setPagina, inicio, fim, n, porPagina,
         <Button tamanho="sm" variante="fantasma" disabled={pagina === total} onClick={() => setPagina(pagina + 1)} aria-label="Próxima página"><Ic.chevronRight size={14} /></Button>
       </div>
     </div>
+  );
+}
+
+/** Nome do lead na tela — nunca o id.
+ *
+ *  Lead sem nome recebe uma DESCRIÇÃO do canal, apagada e em itálico. A diferença visual não é
+ *  enfeite: sem ela, "Visitante do site" é lido como o nome da pessoa, e o corretor cumprimenta
+ *  alguém por um rótulo que o sistema inventou.
+ */
+export function NomeLead({ lead, className }: {
+  lead: { id: string; nome?: string | null; telefone?: string | null; canais?: { canal: string }[] };
+  className?: string;
+}) {
+  const { texto, anonimo } = nomeDoLead(lead);
+  return (
+    <span className={cx(className, anonimo && "italic text-ink-muted")}
+          title={anonimo ? "Este lead ainda não disse o nome" : undefined}>
+      {texto}
+    </span>
+  );
+}
+
+/** O identificador técnico, para copiar — não para ler.
+ *
+ *  Quem precisa dele quer cruzar com o log, com a auditoria ou com o CRM, e isso se faz colando.
+ *  Por isso ele mora só na tela do lead, atrás de um clique, e fica fora das listas: numa lista
+ *  ele ocuparia a linha onde se procura uma pessoa, que é como ele virou nome em primeiro lugar.
+ */
+export function IdCopiavel({ id, rotulo = "id" }: { id: string; rotulo?: string }) {
+  const [copiado, setCopiado] = useState(false);
+  const [falhou, setFalhou] = useState(false);
+
+  const copiar = async () => {
+    try {
+      // `navigator.clipboard` não existe fora de HTTPS/localhost — e falhar calado aqui deixaria
+      // a pessoa achando que copiou. O campo de seleção abaixo é a saída manual.
+      await navigator.clipboard.writeText(id);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1500);
+    } catch {
+      setFalhou(true);
+    }
+  };
+
+  if (falhou) {
+    return <input readOnly value={id} onFocus={(e) => e.currentTarget.select()}
+                  aria-label={`${rotulo} do lead, selecione para copiar`}
+                  className={cx(inputCls, "h-7 w-64 font-mono text-[11px]")} />;
+  }
+  return (
+    <button type="button" onClick={copiar} title={`Copiar o ${rotulo}: ${id}`}
+            aria-label={copiado ? `${rotulo} copiado` : `Copiar o ${rotulo} do lead`}
+            className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-line bg-surface-2 px-1.5 py-0.5 font-mono text-[11px] text-ink-muted hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--anel-foco)]">
+      <span className="truncate">{id}</span>
+      {copiado ? <Ic.check size={12} className="shrink-0 text-good-strong" />
+               : <Ic.external size={12} className="shrink-0 opacity-60" />}
+      <span className="sr-only">{copiado ? "copiado" : "clique para copiar"}</span>
+    </button>
   );
 }

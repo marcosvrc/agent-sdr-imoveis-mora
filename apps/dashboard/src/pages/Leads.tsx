@@ -2,8 +2,8 @@ import { useMemo, useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, ESTAGIOS, ROTULO } from "../lib/api";
-import { brl, relativo, INTENCAO, REGIAO, CANAL } from "../lib/format";
-import { Button, Card, PageHeader, Estagio, Temperatura, Table, EmptyState, Input, Select, Avatar, Paginacao, usePaginacao, cx } from "../components/ui";
+import { CANAL, INTENCAO, REGIAO, brl, canalDoLead, nomeDoLead, relativo, rotulo } from "../lib/format";
+import { Avatar, Button, Card, EmptyState, Estagio, Input, NomeLead, PageHeader, Paginacao, Select, Table, Temperatura, cx, usePaginacao } from "../components/ui";
 import { Ic } from "../components/Icons";
 
 type Ord = "score" | "recente" | "nome";
@@ -42,7 +42,9 @@ export function Leads() {
           vazio={!isLoading && lista.length === 0 ? <EmptyState icone="leads" titulo="Nenhum lead encontrado" descricao="Ajuste os filtros ou aguarde novas conversas nos canais." /> : undefined}>
           {pag.fatia.map((l) => (
             <tr key={l.id} className="hover:bg-surface-2">
-              <td className="px-4 py-2.5"><Link to={`/leads/${l.id}`} className="flex items-center gap-2.5"><Avatar nome={l.nome ?? l.id} /><span><span className="block font-medium hover:underline">{l.nome ?? l.id}</span><span className="block text-xs text-ink-muted">{l.telefone ?? l.id}</span></span></Link></td>
+              <td className="px-4 py-2.5"><Link to={`/leads/${l.id}`} className="flex items-center gap-2.5"><Avatar nome={nomeDoLead(l).avatar} /><span className="min-w-0"><NomeLead lead={l} className="block font-medium hover:underline" />{/* A segunda linha é o CONTATO, e só aparece quando acrescenta alguma coisa: sem nome, o
+                     telefone JÁ É o título, e repeti-lo embaixo é a mesma informação duas vezes. */}
+                {l.telefone && l.nome && <span className="block text-xs text-ink-muted">{l.telefone}</span>}</span></Link></td>
               <td className="px-4 py-2.5">{INTENCAO[l.cartao.intencao] ?? l.cartao.intencao}</td>
               <td className="px-4 py-2.5">{l.cartao.regiao ? REGIAO[l.cartao.regiao] ?? l.cartao.regiao : <span className="text-ink-faint">—</span>}</td>
               <td className="px-4 py-2.5 tabular-nums">{l.cartao.preco_max || l.cartao.ticket ? brl(l.cartao.preco_max ?? l.cartao.ticket, true) : <span className="text-ink-faint">—</span>}</td>
@@ -50,7 +52,7 @@ export function Leads() {
               <td className="px-4 py-2.5"><Temperatura t={l.temperatura} /></td>
               <td className="px-4 py-2.5 text-right"><span className={cx("inline-block min-w-[2.2rem] rounded-md px-1.5 py-0.5 text-center text-xs font-semibold tabular-nums", l.score >= 70 ? "bg-bad-soft text-bad-strong" : l.score >= 40 ? "bg-warn-soft text-warn-strong" : "bg-surface-2 text-ink-muted")}>{l.score}</span></td>
               <td className="px-4 py-2.5 text-xs">{l.corretor_nome ? <span className="inline-flex items-center gap-1.5"><Avatar nome={l.corretor_nome} tamanho={20} />{l.corretor_nome}</span> : l.estagio === "handoff" ? <span className="text-warn-strong">sem corretor</span> : <span className="text-ink-faint">—</span>}</td>
-              <td className="px-4 py-2.5 text-xs text-ink-muted">{l.canais?.length ? l.canais.map((c) => CANAL[c.canal] ?? c.canal).join(", ") : l.id.startsWith("web_") ? CANAL.web : l.id.startsWith("tg_") ? CANAL.telegram : "—"}</td>
+              <td className="px-4 py-2.5 text-xs text-ink-muted">{l.canais?.length ? l.canais.map((c) => CANAL[c.canal] ?? c.canal).join(", ") : rotulo(CANAL, canalDoLead(l))}</td>
               <td className="px-4 py-2.5 text-xs text-ink-muted" title={l.ultima_mensagem_em ?? ""}>{relativo(l.ultima_mensagem_em)}</td>
             </tr>
           ))}

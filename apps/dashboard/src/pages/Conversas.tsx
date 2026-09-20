@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import { relativo, CANAL } from "../lib/format";
+import { CANAL, nomeDoLead, relativo } from "../lib/format";
 import { Transcricao } from "../components/Transcricao";
-import { Card, PageHeader, Estagio, Temperatura, EmptyState, Avatar, Input, Skeleton, cx } from "../components/ui";
+import { Avatar, Card, EmptyState, Estagio, Input, NomeLead, PageHeader, Skeleton, Temperatura, cx } from "../components/ui";
 import { Ic } from "../components/Icons";
 import { Link } from "react-router-dom";
 
@@ -14,7 +14,7 @@ export function Conversas() {
   const [busca, setBusca] = useState("");
   const lista = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return [...(leads ?? [])].filter((l) => l.ultima_mensagem_em && (!q || (l.nome ?? l.id).toLowerCase().includes(q))).sort((a, b) => (b.ultima_mensagem_em ?? "").localeCompare(a.ultima_mensagem_em ?? ""));
+    return [...(leads ?? [])].filter((l) => l.ultima_mensagem_em && (!q || nomeDoLead(l).texto.toLowerCase().includes(q))).sort((a, b) => (b.ultima_mensagem_em ?? "").localeCompare(a.ultima_mensagem_em ?? ""));
   }, [leads, busca]);
   const atual = sel ?? lista[0]?.id ?? null;
   const lead = lista.find((l) => l.id === atual);
@@ -31,8 +31,8 @@ export function Conversas() {
               {isLoading && Array.from({ length: 5 }).map((_, i) => <li key={i} className="p-3"><Skeleton className="h-10" /></li>)}
               {lista.map((l) => (
                 <li key={l.id}><button onClick={() => setSel(l.id)} className={cx("flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-surface-2", atual === l.id && "bg-info-soft")}>
-                  <Avatar nome={l.nome ?? l.id} />
-                  <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><span className="truncate text-sm font-medium">{l.nome ?? l.id}</span><span className="shrink-0 text-[11px] text-ink-faint">{relativo(l.ultima_mensagem_em)}</span></span>
+                  <Avatar nome={nomeDoLead(l).avatar} />
+                  <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-2"><NomeLead lead={l} className="truncate text-sm font-medium" /><span className="shrink-0 text-[11px] text-ink-faint">{relativo(l.ultima_mensagem_em)}</span></span>
                     <span className="mt-0.5 flex items-center gap-1.5"><Estagio e={l.estagio} /><Temperatura t={l.temperatura} /><span className="text-[11px] text-ink-muted">{l.canais?.map((c) => CANAL[c.canal] ?? c.canal).join(", ")}</span></span></span>
                 </button></li>))}
               {!isLoading && lista.length === 0 && <li><EmptyState icone="chat" titulo="Nenhuma conversa" descricao="Assim que um lead escrever no site ou no Telegram, ele aparece aqui." /></li>}
@@ -40,7 +40,7 @@ export function Conversas() {
           </aside>
           <section className="flex min-h-0 min-w-0 flex-col">
             {lead ? (<>
-              <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3"><div className="flex items-center gap-2.5"><Avatar nome={lead.nome ?? lead.id} /><div><p className="text-sm font-medium">{lead.nome ?? lead.id}</p><p className="text-[11px] text-ink-muted">score {lead.score} · {lead.estagio === "handoff" ? "com corretor" : "com a Mora"}</p></div></div><Link to={`/leads/${lead.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-brand-accent hover:underline">abrir lead <Ic.arrowRight size={12} /></Link></header>
+              <header className="flex items-center justify-between gap-2 border-b border-line px-4 py-3"><div className="flex items-center gap-2.5"><Avatar nome={nomeDoLead(lead).avatar} /><div><p className="text-sm font-medium"><NomeLead lead={lead} /></p><p className="text-[11px] text-ink-muted">score {lead.score} · {lead.estagio === "handoff" ? "com corretor" : "com a Mora"}</p></div></div><Link to={`/leads/${lead.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-brand-accent hover:underline">abrir lead <Ic.arrowRight size={12} /></Link></header>
               {/* No desktop a altura vem do grid (`h-full` dentro de um flex que pode encolher). No celular
                   não há grid de altura fixa: sem um teto, a transcrição cresce com as 40 mensagens, a página
                   inteira vira um rolo só e a lista de conversas fica longe do alcance do polegar. */}

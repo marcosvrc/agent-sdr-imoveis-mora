@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, cx, entradaCls, foco } from "../componentes/ui";
 import { ErroApi, api, type Oportunidade } from "../lib/api";
 import { ATENDIMENTO, ESTAGIOS, NOME_ESTAGIO, PROPOSITO,
-         dataHora, diasParado, tomDoParado } from "../lib/formato";
+         dataHora, diasParado, nomeDoCliente, tomDoParado } from "../lib/formato";
 
 /** Busca TODAS as oportunidades, seguindo o cursor.
  *
@@ -149,7 +149,8 @@ function Ficha({ op, aoMover, ocupado }: {
         {humano && <Etiqueta tom={ATENDIMENTO[op.atendimento].tom}>{ATENDIMENTO[op.atendimento].r}</Etiqueta>}
       </div>
       <Link to={`/clientes/${op.lead_id}`} className="mt-0.5 block truncate text-[11px] text-inkMuted hover:underline">
-        {op.lead_name ?? `cliente ${op.lead_id.slice(0, 8)}`}
+        {(() => { const n = nomeDoCliente(op.lead_name, op.lead_id);
+                  return <span className={n.anonimo ? "italic" : undefined}>{n.texto}</span>; })()}
       </Link>
       {tom && (
         /* Texto junto da cor, sempre: "23d" amarelo sozinho não diz nada a quem não distingue

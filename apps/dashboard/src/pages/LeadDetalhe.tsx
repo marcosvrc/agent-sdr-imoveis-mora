@@ -2,11 +2,11 @@ import { useCallback, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, brl, type Lead } from "../lib/api";
-import { dataHora, relativo, CANAL, INTENCAO, REGIAO } from "../lib/format";
+import { CANAL, INTENCAO, REGIAO, canalDoLead, dataHora, nomeDoLead, relativo, rotulo } from "../lib/format";
 import { Transcricao } from "../components/Transcricao";
 import { CartaoLead } from "../components/CartaoLead";
 import { AnaliseLeadCard } from "../components/AnaliseLead";
-import { Badge, Button, Estagio, Temperatura, Input, Avatar, Select, Skeleton, Tabs, Toggle, cx } from "../components/ui";
+import { Avatar, Badge, Button, Estagio, IdCopiavel, Input, NomeLead, Select, Skeleton, Tabs, Temperatura, Toggle, cx } from "../components/ui";
 import { InteressesDoLead } from "../components/Interesses";
 import { Ic } from "../components/Icons";
 import { useTempoReal } from "../lib/ws";
@@ -61,14 +61,18 @@ export function LeadDetalhe() {
       <header className="rounded-xl border border-line bg-surface shadow-card">
         <div className="flex flex-wrap items-start justify-between gap-3 p-4">
           <div className="flex min-w-0 items-center gap-3">
-            <Avatar nome={lead.nome ?? lead.id} tamanho={44} />
+            <Avatar nome={nomeDoLead(lead).avatar} tamanho={44} />
             <div className="min-w-0">
               <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold leading-tight">
-                {lead.nome ?? lead.id}<Estagio e={lead.estagio} /><Temperatura t={lead.temperatura} />
+                <NomeLead lead={lead} /><Estagio e={lead.estagio} /><Temperatura t={lead.temperatura} />
               </h1>
               <p className="mt-0.5 truncate text-xs text-ink-muted">
-                {lead.canais?.map((c) => `${CANAL[c.canal] ?? c.canal}: ${c.identificador}`).join(" · ") || lead.id} · entrou {relativo(lead.criado_em)} atrás
+                {lead.canais?.map((c) => `${CANAL[c.canal] ?? c.canal}: ${c.identificador}`).join(" · ") || rotulo(CANAL, canalDoLead(lead))} · entrou {relativo(lead.criado_em)} atrás
               </p>
+              {/* O id fica AQUI e em nenhum outro lugar: é a tela onde alguém já sabe de quem está
+                  falando e pode precisar do identificador para cruzar com o log ou com o CRM. Nas
+                  listas ele ocupava a linha do nome, que foi como virou nome. */}
+              <div className="mt-1.5"><IdCopiavel id={lead.id} /></div>
             </div>
           </div>
           <div className="flex items-center gap-2">

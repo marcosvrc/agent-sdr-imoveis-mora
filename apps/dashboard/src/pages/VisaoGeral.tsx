@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { brl, duracao, num, pct, relativo, variacao, REGIAO, INTENCAO, CANAL } from "../lib/format";
-import { Ajuda, Card, PageHeader, StatTile, Estagio, Skeleton, EmptyState, Avatar, cx } from "../components/ui";
+import { CANAL, INTENCAO, REGIAO, brl, duracao, nomeDoLead, num, pct, relativo, variacao } from "../lib/format";
+import { Ajuda, Avatar, Card, EmptyState, Estagio, NomeLead, PageHeader, Skeleton, StatTile, cx } from "../components/ui";
 import { SerieChart, FunilChart, Distribuicao } from "../components/charts";
 import { LeadsPorTemperatura } from "../components/Temperaturas";
 import { ReativacaoResumo } from "../components/ReativacaoResumo";
@@ -93,8 +93,8 @@ export function VisaoGeral() {
             <ul className="divide-y divide-line">
               {quentes.slice(0, 6).map((l) => (
                 <li key={l.id}><Link to={`/leads/${l.id}`} className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-surface-2">
-                  <Avatar nome={l.nome ?? l.id} />
-                  <div className="min-w-0 flex-1"><p className="truncate font-medium">{l.nome ?? l.id}</p><p className="truncate text-xs text-ink-muted">{INTENCAO[l.cartao.intencao] ?? l.cartao.intencao} · {REGIAO[l.cartao.regiao ?? ""] ?? "região não informada"}{l.cartao.preco_max ? ` · até ${brl(l.cartao.preco_max, true)}` : ""}</p></div>
+                  <Avatar nome={nomeDoLead(l).avatar} />
+                  <div className="min-w-0 flex-1"><NomeLead lead={l} className="block truncate font-medium" /><p className="truncate text-xs text-ink-muted">{INTENCAO[l.cartao.intencao] ?? l.cartao.intencao} · {REGIAO[l.cartao.regiao ?? ""] ?? "região não informada"}{l.cartao.preco_max ? ` · até ${brl(l.cartao.preco_max, true)}` : ""}</p></div>
                   <Estagio e={l.estagio} /><span className="w-9 text-right text-xs tabular-nums text-ink-muted">{l.score}</span><Ic.chevronRight size={14} className="text-ink-faint" />
                 </Link></li>))}
             </ul>

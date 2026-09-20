@@ -71,6 +71,18 @@ export const NOME_ESTAGIO = Object.fromEntries(ESTAGIOS.map((e) => [e.k, e.r])) 
 
 export const PROPOSITO: Record<Proposito, string> = { rent: "Aluguel", buy: "Compra" };
 
+/** Como chamar um cliente cujo nome não veio junto.
+ *
+ *  Um uuid cortado — `cliente 3f8a1b2c` — ocupa o lugar do nome sem ser nem nome nem identificador
+ *  útil: não dá para procurar por ele nem para colar em lugar nenhum. O rótulo diz o que é, e os
+ *  quatro últimos caracteres existem só para duas linhas seguidas não ficarem idênticas.
+ */
+export function nomeDoCliente(nome: string | null | undefined, leadId: string):
+    { texto: string; anonimo: boolean } {
+  if (nome?.trim()) return { texto: nome.trim(), anonimo: false };
+  return { texto: `Cliente sem nome · ${leadId.replace(/-/g, "").slice(-4)}`, anonimo: true };
+}
+
 export const ATENDIMENTO: Record<Atendimento, { r: string; tom: "neutro" | "alerta" | "info" }> = {
   agent: { r: "Mora (agente)", tom: "neutro" },
   human_pending: { r: "Aguardando corretor", tom: "alerta" },

@@ -37,6 +37,48 @@ export const INTENCAO: Record<string, string> = { compra: "Compra", aluguel: "Al
 export const CANAL: Record<string, string> = { telegram: "Telegram", web: "Site", sistema: "Sistema" };
 export const rotulo = (m: Record<string, string>, k?: string | null) => (k && m[k]) || (k ? k.replace(/_/g, " ") : "—");
 
+/** O canal de origem, quando o lead tem canal registrado — ou deduzido do prefixo do id.
+ *
+ *  A dedução existia espalhada numa célula da tabela de leads. Ela amarra a APARÊNCIA do id a uma
+ *  regra de negócio: mudar o prefixo apagaria a coluna sem quebrar teste nenhum. Continua sendo
+ *  aproximação, mas agora numa função só — se o dia da mudança chegar, é um lugar.
+ */
+export function canalDoLead(l: { id: string; canais?: { canal: string }[] }): string | null {
+  if (l.canais?.length) return l.canais[0].canal;
+  if (l.id.startsWith("web_")) return "web";
+  if (l.id.startsWith("tg_")) return "telegram";
+  return null;
+}
+
+/** Como chamar o lead na tela.
+ *
+ *  O id NUNCA entra aqui. Ele vinha ocupando o lugar do nome em seis pontos do painel
+ *  (`nome ?? id`), e o resultado era o corretor lendo `web_1QQhFOfvpH4hIHCdktHr5w` na linha onde
+ *  procura uma pessoa — e um avatar com as iniciais "WE".
+ *
+ *  A queda é nome → contato → descrição do canal. O último é uma DESCRIÇÃO, não um nome: vem com
+ *  `anonimo: true` para a tela poder apagá-lo visualmente, senão "Visitante do site" passa a ser
+ *  lido como o nome da pessoa.
+ *
+ *  O sufixo curto existe porque uma lista com cinco "Visitante do site" idênticos é pior que o id:
+ *  o corretor não sabe qual já abriu. Quatro caracteres do id bastam para distinguir na tela e não
+ *  se parecem com identificador para copiar — quem quer o id inteiro usa o chip da tela do lead.
+ */
+export function nomeDoLead(l: { id: string; nome?: string | null; telefone?: string | null; canais?: { canal: string }[] }):
+    { texto: string; anonimo: boolean; avatar: string } {
+  const canal = canalDoLead(l);
+  const base = canal === "web" ? "Visitante do site"
+             : canal === "telegram" ? "Contato do Telegram"
+             : "Contato sem identificação";
+  if (l.nome?.trim()) return { texto: l.nome.trim(), anonimo: false, avatar: l.nome.trim() };
+  // Telefone é contato de verdade, então vale como título — mas não como iniciais: um avatar
+  // escrito "+1" não identifica ninguém. Para as iniciais vale a descrição do canal.
+  if (l.telefone?.trim()) return { texto: l.telefone.trim(), anonimo: false, avatar: base };
+  // O sufixo sai do FIM do id: o começo é o prefixo do canal, igual em todos, e distinguiria nada.
+  const sufixo = l.id.replace(/^[a-z]+_/, "").slice(-4);
+  return { texto: sufixo ? `${base} · ${sufixo}` : base, anonimo: true, avatar: base };
+}
+
 /** Tokens em escala legível: 980, 12,4 mil, 3,2 mi. */
 export const tokens = (v?: number | null) =>
   v == null ? "—" : v < 1000 ? String(v)
