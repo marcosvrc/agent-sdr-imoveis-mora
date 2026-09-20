@@ -135,7 +135,12 @@ function Ficha({ op, aoMover, ocupado }: {
   const pedeMotivo = destino === "lost" || (destino === "in_service" && ["won", "lost"].includes(op.stage));
 
   return (
-    <li className="rounded-lg border border-line bg-surface p-2.5">
+    /* `relative` não é estilo: é o bloco contentor do rótulo `sr-only` lá embaixo.
+       `.sr-only` é `position: absolute`, e sem um ancestral posicionado o contentor dele vira a
+       página inteira — aí o `overflow` da coluna não o recorta, e cada rótulo invisível do 15º
+       card empurra a altura do documento. O resultado era uma página que rolava mais de mil pixels
+       de nada, com o quadro inteiro cabendo em 552. */
+    <li className="relative rounded-lg border border-line bg-surface p-2.5">
       <div className="flex items-start justify-between gap-2">
         <Link to={`/oportunidades/${op.id}`}
               className={cx("text-sm font-medium text-ink hover:text-acento hover:underline", foco)}>
