@@ -4,10 +4,14 @@ Com CRM configurado, o **registro comercial** vem de lá: preço, custos, quarto
 É a fonte certa — quem muda o preço de um imóvel ou o marca como vendido é o corretor, no sistema
 dele, e um índice que não acompanha isso faz o agente oferecer o que não está mais à venda.
 
-Os **dados de vitrine** — fotos, região, suítes, destaque de investimento — continuam vindo do
-arquivo do acervo, casados pelo código. Não é meio-termo por preguiça: são dados de apresentação,
-que num cenário real morariam num CDN ou no gerenciador de mídia, não no CRM. O CRM não tem coluna
-para foto, e inventar uma só para o índice da Mora seria dobrar responsabilidade.
+As **fotos** agora vêm do CRM quando ele as tem — a referência passou a ser registro de lá
+(`property_photos`), para que imóvel cadastrado pela tela não nascesse mudo na vitrine enquanto os
+do seed apareciam. O arquivo continua servindo de reserva para quem foi cadastrado antes disso: um
+acervo antigo não deixa de ter foto porque a fonte mudou.
+
+Os demais **dados de vitrine** — região, suítes, destaque de investimento — seguem vindo do arquivo,
+casados pelo código. Não é meio-termo por preguiça: são dados de apresentação que, num cenário real,
+morariam no gerenciador de mídia ou no cadastro de marketing, não no registro comercial.
 
 Sem CRM, o arquivo é o acervo inteiro — e é assim que a Mora sempre rodou sozinha.
 
@@ -74,6 +78,9 @@ def _converter(linha: dict, vitrine: dict) -> Imovel | None:
     if not (codigo and operacao):
         return None
     extra = vitrine.get(codigo, {})
+    # CRM primeiro, arquivo como reserva. A ordem importa: quem editou a galeria pela tela espera
+    # que a edição valha, e um arquivo que vencesse o banco faria a tela parecer que não salvou.
+    fotos = [f["url"] for f in (linha.get("photos") or []) if f.get("url")]
     cidade = linha.get("city") or "São Paulo"
     bairro = linha.get("neighborhood") or ""
     return Imovel(
@@ -87,7 +94,7 @@ def _converter(linha: dict, vitrine: dict) -> Imovel | None:
         preco=_centavos(linha.get("base_price_cents")) or 0.0,
         condominio=_centavos(linha.get("condo_monthly_cents")),
         descricao=linha.get("description") or extra.get("descricao") or "",
-        fotos=list(extra.get("fotos") or []),
+        fotos=fotos or list(extra.get("fotos") or []),
         destaque_investimento=bool(extra.get("destaque_investimento")),
     )
 

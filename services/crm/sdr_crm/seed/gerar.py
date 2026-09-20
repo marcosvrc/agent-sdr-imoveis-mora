@@ -133,6 +133,10 @@ def imoveis(p: Plano) -> list[dict]:
             "area_m2": round(float(x["area_m2"]), 2) if x.get("area_m2") else None,
             # Um indisponível e um reservado, para "imóvel indisponível não recebe visita".
             "status": "unavailable" if i == 11 else ("reserved" if i == 12 else "available"),
+            # As fotos passam a ser registro do CRM, e não só do arquivo. Sem isso, imóvel
+            # cadastrado pela tela nasceria mudo na vitrine enquanto os do seed apareceriam —
+            # duas regras diferentes para a mesma coisa, decididas por quem criou o registro.
+            "photos": list(x.get("fotos") or []),
         })
     _conferir_fixtures(saida)
     return saida

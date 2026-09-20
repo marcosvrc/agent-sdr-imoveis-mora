@@ -44,6 +44,16 @@ def aplicar(p: Plano) -> dict[str, int]:
                  x["property_tax_monthly_cents"], x["other_monthly_cents"], x["bedrooms"],
                  x["parking"], x["area_m2"], x["status"], p.dataset_id))
 
+        for x in imoveis:
+            # Reaplicar o seed não pode duplicar foto nem embaralhar a ordem: a chave (imóvel, url)
+            # recusa a repetida e o UPDATE reafirma a posição.
+            for posicao, url in enumerate(x.get("photos") or []):
+                conn.execute(
+                    """INSERT INTO property_photos (property_id, url, position)
+                       VALUES (%s,%s,%s)
+                       ON CONFLICT (property_id, url) DO UPDATE SET position = EXCLUDED.position""",
+                    (x["id"], url, posicao))
+
         for x in leads:
             conn.execute(
                 """INSERT INTO leads (id, name, email, phone_e164, external_contact_id, source,
@@ -91,7 +101,8 @@ def aplicar(p: Plano) -> dict[str, int]:
         tarefas = _tarefas(p, leads, oportunidades, conn)
         handoffs = _handoffs(p, oportunidades, conn)
 
-    return {"users": len(usuarios), "properties": len(imoveis), "leads": len(leads),
+    return {"users": len(usuarios), "properties": len(imoveis),
+            "property_photos": sum(len(x.get("photos") or []) for x in imoveis), "leads": len(leads),
             "opportunities": len(oportunidades), "availability_slots": len(slots),
             "interactions": interacoes, "visits": visitas, "tasks": tarefas, "handoffs": handoffs}
 

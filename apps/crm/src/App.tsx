@@ -12,6 +12,7 @@ import { Entrar } from "./paginas/Entrar";
 import { Funil } from "./paginas/Funil";
 import { Imoveis } from "./paginas/Imoveis";
 import { LeadDetalhe } from "./paginas/LeadDetalhe";
+import { NovoImovel } from "./paginas/NovoImovel";
 import { OportunidadeDetalhe } from "./paginas/OportunidadeDetalhe";
 import { Visao } from "./paginas/Visao";
 import { Visitas } from "./paginas/Visitas";
@@ -63,6 +64,9 @@ export function App() {
             <Route path="/clientes/:id" element={<LeadDetalhe />} />
             <Route path="/oportunidades/:id" element={<OportunidadeDetalhe />} />
             <Route path="/imoveis" element={<Imoveis />} />
+            {/* Cadastro é ação humana na API (`exigir_humano`); esconder a rota não é controle de
+                acesso — quem recusa é o servidor. A rota fica para os dois papéis humanos. */}
+            <Route path="/imoveis/novo" element={<NovoImovel />} />
             <Route path="/visitas" element={<Visitas />} />
             <Route path="/encaminhamentos" element={<Encaminhamentos />} />
             {admin && <Route path="/auditoria" element={<Auditoria />} />}

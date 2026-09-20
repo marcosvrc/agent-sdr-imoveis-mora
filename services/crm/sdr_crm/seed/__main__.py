@@ -28,7 +28,7 @@ from .gerar import Plano
 
 TABELAS = ("idempotency_records", "audit_events", "handoffs", "tasks", "visits",
            "availability_slots", "property_interests", "interactions", "preferences",
-           "opportunities", "leads", "properties")
+           "opportunities", "leads", "property_photos", "properties")
 
 
 def _conferir_ambiente() -> None:

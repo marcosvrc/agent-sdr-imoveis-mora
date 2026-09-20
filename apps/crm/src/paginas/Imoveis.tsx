@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AvisoOrdemParcial, Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, Paginacao,
-         Vazio, cx, entradaCls, usePaginaCursor } from "../componentes/ui";
+         Vazio, cx, entradaCls, foco, usePaginaCursor } from "../componentes/ui";
+import { Link } from "react-router-dom";
 import { Ic } from "../componentes/Icones";
 import { api } from "../lib/api";
 import { ordenar, useAtraso, useFiltrosNaUrl, type Ordem } from "../lib/filtros";
@@ -68,7 +69,12 @@ export function Imoveis() {
     <div className="space-y-4">
       <CabecalhoPagina titulo="Imóveis"
         descricao="Custo mensal discriminado. Total incompleto aparece marcado, nunca como um número menor."
-        acoes={algumFiltro && <Botao onClick={() => { limpar(); setBairro(""); setTeto(""); }}><Ic.limpar size={14} /> Limpar filtros</Botao>} />
+        acoes={<>
+          {algumFiltro && <Botao onClick={() => { limpar(); setBairro(""); setTeto(""); }}><Ic.limpar size={14} /> Limpar filtros</Botao>}
+          <Link to="/imoveis/novo" className={cx("inline-flex items-center gap-1.5 rounded-md border border-transparent bg-marca px-2.5 py-1.5 text-sm font-medium text-marcaInk hover:opacity-90", foco)}>
+            + Novo imóvel
+          </Link>
+        </>} />
 
       <Card titulo="Busca" acoes={isFetching ? <span className="text-[11px] text-inkFaint">buscando…</span> : undefined}>
         <div className="grid gap-3 sm:grid-cols-4">

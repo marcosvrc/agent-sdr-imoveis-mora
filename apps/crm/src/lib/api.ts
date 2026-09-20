@@ -88,6 +88,11 @@ export const api = {
       { metodo: "POST", corpo: { target_stage, reason }, versao, chave: crypto.randomUUID() }),
 
   imoveis: (q: Record<string, string | undefined>) => chamar<Pagina<Imovel>>(`/v1/properties${consulta(q)}`),
+  criarImovel: (corpo: ImovelNovo) =>
+    chamar<Envelope<Imovel>>("/v1/properties", { metodo: "POST", corpo, chave: crypto.randomUUID() }),
+  trocarFotos: (id: string, photos: FotoImovel[]) =>
+    chamar<Envelope<Imovel>>(`/v1/properties/${id}/photos`,
+      { metodo: "PUT", corpo: { photos }, chave: crypto.randomUUID() }),
 
   visitas: (q: Record<string, string | undefined>) => chamar<Pagina<Visita>>(`/v1/visits${consulta(q)}`),
   moverVisita: (id: string, target_status: string, reason: string | null, versao: number) =>
@@ -149,11 +154,22 @@ export type OportunidadeDetalhe = Oportunidade & {
   interests: { property_id: string; code: string; title: string; status: string; notes: string | null }[];
   visits: Visita[]; tasks: Tarefa[]; handoffs: Handoff[];
 };
+/** A foto é uma REFERÊNCIA. `position` vem do servidor e sai do índice da lista enviada — a
+ *  primeira é a capa, que vai para o cartão da vitrine e para os dados estruturados da ficha. */
+export type FotoImovel = { url: string; alt?: string | null; position?: number };
 export type Imovel = {
   id: string; code: string; title: string; description: string | null; city: string;
   neighborhood: string; type: string; purpose: Proposito; bedrooms: number; parking: number;
   status: string; base_price_cents: number; monthly_total_cents: number | null;
   monthly_total_incomplete: boolean; monthly_missing: string[];
+  photos?: FotoImovel[];
+};
+export type ImovelNovo = {
+  code: string; title: string; description?: string | null; city: string; neighborhood: string;
+  type: string; purpose: Proposito; base_price_cents: number;
+  condo_monthly_cents?: number | null; property_tax_monthly_cents?: number | null;
+  other_monthly_cents?: number | null; bedrooms: number; parking: number;
+  area_m2?: number | null; status?: string; photos?: FotoImovel[];
 };
 export type Visita = {
   id: string; opportunity_id: string; property_id: string; slot_id: string;

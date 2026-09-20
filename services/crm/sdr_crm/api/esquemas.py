@@ -101,6 +101,28 @@ class InteracaoNova(Corpo):
     external_event_id: str | None = Field(default=None, max_length=200)
 
 
+def _conferir_fotos(obj):
+    """A mesma URL duas vezes na lista enviada é engano de colagem, e é problema do PAYLOAD — por
+    isso 422 aqui, e não o 409 de conflito com o que já está gravado. A chave única no banco
+    continua existindo como rede, para quem escreve por outro caminho."""
+    urls = [f.url for f in obj.photos]
+    if len(urls) != len(set(urls)):
+        raise ValueError("a mesma foto aparece duas vezes na lista")
+    return obj
+
+
+class FotoImovel(Corpo):
+    """Uma foto é uma REFERÊNCIA, não um arquivo.
+
+    `https?` obrigatório e conferido também no banco: o que entra aqui vai para o `<img src>` da
+    vitrine e para os dados estruturados da ficha, e um `javascript:` ou `data:` nesse lugar é
+    script de terceiro rodando na página do cliente. A URL precisa ser pública e ESTÁVEL — link
+    assinado que expira quebra o dado estruturado dias depois, quando ninguém está olhando.
+    """
+    url: str = Field(min_length=8, max_length=2000, pattern=r"^https?://")
+    alt: str | None = Field(default=None, max_length=300)
+
+
 class ImovelNovo(Corpo):
     code: str = Field(min_length=1, max_length=40)
     title: str = Field(min_length=1, max_length=300)
@@ -117,6 +139,17 @@ class ImovelNovo(Corpo):
     parking: int = Field(ge=0, le=30)
     area_m2: float | None = Field(default=None, gt=0, le=100_000)
     status: Literal["available", "reserved", "unavailable"] = "available"
+    # A ordem da lista é a ordem na vitrine, e a primeira é a capa. Teto de 20 para um engano de
+    # colagem não virar uma galeria infinita.
+    photos: list[FotoImovel] = Field(default_factory=list, max_length=20)
+
+    _sem_repetida = model_validator(mode="after")(lambda self: _conferir_fotos(self))
+
+
+class FotosImovel(Corpo):
+    photos: list[FotoImovel] = Field(default_factory=list, max_length=20)
+
+    _sem_repetida = model_validator(mode="after")(lambda self: _conferir_fotos(self))
 
 
 class SlotNovo(Corpo):

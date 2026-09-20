@@ -177,6 +177,32 @@ CREATE TABLE IF NOT EXISTS properties (
     version                  integer NOT NULL DEFAULT 1
 );
 CREATE INDEX IF NOT EXISTS properties_busca_idx ON properties (purpose, city, status);
+
+-- Fotos do imóvel: a REFERÊNCIA mora aqui, o arquivo não.
+--
+-- Guardar o binário numa coluna seria o caminho mais curto e o mais caro: o CRM divide o Postgres
+-- com o agente, e uma leitura de imagem ocupa conexão do pool que deveria estar atendendo conversa
+-- — sem contar que toda imagem entraria em todo backup. A URL aponta para onde imagem deve morar,
+-- que é armazenamento de objeto.
+--
+-- `position` existe porque a ordem é informação: a primeira foto é a capa, vai para o cartão da
+-- vitrine e para os dados estruturados da ficha. Uma lista sem ordem estável faz a capa mudar
+-- sozinha entre duas consultas.
+--
+-- `alt` existe porque "foto 1 de 5" não descreve imóvel nenhum. É o único texto que chega a quem
+-- usa leitor de tela, e é nulável de propósito: exigir no cadastro produziria "foto do imóvel"
+-- repetido cinco vezes, que é pior que a contagem honesta que a galeria já faz sozinha.
+CREATE TABLE IF NOT EXISTS property_photos (
+    id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    property_id uuid NOT NULL REFERENCES properties (id) ON DELETE CASCADE,
+    url         text NOT NULL CHECK (url ~ '^https?://'),
+    alt         text,
+    position    integer NOT NULL DEFAULT 0 CHECK (position >= 0),
+    created_at  timestamptz NOT NULL DEFAULT now(),
+    -- A mesma foto duas vezes no mesmo imóvel é engano de cadastro, não catálogo.
+    CONSTRAINT property_photos_unica UNIQUE (property_id, url)
+);
+CREATE INDEX IF NOT EXISTS property_photos_imovel_idx ON property_photos (property_id, position);
 CREATE INDEX IF NOT EXISTS properties_criado_idx ON properties (created_at DESC, id DESC);
 
 CREATE TABLE IF NOT EXISTS property_interests (

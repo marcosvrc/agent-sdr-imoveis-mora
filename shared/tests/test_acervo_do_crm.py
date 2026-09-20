@@ -221,3 +221,34 @@ def test_sem_crm_a_sincronia_nao_faz_nada(arquivo_de_vitrine, monkeypatch, embed
     monkeypatch.delenv("SDR_CRM_TOKEN", raising=False)
     assert sincronizar(arquivo_de_vitrine) == {"fonte": "arquivo", "ignorado": True}
     assert embedder_contado == []
+
+
+def test_foto_do_crm_vence_a_do_arquivo(ligado, acervo_no_crm, arquivo_de_vitrine):
+    """Quem editou a galeria pela tela do CRM espera que a edição valha.
+
+    O arquivo continua sendo reserva — imóvel cadastrado antes de as fotos virarem registro do CRM
+    não pode perder a vitrine porque a fonte mudou. Mas quando as duas existem, manda a do banco:
+    um arquivo que vencesse faria a tela parecer que não salvou."""
+    from sdr_ingestion.acervo import carregar
+
+    with psycopg.connect(DSN_CRM, autocommit=True, row_factory=psycopg.rows.dict_row) as conn:
+        pid = conn.execute("SELECT id FROM properties WHERE code = %s",
+                           (acervo_no_crm[0],)).fetchone()["id"]
+        # ordem invertida na inserção, posição correta na coluna: é a posição que decide a capa
+        for url, posicao in (("https://cdn.exemplo/capa.jpg", 0), ("https://cdn.exemplo/2.jpg", 1)):
+            conn.execute("INSERT INTO property_photos (property_id, url, position) VALUES (%s,%s,%s)",
+                         (pid, url, posicao))
+
+    porId = {im.id: im for im in carregar(arquivo_de_vitrine)[0]}
+    assert porId[acervo_no_crm[0]].fotos == ["https://cdn.exemplo/capa.jpg",
+                                             "https://cdn.exemplo/2.jpg"], "o CRM manda"
+    # o que só existe no arquivo continua aparecendo: nada foi perdido na troca de fonte
+    assert porId[acervo_no_crm[1]].fotos == [], "sem foto em lugar nenhum é lista vazia, não erro"
+
+
+def test_imovel_sem_foto_nenhuma_nao_inventa_capa(ligado, acervo_no_crm, arquivo_de_vitrine):
+    """Imóvel sem imagem tem de PARECER sem imagem. Uma foto genérica de apartamento no lugar da
+    capa seria lida pelo cliente como sendo aquele imóvel."""
+    from sdr_ingestion.acervo import carregar
+    porId = {im.id: im for im in carregar(arquivo_de_vitrine)[0]}
+    assert porId[acervo_no_crm[2]].fotos == []
