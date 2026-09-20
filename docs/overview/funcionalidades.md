@@ -50,6 +50,32 @@ As tabelas refletem o estado descrito no repositório. Legenda:
 | Funil da reativação na Visão geral (avisos → respostas → visitas → saídas) | Concluída | ADR-0013, `GET /dashboard/reativacao`, `components/ReativacaoResumo.tsx` |
 | Tema claro / escuro / sistema, com contraste verificado nos dois | Concluída | ADR-0014, `components/SeletorTema.tsx`, axe-core em 11 telas |
 
+## CRM da imobiliária (`services/crm`, `apps/crm`)
+
+Sistema **à parte**, com banco próprio e autenticação própria: é o registro comercial que a
+imobiliária já teria, e o agente é cliente dele. A separação é o que permite desligar a integração e
+ver a Mora continuar atendendo.
+
+| Funcionalidade | Estado | Evidência |
+|---|---|---|
+| API REST v1 com envelope padrão, idempotência por chave, ETag/`If-Match` e paginação por cursor | Concluída | `services/crm/sdr_crm/api`, `tests/test_api_leads.py` |
+| Dois portões: credencial de serviço para o agente (por escopo) e sessão humana em cookie HttpOnly | Concluída | ADR-0008, `api/auth.py`, `tests/test_api_leads.py` |
+| Servidor MCP por HTTP — 18 ferramentas, é por onde a Mora entra | Concluída | `sdr_crm/mcp/ferramentas.py`, `tests/test_mcp.py` |
+| Clientes: deduplicação por identificador, conflito, política de contato e arquivamento | Concluída | `tests/test_api_leads.py` |
+| Funil de oportunidades com transições validadas e reabertura administrativa | Concluída | `dominio/funil.py`, `tests/test_api_funil.py` |
+| Visitas: solicitar não reserva, confirmar é humano, e duas confirmações no mesmo horário não coexistem (índice único parcial) | Concluída | `routers/visitas_rt.py`, `tests/test_api_funil.py` |
+| Remarcação de visita numa transação só, com a antiga apontando para a nova | Concluída | `tests/test_api_remarcacao.py` |
+| Catálogo com custos **discriminados**: custo mensal desconhecido sai marcado como incompleto, nunca como número menor | Concluída | `dominio/custos.py`, `tests/test_dominio.py` |
+| Cadastro de imóvel pela tela, com fotos, agenda de horários e mudança de situação (`reserved`/`unavailable`, reversível) | Concluída | `tests/test_api_situacao_imovel.py`, `tests/test_api_fotos.py` |
+| Encaminhamentos, tarefas e trilha de auditoria de toda escrita | Concluída | `routers/handoffs_rt.py`, `routers/tarefas_rt.py`, `api/auditoria.py` |
+| Painel React próprio: funil, clientes, imóveis, visitas, encaminhamentos, auditoria — com tema claro/escuro e identidade visual distinta da Mora | Concluída | `apps/crm`, `npm run build` |
+| Seed determinístico por semente e reset com três travas, só por linha de comando | Concluída | `sdr_crm/seed/`, `tests/test_seed.py` |
+
+!!! info "Dados sintéticos, e isso é permanente"
+    O CRM roda com massa gerada e carrega uma faixa permanente dizendo isso em toda tela. O reset
+    recusa rodar fora de `development`/`test`, exige que todo registro esteja marcado como sintético
+    e pede `--confirm-reset` digitado à mão.
+
 ## Backend, integrações e infraestrutura
 
 | Funcionalidade | Estado | Evidência |
@@ -61,5 +87,6 @@ As tabelas refletem o estado descrito no repositório. Legenda:
 | Ingestão de documentos institucionais (FAQ, políticas, taxas) para a tabela `documentos` do pgvector | Concluída | `sdr_ingestion/ingest_documentos.py`, `make docs-kb`, `shared/tests/test_conhecimento.py` |
 | Integração Google Agenda do corretor | Parcial | `tools/agenda.py`; opcional, degrada para agenda interna |
 | Ambiente completo em `docker compose` (Postgres+pgvector, Redis, workers, front-ends, CRM) | Concluída | `local/docker-compose.yml` |
+| Acervo da Mora vem do CRM quando ele está configurado, com reindexação incremental e purga só a partir de leitura completa | Concluída | ADR-0015, `sdr_ingestion/acervo.py`, `sdr_ingestion/sincronia.py`, `shared/tests/test_acervo_do_crm.py` |
 
 Para o que **não** está pronto e os débitos técnicos, veja [Roadmap e limitações](../project/roadmap.md).
