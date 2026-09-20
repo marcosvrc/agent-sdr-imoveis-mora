@@ -58,7 +58,7 @@ export function Configuracoes() {
                 <Field label="Cidade"><Input value={String(form.cidade ?? "")} onChange={(e) => set("cidade", e.target.value)} /></Field>
                 <Field label="Regiões atendidas" dica="Fora dessas regiões a Mora avisa o cliente e sugere a mais próxima"><div className="flex flex-wrap gap-1.5">{REGIOES.map((r) => { const rs = (form.regioes as string[]) ?? []; const on = rs.includes(r); return <button type="button" key={r} onClick={() => set("regioes", on ? rs.filter((x) => x !== r) : [...rs, r])} className={cx("rounded-full border px-3 py-1 text-xs font-medium", on ? "border-brand bg-brand text-brand-ink" : "border-line text-ink-muted hover:bg-surface-2")}>{REGIAO[r]}</button>; })}</div></Field>
               </>}
-              {secao === "modelos" && <ModelosForm form={form} set={set} efetivo={data.canais.llm.efetivo} />}
+              {secao === "modelos" && <ModelosForm form={form} set={set} efetivo={data.canais.llm.efetivo} catalogo={data.canais.llm.catalogo} />}
               {secao === "operacao" && <>
                 <p className="rounded-lg bg-info-soft px-3 py-2 text-xs text-ink-muted">
                   Campo vazio usa o valor do <code>.env</code>. Um valor explícito — inclusive

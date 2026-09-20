@@ -226,6 +226,21 @@ def test_modelos_aceita_modelo_com_preco_e_muda_o_efetivo():
     assert c.get("/config", headers=H).json()["canais"]["llm"]["efetivo"]["conversa"]["origem"] == "ambiente"
 
 
+def test_config_expoe_catalogo_de_modelos_por_provedor():
+    """A tela monta o combo com isto. Ter que manter uma lista no React ao lado da tabela de preços
+    daria duas verdades: a que a tela oferece e a que o PUT aceita."""
+    c = TestClient(app)
+    catalogo = c.get("/config", headers=H).json()["canais"]["llm"]["catalogo"]
+    assert "claude-sonnet-4-5" in catalogo["anthropic"]
+    assert all(m.startswith("gpt-") or m[0] == "o" for m in catalogo["openai"])
+    # o contrato que importa: tudo que a tela oferece passa no validador do PUT
+    for provedor, modelos in catalogo.items():
+        for m in modelos:
+            r = c.put("/config/modelos", headers=H, json={"conversa": m, "conversa_provider": provedor})
+            assert r.status_code == 200, f"{provedor}/{m} está no combo mas o PUT recusa: {r.text}"
+    assert c.delete("/config/modelos", headers=H).status_code == 204
+
+
 def test_modelos_recusa_provedor_e_id_invalidos():
     c = TestClient(app)
     # `openai` era recusado aqui até virar reserva de produção (ADR-0009). O caso continua valendo

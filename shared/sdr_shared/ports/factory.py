@@ -103,6 +103,29 @@ _EQUIVALENTE = {
 }
 
 
+def catalogo_de_modelos(tabela: dict | None = None) -> dict[str, list[str]]:
+    """Modelos que o painel pode oferecer, agrupados por provedor.
+
+    Sai da MESMA tabela de preços que o `PUT /config/modelos` usa para recusar. Uma lista escrita à
+    mão no frontend ofereceria opções que o backend depois rejeita — o combo estaria mentindo sobre
+    o que dá para salvar. Assim, cadastrar um preço novo faz o modelo aparecer na tela sem tocar no
+    React, e a tela nunca oferece modelo sem preço, que é justamente o que desliga o teto mensal.
+
+    Ollama fica de fora de propósito: o que existe lá depende de qual modelo a máquina baixou, e uma
+    lista fixa ofereceria o que o `ollama pull` ainda não trouxe. Para ele a tela cai no campo livre,
+    que é o comportamento honesto para um provedor que só a máquina conhece.
+    """
+    from ..governanca.precos import PRECOS_PADRAO
+
+    saida: dict[str, list[str]] = {p: [] for p in _FAMILIA}
+    for modelo in {**PRECOS_PADRAO, **(tabela or {})}:
+        for provedor, prefixos in _FAMILIA.items():
+            if modelo.lower().startswith(prefixos):
+                saida[provedor].append(modelo)
+                break
+    return {p: sorted(m) for p, m in saida.items()}
+
+
 def modelo_do_provedor(model: str, provider: str, papel: str = "conversa") -> str:
     """Devolve um ID que EXISTE no provedor pedido.
 

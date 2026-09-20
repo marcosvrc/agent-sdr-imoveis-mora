@@ -10,18 +10,50 @@ const NIVEIS = [
 ] as const;
 
 const PROVIDERS = ["", "anthropic", "openai", "ollama"];
+const OUTRO = "__outro__";
 
 type Teste = { ok: boolean; latencia_ms: number; resposta?: string; erro?: string; tem_preco: boolean };
 
-/** Trocar o modelo pelo painel vale no próximo turno do agente. Duas travas de propósito:
- *  o backend recusa modelo sem preço cadastrado (custo zerado desliga o teto de orçamento), e o
- *  botão Testar faz uma chamada real antes de salvar — lista fixa envelhece, campo livre derruba. */
-export function ModelosForm({ form, set, efetivo }: {
+/** Trocar o modelo pelo painel vale no próximo turno do agente. Três travas de propósito:
+ *  o combo só oferece modelo com preço cadastrado (custo zerado desliga o teto de orçamento), o
+ *  backend recusa de novo no PUT, e o botão Testar faz uma chamada real antes de salvar — porque
+ *  a lista vem do catálogo do servidor, mas ainda assim só o provedor sabe o que existe hoje. */
+export function ModelosForm({ form, set, efetivo, catalogo }: {
   form: Record<string, unknown>;
   set: (k: string, v: unknown) => void;
   efetivo: Config["canais"]["llm"]["efetivo"];
+  catalogo: Config["canais"]["llm"]["catalogo"];
 }) {
   const [testes, setTestes] = useState<Record<string, Teste | "carregando">>({});
+  // Quem digitou um ID que não está no catálogo continua podendo: o combo ganha "outro…" em vez de
+  // virar uma gaiola. Lista de servidor envelhece menos que lista de frontend, mas envelhece.
+  const [livres, setLivres] = useState<Record<string, boolean>>({});
+  // Um modelo trocado com o resultado verde do modelo ANTERIOR ainda na tela seria uma mentira
+  // confortável: quem salvasse acharia que testou. Qualquer mexida no nível limpa o resultado.
+  const limpar = (k: string) => setTestes(({ [k]: _, ...resto }) => resto);
+
+  const provedorDe = (k: string) => String(form[`${k}_provider`] ?? "") || efetivo?.[k]?.provider || "";
+  const opcoesDe = (k: string) => catalogo?.[provedorDe(k)] ?? [];
+
+  const trocarProvedor = (k: string, novo: string) => {
+    set(`${k}_provider`, novo);
+    limpar(k);
+    const modelo = String(form[k] ?? "");
+    const lista = catalogo?.[novo || efetivo?.[k]?.provider || ""] ?? [];
+    // Modelo que não existe no provedor novo não pode ficar no campo: salvaria um 404 para o
+    // próximo turno do cliente. Vazio é o estado seguro — o ambiente decide e a tradução por papel
+    // (modelo_do_provedor) escolhe o equivalente lá.
+    if (modelo && lista.length && !lista.includes(modelo)) {
+      set(k, "");
+      setLivres((l) => ({ ...l, [k]: false }));
+    }
+  };
+
+  const escolherModelo = (k: string, v: string) => {
+    limpar(k);
+    if (v === OUTRO) { setLivres((l) => ({ ...l, [k]: true })); set(k, ""); return; }
+    set(k, v);
+  };
 
   const testar = async (nivel: string) => {
     const modelo = String(form[nivel] ?? "") || efetivo?.[nivel]?.modelo || "";
@@ -45,9 +77,15 @@ export function ModelosForm({ form, set, efetivo }: {
       {NIVEIS.map(({ k, r, d }) => {
         const atual = efetivo?.[k];
         const teste = testes[k];
+        const escolhido = String(form[k] ?? "");
+        const opcoes = opcoesDe(k);
+        // Sem catálogo para o provedor (Ollama, ou um ID que o servidor não conhece) ou pedido
+        // explícito de "outro…": campo livre. Um valor fora da lista também abre o campo sozinho,
+        // senão a tela apagaria em silêncio o que já estava salvo.
+        const campoLivre = livres[k] || opcoes.length === 0 || (!!escolhido && !opcoes.includes(escolhido));
         return (
           <div key={k} className="rounded-xl border border-line p-3">
-            <div className="mb-2 flex items-start justify-between gap-2">
+            <div className="mb-3 flex items-start justify-between gap-2">
               <div>
                 <p className="text-sm font-medium">{r}</p>
                 <p className="text-xs text-ink-muted">{d}</p>
@@ -55,20 +93,47 @@ export function ModelosForm({ form, set, efetivo }: {
               {atual && <Badge tom={atual.origem === "painel" ? "info" : undefined}>{atual.origem}</Badge>}
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-[1fr_150px_auto] sm:items-end">
-              <Field label="Modelo" dica={atual ? `em uso agora: ${atual.modelo}` : undefined}>
-                <Input value={String(form[k] ?? "")} placeholder={atual?.modelo ?? "usa o do ambiente"}
-                       onChange={(e) => set(k, e.target.value)} />
-              </Field>
+            {/* Provedor primeiro: é ele que decide quais modelos existem, então perguntar o modelo
+                antes seria pedir uma escolha que a próxima pergunta pode invalidar. Nenhuma coluna
+                carrega dica aqui — as três têm a mesma altura e os campos alinham de fato. */}
+            <div className="grid items-end gap-3 sm:grid-cols-[minmax(0,190px)_minmax(0,1fr)_auto]">
               <Field label="Provedor">
-                <Select value={String(form[`${k}_provider`] ?? "")} onChange={(e) => set(`${k}_provider`, e.target.value)}>
+                <Select value={String(form[`${k}_provider`] ?? "")}
+                        onChange={(e) => trocarProvedor(k, e.target.value)}>
                   {PROVIDERS.map((p) => <option key={p} value={p}>{p || "usa o do ambiente"}</option>)}
                 </Select>
               </Field>
-              <Button type="button" tamanho="sm" onClick={() => testar(k)} disabled={teste === "carregando"}
-                      icone={<Ic.bolt size={13} />}>
+
+              <Field label="Modelo">
+                {campoLivre ? (
+                  <Input value={escolhido} placeholder={atual?.modelo ?? "usa o do ambiente"}
+                         onChange={(e) => { limpar(k); set(k, e.target.value); }} />
+                ) : (
+                  <Select value={escolhido} onChange={(e) => escolherModelo(k, e.target.value)}>
+                    <option value="">usa o do ambiente{atual ? ` (${atual.modelo})` : ""}</option>
+                    {opcoes.map((m) => <option key={m} value={m}>{m}</option>)}
+                    <option value={OUTRO}>outro — digitar o ID…</option>
+                  </Select>
+                )}
+              </Field>
+
+              <Button type="button" tamanho="sm" className="h-9" onClick={() => testar(k)}
+                      disabled={teste === "carregando"} icone={<Ic.bolt size={13} />}>
                 {teste === "carregando" ? "Testando…" : "Testar"}
               </Button>
+            </div>
+
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-faint">
+              {atual && <span>em uso agora: {atual.modelo} · {atual.provider}</span>}
+              {campoLivre && opcoes.length > 0 && (
+                <button type="button" className="underline hover:text-ink-muted"
+                        onClick={() => { setLivres((l) => ({ ...l, [k]: false })); limpar(k); set(k, ""); }}>
+                  voltar para a lista
+                </button>
+              )}
+              {campoLivre && opcoes.length === 0 && provedorDe(k) === "ollama" && (
+                <span>Ollama não tem lista: vale o que a máquina baixou com <code>ollama pull</code>.</span>
+              )}
             </div>
 
             {teste && teste !== "carregando" && (

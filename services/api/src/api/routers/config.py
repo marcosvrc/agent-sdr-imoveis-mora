@@ -3,12 +3,15 @@
 `followup` é lido pelo agente em tempo de execução (sdr_shared/followup.py) — salvar aqui muda o
 comportamento no próximo turno. As demais chaves ainda são declarativas.
 """
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sdr_shared import followup as politica_followup
 from sdr_shared.config import get_settings
 from sdr_shared.db import ConfigRepository
 from ..auth import corretor_atual
 
+log = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(corretor_atual)])
 
 DEFAULTS: dict[str, dict] = {
@@ -52,6 +55,23 @@ def _modelos_efetivos() -> dict:
     return saida
 
 
+def _catalogo() -> dict:
+    """Modelos oferecidos no combo da tela, por provedor — a mesma lista que o PUT valida.
+
+    Cair na tabela padrão (sem os preços cadastrados no painel) é aceitável porque o combo é
+    sugestão: salvar continua passando por _validar_modelos, que recusa com o motivo. Mas vai para o
+    log — uma lista que encolheu sozinha é exatamente o tipo de coisa que ninguém percebe.
+    """
+    from sdr_shared.ports.factory import catalogo_de_modelos
+    try:
+        from sdr_shared.db import UsoRepository
+        return catalogo_de_modelos(UsoRepository().precos())
+    except Exception:
+        log.warning("preços do painel indisponíveis; combo de modelos cai na tabela padrão",
+                    exc_info=True)
+        return catalogo_de_modelos()
+
+
 def _status_canais() -> dict:
     s = get_settings()
     return {"telegram": {"configurado": bool(getattr(s, "telegram_bot_token", "")), "usuario": getattr(s, "telegram_bot_username", "") or None},
@@ -60,7 +80,9 @@ def _status_canais() -> dict:
                     "modelo_roteamento": getattr(s, "model_roteamento", ""),
                     "fallback": getattr(s, "llm_provider_fallback", "") or None,
                     # o que está valendo de fato: painel quando preenchido, .env quando não
-                    "efetivo": _modelos_efetivos()},
+                    "efetivo": _modelos_efetivos(),
+                    # o que a tela pode oferecer sem que o PUT recuse depois
+                    "catalogo": _catalogo()},
             "embeddings": {"provider": getattr(s, "embeddings_provider", "ollama"),
                            "modelo": (getattr(s, "embeddings_model", "") if getattr(s, "embeddings_provider", "") == "openai"
                                       else getattr(s, "ollama_embedding_model", "")),

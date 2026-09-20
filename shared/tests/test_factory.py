@@ -94,3 +94,29 @@ def test_todo_modelo_equivalente_tem_preco():
     for provedor, papeis in _EQUIVALENTE.items():
         for papel, modelo in papeis.items():
             assert normalizar(modelo) in PRECOS_PADRAO, f"{provedor}/{papel}: {modelo} sem preço"
+
+
+def test_catalogo_so_oferece_modelo_que_o_painel_consegue_salvar():
+    """O combo da tela sai daqui. Se oferecesse um modelo sem preço, o usuário escolheria da lista
+    e levaria 422 no salvar — ou pior, salvaria e desligaria o teto de orçamento em silêncio."""
+    from sdr_shared.governanca.precos import PRECOS_PADRAO, preco_do_modelo
+    from sdr_shared.ports.factory import catalogo_de_modelos
+
+    catalogo = catalogo_de_modelos()
+    assert set(catalogo) == {"openai", "anthropic"}, "Ollama não tem lista: depende do que a máquina baixou"
+    for provedor, modelos in catalogo.items():
+        assert modelos, f"{provedor} ficou sem nenhuma opção"
+        for m in modelos:
+            assert preco_do_modelo(m), f"{m} entrou no combo sem preço"
+    assert "claude-sonnet-4-5" in catalogo["anthropic"] and "gpt-5-mini" in catalogo["openai"]
+    # embeddings e modelo local não são opção de conversa
+    assert "bge-m3" not in catalogo["anthropic"] + catalogo["openai"]
+    assert all(m in PRECOS_PADRAO for m in catalogo["anthropic"])
+
+
+def test_catalogo_incorpora_precos_cadastrados_no_painel():
+    """Quem cadastra um preço novo ganha o modelo na tela sem que ninguém toque no frontend."""
+    from sdr_shared.ports.factory import catalogo_de_modelos
+
+    c = catalogo_de_modelos({"claude-opus-9": (1.0, 2.0, 0.0, 0.0), "gpt-7-nova": (1.0, 2.0, 0.0, 0.0)})
+    assert "claude-opus-9" in c["anthropic"] and "gpt-7-nova" in c["openai"]
