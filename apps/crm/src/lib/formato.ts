@@ -29,15 +29,43 @@ export function relativo(iso: string | null | undefined): string {
   return dias <= 30 ? `há ${dias} d` : dataHora(iso);
 }
 
-export const ESTAGIOS: { k: Estagio; r: string; ajuda: string }[] = [
+export const ESTAGIOS: { k: Estagio; r: string; ajuda: string; encerrado?: true }[] = [
   { k: "new", r: "Novo", ajuda: "Chegou e ainda ninguém falou com ele." },
   { k: "in_service", r: "Em atendimento", ajuda: "Conversa começou; o cartão ainda está incompleto." },
   { k: "qualified", r: "Qualificado", ajuda: "Já se sabe cidade, finalidade e teto de orçamento." },
   { k: "visit_scheduled", r: "Visita marcada", ajuda: "Tem visita confirmada no futuro." },
   { k: "negotiation", r: "Negociação", ajuda: "Proposta em discussão — só uma pessoa move para cá." },
-  { k: "won", r: "Ganho", ajuda: "Fechou." },
-  { k: "lost", r: "Perdido", ajuda: "Encerrado, com motivo registrado." },
+  { k: "won", r: "Ganho", ajuda: "Fechou.", encerrado: true },
+  { k: "lost", r: "Perdido", ajuda: "Encerrado, com motivo registrado.", encerrado: true },
 ];
+
+export const ENCERRADOS = new Set(ESTAGIOS.filter((e) => e.encerrado).map((e) => e.k));
+
+/** Dias desde a última mexida na oportunidade (`updated_at`).
+ *
+ *  É "parada há", e não "existe há": `created_at` responderia a pergunta errada — uma oportunidade
+ *  aberta há seis meses e trabalhada ontem não está esquecida, e é a esquecida que se quer achar.
+ */
+export function diasParado(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+}
+
+/** A partir de quantos dias sem movimento a oportunidade vira um alerta na tela.
+ *
+ *  Sete e quinze, e não um número só, porque "parado" não é um estado binário: sete dias é o prazo
+ *  em que ainda dá para retomar sem constrangimento, quinze é quando o cliente já procurou outro
+ *  lugar. Estágio encerrado nunca acende — ganho de três meses atrás não está "esquecido", está
+ *  pronto, e marcá-lo de amarelo ensinaria a ignorar a cor. */
+export const PARADO_ATENCAO = 7;
+export const PARADO_GRAVE = 15;
+
+export function tomDoParado(dias: number | null, estagio: Estagio): "neutro" | "alerta" | "ruim" | null {
+  if (dias === null || ENCERRADOS.has(estagio)) return null;
+  if (dias >= PARADO_GRAVE) return "ruim";
+  if (dias >= PARADO_ATENCAO) return "alerta";
+  return "neutro";
+}
 
 export const NOME_ESTAGIO = Object.fromEntries(ESTAGIOS.map((e) => [e.k, e.r])) as Record<Estagio, string>;
 

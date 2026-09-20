@@ -133,6 +133,10 @@ export type Atendimento = "agent" | "human_pending" | "human";
 export type Oportunidade = {
   id: string; lead_id: string; lead_name?: string; purpose: Proposito; stage: Estagio;
   atendimento: Atendimento; lost_reason: string | null; created_at: string; version: number;
+  // Já vinha na resposta (o endpoint faz `SELECT o.*`) e o tipo é que não declarava. É o que
+  // sustenta o "parada há N dias" do quadro — `created_at` diria há quanto tempo ela existe, que
+  // é outra pergunta.
+  updated_at: string;
 };
 export type Preferencias = {
   city: string | null; neighborhoods: string[]; property_types: string[];

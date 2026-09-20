@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Botao, CabecalhoPagina, Card, Carregando, Erro, Etiqueta, cx, entradaCls, foco } from "../componentes/ui";
 import { ErroApi, api, type Oportunidade } from "../lib/api";
-import { ATENDIMENTO, ESTAGIOS, NOME_ESTAGIO, PROPOSITO } from "../lib/formato";
+import { ATENDIMENTO, ESTAGIOS, NOME_ESTAGIO, PROPOSITO,
+         dataHora, diasParado, tomDoParado } from "../lib/formato";
 
 /** Busca TODAS as oportunidades, seguindo o cursor.
  *
@@ -58,10 +59,9 @@ export function Funil() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-baseline gap-2">
-        <CabecalhoPagina titulo="Funil" descricao="Arraste ou use os botões para mover a oportunidade de estágio." />
-        <span className="text-xs text-inkFaint">{data!.itens.length} oportunidades</span>
-      </div>
+      <CabecalhoPagina titulo="Funil"
+        descricao="Da esquerda para a direita. Mover pede o estágio de destino — e o motivo, quando a API exige."
+        acoes={<span className="text-xs text-inkFaint">{data!.itens.length} oportunidades</span>} />
       {data!.truncado && (
         <p className="rounded-lg border border-line bg-alertaSoft px-3 py-2 text-xs text-alerta">
           Mostrando as {data!.itens.length} mais recentes — há mais no banco do que cabe neste quadro.
@@ -75,28 +75,48 @@ export function Funil() {
         </p>
       )}
 
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {ESTAGIOS.map((e) => (
-          <Card key={e.k} titulo={
-            <span className="flex items-center gap-2">
-              {e.r}
-              <span className="rounded bg-surface2 px-1.5 text-[11px] tabular-nums text-inkMuted">
-                {porEstagio[e.k].length}
-              </span>
-            </span>
-          } semPadding>
-            <p className="px-4 pt-2 text-[11px] text-inkFaint">{e.ajuda}</p>
-            <ul className="max-h-[420px] space-y-2 overflow-y-auto p-3">
-              {porEstagio[e.k].length === 0 && (
-                <li className="px-1 py-2 text-xs text-inkFaint">Vazio.</li>
-              )}
-              {porEstagio[e.k].map((op) => (
-                <Ficha key={op.id} op={op} ocupado={mover.isPending}
-                       aoMover={(destino, motivo) => mover.mutate({ op, destino, motivo })} />
-              ))}
-            </ul>
-          </Card>
-        ))}
+      {/* Uma faixa só, com rolagem lateral. O grid anterior quebrava em duas linhas e punha
+          "Negociação" longe de "Ganho" — um funil lido de cima para baixo e de volta para a
+          esquerda deixa de parecer um funil. Coluna de largura fixa: deixar sete colunas
+          dividirem a tela espremeria cada card a ponto de o nome do cliente não caber. */}
+      <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-2">
+        {ESTAGIOS.map((e) => {
+          const itens = porEstagio[e.k];
+          // Uma regra só, em `tomDoParado`: ela já sabe do limiar e já isenta estágio encerrado.
+          // Repetir a condição aqui criaria a chance de o total e os cards discordarem.
+          const parados = itens.filter((o) => ["alerta", "ruim"].includes(
+            tomDoParado(diasParado(o.updated_at), o.stage) ?? "")).length;
+          return (
+            <div key={e.k} className="w-72 shrink-0">
+              <Card titulo={
+                <span className="flex items-center gap-2">
+                  {e.r}
+                  <span className="rounded bg-surface2 px-1.5 text-[11px] tabular-nums text-inkMuted">
+                    {itens.length}
+                  </span>
+                </span>
+              } acoes={
+                /* No lugar da soma em dinheiro de um CRM comercial: quantas estão paradas. O CRM
+                   não guarda valor de negócio, e somar orçamento do cliente e chamar de pipeline
+                   seria inventar dinheiro justamente na tela onde se decide o que priorizar. */
+                parados > 0
+                  ? <span className="rounded bg-alertaSoft px-1.5 py-0.5 text-[11px] font-medium text-alerta">
+                      {parados} parada{parados > 1 ? "s" : ""}
+                    </span>
+                  : undefined
+              } semPadding>
+                <p className="px-4 pt-2 text-[11px] text-inkFaint">{e.ajuda}</p>
+                <ul className="max-h-[460px] space-y-2 overflow-y-auto p-3">
+                  {itens.length === 0 && <li className="px-1 py-2 text-xs text-inkFaint">Vazio.</li>}
+                  {itens.map((op) => (
+                    <Ficha key={op.id} op={op} ocupado={mover.isPending}
+                           aoMover={(destino, motivo) => mover.mutate({ op, destino, motivo })} />
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -108,6 +128,8 @@ function Ficha({ op, aoMover, ocupado }: {
   const [destino, setDestino] = useState("");
   const [motivo, setMotivo] = useState("");
   const humano = op.atendimento !== "agent";
+  const dias = diasParado(op.updated_at);
+  const tom = tomDoParado(dias, op.stage);
   // Perder e reabrir exigem motivo — a API recusa sem ele, e pedir aqui evita um erro que a
   // pessoa só descobriria depois de clicar.
   const pedeMotivo = destino === "lost" || (destino === "in_service" && ["won", "lost"].includes(op.stage));
@@ -124,6 +146,16 @@ function Ficha({ op, aoMover, ocupado }: {
       <Link to={`/clientes/${op.lead_id}`} className="mt-0.5 block truncate text-[11px] text-inkMuted hover:underline">
         {op.lead_name ?? `cliente ${op.lead_id.slice(0, 8)}`}
       </Link>
+      {tom && (
+        /* Texto junto da cor, sempre: "23d" amarelo sozinho não diz nada a quem não distingue
+           amarelo de cinza — e não diz nada a ninguém na primeira vez que vê a tela. */
+        <p className={cx("mt-1 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium",
+                         tom === "ruim" ? "bg-ruimSoft text-ruim"
+                         : tom === "alerta" ? "bg-alertaSoft text-alerta" : "text-inkFaint")}
+           title={`Última alteração em ${dataHora(op.updated_at)}`}>
+          {dias === 0 ? "mexida hoje" : `parada há ${dias}d`}
+        </p>
+      )}
       {op.lost_reason && <p className="mt-1 text-[11px] text-inkFaint">Motivo: {op.lost_reason}</p>}
 
       <div className="mt-2 space-y-1.5">
