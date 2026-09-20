@@ -42,7 +42,12 @@ def setup_module(m):
     from sdr_shared.models import Imovel, Lead
     import pathlib
     with get_pool().connection() as c:
-        for t in ("visitas", "mensagens", "canais", "followups_agendados", "eventos_navegacao", "leads", "corretores", "configuracoes", "imoveis"):
+        # `uso_llm`, `turnos`, `saude` e `batimentos` entram aqui porque os testes de comparação de
+        # modelos e de saúde INSEREM nessas tabelas: sem limpar, a segunda execução da suíte começa
+        # com o estado da primeira, e o teste que afirma "ainda não há uso gravado" falha. Vermelho
+        # que depende de quantas vezes alguém rodou a suíte, não do código.
+        for t in ("visitas", "mensagens", "canais", "followups_agendados", "eventos_navegacao", "leads",
+                  "corretores", "configuracoes", "imoveis", "uso_llm", "turnos", "saude", "batimentos"):
             c.execute(f"DELETE FROM {t}")
     data = pathlib.Path(__file__).parents[2] / "agent/tests/fixtures/imoveis.json"
     for x in json.load(open(data, encoding="utf-8")):
@@ -202,6 +207,65 @@ def test_callback_recusa_state_nao_assinado():
     c = TestClient(app)
     r = c.get("/calendario/callback", params={"code": "qualquer", "state": "cor_ana-souza"})
     assert r.status_code == 200 and "Link expirado" in r.text
+
+
+def test_saude_diz_por_que_esta_lento_e_nao_so_que_esta():
+    """As colunas que a tela descartava: canal, estágio e o caminho no grafo.
+
+    Monta dois perfis no mesmo período — web rápida e telegram lento, com o agendador presente só
+    nos lentos — e cobra que o recorte separe os dois e aponte o suspeito."""
+    from sdr_shared.db import get_pool
+
+    c = TestClient(app)
+    with get_pool().connection() as conn:
+        conn.execute("DELETE FROM turnos")
+        for _ in range(20):
+            conn.execute("""INSERT INTO turnos (lead_id, canal, resultado, duracao_ms, estagio, nos)
+                            VALUES ('l1','web','ok',1200,'qualificando','{supervisor,qualificador}')""")
+        for _ in range(4):
+            conn.execute("""INSERT INTO turnos (lead_id, canal, resultado, duracao_ms, estagio, nos)
+                            VALUES ('l1','telegram','ok',41000,'agendado','{supervisor,agendador}')""")
+
+    d = c.get("/dashboard/saude", headers=H, params={"horas": 24}).json()
+
+    canais = {x["chave"]: x for x in d["por_canal"]}
+    assert canais["telegram"]["p95_ms"] > 30_000 and canais["web"]["p95_ms"] < 5_000, \
+        "o p95 global misturaria os dois e esconderia qual canal está ruim"
+    assert {x["chave"] for x in d["por_estagio"]} == {"qualificando", "agendado"}
+
+    nos = {n["no"]: n for n in d["nos_lentos"]["nos"]}
+    # O supervisor roda em TODO turno: aparece nos dois lados e não explica nada. O agendador só
+    # aparece nos lentos — é o suspeito, e por isso encabeça a lista.
+    assert d["nos_lentos"]["nos"][0]["no"] == "agendador"
+    assert nos["agendador"]["pct_lentos"] == 100.0 and nos["agendador"]["pct_rapidos"] == 0.0
+    assert nos["supervisor"]["pct_lentos"] == nos["supervisor"]["pct_rapidos"] == 100.0
+    assert d["nos_lentos"]["corte_ms"] > 0, "o corte é o p95 do período, não um limiar fixo"
+
+
+def test_saude_sem_turno_nenhum_nao_inventa_diagnostico():
+    from sdr_shared.db import get_pool
+
+    c = TestClient(app)
+    with get_pool().connection() as conn:
+        conn.execute("DELETE FROM turnos")
+    d = c.get("/dashboard/saude", headers=H, params={"horas": 24}).json()
+    assert d["nos_lentos"] == {"corte_ms": 0, "lentos": 0, "nos": []}
+    assert d["por_canal"] == [] and d["por_estagio"] == []
+
+
+def test_saude_serie_de_filas_mostra_o_pico_e_nao_a_media():
+    """Fila estável em 40 e fila subindo até 40 têm a mesma cara num número só — e são opostas."""
+    from sdr_shared.db import get_pool
+
+    c = TestClient(app)
+    with get_pool().connection() as conn:
+        conn.execute("DELETE FROM saude")
+        for filas, conexoes in (('{"agente": 0}', 4), ('{"agente": 60}', 9), ('{"agente": 2}', 5)):
+            conn.execute("INSERT INTO saude (filas, conexoes_db) VALUES (%s, %s)", (filas, conexoes))
+
+    serie = c.get("/dashboard/saude", headers=H, params={"horas": 24}).json()["serie_filas"]
+    assert serie and max(p["filas"] for p in serie) == 60, "média apagaria o pico de 60"
+    assert max(p["conexoes"] for p in serie) == 9
 
 
 def test_modelos_recusa_modelo_sem_preco():

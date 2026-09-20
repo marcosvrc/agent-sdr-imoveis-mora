@@ -1774,7 +1774,7 @@
     },
     "/dashboard/saude": {
       "get": {
-        "description": "Observabilidade leve (ADR-0011): o que o corretor precisa ver sem abrir um Grafana.\n\nTrês leituras baratas do Postgres — espera do cliente por turno, última amostra de filas e\nquem está batendo ponto. Sem coletor, sem série temporal de métricas, sem agente extra.",
+        "description": "Observabilidade leve (ADR-0011): o que o corretor precisa ver sem abrir um Grafana.\n\nLeituras baratas do Postgres — espera do cliente por turno, filas ao longo do tempo e quem está\nbatendo ponto. Sem coletor, sem série temporal de métricas, sem agente extra.\n\nA segunda metade existe para responder à pergunta seguinte. `turnos`, `p50` e `p95` dizem que\nESTÁ lento; recorte por canal e por estágio, presença de nós nos turnos lentos, série de filas e\nerro por provedor são o que começa a dizer POR QUÊ — tudo saindo de colunas que já eram gravadas\ne que a tela descartava.",
         "operationId": "saude_dashboard_saude_get",
         "parameters": [
           {

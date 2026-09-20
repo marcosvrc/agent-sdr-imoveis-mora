@@ -85,7 +85,18 @@ export type Saude = {
     serie: { hora: string; turnos: number; p95_ms: number; falhas: number }[] };
   amostra: { em: string; filas: Record<string, number>; conexoes_db: number | null } | null;
   servicos: { servico: string; em: string; ha_segundos: number; vivo: boolean; detalhe: Record<string, unknown> }[];
+  /** Recortes que respondem POR QUE está lento — todos de colunas que já eram gravadas. */
+  por_canal: RecorteTurnos[];
+  por_estagio: RecorteTurnos[];
+  /** Presença de cada nó do grafo nos turnos mais lentos vs. o resto. Presença, não duração:
+   *  `turnos.nos` guarda o caminho percorrido, e não quanto tempo cada nó levou. */
+  nos_lentos: { corte_ms: number; lentos: number;
+    nos: { no: string; em_lentos: number; em_rapidos: number; pct_lentos: number; pct_rapidos: number }[] };
+  serie_filas: { em: string; filas: number; conexoes: number | null }[];
+  provedores: { provedor: string; chamadas: number; erros: number; taxa_erro: number; p95_ms: number }[];
 };
+
+export type RecorteTurnos = { chave: string; turnos: number; p50_ms: number; p95_ms: number; falhas: number };
 
 /** Vínculo lead↔imóvel. `sugerido` é escrito pelo agente; o corretor move para os demais. */
 export type SituacaoInteresse = "sugerido" | "interessado" | "descartado" | "visita_marcada";

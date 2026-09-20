@@ -9,7 +9,9 @@ from .modelos import (escolha as escolha_de_modelo, invalidar_cache_modelos, NIV
 from .operacao import (invalidar_cache_operacao, numero as operacao_numero,
                        texto as operacao_texto)
 from .monitoramento import (registrar_turno, resumo_de_turnos, amostrar, ultima_amostra,
-                            bater, iniciar_batimento, batimentos, servicos_parados)
+                            bater, iniciar_batimento, batimentos, servicos_parados,
+                            recorte_de_turnos, nos_dos_turnos_lentos, serie_de_amostras,
+                            saude_dos_provedores)
 from .clientes import ClienteRepository, nova_oportunidade_se_mudou_intencao
 from .notificacoes import NotificacaoRepository, notificar
 from .auditoria import AuditoriaRepository, auditar, SENSIVEIS

@@ -137,3 +137,107 @@ def batimentos() -> list[dict]:
                               FROM batimentos ORDER BY servico""").fetchall()
     return [{"servico": r["servico"], "em": r["em"].isoformat(), "ha_segundos": int(r["ha_segundos"]),
              "vivo": int(r["ha_segundos"]) <= PARADO_S, "detalhe": r["detalhe"]} for r in rows]
+
+
+# ------------------------------------------------- diagnóstico: por que está lento
+
+def recorte_de_turnos(horas: int = 24, campo: str = "canal") -> list[dict]:
+    """Espera e falha por canal ou por estágio.
+
+    O p95 global diz que ESTÁ lento; este recorte começa a dizer ONDE. Telegram lento com a web
+    rápida aponta para o canal; lentidão só na qualificação aponta para o prompt daquele nó.
+    """
+    if campo not in ("canal", "estagio"):                      # o valor vai concatenado no SQL
+        raise ValueError(f"recorte desconhecido: {campo}")
+    with _conn() as c:
+        rows = c.execute(f"""
+            SELECT coalesce({campo}, 'sem registro') AS chave, count(*) AS turnos,
+                   coalesce(percentile_disc(0.5)  WITHIN GROUP (ORDER BY duracao_ms), 0) AS p50,
+                   coalesce(percentile_disc(0.95) WITHIN GROUP (ORDER BY duracao_ms), 0) AS p95,
+                   count(*) FILTER (WHERE resultado <> 'ok') AS falhas
+              FROM turnos WHERE em >= now() - make_interval(hours => %s)
+             GROUP BY 1 ORDER BY turnos DESC""", (horas,)).fetchall()
+    return [{"chave": r["chave"], "turnos": int(r["turnos"]), "p50_ms": int(r["p50"]),
+             "p95_ms": int(r["p95"]), "falhas": int(r["falhas"])} for r in rows]
+
+
+def nos_dos_turnos_lentos(horas: int = 24) -> dict:
+    """Quais nós do grafo aparecem nos 5% de turnos mais lentos, comparados com o resto.
+
+    ATENÇÃO ao que este número é e ao que ele não é: `turnos.nos` guarda o CAMINHO percorrido, não
+    o tempo de cada nó. Então isto mede **presença**, não duração — um nó que aparece em 90% dos
+    turnos lentos e em 20% dos rápidos é um suspeito, não um culpado. Apresentar isso como "o nó X
+    gastou 4s" seria inventar uma medição que o projeto não faz; quem quiser a duração por nó
+    precisa passar a gravá-la.
+
+    O corte é o p95 do próprio período, e não um limiar fixo: num dia bom, 30s nunca seria atingido
+    e a tabela ficaria sempre vazia, escondendo o nó que está fazendo o dia bom ser pior.
+    """
+    with _conn() as c:
+        r = c.execute("""SELECT count(*) AS total,
+                                coalesce(percentile_disc(0.95) WITHIN GROUP (ORDER BY duracao_ms), 0) AS p95
+                           FROM turnos WHERE em >= now() - make_interval(hours => %s)""", (horas,)).fetchone()
+        total, corte = int(r["total"]), int(r["p95"])
+        if not total:
+            return {"corte_ms": 0, "lentos": 0, "nos": []}
+        rows = c.execute("""
+            SELECT no, count(*) AS total,
+                   count(*) FILTER (WHERE t.duracao_ms >= %(corte)s) AS em_lentos
+              FROM turnos t, unnest(t.nos) AS no
+             WHERE t.em >= now() - make_interval(hours => %(h)s)
+             GROUP BY no""", {"corte": corte, "h": horas}).fetchall()
+        lentos = int(c.execute("""SELECT count(*) AS n FROM turnos
+                                   WHERE em >= now() - make_interval(hours => %s) AND duracao_ms >= %s""",
+                               (horas, corte)).fetchone()["n"])
+    rapidos = total - lentos
+    nos = [{"no": r["no"],
+            "em_lentos": int(r["em_lentos"]),
+            "em_rapidos": int(r["total"]) - int(r["em_lentos"]),
+            "pct_lentos": round(100 * int(r["em_lentos"]) / lentos, 1) if lentos else 0.0,
+            "pct_rapidos": round(100 * (int(r["total"]) - int(r["em_lentos"])) / rapidos, 1) if rapidos else 0.0}
+           for r in rows]
+    # Ordena pelo tamanho da DIFERENÇA: um nó presente em todo turno (o supervisor) aparece em 100%
+    # dos dois lados e não explica nada; o que informa é quem aparece muito mais de um lado.
+    nos.sort(key=lambda n: n["pct_lentos"] - n["pct_rapidos"], reverse=True)
+    return {"corte_ms": corte, "lentos": lentos, "nos": nos}
+
+
+def serie_de_amostras(horas: int = 24) -> list[dict]:
+    """Profundidade de fila e conexões do banco AO LONGO do tempo, não só na última amostra.
+
+    Fila estável em 40 e fila subindo de 0 a 40 têm exatamente a mesma aparência quando se olha um
+    número só — e são situações opostas: uma é ritmo, a outra é represamento.
+
+    Máximo por balde, não média: o pico é o que dói. Uma fila que encheu por dois minutos some
+    inteira numa média horária.
+    """
+    balde = 600 if horas <= 12 else 3600                       # 10 min em janela curta, 1 h nas longas
+    with _conn() as c:
+        rows = c.execute("""
+            SELECT to_timestamp(floor(extract(epoch FROM em) / %(b)s) * %(b)s) AS bucket,
+                   max(coalesce((SELECT sum(v::int) FROM jsonb_each_text(filas) AS e(k, v)), 0)) AS filas,
+                   max(conexoes_db) AS conexoes
+              FROM saude WHERE em >= now() - make_interval(hours => %(h)s)
+             GROUP BY 1 ORDER BY 1""", {"b": balde, "h": horas}).fetchall()
+    return [{"em": r["bucket"].isoformat(), "filas": int(r["filas"] or 0),
+             "conexoes": int(r["conexoes"]) if r["conexoes"] is not None else None} for r in rows]
+
+
+def saude_dos_provedores(horas: int = 24) -> list[dict]:
+    """Falha e latência por provedor de LLM.
+
+    Mora em Governança porque lá se olha custo; aqui se olha disponibilidade. É a mesma tabela
+    respondendo outra pergunta: quando o agente fica lento sem a fila crescer, costuma ser isto.
+    """
+    with _conn() as c:
+        rows = c.execute("""
+            SELECT provider, count(*) AS chamadas,
+                   count(*) FILTER (WHERE erro IS NOT NULL) AS erros,
+                   coalesce(percentile_disc(0.95) WITHIN GROUP (ORDER BY latencia_ms)
+                            FILTER (WHERE erro IS NULL), 0) AS p95
+              FROM uso_llm WHERE em >= now() - make_interval(hours => %s)
+             GROUP BY 1 ORDER BY chamadas DESC""", (horas,)).fetchall()
+    return [{"provedor": r["provider"], "chamadas": int(r["chamadas"]), "erros": int(r["erros"]),
+             "p95_ms": int(r["p95"]),
+             "taxa_erro": round(100 * int(r["erros"]) / int(r["chamadas"]), 1) if r["chamadas"] else 0.0}
+            for r in rows]

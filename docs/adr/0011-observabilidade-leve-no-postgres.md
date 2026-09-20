@@ -80,6 +80,13 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
 - **Não é tracing.** Não há span por operação, não há correlação entre serviços, não há flame
   graph. O `nos` de `turnos` (por quais nós do grafo o turno passou) é a aproximação barata disso,
   e para um grafo de 8 nós ela responde a maior parte das perguntas.
+
+  A tela usa esse campo comparando a **presença** de cada nó nos 5% de turnos mais lentos com a
+  presença no resto — e diz isso em letras miúdas ao lado do gráfico. É preciso dizer: `nos` é o
+  caminho, não a duração de cada etapa, então o que sai dali é suspeito, não culpado. Ranquear por
+  presença bruta apontaria sempre o supervisor, que roda em todo turno; por isso a ordem é pela
+  diferença entre os dois lados. Ter a duração por nó exigiria um segundo INSERT por etapa — é o
+  preço que este ADR escolheu não pagar.
 - **Cardinalidade fixa.** Não dá para fatiar por dimensão arbitrária como em Prometheus; as
   agregações são as que estão escritas no SQL de `resumo_de_turnos`.
 - **Escrita síncrona no caminho do turno.** Um INSERT por turno, na mesma transação-conexão do
