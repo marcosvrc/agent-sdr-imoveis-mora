@@ -88,6 +88,33 @@ export function ModelosForm({ form, set, efetivo }: {
           </div>
         );
       })}
+
+      {/* O reserva é decisão de operação — quem assume quando o provedor primário cai — e estava
+          só no .env, exigindo recriar container para mudar. Aqui vale no próximo turno. */}
+      <div className="rounded-xl border border-line p-4">
+        <div className="mb-1 flex items-center gap-2">
+          <Ic.shield size={15} className="text-ink-faint" />
+          <h3 className="text-sm font-semibold">Provedor de reserva</h3>
+        </div>
+        <p className="mb-3 text-xs text-ink-muted">
+          Assume quando o primário falha — indisponibilidade, timeout ou cota. Sem reserva, cada turno
+          vira mensagem de desculpa e encaminhamento ao corretor. O ID do modelo é traduzido sozinho
+          entre provedores, então basta nomear o outro.
+        </p>
+        <Field label="Quem assume a queda">
+          <Select value={String(form.fallback_provider ?? "")}
+                  onChange={(e) => set("fallback_provider", e.target.value)}>
+            <option value="">usa o do ambiente (.env)</option>
+            {PROVIDERS.filter(Boolean).map((p) => <option key={p} value={p}>{p}</option>)}
+            <option value="nenhum">nenhum — sem reserva</option>
+          </Select>
+        </Field>
+        {String(form.fallback_provider ?? "") === "nenhum" && (
+          <p className="mt-2 rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-strong">
+            Sem reserva: se o provedor cair, o cliente recebe uma desculpa e o corretor recebe o lead.
+          </p>
+        )}
+      </div>
     </div>
   );
 }

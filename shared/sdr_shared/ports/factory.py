@@ -222,6 +222,15 @@ def _escolha_do_painel(papel: str) -> tuple[str | None, str | None]:
         return None, None
 
 
+def _reserva_do_painel() -> str | None:
+    """Mesmo contrato do modelo por nível: o painel manda, o .env é o piso."""
+    try:
+        from ..db import reserva_do_painel
+        return reserva_do_painel()
+    except Exception:                       # sem banco (testes, boot): o ambiente decide sozinho
+        return None
+
+
 def get_chat_model(papel: str = "conversa"):
     """papel: conversa | roteamento | analise. Provedor: anthropic | openai | ollama.
     Modelo e provedor saem do painel quando configurados lá, senão do .env (ADR-0010).
@@ -236,7 +245,8 @@ def get_chat_model(papel: str = "conversa"):
     provider = provider_painel or s.llm_provider
     temp = 0.0 if papel == "roteamento" else 0.6
     primario = _construir(provider, model, temp, papel)
-    reserva = (s.llm_provider_fallback or "").strip()
+    escolhido = _reserva_do_painel()
+    reserva = "" if escolhido == "nenhum" else (escolhido or (s.llm_provider_fallback or "").strip())
     if not reserva or reserva == provider:
         return primario
     return ModeloComFallback(primario, _construir(reserva, model, temp, papel), reserva)

@@ -22,8 +22,11 @@ DEFAULTS: dict[str, dict] = {
     "handoff": {"palavras_gatilho": ["corretor", "atendente", "humano", "pessoa de verdade"], "auto_quando_quente": False},
     # Modelo por nível (ADR-0010). Vazio = usa o do .env, então dá para mexer em um nível só e
     # desfazer tudo com DELETE /config/modelos, sem precisar do banco.
+    # `fallback_provider` vazio = usa o SDR_LLM_PROVIDER_FALLBACK do ambiente; a string "nenhum"
+    # é o jeito de DESLIGAR o reserva pela tela sem mexer no .env. Sem ela, apagar o campo no
+    # painel não conseguiria desfazer um fallback herdado do ambiente.
     "modelos": {"conversa": "", "conversa_provider": "", "roteamento": "", "roteamento_provider": "",
-                "analise": "", "analise_provider": ""},
+                "analise": "", "analise_provider": "", "fallback_provider": ""},
 }
 
 PROVIDERS = ("", "anthropic", "openai", "ollama")
@@ -98,6 +101,15 @@ def _validar_modelos(body: dict) -> None:
     Por isso salvar um modelo desconhecido é recusado, com o caminho para resolver."""
     from sdr_shared.db import UsoRepository
     from sdr_shared.governanca import preco_do_modelo
+
+    if (reserva := (body.get("fallback_provider") or "").strip()):
+        if reserva not in (*PROVIDERS, "nenhum"):
+            raise HTTPException(422, f"fallback_provider: provedor desconhecido '{reserva}'")
+        # Reserva igual ao primário não é erro de digitação inofensivo: são duas chamadas ao mesmo
+        # provedor caído, e o cliente espera o dobro para receber a mesma falha.
+        if reserva == (body.get("conversa_provider") or "").strip():
+            raise HTTPException(422, "fallback_provider: o reserva não pode ser o mesmo provedor da "
+                                     "conversa — seriam duas tentativas no provedor que caiu.")
 
     for nivel in ("conversa", "roteamento", "analise"):
         if (prov := body.get(f"{nivel}_provider")) and prov not in PROVIDERS:

@@ -118,3 +118,33 @@ def test_uso_registra_o_provedor_que_realmente_atendeu():
 
     assert callbacks_para("conversa", "anthropic")[0].provider == "anthropic"
     assert callbacks_para("conversa")[0].provider is None, "sem override, cai no provedor do .env"
+
+
+def test_painel_vence_o_ambiente_na_escolha_do_reserva(monkeypatch):
+    """Mesmo contrato do modelo por nível (ADR-0010): o painel manda, o .env é o piso."""
+    import sdr_shared.ports.factory as f
+
+    monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_reserva_do_painel", lambda: "ollama")
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
+    get_settings.cache_clear()
+    m = f.get_chat_model("conversa")
+    assert m._reserva == "modelo:ollama", "o painel decide quem assume a queda"
+    get_settings.cache_clear()
+
+
+def test_painel_pode_DESLIGAR_um_reserva_herdado_do_ambiente(monkeypatch):
+    """Sem um valor explícito para 'nenhum', apagar o campo no painel nunca desfaria um fallback
+    que veio do `.env` — o campo vazio significa 'não opinei', não 'desligue'."""
+    import sdr_shared.ports.factory as f
+
+    monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_reserva_do_painel", lambda: "nenhum")
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
+    get_settings.cache_clear()
+    assert f.get_chat_model("conversa") == "modelo:anthropic", "sem envelope de fallback"
+    get_settings.cache_clear()

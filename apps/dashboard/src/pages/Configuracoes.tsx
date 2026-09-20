@@ -45,7 +45,7 @@ export function Configuracoes() {
                 <div className="grid gap-3 sm:grid-cols-2"><Field label="Nome do agente"><Input value={String(form.nome ?? "")} onChange={(e) => set("nome", e.target.value)} /></Field><Field label="Empresa"><Input value={String(form.empresa ?? "")} onChange={(e) => set("empresa", e.target.value)} /></Field></div>
                 <Field label="Tom de voz"><Input value={String(form.tom ?? "")} onChange={(e) => set("tom", e.target.value)} placeholder="cordial e direto" /></Field>
                 <div className="grid gap-3 sm:grid-cols-2"><Field label="Máximo de frases por mensagem"><Input type="number" min={1} max={6} value={Number(form.max_frases ?? 3)} onChange={(e) => set("max_frases", Number(e.target.value))} /></Field><Field label="Uso de emojis"><Select value={String(form.emojis ?? "raros")} onChange={(e) => set("emojis", e.target.value)}><option value="nunca">Nunca</option><option value="raros">Raros</option><option value="moderado">Moderado</option></Select></Field></div>
-                <Toggle on={!!form.apresentar_como_assistente} onChange={(v) => set("apresentar_como_assistente", v)} label="Apresentar-se sempre como assistente virtual (exigência da Meta)" />
+                <Toggle on={!!form.apresentar_como_assistente} onChange={(v) => set("apresentar_como_assistente", v)} label="Apresentar-se sempre como assistente virtual, nunca como pessoa" />
               </>}
               {secao === "followup" && <FollowupForm form={form} set={set} />}
               {secao === "agenda" && <>

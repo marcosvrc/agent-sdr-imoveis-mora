@@ -596,3 +596,29 @@ def test_funil_de_reativacao_conta_o_que_o_aviso_produziu():
     # zero aviso é uma afirmação falsa sobre a campanha.
     vazio = c.get("/dashboard/reativacao", headers=H, params={"dias": 1}).json()
     assert vazio["avisos"] == 0 and vazio["taxa_resposta"] is None
+
+
+# --------------------------------------------------- provedor de reserva pelo painel
+
+def test_reserva_pode_ser_escolhida_no_painel():
+    """Estava só no `.env`: dava para apontar a conversa para outro provedor pela tela, mas não
+    para dizer quem assume quando ele cai — justamente a decisão que alguém toma com o sistema no
+    ar, e não num arquivo que exige recriar container."""
+    c = TestClient(app)
+    assert c.put("/config/modelos", headers=H, json={"fallback_provider": "openai"}).status_code == 200
+    assert c.get("/config", headers=H).json()["config"]["modelos"]["fallback_provider"] == "openai"
+    c.delete("/config/modelos", headers=H)
+
+
+def test_reserva_igual_ao_primario_e_recusada():
+    """Não é erro de digitação inofensivo: seriam duas chamadas ao mesmo provedor caído, e o cliente
+    esperaria o dobro para receber a mesma falha."""
+    c = TestClient(app)
+    r = c.put("/config/modelos", headers=H,
+              json={"conversa_provider": "openai", "fallback_provider": "openai"})
+    assert r.status_code == 422 and "mesmo provedor" in r.json()["detail"]
+
+
+def test_reserva_desconhecida_e_recusada():
+    c = TestClient(app)
+    assert c.put("/config/modelos", headers=H, json={"fallback_provider": "bedrock"}).status_code == 422
