@@ -158,6 +158,7 @@ nav:
           - ADR-0012 — Vitrine encontrável e acessível: adr/0012-vitrine-encontravel-e-acessivel.md
           - ADR-0013 — Reativação proativa de leads adormecidos: adr/0013-reativacao-proativa-de-leads-adormecidos.md
           - ADR-0014 — Tema claro e escuro no painel: adr/0014-tema-claro-e-escuro-no-painel.md
+          - ADR-0015 — Quem manda nas fotos do imóvel: adr/0015-quem-manda-nas-fotos-do-imovel.md
   - Manual de uso:
       - Agente (Mora): user-guide/agente.md
       - Site: user-guide/site.md

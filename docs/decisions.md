@@ -200,3 +200,41 @@ UUIDs obriga a abrir cada cartão para saber de quem se trata — `GET /opportun
 devolver `lead_name`.
 
 Nenhum dos dois quebrava teste nenhum, e nenhum aparece em `tsc`.
+
+## D-18 — O que eu afirmei sem medir, e o que a medição devolveu
+
+Três afirmações minhas sobre o comportamento do sistema, feitas lendo código, foram desmentidas por
+medição em dois dias. Ficam registradas porque o padrão importa mais que os casos.
+
+**"O sistema nunca guardou um byte de imagem."** O painel da Mora tinha envio, remoção e troca de
+capa desde antes — bytes em `fotos_dir/<imovel>/<uuid>.jpg`. A discussão inteira sobre onde gravar
+imagem aconteceu sem olhar o lado que já tinha a resposta.
+
+**"O resultado depende de qual regra roda primeiro."** Sobre as duas fontes de foto. Medido, não
+depende: painel > CRM > arquivo, sempre, porque o `CASE` do `upsert` fala por último (ADR-0015).
+
+**"O painel pode enviar a foto e gravar a referência no CRM."** Recomendado sem olhar o
+`exigir_humano`, que exige sessão de usuário e não credencial de serviço. A recomendação era
+inviável sem criar "agindo em nome de" — e esse custo mudou a decisão inteira.
+
+As três custaram tempo e uma delas custou uma recomendação errada. O que funcionou, nas três, foi a
+mesma coisa: rodar. O painel mostrou os bytes, o teste mostrou a ordem, o código de autenticação
+mostrou a parede.
+
+## D-19 — Uma tabela de amostra não confere um schema
+
+O `/health/ready` do CRM já tinha a intenção certa escrita no docstring: "conecta mas não tem tabela
+é indisponível, senão a primeira requisição quebra com erro de SQL". A conferência olhava
+`opportunities` e mais nada.
+
+Entrou `property_photos`, o readiness seguiu verde, e o erro apareceu do jeito que aquela
+verificação existia para evitar: traceback de `psycopg` no meio de uma consulta de imóvel.
+
+A lista de tabelas passou a sair do próprio `schema.sql`. Lista escrita à mão envelhece em silêncio,
+e foi exatamente o que aconteceu.
+
+Duas lições operacionais vieram junto, e as duas são sobre o mesmo arquivo ser reaplicado a cada
+`docker compose up`: **`restart` não roda o `db-init`**, então mudança de schema exige `up`; e
+`CREATE TABLE IF NOT EXISTS` **não acrescenta coluna** em tabela que já existe — coluna nova em
+tabela antiga só entra por `ALTER ... ADD COLUMN IF NOT EXISTS`. A segunda foi descoberta por teste
+vermelho, não por leitura.

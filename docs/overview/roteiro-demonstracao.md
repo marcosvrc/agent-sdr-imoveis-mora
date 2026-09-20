@@ -1,12 +1,15 @@
 ---
 title: "Roteiro de demonstração"
-description: A sequência que mostra a Mora conversando, respondendo política com RAG, reconhecendo um cliente do CRM e pedindo visita.
+description: A sequência que mostra a Mora conversando, respondendo política com RAG, reconhecendo um cliente do CRM, pedindo visita — e o acervo mudando de lado a lado.
 ---
 
 # Roteiro de demonstração
 
-Quinze minutos, quatro momentos. Cada um mostra uma capacidade diferente e termina com algo
-visível numa tela — não com uma afirmação sobre o que o sistema faz.
+Vinte minutos, cinco momentos. Cada um mostra uma capacidade diferente e termina com algo visível
+numa tela — não com uma afirmação sobre o que o sistema faz.
+
+Se houver só quinze minutos, corte o momento 5 e faça a versão curta do 4 (sem remarcar). O que não
+se corta é o 1 e o 4: um mostra o agente, o outro mostra por que ele não decide sozinho.
 
 A ordem importa: cada momento usa o estado que o anterior deixou. Pular um quebra o seguinte.
 
@@ -105,9 +108,60 @@ marcada" cria um cliente esperando na porta, com um corretor que nunca soube. As
 verdadeiras ao mesmo tempo — o horário está reservado e a visita não está confirmada — e é a única
 combinação em que ninguém é enganado.
 
+**Se sobrar um minuto aqui**, confirme a visita no CRM e depois clique em **Remarcar**, escolhendo
+outro horário do mesmo imóvel. A visita antiga fica cancelada apontando para a nova, e a lista diz
+"remarcada" em vez de "motivo". Antes isso era cancelar e pedir de novo: dois eventos soltos no
+histórico, e uma visita cancelada indistinguível de cliente perdido.
+
+!!! tip "De onde vêm os horários"
+    Se a agenda estiver vazia, abra **Imóveis → Agenda** e crie um. É a mesma tela do momento 5, e
+    ela existe justamente para a demonstração não depender do `make seed`.
+
+## 5. O acervo muda, e a Mora acompanha (5 min)
+
+É o arco completo da integração, e o único momento em que as duas pontas aparecem na mesma frase.
+
+**Primeiro, cadastre.** No CRM, **Imóveis → Novo imóvel**: um código novo, bairro, aluguel e —
+importante — deixe **condomínio em branco**. Salve. Na tela, o imóvel aparece com **"total
+incompleto"** em vez de um número menor que a conta real, e diz o que falta (condomínio e outros
+custos, se você deixou os dois vazios).
+
+**Depois, abra a agenda dele** e crie um horário para amanhã.
+
+**Agora mostre a Mora encontrando.** No site, peça um imóvel naquele bairro. Ele está lá, com
+horário disponível para visita.
+
+**Por fim, tire do catálogo.** De volta ao CRM, no cartão do imóvel: **Mudar situação → Reservado**,
+com o motivo. Espere o ciclo de reindexação (o intervalo está em **Configurações → Operação**, no
+painel da Mora) e peça de novo, no site.
+
+**O que mostrar:** a Mora parou de oferecer. Ninguém rodou comando nenhum.
+
+**O que dizer:** três coisas, nesta ordem.
+
+Campo de custo em branco significa **desconhecido**, nunca zero — é o que evita a surpresa do
+cliente no dia da assinatura, e é uma decisão de produto, não um detalhe de formulário.
+
+`reserved` é a proposta aceita, antes da assinatura, e **volta** para disponível se a proposta cair.
+Situação que só anda para a frente faz o acervo minguar sozinho.
+
+E o índice do agente **não tem campo de situação**: imóvel indisponível não chega nele, some pela
+purga da reindexação. Não é sincronização de status — é a fonte deixando de listar, e o índice
+obedecendo. Se alguém perguntar o que acontece quando há visita confirmada, mostre: o CRM **recusa**
+tirar o imóvel do catálogo. Tirá-lo por baixo mandaria o corretor a um endereço para mostrar o que
+não está mais à venda.
+
 ## Se sobrar tempo
 
 - **Governança de IA** no painel da Mora: custo por modelo e troca de modelo por nível, sem deploy.
+  Em **Configurações → Modelos**, o ícone ao lado do campo abre a comparação: preço de entrada e
+  saída, latência **medida neste ambiente** e quanto o uso real dos últimos 30 dias teria custado com
+  cada modelo. Vale dizer que janela de contexto não aparece ali de propósito — o projeto não guarda
+  esse dado, e número inventado numa tela de escolha vira o motivo de escolher errado.
+- **Saúde do sistema**: além de "está lento?", ela responde "por quê" — espera por canal e por
+  estágio, e quais nós do grafo aparecem nos 5% de turnos mais lentos. Diga que isso é **presença**,
+  não duração: o turno grava por quais nós passou, não quanto tempo levou em cada um, então o que
+  sai dali é suspeito e não culpado.
 - **Auditoria**: a trilha do que o agente fez, com o motivo de cada decisão.
 - **Desligue o CRM** (comente `CRM_MCP_TOKEN` e reinicie o agente) e refaça o momento 1. A Mora
   atende igual. É a porta fazendo o trabalho dela, e talvez seja a coisa mais difícil de mostrar e
