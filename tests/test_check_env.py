@@ -72,3 +72,30 @@ def test_reserva_configurada_passa():
 def test_modelo_de_embedding_com_dimensao_diferente_avisa():
     _, avisos = checar({**BASE, "SDR_OLLAMA_EMBEDDING_MODEL": "nomic-embed-text"})
     assert any("1024 dimensões" in a for a in avisos)
+
+
+def test_variavel_repetida_e_erro(tmp_path):
+    """Vale a ÚLTIMA linha — no compose e aqui. Quem descomenta um bloco de exemplo inteiro leva
+    junto um `SDR_LLM_PROVIDER=` que não pretendia, e o sistema troca de modelo em silêncio,
+    com a linha antiga ainda no arquivo dizendo o contrário. Aconteceu duas vezes neste projeto."""
+    from check_env import carregar, checar
+
+    arq = tmp_path / ".env"
+    arq.write_text("SDR_LLM_PROVIDER=anthropic\nANTHROPIC_API_KEY=" + CHAVE +
+                   "\nSDR_EMBEDDINGS_PROVIDER=ollama\nSDR_LLM_PROVIDER=openai\n", encoding="utf-8")
+    env, repetidas = carregar(arq)
+    assert repetidas == ["SDR_LLM_PROVIDER"]
+    assert env["SDR_LLM_PROVIDER"] == "openai", "a última vence — é o que o compose faz"
+    erros = checar(env, repetidas)[0]
+    assert any("mais de uma vez" in e for e in erros)
+
+
+def test_sem_repeticao_nao_inventa_erro(tmp_path):
+    from check_env import carregar, checar
+
+    arq = tmp_path / ".env"
+    arq.write_text("SDR_LLM_PROVIDER=anthropic\nANTHROPIC_API_KEY=" + CHAVE +
+                   "\nSDR_EMBEDDINGS_PROVIDER=ollama\n", encoding="utf-8")
+    env, repetidas = carregar(arq)
+    assert repetidas == []
+    assert checar(env, repetidas)[0] == []

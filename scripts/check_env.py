@@ -18,19 +18,35 @@ EMBEDDINGS = {"ollama", "openai"}
 PLACEHOLDERS = re.compile(r"(COLE_|SEU_ID|SEU_|CHANGE_?ME|<.*>|xxx+|placeholder|preencher)", re.I)
 
 
-def carregar(caminho: Path) -> dict[str, str]:
-    env = {}
+def carregar(caminho: Path) -> tuple[dict[str, str], list[str]]:
+    """Devolve as variáveis e as que aparecem MAIS DE UMA VEZ.
+
+    A duplicata importa e não é cosmética: tanto o `env_file` do compose quanto este arquivo
+    resolvem a repetição pela ÚLTIMA linha. Quem descomenta um bloco de exemplo inteiro leva junto
+    um `SDR_LLM_PROVIDER=` que não pretendia, e o sistema troca de modelo em silêncio — a primeira
+    linha continua lá, legível, dizendo o contrário do que vale. Já aconteceu duas vezes aqui: uma
+    com o token do CRM, outra com o provedor de LLM.
+    """
+    env: dict[str, str] = {}
+    vistas: list[str] = []
     for linha in caminho.read_text(encoding="utf-8").splitlines():
         linha = linha.strip()
         if not linha or linha.startswith("#") or "=" not in linha:
             continue
         k, v = linha.split("=", 1)
-        env[k.strip()] = v.strip().strip("'\"")
-    return env
+        k = k.strip()
+        vistas.append(k)
+        env[k] = v.strip().strip("'\"")
+    repetidas = sorted({k for k in vistas if vistas.count(k) > 1})
+    return env, repetidas
 
 
-def checar(env: dict[str, str]) -> tuple[list[str], list[str]]:
+def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[list[str], list[str]]:
     erros, avisos = [], []
+
+    for chave in repetidas or []:
+        erros.append(f"{chave} aparece mais de uma vez — vale a ÚLTIMA linha, e a primeira fica no "
+                     f"arquivo dizendo o contrário. Apague a que sobra.")
 
     for k, v in env.items():
         if v and PLACEHOLDERS.search(v):
@@ -121,7 +137,8 @@ def main() -> int:
         print("  ser lidos deles: cd local && docker compose exec agent printenv | grep -E 'SDR_|_KEY'")
         return 1
 
-    erros, avisos = checar(carregar(caminho))
+    env, repetidas = carregar(caminho)
+    erros, avisos = checar(env, repetidas)
     for a in avisos:
         print(f"! {a}")
     for e in erros:
