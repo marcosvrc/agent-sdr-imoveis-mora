@@ -134,6 +134,8 @@ services:
     <<: *py
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     working_dir: /app/services/api/src
+    # A API atende painel, site e canal ao mesmo tempo; o pool padrão (4) é o do worker.
+    environment: { SDR_DB_POOL_MAX: "12" }
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)\""]

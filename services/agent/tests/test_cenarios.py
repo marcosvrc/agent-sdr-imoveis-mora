@@ -286,3 +286,45 @@ def test_mudanca_nao_derruba_o_turno(infra, monkeypatch):
     lead.cartao.bairros = ["Pinheiros"]
     consultor._absorver_mudanca(lead, "quero na Vila Mariana")
     assert lead.cartao.bairros == ["Pinheiros"], "sem extração, segue com o cartão anterior"
+
+
+def test_cartao_completo_nao_extrai_a_mesma_frase_duas_vezes(infra, monkeypatch):
+    """A frase que completa o cartão passava por DUAS extrações: a do qualificador e, no mesmo
+    turno, a do consultor (`_absorver_mudanca`), que relia a mesma mensagem. Uma chamada de modelo
+    a mais em todo turno que completava o cartão — introduzida sem ninguém medir."""
+    import agent.nodes.qualificador as q
+    extracoes = []
+    original = q._extrair
+    monkeypatch.setattr(q, "_extrair", lambda cartao, mensagem: extracoes.append(mensagem) or original(cartao, mensagem))
+    processar(msg("l9", "Estou procurando apartamento na zona sul", meta={"nome": "Marcos"}))
+    extracoes.clear()
+    processar(msg("l9", "até 800 mil, 2 quartos, é urgente"))                 # completa o cartão → consultor
+    lead = LeadRepository().get("l9")
+    assert lead.cartao.completo() and lead.estagio == Estagio.QUALIFICADO, "o turno passou pelo consultor"
+    assert extracoes == ["até 800 mil, 2 quartos, é urgente"], "uma extração por frase, não duas"
+    # No turno seguinte, que vai direto ao consultor, a frase é nova e a extração acontece.
+    extracoes.clear()
+    processar(msg("l9", "me mostra as opções"))
+    assert extracoes == ["me mostra as opções"]
+
+
+def test_historico_longo_e_podado_e_o_cartao_sobrevive(infra):
+    """`add_messages` só acrescenta e o checkpointer guarda tudo: um lead de três meses mandava a
+    conversa inteira ao modelo em cada turno. A poda corta o histórico; o que é durável está no
+    cartão e no banco, não nele."""
+    from agent.handler import get_graph
+    from agent.state import MAX_HISTORICO, HISTORICO_APOS_PODA
+    from agent.guardrails import vazao
+    processar(msg("l8", "Estou procurando apartamento na zona sul", meta={"nome": "Marcos"}))
+    for i in range(MAX_HISTORICO):
+        vazao.resetar()                       # o limitador por lead não é o assunto deste teste
+        processar(msg("l8", f"mensagem número {i}"))
+    estado = get_graph().get_state({"configurable": {"thread_id": "l8"}}).values
+    assert len(estado["messages"]) <= MAX_HISTORICO
+    assert len(estado["messages"]) >= HISTORICO_APOS_PODA
+    # as mais recentes ficam; as mais antigas se foram
+    textos = [getattr(m, "content", "") for m in estado["messages"]]
+    assert any("mensagem número 39" in t for t in textos)
+    assert not any("zona sul" in t for t in textos)
+    lead = LeadRepository().get("l8")
+    assert lead.cartao.regiao == "zona_sul" and lead.nome == "Marcos", "o cartão não depende do histórico"

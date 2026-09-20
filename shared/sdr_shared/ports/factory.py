@@ -164,6 +164,20 @@ def modo_do_agente() -> str:
         return "normal"
 
 
+# Uma tentativa a mais além da primeira, para todo provedor hospedado. O pior caso de um turno
+# é `orcamento_do_turno_s()`; quem serializa turnos por lead (o lock do broker) usa esse número.
+MAX_RETRIES = 1
+
+
+def orcamento_do_turno_s(timeout_s: float | None = None) -> float:
+    """Quanto um turno pode levar no pior caso: cada provedor tenta (1 + MAX_RETRIES) vezes até o
+    timeout, e há no máximo dois provedores (principal e reserva). Mais uma folga para banco e
+    embeddings. É a régua do lock por lead — abaixo dela, o lock expira com o turno em curso e
+    duas respostas saem para a mesma mensagem."""
+    espera = timeout_s or _timeout_do_painel() or get_settings().llm_timeout_s
+    return espera * (1 + MAX_RETRIES) * 2 + 30
+
+
 def _construir(provider: str, model: str, temp: float, papel: str):
     """Monta UM provedor. Separado de `get_chat_model` para o fallback montar o segundo pelo mesmo
     caminho — inclusive a tradução do ID do modelo, que é o pedaço chato de trocar de provedor e já
@@ -180,9 +194,11 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         from langchain_anthropic import ChatAnthropic
         # Chave de organização precisa dizer em qual workspace cobrar; chave já escopada dispensa.
         headers = {"anthropic-workspace-id": s.anthropic_workspace_id} if s.anthropic_workspace_id else None
-        # timeout/retries curtos: melhor falhar rápido e acionar o fallback do que pendurar o cliente
+        # timeout/retries curtos: melhor falhar rápido e acionar o fallback do que pendurar o cliente.
+        # `MAX_RETRIES=1`: com 2, o pior caso era 45 s × 3 tentativas × 2 provedores = 270 s de
+        # cliente olhando para "digitando" — e o lock por lead (180 s) expirava no meio.
         return ChatAnthropic(model=model, temperature=temp, max_tokens=600, default_headers=headers, callbacks=cb,
-                             timeout=espera, max_retries=2)
+                             timeout=espera, max_retries=MAX_RETRIES)
     if provider == "ollama":
         from langchain_ollama import ChatOllama
         return ChatOllama(model=model, base_url=s.ollama_url, temperature=temp, callbacks=cb, client_kwargs={"timeout": espera})
@@ -195,7 +211,7 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         # é o nome que a própria biblioteca procura. Passar `api_key=` explícito anularia esse
         # caminho para quem exporta a variável convencional.
         return ChatOpenAI(model=model, temperature=temp, max_tokens=600, callbacks=cb,
-                          timeout=espera, max_retries=2)
+                          timeout=espera, max_retries=MAX_RETRIES)
     if provider == "openrouter":
         # Porta aberta para BANCADA, não para produção: o OpenRouter põe um terceiro no caminho de
         # dados de cliente (ver ADR-0009). Serve para o harness comparar modelos alternativos sobre
@@ -203,7 +219,7 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model=model, temperature=temp, max_tokens=600, callbacks=cb,
                           base_url="https://openrouter.ai/api/v1", api_key=s.openrouter_api_key,
-                          timeout=espera, max_retries=2)
+                          timeout=espera, max_retries=MAX_RETRIES)
     raise RuntimeError(
         f"SDR_LLM_PROVIDER='{provider}' não é suportado. Use anthropic, openai ou ollama.\n"
         "Levantar aqui é melhor que escolher um provedor por conta própria e o cliente descobrir "

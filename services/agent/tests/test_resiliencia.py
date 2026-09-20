@@ -55,9 +55,11 @@ def test_broker_confirma_mensagem_com_erro(monkeypatch):
 
     class RedisFake:
         def xgroup_create(self, *_a, **_kw): pass
-        def xreadgroup(self, *_a, **_kw):
+        def xreadgroup(self, _g, _c, streams, **_kw):
+            if "0" in streams.values(): return []               # retomada no boot: nada pendente
             if eventos: raise KeyboardInterrupt                 # um ciclo só
             return [("s", [("1-1", {"key": "k", "body": "corpo"})])]
+        def xautoclaim(self, *_a, **_kw): return ["0-0", [], []]
         def lock(self, *_a, **_kw):
             class L:
                 def __enter__(self): return None

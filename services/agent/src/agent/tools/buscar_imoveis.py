@@ -37,9 +37,16 @@ def _consulta(cartao: CartaoQualificacao, preferencia: str, local: Local | None)
     return " ".join(filter(None, partes)).strip() or "imóvel"
 
 
-def _executar(consulta: str, filtros: dict, limite: int) -> list[ImovelCard]:
+def _vetor(consulta: str) -> list[float]:
+    """Um embedding por busca. A cascata abaixo chama `_executar` até seis vezes com a MESMA
+    consulta (bairro, vizinhos, região, cidade, mais as alternativas) — e cada chamada ia ao
+    Ollama de novo pelo mesmo vetor: seis viagens de ~100 ms para calcular seis vezes o mesmo número."""
     from sdr_shared.ports import get_embedder
-    return [montar_card(i) for i in ImovelRepository().buscar_hibrido(get_embedder().embed(consulta), filtros, limite)]
+    return get_embedder().embed(consulta)
+
+
+def _executar(vetor: list[float], filtros: dict, limite: int) -> list[ImovelCard]:
+    return [montar_card(i) for i in ImovelRepository().buscar_hibrido(vetor, filtros, limite)]
 
 
 def local_do_cartao(cartao: CartaoQualificacao) -> Local | None:
@@ -71,14 +78,14 @@ def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limit
     `nivel` diz onde a busca parou — é o que autoriza (ou não) o agente a falar de indisponibilidade.
     """
     local = local_do_cartao(cartao)
-    consulta = _consulta(cartao, preferencia, local)
+    vetor = _vetor(_consulta(cartao, preferencia, local))
     pedidos = local.bairros if local and local.tipo == "bairro" else []
     # Cidade fora de cobertura: em vez de varrer a capital inteira, oferece a região mais próxima dela.
     if local and local.tipo == "fora":
         proxima = local.sugestao_regiao
-        cards = _executar(consulta, _filtros(cartao, None, proxima), limite) if proxima else []
+        cards = _executar(vetor, _filtros(cartao, None, proxima), limite) if proxima else []
         if not cards:
-            cards = _executar(consulta, _filtros(cartao, None, None), limite)
+            cards = _executar(vetor, _filtros(cartao, None, None), limite)
         return {"cards": cards, "nivel": "fora_de_cobertura", "local": local, "bairros_pedidos": [],
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
                 "ampliou": True, "alternativa_no_bairro": []}
@@ -91,33 +98,33 @@ def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limit
 
     # 1. o bairro que o cliente pediu
     if pedidos:
-        if cards := _executar(consulta, _filtros(cartao, pedidos), limite):
+        if cards := _executar(vetor, _filtros(cartao, pedidos), limite):
             return resposta(cards, "bairro")
         # 2. vizinhos do bairro (mesma região, os mais próximos primeiro)
         proximos = [v for b in pedidos for v in vizinhos(b)]
-        if proximos and (cards := _executar(consulta, _filtros(cartao, list(dict.fromkeys(proximos))), limite)):
-            return resposta(cards, "vizinhos", _alternativa(cartao, pedidos, consulta))
+        if proximos and (cards := _executar(vetor, _filtros(cartao, list(dict.fromkeys(proximos))), limite)):
+            return resposta(cards, "vizinhos", _alternativa(cartao, pedidos, vetor))
 
     # 3. a região (a do local resolvido vence a do cartão, que o LLM pode ter errado)
     regiao = (local.regiao if local else None) or cartao.regiao
-    if regiao and (cards := _executar(consulta, _filtros(cartao, None, regiao), limite)):
-        return resposta(cards, "regiao", _alternativa(cartao, pedidos, consulta))
+    if regiao and (cards := _executar(vetor, _filtros(cartao, None, regiao), limite)):
+        return resposta(cards, "regiao", _alternativa(cartao, pedidos, vetor))
 
     # 4. a cidade inteira — melhor mostrar algo bom fora da área pedida do que dizer "não temos nada"
-    if cards := _executar(consulta, _filtros(cartao, None, None), limite):
-        return resposta(cards, "cidade", _alternativa(cartao, pedidos, consulta))
+    if cards := _executar(vetor, _filtros(cartao, None, None), limite):
+        return resposta(cards, "cidade", _alternativa(cartao, pedidos, vetor))
 
-    return resposta([], "vazio", _alternativa(cartao, pedidos, consulta))
+    return resposta([], "vazio", _alternativa(cartao, pedidos, vetor))
 
 
-def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], consulta: str) -> list[ImovelCard]:
+def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], vetor: list[float]) -> list[ImovelCard]:
     """O que EXISTE no bairro pedido fora do perfil exato (relaxa quartos e, depois, preço).
     É o que um bom corretor diz: 'de 2 quartos não tenho aí, mas tenho este de 1'."""
     if not pedidos:
         return []
-    if cartao.quartos and (r := _executar(consulta, _filtros(cartao.model_copy(update={"quartos": None}), pedidos), 3)):
+    if cartao.quartos and (r := _executar(vetor, _filtros(cartao.model_copy(update={"quartos": None}), pedidos), 3)):
         return r
-    if cartao.preco_max and (r := _executar(consulta, _filtros(cartao.model_copy(update={"preco_max": None, "ticket": None}), pedidos), 3)):
+    if cartao.preco_max and (r := _executar(vetor, _filtros(cartao.model_copy(update={"preco_max": None, "ticket": None}), pedidos), 3)):
         return r
     return []
 

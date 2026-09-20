@@ -150,6 +150,7 @@ def processar(entrada: MensagemNormalizada) -> None:
     # `entrada.conteudo` segue cru para os nós, que é quem precisa do identificador.
     from .nodes.agendador import texto_para_historico
     entrada_grafo = {"lead": lead, "entrada": entrada, "primeira_interacao": novo, "saltos": 0, "resposta": None,
+                     "cartao_extraido_de": None,
                      "messages": [("user", texto_para_historico(entrada.conteudo))] if entrada.conteudo else []}
     try:
         out = get_graph().invoke(entrada_grafo, config={"configurable": {"thread_id": lead.id}})

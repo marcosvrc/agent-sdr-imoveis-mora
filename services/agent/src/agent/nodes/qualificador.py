@@ -109,7 +109,8 @@ def run(state: AgentState) -> dict:
     # Cartão ficou completo com esta mensagem: não prometer "vou buscar" — o consultor responde já com os imóveis.
     # (O supervisor decidiu antes da extração; sem isto o modelo inventa uma "ferramenta" em texto.)
     if lead.cartao.completo() and not state.get("imoveis_sugeridos"):
-        return {"lead": lead, "proximo": "consultor"}
+        # `cartao_extraido_de`: o consultor recebe o turno agora e leria esta mesma frase de novo.
+        return {"lead": lead, "proximo": "consultor", "cartao_extraido_de": entrada.conteudo}
 
     origem = ""
     if lead.cartao.imoveis_visualizados:

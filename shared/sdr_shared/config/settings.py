@@ -44,6 +44,7 @@ class Settings(BaseSettings):
 
     # Dados
     database_dsn: str = "postgresql://sdr:sdr@localhost:5432/sdr"
+    db_pool_max: int = 4                    # por processo; a API sobe para 12 no compose
 
     # Modelos. IDs da API direta da Anthropic; `normalizar_modelo` ainda limpa prefixos de
     # provedores hospedados que possam vir de um .env antigo.

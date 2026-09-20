@@ -75,3 +75,21 @@ def test_local_fora_de_cobertura_nao_vira_bairro():
     assert fora == "Osasco" and cartao.bairros == [] and cartao.regiao is None
     cartao2, fora2 = _normalizar_local(CartaoQualificacao(bairros=["Vila Madalena"]), "")
     assert fora2 is None and cartao2.bairros == ["Pinheiros"] and cartao2.regiao == "zona_oeste"
+
+
+def test_a_cascata_inteira_calcula_um_embedding_so(infra, monkeypatch):
+    """Bairro sem estoque desce até a cidade e ainda tenta as alternativas: até seis buscas com a
+    MESMA consulta. Cada uma ia ao Ollama pelo mesmo vetor."""
+    import agent.tools.buscar_imoveis as bi
+    import sdr_shared.ports as ports
+    vezes = []
+    real = ports.get_embedder()
+
+    class Contador:
+        dimensoes = real.dimensoes
+        def embed(self, texto): vezes.append(texto); return real.embed(texto)
+    monkeypatch.setattr(ports, "get_embedder", lambda: Contador())
+    sem = CartaoQualificacao(intencao=Intencao.ALUGUEL, bairros=["Tatuapé"], preco_max=5000, quartos=1)
+    r = bi.buscar_com_contexto(sem, limite=5)
+    assert r["nivel"] != "bairro", "o cenário precisa descer a cascata"
+    assert len(vezes) == 1, vezes

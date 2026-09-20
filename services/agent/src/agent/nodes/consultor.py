@@ -78,7 +78,12 @@ def _absorver_mudanca(lead, mensagem: str) -> None:
 
 def run(state: AgentState) -> dict:
     lead = state["lead"]
-    _absorver_mudanca(lead, state["entrada"].conteudo or "")
+    mensagem = state["entrada"].conteudo or ""
+    # Quando o qualificador acabou de extrair esta mesma frase e passou o turno para cá, o cartão
+    # já está atualizado: extrair de novo era uma chamada de modelo repetida em todo turno que
+    # completava o cartão (introduzida junto com `_absorver_mudanca`, sem ninguém medir).
+    if state.get("cartao_extraido_de") != mensagem:
+        _absorver_mudanca(lead, mensagem)
     # O estado do grafo só conhece esta conversa. `interesses` atravessa sessões: quem voltou
     # duas semanas depois não recebe os mesmos três imóveis de novo, e o que foi descartado
     # não reaparece nunca — reoferecer o que a pessoa já recusou é o que faz um bot parecer burro.

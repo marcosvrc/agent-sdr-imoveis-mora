@@ -6,7 +6,7 @@ from langgraph.graph import StateGraph, END
 from contextvars import ContextVar
 
 from sdr_shared.governanca import ctx_lead, ctx_no
-from .state import AgentState
+from .state import AgentState, podar_historico
 from .nodes import (supervisor, qualificador, consultor, agendador, followup, resumidor, handoff,
                     informacoes,
                     recusa, reativador)
@@ -44,6 +44,19 @@ def _cronometrado(nome: str, fn):
         return out
     return run
 
+def _com_poda(fn):
+    """O supervisor é o primeiro nó de todo turno: é onde o histórico longo demais é podado, antes
+    de qualquer especialista mandá-lo ao modelo. Ver `podar_historico`."""
+    def run(state: AgentState) -> dict:
+        out = fn(state)
+        poda = podar_historico(state.get("messages") or [])
+        if poda:
+            log.info("histórico do lead %s podado: %d mensagens removidas", state["lead"].id, len(poda["messages"]))
+            out = {**out, **poda}
+        return out
+    return run
+
+
 MAX_SALTOS = 4
 ESPECIALISTAS = ("qualificador", "consultor", "agendador", "followup", "resumidor", "handoff",
                  "recusa", "reativador", "informacoes")
@@ -57,7 +70,7 @@ def _rotear(state: AgentState) -> str:
 
 def build_graph(checkpointer=None):
     g = StateGraph(AgentState)
-    g.add_node("supervisor", _cronometrado("supervisor", supervisor.run))
+    g.add_node("supervisor", _cronometrado("supervisor", _com_poda(supervisor.run)))
     # strict: acrescentar um nó a só uma das duas listas passaria despercebido — o zip truncaria
     # em silêncio e o especialista simplesmente não existiria no grafo.
     for nome, mod in zip(ESPECIALISTAS, (qualificador, consultor, agendador, followup, resumidor,
