@@ -24,6 +24,18 @@ TOPICOS = ("inbound", "outbound-web", "outbound-telegram", "resumir")
 # para não constranger numa demonstração e longo o bastante para não pesar: a passada é
 # incremental e só gera embedding do que mudou de texto.
 INTERVALO_ACERVO_S = int(os.getenv("SDR_ACERVO_REFRESH_S", "900"))
+
+
+def _intervalo_acervo() -> int:
+    """Lido a cada ciclo, não uma vez no import: mudar no painel precisa valer sem reiniciar o
+    worker. O painel manda, o `.env` é o piso, e `0` desliga de verdade — diferente de vazio, que
+    significa 'não opinei'."""
+    try:
+        from sdr_shared.db import operacao_numero
+        v = operacao_numero("acervo_refresh_s")
+        return int(v) if v is not None else INTERVALO_ACERVO_S
+    except Exception:
+        return INTERVALO_ACERVO_S
 ACERVO = os.getenv("SDR_ACERVO_ARQUIVO", "/app/data/imoveis/imoveis.json")
 
 
@@ -50,9 +62,10 @@ def main():
             broker.publish("inbound", payload, key=lead_id)
         filas = broker.profundidade(list(TOPICOS)) if hasattr(broker, "profundidade") else {}
         amostrar(filas)
-        if INTERVALO_ACERVO_S and time.monotonic() >= proxima_sincronia:
+        intervalo = _intervalo_acervo()
+        if intervalo and time.monotonic() >= proxima_sincronia:
             _sincronizar_acervo()
-            proxima_sincronia = time.monotonic() + INTERVALO_ACERVO_S
+            proxima_sincronia = time.monotonic() + intervalo
         time.sleep(30)
 
 

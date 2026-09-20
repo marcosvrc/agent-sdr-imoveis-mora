@@ -149,3 +149,17 @@ def test_sem_motor_nao_se_promete_resposta(monkeypatch):
                                   identificador_canal="123", conteudo="", meta={})
     handler._transcrever_se_audio(entrada)
     assert enviados == []
+
+
+def test_painel_pode_desligar_a_transcricao(monkeypatch):
+    """O botão que alguém vira AO VIVO — "está demorando, tira o áudio". Num arquivo de ambiente
+    isso custaria recriar container no meio do atendimento."""
+    monkeypatch.setattr(transcricao, "_do_painel", lambda: "off")
+    assert transcricao._motor_efetivo() == "off"
+
+
+def test_sem_opiniao_do_painel_vale_o_ambiente(monkeypatch):
+    monkeypatch.setattr(transcricao, "_do_painel", lambda: None)
+    s = transcricao.get_settings()
+    monkeypatch.setattr(s, "transcricao_provider", "auto", raising=False)
+    assert transcricao._motor_efetivo() == "whisper_local"

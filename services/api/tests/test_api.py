@@ -622,3 +622,35 @@ def test_reserva_igual_ao_primario_e_recusada():
 def test_reserva_desconhecida_e_recusada():
     c = TestClient(app)
     assert c.put("/config/modelos", headers=H, json={"fallback_provider": "bedrock"}).status_code == 422
+
+
+# --------------------------------------------------- ajustes de operação
+
+def test_operacao_aceita_valores_na_faixa():
+    c = TestClient(app)
+    r = c.put("/config/operacao", headers=H,
+              json={"llm_timeout_s": 30, "transcricao": "off", "acervo_refresh_s": 0})
+    assert r.status_code == 200
+    salvo = c.get("/config", headers=H).json()["config"]["operacao"]
+    assert salvo["llm_timeout_s"] == 30 and salvo["transcricao"] == "off"
+    assert salvo["acervo_refresh_s"] == 0, "0 é 'desligado', não 'vazio'"
+    c.delete("/config/operacao", headers=H)
+
+
+def test_operacao_recusa_timeout_fora_da_faixa():
+    """Abaixo de 5s o modelo não termina de responder; acima de 180 o cliente já desistiu."""
+    c = TestClient(app)
+    assert c.put("/config/operacao", headers=H, json={"llm_timeout_s": 2}).status_code == 422
+    assert c.put("/config/operacao", headers=H, json={"llm_timeout_s": 600}).status_code == 422
+
+
+def test_operacao_recusa_refresh_curto_demais():
+    """Abaixo de 60s a reindexação pega o worker ainda ocupado com o follow-up."""
+    c = TestClient(app)
+    r = c.put("/config/operacao", headers=H, json={"acervo_refresh_s": 10})
+    assert r.status_code == 422 and "60s" in r.json()["detail"]
+
+
+def test_operacao_recusa_motor_desconhecido():
+    c = TestClient(app)
+    assert c.put("/config/operacao", headers=H, json={"transcricao": "transcribe"}).status_code == 422

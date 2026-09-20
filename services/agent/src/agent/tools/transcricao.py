@@ -68,11 +68,25 @@ def _transcrever_whisper_local(audio: bytes) -> str:
 
 
 def _motor_efetivo() -> str:
+    """O painel manda; o `.env` é o piso.
+
+    Desligar a transcrição é o botão que alguém quer virar AO VIVO — "está demorando, tira o áudio"
+    — e num arquivo de ambiente isso custa recriar container no meio do atendimento.
+    """
     s = get_settings()
-    escolha = (s.transcricao_provider or "auto").lower()
+    escolha = _do_painel() or (s.transcricao_provider or "auto")
+    escolha = escolha.lower()
     if escolha == "auto":
         return "whisper_local"
     return escolha
+
+
+def _do_painel() -> str | None:
+    try:
+        from sdr_shared.db import operacao_texto
+        return operacao_texto("transcricao")
+    except Exception:                       # sem banco (testes, boot): o ambiente decide sozinho
+        return None
 
 
 def transcrever(meta: dict) -> str:

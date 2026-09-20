@@ -148,6 +148,9 @@ def _construir(provider: str, model: str, temp: float, papel: str):
     s = get_settings()
     from ..governanca import callbacks_para
     cb = callbacks_para(papel, provider)
+    # A régua do timeout é a espera do CLIENTE, não o provedor — e quem descobre que ela está curta
+    # demais é quem está olhando a conversa travar, com o sistema no ar. Por isso vem do painel.
+    espera = _timeout_do_painel() or s.llm_timeout_s
     if provider != "ollama":
         model = modelo_do_provedor(model, provider, papel)
     if provider == "anthropic":
@@ -156,10 +159,10 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         headers = {"anthropic-workspace-id": s.anthropic_workspace_id} if s.anthropic_workspace_id else None
         # timeout/retries curtos: melhor falhar rápido e acionar o fallback do que pendurar o cliente
         return ChatAnthropic(model=model, temperature=temp, max_tokens=600, default_headers=headers, callbacks=cb,
-                             timeout=s.llm_timeout_s, max_retries=2)
+                             timeout=espera, max_retries=2)
     if provider == "ollama":
         from langchain_ollama import ChatOllama
-        return ChatOllama(model=model, base_url=s.ollama_url, temperature=temp, callbacks=cb, client_kwargs={"timeout": s.llm_timeout_s})
+        return ChatOllama(model=model, base_url=s.ollama_url, temperature=temp, callbacks=cb, client_kwargs={"timeout": espera})
     if provider == "openai":
         from langchain_openai import ChatOpenAI
         # Reserva de produção (ADR-0009): ao contrário do OpenRouter, é o próprio fornecedor do
@@ -169,7 +172,7 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         # é o nome que a própria biblioteca procura. Passar `api_key=` explícito anularia esse
         # caminho para quem exporta a variável convencional.
         return ChatOpenAI(model=model, temperature=temp, max_tokens=600, callbacks=cb,
-                          timeout=s.llm_timeout_s, max_retries=2)
+                          timeout=espera, max_retries=2)
     if provider == "openrouter":
         # Porta aberta para BANCADA, não para produção: o OpenRouter põe um terceiro no caminho de
         # dados de cliente (ver ADR-0009). Serve para o harness comparar modelos alternativos sobre
@@ -177,7 +180,7 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(model=model, temperature=temp, max_tokens=600, callbacks=cb,
                           base_url="https://openrouter.ai/api/v1", api_key=s.openrouter_api_key,
-                          timeout=s.llm_timeout_s, max_retries=2)
+                          timeout=espera, max_retries=2)
     raise RuntimeError(
         f"SDR_LLM_PROVIDER='{provider}' não é suportado. Use anthropic, openai ou ollama.\n"
         "Levantar aqui é melhor que escolher um provedor por conta própria e o cliente descobrir "
@@ -220,6 +223,15 @@ def _escolha_do_painel(papel: str) -> tuple[str | None, str | None]:
         return escolha_de_modelo(papel)
     except Exception:                       # sem banco (testes, boot): o ambiente decide sozinho
         return None, None
+
+
+def _timeout_do_painel() -> float | None:
+    try:
+        from ..db import operacao_numero
+        v = operacao_numero("llm_timeout_s")
+        return v if v and v > 0 else None        # 0 aqui seria "sem espera", que não faz sentido
+    except Exception:                            # sem banco (testes, boot): o ambiente decide
+        return None
 
 
 def _reserva_do_painel() -> str | None:

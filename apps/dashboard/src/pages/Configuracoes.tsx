@@ -7,7 +7,7 @@ import { Ic } from "../components/Icons";
 import { FollowupForm } from "../components/FollowupForm";
 import { ModelosForm } from "../components/ModelosForm";
 
-type Secao = "agente" | "followup" | "agenda" | "cobertura" | "handoff" | "modelos" | "canais";
+type Secao = "agente" | "followup" | "agenda" | "cobertura" | "handoff" | "modelos" | "operacao" | "canais";
 const SECOES: { k: Secao; r: string; d: string }[] = [
   { k: "agente", r: "Persona do agente", d: "Nome, tom e limites da conversa" },
   { k: "followup", r: "Follow-up automático", d: "Cadência, ritmo e janela de horário" },
@@ -15,6 +15,7 @@ const SECOES: { k: Secao; r: string; d: string }[] = [
   { k: "cobertura", r: "Área de cobertura", d: "Regiões que a Mora oferece" },
   { k: "handoff", r: "Handoff para corretor", d: "Quando passar a conversa" },
   { k: "modelos", r: "Modelos de IA", d: "Qual modelo cada nível usa (ADR-0010)" },
+  { k: "operacao", r: "Operação", d: "Timeout, transcrição e refresh do acervo" },
   { k: "canais", r: "Canais e modelos", d: "Status da integração (somente leitura)" },
 ];
 
@@ -58,6 +59,35 @@ export function Configuracoes() {
                 <Field label="Regiões atendidas" dica="Fora dessas regiões a Mora avisa o cliente e sugere a mais próxima"><div className="flex flex-wrap gap-1.5">{REGIOES.map((r) => { const rs = (form.regioes as string[]) ?? []; const on = rs.includes(r); return <button type="button" key={r} onClick={() => set("regioes", on ? rs.filter((x) => x !== r) : [...rs, r])} className={cx("rounded-full border px-3 py-1 text-xs font-medium", on ? "border-brand bg-brand text-brand-ink" : "border-line text-ink-muted hover:bg-surface-2")}>{REGIAO[r]}</button>; })}</div></Field>
               </>}
               {secao === "modelos" && <ModelosForm form={form} set={set} efetivo={data.canais.llm.efetivo} />}
+              {secao === "operacao" && <>
+                <p className="rounded-lg bg-info-soft px-3 py-2 text-xs text-ink-muted">
+                  Campo vazio usa o valor do <code>.env</code>. Um valor explícito — inclusive
+                  <b> 0</b> e <b> desligada</b> — vale no próximo ciclo, sem reiniciar nada.
+                </p>
+                <Field label="Timeout do LLM (segundos)" dica="Vazio = usa o do ambiente. A régua é a espera do cliente, não o provedor.">
+                  <Input type="number" min={5} max={180} placeholder="usa o do ambiente"
+                         value={form.llm_timeout_s === "" || form.llm_timeout_s == null ? "" : Number(form.llm_timeout_s)}
+                         onChange={(e) => set("llm_timeout_s", e.target.value === "" ? "" : Number(e.target.value))} />
+                </Field>
+                <Field label="Transcrição de áudio" dica="Desligada, a Mora pede ao cliente que escreva.">
+                  <Select value={String(form.transcricao ?? "")} onChange={(e) => set("transcricao", e.target.value)}>
+                    <option value="">usa o do ambiente</option>
+                    <option value="auto">ligada (faster-whisper)</option>
+                    <option value="off">desligada</option>
+                  </Select>
+                </Field>
+                <Field label="Refresh do acervo (segundos)" dica="De quanto em quanto tempo o acervo do CRM volta ao índice. 0 desliga; mínimo 60.">
+                  <Input type="number" min={0} step={60} placeholder="usa o do ambiente"
+                         value={form.acervo_refresh_s === "" || form.acervo_refresh_s == null ? "" : Number(form.acervo_refresh_s)}
+                         onChange={(e) => set("acervo_refresh_s", e.target.value === "" ? "" : Number(e.target.value))} />
+                </Field>
+                {Number(form.acervo_refresh_s) === 0 && form.acervo_refresh_s !== "" && (
+                  <p className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-strong">
+                    Refresh desligado: preço e status mudados no CRM só chegam ao índice com <code>make seed</code>.
+                    Até lá, a Mora pode oferecer um imóvel já vendido.
+                  </p>
+                )}
+              </>}
               {secao === "handoff" && <>
                 <Field label="Palavras que acionam o handoff" dica="Separadas por vírgula"><Input value={((form.palavras_gatilho as string[]) ?? []).join(", ")} onChange={(e) => set("palavras_gatilho", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))} /></Field>
                 <Toggle on={!!form.auto_quando_quente} onChange={(v) => set("auto_quando_quente", v)} label="Encaminhar automaticamente leads quentes ao corretor" />

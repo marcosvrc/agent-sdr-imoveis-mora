@@ -27,6 +27,10 @@ DEFAULTS: dict[str, dict] = {
     # painel não conseguiria desfazer um fallback herdado do ambiente.
     "modelos": {"conversa": "", "conversa_provider": "", "roteamento": "", "roteamento_provider": "",
                 "analise": "", "analise_provider": "", "fallback_provider": ""},
+    # Ajustes de operação. Vazio = usa o do ambiente; um valor explícito (inclusive `0` e `off`)
+    # é decisão de quem está olhando o sistema no ar. A distinção entre "vazio" e "desligado" é o
+    # que permite a tela desfazer algo herdado do `.env` — ver db/operacao.py.
+    "operacao": {"llm_timeout_s": "", "transcricao": "", "acervo_refresh_s": ""},
 }
 
 PROVIDERS = ("", "anthropic", "openai", "ollama")
@@ -86,12 +90,17 @@ def salvar(chave: str, body: dict):
         _validar_followup(body)
     if chave == "modelos":
         _validar_modelos(body)
+    if chave == "operacao":
+        _validar_operacao(body)
     ConfigRepository().salvar(chave, body)
     if chave == "followup":
         politica_followup.invalidar_cache()       # o agente lê isto a cada turno; vale já
     if chave == "modelos":
         from sdr_shared.db import invalidar_cache_modelos
         invalidar_cache_modelos()                 # sem isto o worker seguiria com o modelo antigo
+    if chave == "operacao":
+        from sdr_shared.db import invalidar_cache_operacao
+        invalidar_cache_operacao()
     return {"chave": chave, "valor": {**DEFAULTS[chave], **body}}
 
 
@@ -126,6 +135,25 @@ def _validar_modelos(body: dict) -> None:
             raise HTTPException(422, f"{nivel}: sem preço cadastrado para '{modelo}'. Cadastre em "
                                      f"Configurações → preços antes de usá-lo, senão o custo é "
                                      f"contabilizado como zero e o teto de orçamento para de valer.")
+
+
+def _validar_operacao(body: dict) -> None:
+    """Cada um destes números tem uma faixa em que ele ainda é o que promete ser."""
+    t = body.get("llm_timeout_s")
+    if t not in (None, ""):
+        if not isinstance(t, (int, float)) or not 5 <= t <= 180:
+            raise HTTPException(422, "llm_timeout_s: entre 5 e 180 segundos. Abaixo de 5 o modelo "
+                                     "não termina de responder; acima de 180 o cliente já desistiu.")
+    tr = (body.get("transcricao") or "").strip()
+    if tr and tr not in ("auto", "whisper_local", "off"):
+        raise HTTPException(422, f"transcricao: valor desconhecido '{tr}' — use auto, whisper_local ou off")
+    r = body.get("acervo_refresh_s")
+    if r not in (None, ""):
+        if not isinstance(r, (int, float)) or r < 0:
+            raise HTTPException(422, "acervo_refresh_s: informe 0 para desligar, ou um número de segundos")
+        if 0 < r < 60:
+            raise HTTPException(422, "acervo_refresh_s: abaixo de 60s a reindexação pega o worker "
+                                     "ainda ocupado com o follow-up. Use 0 para desligar.")
 
 
 def _validar_followup(body: dict) -> None:
@@ -183,6 +211,9 @@ def restaurar(chave: str):
         # senão o worker segue chamando o modelo quebrado com o override já apagado.
         from sdr_shared.db import invalidar_cache_modelos
         invalidar_cache_modelos()
+    if chave == "operacao":
+        from sdr_shared.db import invalidar_cache_operacao
+        invalidar_cache_operacao()
 
 
 @router.post("/modelos/testar")
