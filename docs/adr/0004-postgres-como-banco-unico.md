@@ -15,7 +15,10 @@ Um **PostgreSQL com pgvector** atende as quatro.
 - O painel exige funil, filtros e agregação — isso é SQL, e um banco de documentos cobraria caro em
   código por cada tela.
 - `pgvector` põe o vetor na mesma linha do registro. O filtro por preço e o vizinho mais próximo
-  acontecem na mesma consulta, e não existe índice paralelo que possa divergir do catálogo.
+  acontecem na mesma consulta. *Corrigido em 2026-09:* "não existe índice paralelo que possa
+  divergir do catálogo" valia até D-01b; desde então o catálogo é o CRM e `imoveis` é a réplica —
+  o índice não diverge do que está na MESMA tabela, mas pode atrasar em relação ao CRM até a
+  próxima sincronização.
 - O checkpointer do LangGraph tem suporte nativo a Postgres: o estado da conversa fica junto do
   lead, e não em mais um lugar.
 - Um banco só é um schema só, um backup só e um lugar só para olhar quando algo não bate.

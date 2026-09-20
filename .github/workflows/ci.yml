@@ -22,11 +22,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage
+      - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage pyright
       # Estático antes do teste: erro de nome ou import quebrado aparece em segundos, sem esperar
       # o banco subir e as sete suítes rodarem.
       - name: Análise estática (ruff)
         run: make lint
+      # Tipos em modo básico. Foi o que achou `LeadRepository().salvar`, um método que não existe,
+      # no caminho de reconhecimento pelo CRM — o ruff não vê isso, e o teste não passava por ali.
+      - name: Tipos (pyright básico)
+        run: make tipos
       # `make cobertura` roda as MESMAS suítes que `make test` (mesmo alvo test-db, mesmo pytest),
       # medindo cobertura e falhando abaixo do piso de .coveragerc. Rodar os dois seria pagar duas
       # vezes pelo mesmo trabalho.
@@ -50,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        app: [web, dashboard]
+        app: [web, dashboard, crm]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

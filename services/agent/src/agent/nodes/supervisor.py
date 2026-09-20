@@ -84,8 +84,9 @@ def run(state: AgentState) -> dict:
         return {"proximo": "qualificador", "saltos": saltos}
 
     # Ambíguo: cartão completo, imóveis já sugeridos, mensagem livre → Haiku decide
-    decisao = llm_roteamento().invoke(texto("supervisor", estagio=lead.estagio, intencao=lead.cartao.intencao,
-                                            completo=lead.cartao.completo(), faltantes=[], mensagem=txt)).content
+    bruto = llm_roteamento().invoke(texto("supervisor", estagio=lead.estagio, intencao=lead.cartao.intencao,
+                                          completo=lead.cartao.completo(), faltantes=[], mensagem=txt)).content
+    decisao = bruto if isinstance(bruto, str) else str(bruto)      # `content` pode vir em blocos
     decisao = decisao.strip().lower().split()[0] if decisao.strip() else "qualificador"
     if decisao not in ("qualificador", "consultor", "agendador", "handoff", "informacoes"):
         decisao = "qualificador"

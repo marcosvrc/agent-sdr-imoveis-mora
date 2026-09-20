@@ -4,7 +4,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 # rodaria `crm-reset` antes de `crm-migrate` e a falha não apontaria para a causa.
 .NOTPARALLEL:
 
-.PHONY: ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
+.PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
         cobertura eval eval-fake eval-rag eval-embeddings whisper-aquecer test-docker openapi docs
 
@@ -187,6 +187,9 @@ test: test-db
 
 lint:          # análise estática do Python; a régua e os porquês estão em ruff.toml
 	ruff check .
+
+tipos:         # pyright em modo básico (pyrightconfig.json): nome errado, atributo inexistente. Avisos não falham; erros sim.
+	pyright
 
 # Cobertura combinada das sete suítes. `set -e` porque as chamadas estão encadeadas num shell só:
 # sem isso uma suíte quebrada seguiria em frente e o relatório sairia como se estivesse tudo bem.

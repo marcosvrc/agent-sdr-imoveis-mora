@@ -84,7 +84,7 @@ def test_sem_barramento_o_turno_falha_antes_de_comecar(infra, monkeypatch):
     e a resposta perdida em silêncio. Agora um PING no início recusa o turno, alto e barato."""
     import agent.dispatch as d
     from agent.handler import processar
-    from sdr_shared.db import LeadRepository, MensagemRepository
+    from sdr_shared.db import LeadRepository
     from sdr_shared.messaging import Canal, MensagemNormalizada
 
     class Morto:

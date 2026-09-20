@@ -156,7 +156,7 @@ async def _credencial_do_painel(sock: WebSocket) -> bool:
     try:
         bruto = await asyncio.wait_for(sock.receive_text(), timeout=PRAZO_CREDENCIAL_S)
         corpo = json.loads(bruto)
-    except (TimeoutError, asyncio.TimeoutError, WebSocketDisconnect, ValueError):
+    except (TimeoutError, WebSocketDisconnect, ValueError):
         return False
     credencial = corpo.get("token") if isinstance(corpo, dict) else None
     return isinstance(credencial, str) and painel.valido(credencial)

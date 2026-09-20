@@ -24,8 +24,12 @@ Um Postgres com **pgvector** serve os dois, e é o mesmo banco que o painel cons
   trecho de taxas e o agente afirmaria uma política inventada. Lista vazia é resultado, não falha.
 
 ## Consequências
-- (+) Um banco só: o mesmo `SELECT` que alimenta o funil do painel alimenta a busca do agente, e
-  não existe índice que possa divergir do catálogo.
+- (+) Um banco só: o mesmo `SELECT` que alimenta o funil do painel alimenta a busca do agente.
+  *Corrigido em 2026-09:* a frase original dizia que "não existe índice que possa divergir do
+  catálogo" — deixou de ser verdade em D-01b, quando o CRM virou a fonte do acervo e `imoveis`
+  passou a ser réplica sincronizada dele (a cada 15 min pelo scheduler, ou `make seed`). A
+  divergência existe e é limitada por esse intervalo; preço e status de um imóvel podem estar
+  atrasados até lá.
 - (+) Roda inteiro na máquina de quem avalia — nenhum serviço a provisionar antes da primeira
   conversa.
 - (−) Toda a qualidade da recuperação é responsabilidade do código, não de um serviço gerenciado.

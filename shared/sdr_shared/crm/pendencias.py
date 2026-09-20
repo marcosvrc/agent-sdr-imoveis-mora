@@ -16,7 +16,6 @@ repetir o defeito que esta fila corrige.
 """
 import json
 import logging
-from datetime import UTC, datetime
 
 from ..db.connection import get_pool
 from ..messaging import MensagemNormalizada

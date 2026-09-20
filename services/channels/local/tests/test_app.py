@@ -87,7 +87,7 @@ def test_credencial_do_painel_na_url_nao_vale_mais():
 
 def test_painel_recebe_pronto_depois_da_credencial():
     c = TestClient(local_app.app)
-    with painel_conectado(c) as ws:
+    with painel_conectado(c):
         pass                                             # o `pronto` já foi conferido ao abrir
 
 

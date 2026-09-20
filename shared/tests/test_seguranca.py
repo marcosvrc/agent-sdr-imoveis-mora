@@ -86,7 +86,8 @@ def test_segredo_trocado_nao_vira_token_vazio_em_silencio(monkeypatch):
     monkeypatch.setattr(get_settings(), "sessao_secret", "chave-a")
     cifrado = cofre.cifrar("x")
     monkeypatch.setattr(get_settings(), "sessao_secret", "chave-b")
-    with pytest.raises(Exception):
+    from cryptography.fernet import InvalidToken
+    with pytest.raises(InvalidToken):
         cofre.decifrar(cifrado)
 
 

@@ -17,6 +17,8 @@ def _extrair(cartao: CartaoQualificacao, mensagem: str) -> CartaoQualificacao:
             texto("extracao", cartao=cartao.model_dump(exclude_defaults=True), mensagem=mensagem))
     except Exception:
         return cartao
+    if not isinstance(novo, CartaoQualificacao):        # saída estruturada pode vir como dict cru
+        return cartao
     dados = {k: v for k, v in novo.model_dump().items()
              if v not in (None, [], False, Intencao.INDEFINIDA, 0)}
     dados["imoveis_visualizados"] = list(dict.fromkeys(cartao.imoveis_visualizados + novo.imoveis_visualizados))

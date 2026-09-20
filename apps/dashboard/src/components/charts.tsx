@@ -1,7 +1,7 @@
 // Gráficos do painel (Recharts) seguindo as specs do dataviz: marcas finas, grid recessivo, tooltip por padrão,
 // legenda para ≥2 séries, texto sempre em tokens de texto (nunca na cor da série).
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { ESTAGIOS, ROTULO, type Metricas } from "../lib/api";
+import { ROTULO, type Metricas } from "../lib/api";
 import { dataCurta, num } from "../lib/format";
 
 const S1 = "var(--series-1)", S2 = "var(--series-2)", S3 = "var(--series-3)";

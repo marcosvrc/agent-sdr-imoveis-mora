@@ -3,7 +3,6 @@
 O laço principal lê com `>` — "o que nunca foi entregue". Mensagem entregue a um worker que caiu
 antes do XACK fica na PEL e, sem retomada, nunca mais é lida: o cliente que escreveu no instante da
 queda fica sem resposta e a fila "atrasa" para sempre em `profundidade()`."""
-import os
 import shutil
 import socket
 import subprocess

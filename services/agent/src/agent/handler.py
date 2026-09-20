@@ -152,7 +152,7 @@ def processar(entrada: MensagemNormalizada) -> None:
     # continua valendo mais que o registro. Silencioso quando não há CRM, quando o contato é
     # desconhecido ou quando já procuramos por este contato.
     if reconhecer(lead):
-        LeadRepository().salvar(lead)
+        LeadRepository().upsert(lead)           # era `.salvar`, que não existe: achado pelo pyright
 
     # O histórico guarda o que o cliente VIU, não o protocolo do botão: ver `texto_para_historico`.
     # `entrada.conteudo` segue cru para os nós, que é quem precisa do identificador.
