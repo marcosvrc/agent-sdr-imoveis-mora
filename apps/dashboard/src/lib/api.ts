@@ -117,6 +117,16 @@ export type Config = { config: Record<string, Record<string, unknown>>; defaults
     efetivo: Record<string, { modelo: string; provider: string; origem: "painel" | "ambiente" }>;
     catalogo: Record<string, string[]> }; embeddings: { provider: string } } };
 
+/** Uma linha por modelo, da mais barata para a mais cara. `custo.base` diz se o número saiu do uso
+ *  gravado ("uso") ou de um mix de referência ("referencia") — a tela precisa dizer qual dos dois. */
+export type LinhaModelo = {
+  modelo: string; provedor: string;
+  preco: { entrada: number; saida: number; cache_escrita: number; cache_leitura: number };
+  recomendado_para: string | null;
+  latencia: { mediana_ms: number | null; amostras: number; escopo: "papel" | "geral" | null };
+  custo: { usd: number; base: "uso" | "referencia"; dias: number | null; chamadas: number } };
+export type Comparacao = { dias: number; papeis: Record<string, LinhaModelo[]> };
+
 const qs = (o: Record<string, string | number | undefined>) => { const p = new URLSearchParams(); for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== "") p.set(k, String(v)); const s = p.toString(); return s ? `?${s}` : ""; };
 
 export const api = {
@@ -189,6 +199,7 @@ export const api = {
   restaurarConfig: (chave: string) => req<void>(`/config/${chave}`, { method: "DELETE" }),
   testarModelo: (modelo: string, provider?: string) => req<{ ok: boolean; latencia_ms: number; resposta?: string; erro?: string; tem_preco: boolean }>(
     "/config/modelos/testar", { method: "POST", body: JSON.stringify({ modelo, provider }) }),
+  compararModelos: (dias = 30) => req<Comparacao>(`/config/modelos/comparacao${qs({ dias })}`),
 };
 
 export { brl } from "./format";

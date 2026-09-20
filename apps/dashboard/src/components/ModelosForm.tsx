@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { api, type Config } from "../lib/api";
+import { useEffect, useState } from "react";
+import { api, type Comparacao, type Config, type LinhaModelo } from "../lib/api";
 import { Badge, Button, Field, Input, Select, cx } from "./ui";
+import { ComparacaoModelos, usd } from "./ComparacaoModelos";
 import { Ic } from "./Icons";
 
 const NIVEIS = [
@@ -32,8 +33,32 @@ export function ModelosForm({ form, set, efetivo, catalogo }: {
   // confortável: quem salvasse acharia que testou. Qualquer mexida no nível limpa o resultado.
   const limpar = (k: string) => setTestes(({ [k]: _, ...resto }) => resto);
 
+  // Custo e latência por papel. Carrega em separado do resto da configuração porque é leitura de
+  // uso (agregação sobre `uso_llm`) e não configuração: se falhar, a tela de modelos continua
+  // funcionando sem os números, em vez de não abrir.
+  const [comparacao, setComparacao] = useState<Comparacao | null>(null);
+  const [modal, setModal] = useState<string | null>(null);
+  useEffect(() => { api.compararModelos().then(setComparacao).catch(() => setComparacao(null)); }, []);
+
   const provedorDe = (k: string) => String(form[`${k}_provider`] ?? "") || efetivo?.[k]?.provider || "";
-  const opcoesDe = (k: string) => catalogo?.[provedorDe(k)] ?? [];
+  /** Do mais barato para o mais caro, porque é a ordem em que a pergunta "qual eu escolho?" se
+   *  responde. Só entram os modelos do provedor selecionado — o catálogo é quem diz quais existem;
+   *  a comparação só reordena e enriquece. */
+  const linhasDe = (k: string): LinhaModelo[] =>
+    (comparacao?.papeis[k] ?? []).filter((l) => l.provedor === provedorDe(k));
+  const opcoesDe = (k: string) => {
+    const ordenadas = linhasDe(k).map((l) => l.modelo);
+    const doCatalogo = catalogo?.[provedorDe(k)] ?? [];
+    // O catálogo manda: um modelo que a comparação não conhece ainda pode ser salvo, e some da
+    // lista se eu confiasse só na comparação.
+    return [...ordenadas.filter((m) => doCatalogo.includes(m)),
+            ...doCatalogo.filter((m) => !ordenadas.includes(m))];
+  };
+  const rotuloDe = (k: string, m: string) => {
+    const l = linhasDe(k).find((x) => x.modelo === m);
+    if (!l) return m;
+    return `${m} — ${usd(l.custo.usd)}${l.custo.base === "uso" ? "" : " est."}`;
+  };
 
   const trocarProvedor = (k: string, novo: string) => {
     set(`${k}_provider`, novo);
@@ -107,16 +132,28 @@ export function ModelosForm({ form, set, efetivo, catalogo }: {
               </Field>
 
               <Field label="Modelo">
-                {campoLivre ? (
-                  <Input value={escolhido} placeholder={atual?.modelo ?? "usa o do ambiente"}
-                         onChange={(e) => { limpar(k); set(k, e.target.value); }} />
-                ) : (
-                  <Select value={escolhido} onChange={(e) => escolherModelo(k, e.target.value)}>
-                    <option value="">usa o do ambiente{atual ? ` (${atual.modelo})` : ""}</option>
-                    {opcoes.map((m) => <option key={m} value={m}>{m}</option>)}
-                    <option value={OUTRO}>outro — digitar o ID…</option>
-                  </Select>
-                )}
+                <div className="flex items-center gap-1.5">
+                  {campoLivre ? (
+                    <Input value={escolhido} placeholder={atual?.modelo ?? "usa o do ambiente"}
+                           onChange={(e) => { limpar(k); set(k, e.target.value); }} />
+                  ) : (
+                    <Select value={escolhido} onChange={(e) => escolherModelo(k, e.target.value)}>
+                      <option value="">usa o do ambiente{atual ? ` (${atual.modelo})` : ""}</option>
+                      {opcoes.map((m) => <option key={m} value={m}>{rotuloDe(k, m)}</option>)}
+                      <option value={OUTRO}>outro — digitar o ID…</option>
+                    </Select>
+                  )}
+                  {/* O combo responde "qual é mais barato"; o modal responde "por quê" — preço de
+                      entrada e saída separados, latência medida aqui e o papel que o projeto
+                      recomenda. Cabe do lado, e não no lugar, porque a escolha rápida é a comum. */}
+                  {linhasDe(k).length > 0 && (
+                    <Button type="button" variante="fantasma" tamanho="sm" className="h-9 shrink-0 px-2"
+                            title="Comparar custo e velocidade dos modelos deste provedor"
+                            aria-label="Comparar modelos" onClick={() => setModal(k)}>
+                      <Ic.coins size={15} />
+                    </Button>
+                  )}
+                </div>
               </Field>
 
               <Button type="button" tamanho="sm" className="h-9" onClick={() => testar(k)}
@@ -160,6 +197,12 @@ export function ModelosForm({ form, set, efetivo, catalogo }: {
           </div>
         );
       })}
+
+      {modal && (
+        <ComparacaoModelos aberto onFechar={() => setModal(null)} papel={modal} linhas={linhasDe(modal)}
+                           atual={String(form[modal] ?? "") || efetivo?.[modal]?.modelo || ""}
+                           onEscolher={(m) => escolherModelo(modal, m)} />
+      )}
 
       {/* O reserva é decisão de operação — quem assume quando o provedor primário cai — e estava
           só no .env, exigindo recriar container para mudar. Aqui vale no próximo turno. */}

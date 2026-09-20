@@ -241,6 +241,37 @@ def test_config_expoe_catalogo_de_modelos_por_provedor():
     assert c.delete("/config/modelos", headers=H).status_code == 204
 
 
+def test_comparacao_de_modelos_usa_o_consumo_real_e_a_latencia_medida():
+    """A coluna que responde a pergunta de quem abre a tela: quanto o MEU uso teria custado com
+    cada modelo, e qual deles respondeu rápido AQUI."""
+    from sdr_shared.db import UsoRepository
+
+    c = TestClient(app)
+    sem_uso = c.get("/config/modelos/comparacao", headers=H).json()["papeis"]["roteamento"]
+    assert [l["custo"]["usd"] for l in sem_uso] == sorted(l["custo"]["usd"] for l in sem_uso)
+    assert all(l["custo"]["base"] == "referencia" for l in sem_uso)
+    assert all(l["latencia"]["mediana_ms"] is None for l in sem_uso), "sem chamada, sem velocidade"
+
+    repo = UsoRepository()
+    for ms in (300, 400, 500, 600, 700, 800):
+        repo.registrar(lead_id=None, no="supervisor", papel="roteamento", provider="anthropic",
+                       modelo="claude-haiku-4-5", entrada=10_000, saida=1_000, cache_escrita=0,
+                       cache_leitura=0, custo=0.015, latencia_ms=ms, erro=None)
+
+    com_uso = c.get("/config/modelos/comparacao", headers=H).json()["papeis"]["roteamento"]
+    haiku = next(l for l in com_uso if l["modelo"] == "claude-haiku-4-5")
+    assert haiku["latencia"] == {"mediana_ms": 550, "amostras": 6, "escopo": "papel"}
+    # 60k de entrada a US$1/1M + 6k de saída a US$5/1M = 0,09
+    assert haiku["custo"] == {"usd": 0.09, "base": "uso", "dias": 30, "chamadas": 6}
+    assert haiku["recomendado_para"] == "roteamento"
+    # o contrafactual vale para TODOS os modelos, inclusive os que nunca rodaram
+    opus = next(l for l in com_uso if l["modelo"] == "claude-opus-4-1")
+    assert opus["custo"]["usd"] > haiku["custo"]["usd"] and opus["latencia"]["amostras"] == 0
+    # e a conversa, que não teve uso, continua na referência — o mix é por papel
+    assert all(l["custo"]["base"] == "referencia"
+               for l in c.get("/config/modelos/comparacao", headers=H).json()["papeis"]["conversa"])
+
+
 def test_modelos_recusa_provedor_e_id_invalidos():
     c = TestClient(app)
     # `openai` era recusado aqui até virar reserva de produção (ADR-0009). O caso continua valendo

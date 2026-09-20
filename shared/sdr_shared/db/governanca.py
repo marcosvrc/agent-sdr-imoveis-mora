@@ -29,6 +29,61 @@ class UsoRepository:
                        custo, latencia_ms, erro))
 
     # ---- leitura para o painel ----
+    def mix_por_papel(self, dias: int = 30) -> dict:
+        """Quantos tokens cada papel consumiu de fato — a base do contrafactual da tela de modelos.
+
+        Por papel, e não no total, porque a proporção entrada/saída é o que decide qual modelo sai
+        mais barato: roteamento lê muito e responde pouco, conversa faz o contrário. Um número só
+        para os dois ordenaria a lista errado exatamente onde a escolha importa.
+        """
+        with _conn() as c:
+            linhas = c.execute("""SELECT coalesce(papel, 'sem_papel') AS papel, count(*) AS chamadas,
+                                         coalesce(sum(tokens_entrada),0) AS entrada,
+                                         coalesce(sum(tokens_saida),0) AS saida,
+                                         coalesce(sum(tokens_cache_escrita),0) AS cache_escrita,
+                                         coalesce(sum(tokens_cache_leitura),0) AS cache_leitura
+                                  FROM uso_llm
+                                  WHERE em >= now() - make_interval(days => %s) AND erro IS NULL
+                                  GROUP BY 1""", (dias,)).fetchall()
+        campos = ("chamadas", "entrada", "saida", "cache_escrita", "cache_leitura")
+        return {l["papel"]: {k: int(l[k]) for k in campos} for l in linhas}
+
+    def latencia_por_modelo(self, dias: int = 30, minimo: int = 5) -> dict:
+        """Mediana de latência medida, por papel e modelo: `{papel: {modelo: {...}}}`.
+
+        Mediana, não média: uma única chamada que pegou fila do provedor puxaria a média e faria um
+        modelo rápido parecer lento para sempre.
+
+        Cai para a medição geral do modelo quando o papel tem menos de `minimo` amostras, e diz
+        qual dos dois usou (`escopo`). Misturar os papéis sem avisar inventaria um número que não
+        descreve nenhum deles: o prompt do roteamento é uma fração do prompt da conversa.
+        """
+        with _conn() as c:
+            por_papel = c.execute("""SELECT modelo, coalesce(papel, 'sem_papel') AS papel, count(*) AS n,
+                                            percentile_cont(0.5) WITHIN GROUP (ORDER BY latencia_ms) AS med
+                                     FROM uso_llm
+                                     WHERE em >= now() - make_interval(days => %s)
+                                       AND latencia_ms > 0 AND erro IS NULL
+                                     GROUP BY 1, 2""", (dias,)).fetchall()
+            geral = c.execute("""SELECT modelo, count(*) AS n,
+                                        percentile_cont(0.5) WITHIN GROUP (ORDER BY latencia_ms) AS med
+                                 FROM uso_llm
+                                 WHERE em >= now() - make_interval(days => %s)
+                                   AND latencia_ms > 0 AND erro IS NULL
+                                 GROUP BY 1""", (dias,)).fetchall()
+
+        g = {l["modelo"]: {"mediana_ms": int(l["med"]), "amostras": int(l["n"]), "escopo": "geral"} for l in geral}
+        saida: dict[str, dict] = {}
+        papeis = {l["papel"] for l in por_papel}
+        for papel in papeis:
+            saida[papel] = dict(g)                       # base: o que se sabe do modelo em geral
+            for l in por_papel:
+                if l["papel"] == papel and int(l["n"]) >= minimo:
+                    saida[papel][l["modelo"]] = {"mediana_ms": int(l["med"]), "amostras": int(l["n"]),
+                                                 "escopo": "papel"}
+        saida["_geral"] = g
+        return saida
+
     def resumo(self, dias: int = 30) -> dict:
         agora = datetime.now(timezone.utc)
         ini, ini_ant = agora - timedelta(days=dias), agora - timedelta(days=2 * dias)

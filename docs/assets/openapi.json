@@ -1193,6 +1193,55 @@
         ]
       }
     },
+    "/config/modelos/comparacao": {
+      "get": {
+        "description": "Custo, latência medida e papel recomendado por modelo — uma lista por papel, da mais barata\npara a mais cara.\n\nUma lista POR PAPEL porque a ordem muda: o roteamento gasta quase tudo em entrada e a conversa\nem saída, então o modelo mais barato para um não é o mais barato para o outro.",
+        "operationId": "comparacao_de_modelos_config_modelos_comparacao_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "dias",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Dias",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "Token do painel": []
+          }
+        ],
+        "summary": "Comparacao De Modelos",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/config/modelos/testar": {
       "post": {
         "description": "Faz UMA chamada real e curta ao modelo pedido, antes de salvar.\n\nLista fixa de modelos envelhece e campo livre derruba o agente no turno seguinte; um teste de\nverdade responde as duas dúvidas que a lista não responde — o ID existe neste provedor e nesta\nregião? e quanto ele demora? Também avisa se falta preço, porque salvar sem preço desliga o\nteto de orçamento em dólar (ver _validar_modelos).",

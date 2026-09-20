@@ -126,6 +126,28 @@ def salvar(chave: str, body: dict):
     return {"chave": chave, "valor": {**DEFAULTS[chave], **body}}
 
 
+@router.get("/modelos/comparacao")
+def comparacao_de_modelos(dias: int = Query(30, ge=1, le=365)):
+    """Custo, latência medida e papel recomendado por modelo — uma lista por papel, da mais barata
+    para a mais cara.
+
+    Uma lista POR PAPEL porque a ordem muda: o roteamento gasta quase tudo em entrada e a conversa
+    em saída, então o modelo mais barato para um não é o mais barato para o outro.
+    """
+    from sdr_shared.db import UsoRepository
+    from sdr_shared.governanca import comparar, recomendacoes
+    from sdr_shared.ports.factory import _EQUIVALENTE, catalogo_de_modelos
+
+    repo = UsoRepository()
+    tabela, mixes, latencias = repo.precos(), repo.mix_por_papel(dias), repo.latencia_por_modelo(dias)
+    catalogo, recomendado = catalogo_de_modelos(tabela), recomendacoes(_EQUIVALENTE)
+    papeis = {p: comparar(catalogo=catalogo, mix=mixes.get(p, {}),
+                          latencias=latencias.get(p, latencias.get("_geral", {})),
+                          recomendado=recomendado, tabela=tabela, dias=dias)
+              for p in ("conversa", "roteamento", "analise")}
+    return {"dias": dias, "papeis": papeis}
+
+
 def _validar_modelos(body: dict) -> None:
     """A trava que importa: modelo sem preço cadastrado zera o custo calculado, e com o custo em zero
     o teto mensal em dólar nunca é atingido — o guardrail de orçamento fica ligado só na aparência.
