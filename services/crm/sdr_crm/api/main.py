@@ -5,7 +5,9 @@ o cliente recebe um `code` estável para decidir o que fazer e um `request_id` p
 resto no log.
 """
 import logging
+import re
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.encoders import jsonable_encoder
@@ -100,20 +102,46 @@ def vivo() -> dict:
     return {"status": "ok"}
 
 
+def _tabelas_esperadas() -> set[str]:
+    """As tabelas do `schema.sql`, lidas do próprio arquivo.
+
+    Lista escrita à mão aqui envelheceria em silêncio — foi exatamente o que aconteceu: a conferência
+    olhava só `opportunities`, uma tabela nova entrou, e o readiness continuou verde enquanto a
+    primeira consulta de imóvel estourava `UndefinedTable` no meio de uma requisição. Derivando do
+    arquivo, toda tabela futura já nasce coberta e ninguém precisa lembrar de nada.
+    """
+    caminho = Path(__file__).resolve().parents[1] / "db" / "schema.sql"
+    return set(re.findall(r"CREATE TABLE IF NOT EXISTS\s+(\w+)", caminho.read_text(encoding="utf-8")))
+
+
+ESPERADAS = _tabelas_esperadas()
+
+
 @app.get("/health/ready", tags=["health"])
 def pronto() -> JSONResponse:
-    """Readiness confere banco E schema aplicado. 'Conecta mas não tem tabela' é indisponível: a
-    primeira requisição real quebraria com erro de SQL em vez de 503."""
+    """Readiness confere banco E schema COMPLETO. 'Conecta mas falta tabela' é indisponível: a
+    primeira requisição real quebraria com erro de SQL em vez de 503.
+
+    Schema incompleto quase nunca é banco corrompido — é `docker compose restart` onde precisava ser
+    `up`, que não roda o `db-init`. Por isso a mensagem carrega o comando: quem lê isto está com o
+    log na frente e quer sair do problema, não classificá-lo.
+    """
     try:
         with leitura() as conn:
-            faltando = conn.execute(
-                """SELECT count(*) = 0 AS falta FROM information_schema.tables
-                    WHERE table_schema = 'public' AND table_name = 'opportunities'""").fetchone()
-        if faltando["falta"]:
-            raise RuntimeError("schema não aplicado")
+            linhas = conn.execute(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+            ).fetchall()
+        faltando = sorted(ESPERADAS - {r["table_name"] for r in linhas})
+        if faltando:
+            # Os nomes vão para o LOG, não para a resposta: /health/ready é aberto, e estrutura
+            # interna não sai por rota pública nem aqui. Quem opera tem o log.
+            log.error("schema incompleto: faltam %s", ", ".join(faltando))
+            raise RuntimeError("schema incompleto")
     except Exception:
         return JSONResponse(status_code=503, content={
-            "error": {"code": "DEPENDENCY_UNAVAILABLE", "message": "Banco indisponível ou sem schema.",
+            "error": {"code": "DEPENDENCY_UNAVAILABLE",
+                      "message": "Banco indisponível ou schema desatualizado. "
+                                 "Aplique com `docker compose up -d` (o `restart` não roda o db-init).",
                       "details": {}, "retryable": True},
             "request_id": str(uuid.uuid4())})
     return JSONResponse(status_code=200, content={"status": "ok"})

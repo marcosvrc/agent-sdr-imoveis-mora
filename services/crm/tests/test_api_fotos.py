@@ -60,3 +60,26 @@ def test_a_mesma_foto_duas_vezes_e_recusada(humano):
     r = humano.post("/v1/properties", {**IMOVEL, "code": "SP-9005", "photos": [
         {"url": "https://cdn.exemplo/igual.jpg"}, {"url": "https://cdn.exemplo/igual.jpg"}]})
     assert r.status_code == 422, r.text
+
+
+def test_readiness_reprova_quando_falta_tabela(cliente):
+    """A regressão que este teste guarda: a conferência olhava UMA tabela, uma nova entrou, e o
+    readiness continuou verde enquanto a consulta de imóvel estourava no meio da requisição.
+
+    Derrubar uma tabela de verdade para testar seria destrutivo; basta provar que a lista esperada
+    sai do schema.sql — se saísse de uma lista escrita à mão, é ela que envelheceria."""
+    from sdr_crm.api import main
+
+    assert cliente.get("/health/ready").status_code == 200
+    assert {"properties", "property_photos", "opportunities", "leads"} <= main.ESPERADAS
+
+    original = main.ESPERADAS
+    try:
+        main.ESPERADAS = original | {"tabela_que_nao_existe"}
+        r = cliente.get("/health/ready")
+        assert r.status_code == 503
+        assert "docker compose up -d" in r.json()["error"]["message"], "a saída tem de vir junto"
+        # nome de tabela não sai por rota pública: vai para o log de quem opera
+        assert r.json()["error"]["details"] == {}
+    finally:
+        main.ESPERADAS = original
