@@ -79,9 +79,11 @@ export function ModelosForm({ form, set, efetivo, catalogo }: {
         const teste = testes[k];
         const escolhido = String(form[k] ?? "");
         const opcoes = opcoesDe(k);
-        // Sem catálogo para o provedor (Ollama, ou um ID que o servidor não conhece) ou pedido
-        // explícito de "outro…": campo livre. Um valor fora da lista também abre o campo sozinho,
-        // senão a tela apagaria em silêncio o que já estava salvo.
+        // Sem catálogo para o provedor (Ollama, ou uma API velha que ainda não manda a lista) ou
+        // pedido explícito de "outro…": campo livre. Um valor fora da lista também abre o campo
+        // sozinho, senão a tela apagaria em silêncio o que já estava salvo.
+        // Cair no campo livre CALADO seria o mesmo defeito de sempre: funciona, e ninguém descobre
+        // por quê. Quando não é o Ollama, a linha de baixo diz que a lista não chegou.
         const campoLivre = livres[k] || opcoes.length === 0 || (!!escolhido && !opcoes.includes(escolhido));
         return (
           <div key={k} className="rounded-xl border border-line p-3">
@@ -131,8 +133,13 @@ export function ModelosForm({ form, set, efetivo, catalogo }: {
                   voltar para a lista
                 </button>
               )}
-              {campoLivre && opcoes.length === 0 && provedorDe(k) === "ollama" && (
-                <span>Ollama não tem lista: vale o que a máquina baixou com <code>ollama pull</code>.</span>
+              {campoLivre && opcoes.length === 0 && (
+                provedorDe(k) === "ollama"
+                  ? <span>Ollama não tem lista: vale o que a máquina baixou com <code>ollama pull</code>.</span>
+                  : <span className="text-warn-strong">
+                      A API não mandou a lista de modelos de <b>{provedorDe(k) || "—"}</b> — provavelmente
+                      está rodando uma versão anterior a esta tela. Campo livre até ela subir de novo.
+                    </span>
               )}
             </div>
 
