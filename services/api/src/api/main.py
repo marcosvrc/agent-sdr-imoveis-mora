@@ -1,7 +1,8 @@
 import re
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sdr_shared.config import get_settings
@@ -61,6 +62,25 @@ app = FastAPI(
 _origens = [o.strip() for o in (get_settings().cors_origins or "").split(",") if o.strip()] or ["*"]
 app.add_middleware(CORSMiddleware, allow_origins=_origens, allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(AuditoriaMiddleware)      # registra tudo que muda o sistema
+
+# Teto de corpo. O CRM tinha o dele desde o início; esta API não tinha nenhum, e a auditoria lê o
+# corpo inteiro em memória antes de a rota rodar — 50 MB num POST autenticado eram 50 MB de RAM.
+# Conferido pelo Content-Length porque recusar ANTES de ler é o ponto. A foto tem teto próprio: o
+# limite geral é menor do que uma imagem legítima em base64 (1,5 MB × 4/3).
+LIMITE_CORPO = 256 * 1024
+LIMITE_CORPO_FOTO = 2_200_000
+_ROTA_FOTO = re.compile(r"^/imoveis/[^/]+/fotos$")
+
+
+@app.middleware("http")
+async def limitar_corpo(request: Request, call_next):
+    tamanho = request.headers.get("content-length")
+    if tamanho and tamanho.isdigit():
+        teto = LIMITE_CORPO_FOTO if (request.method == "POST" and _ROTA_FOTO.match(request.url.path)) \
+            else LIMITE_CORPO
+        if int(tamanho) > teto:
+            return JSONResponse(status_code=413, content={"detail": f"corpo acima de {teto} bytes"})
+    return await call_next(request)
 
 app.include_router(imoveis.router, prefix="/imoveis", tags=["público"])       # sem auth: é a vitrine
 app.include_router(eventos.router, prefix="/eventos", tags=["público"])       # navegação do site → cartão do lead

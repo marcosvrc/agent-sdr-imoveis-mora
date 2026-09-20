@@ -18,8 +18,9 @@ class Corpo(BaseModel):
 
 
 class Login(Corpo):
-    email: str
-    password: str
+    email: str = Field(min_length=1, max_length=320)
+    # argon2 é caro por desenho; sem teto, uma senha de 200 KB é uma requisição de CPU grátis.
+    password: str = Field(min_length=1, max_length=256)
 
 
 class LeadNovo(Corpo):

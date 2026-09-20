@@ -39,7 +39,10 @@ Dois outros achados na mesma família:
 2. `papel=dashboard` exige credencial da equipe, validada por `seguranca/painel.py`. A credencial
    sai de `SDR_PAINEL_TOKEN`; **vazia, só vale no perfil local** (cai em `dev-token`), e fora dele
    não vale nada — fail-closed. A API passou a usar a mesma função, para não existirem duas
-   verdades sobre "quem é da equipe".
+   verdades sobre "quem é da equipe". *Nota de 2026-09:* a credencial deixou de ir na query
+   string (`?token=`), que aparece em access log, histórico e Referer; ela vai no **primeiro
+   quadro** depois de abrir a conexão, e o servidor responde `{"evento":"pronto"}` ou fecha com
+   4403 — nada é entregue antes disso.
 3. O `state` do OAuth passa a ser assinado com prazo de 10 min (`seguranca/oauth.py`), reusando a
    chave HMAC da sessão. O callback só aceita `state` emitido por nós, para aquele corretor.
 4. `_pagina()` do callback escapa o que interpola.

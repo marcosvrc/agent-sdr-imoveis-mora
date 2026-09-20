@@ -42,18 +42,31 @@ class Contexto:
 _balde: dict[str, list[float]] = defaultdict(list)
 
 
-def conferir_limite(chave: str) -> None:
+def conferir_limite(chave: str, limite: int | None = None) -> None:
     cfg = get_settings()
+    limite = limite or cfg.rate_limit_por_minuto
     agora = time.monotonic()
     janela = [t for t in _balde[chave] if agora - t < 60]
-    if len(janela) >= cfg.rate_limit_por_minuto:
+    if len(janela) >= limite:
         janela.sort()
         espera = max(1, int(60 - (agora - janela[0])) + 1)
         _balde[chave] = janela
-        raise LimiteExcedido(f"Limite de {cfg.rate_limit_por_minuto} chamadas por minuto atingido.",
+        raise LimiteExcedido(f"Limite de {limite} chamadas por minuto atingido.",
                              retry_after_seconds=espera)
     janela.append(agora)
     _balde[chave] = janela
+
+
+def conferir_limite_de_login(request: Request, email: str) -> None:
+    """O login não passa pelo `Ctx` (ainda não há ator), então o limite geral nunca o via: era a
+    única rota sem teto, e justamente a que se testa senha. Duas chaves, de propósito:
+    por IP, contra quem varre e-mails de um lugar só; por e-mail, contra quem varre senhas de
+    uma conta a partir de vários lugares. O IP é o do par TCP — atrás de proxy, é o do proxy,
+    e a chave por e-mail é a que continua valendo."""
+    limite = get_settings().login_tentativas_por_minuto
+    ip = request.client.host if request.client else "?"
+    conferir_limite(f"login:ip:{ip}", limite)
+    conferir_limite(f"login:email:{email.strip().lower()}", limite)
 
 
 def limpar_limites() -> None:

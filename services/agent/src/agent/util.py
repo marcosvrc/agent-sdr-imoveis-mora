@@ -34,7 +34,7 @@ def limpar_texto(texto: str) -> str:
 # (zero-width, word-joiner, BOM, soft-hyphen, separadores de linha/parágrafo Unicode).
 _INVISIVEIS = re.compile(r"[\u200b-\u200f\u2028\u2029\u2060-\u2064\u00ad\ufeff]")
 # Marcadores do nosso envelope de contexto: se aparecerem num texto externo, é forja.
-_MARCADOR_FORJADO = re.compile(r"<<<\s*/?\s*(?:fim_)?cliente[_a-f0-9]*\s*>>>|\bCLIENTE_[0-9a-f]{4,}", re.I)
+_MARCADOR_FORJADO = re.compile(r"<<<\s*/?\s*(?:fim_)?(?:cliente|dado)[_a-f0-9]*\s*>>>|\b(?:CLIENTE|DADO)_[0-9a-f]{4,}", re.I)
 
 
 def neutralizar_texto_externo(valor: object, limite: int = 400) -> str:

@@ -97,6 +97,11 @@ def enviar_foto(imovel_id: str, body: FotoIn, request: Request):
     m = re.match(r"^data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$", body.imagem)
     if not m:
         raise HTTPException(422, "imagem deve ser JPEG, PNG ou WebP em base64")
+    # Tamanho conferido ANTES de decodificar: base64 rende 3 bytes a cada 4 caracteres, então o
+    # texto já diz se a imagem passa do teto — decodificar para depois medir gastava a memória que
+    # o teto existe para poupar.
+    if len(m.group(2)) * 3 // 4 > MAX_BYTES:
+        raise HTTPException(413, "imagem acima de 1,5 MB — reduza antes de enviar")
     dados = base64.b64decode(m.group(2))
     if len(dados) > MAX_BYTES:
         raise HTTPException(413, "imagem acima de 1,5 MB — reduza antes de enviar")

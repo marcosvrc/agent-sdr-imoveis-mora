@@ -1,5 +1,5 @@
 """Canal web do perfil local. Um processo FastAPI com:
-  WS  /ws            → widget do site (papel=lead) e dashboard (papel=dashboard)
+  WS  /ws            → widget do site (papel=lead) e dashboard (papel=dashboard; credencial no 1º quadro)
   worker de saída    → consome outbound-web do Redis e faz push nas conexões abertas
 
 Havia aqui um `/webhook` que reaproveitava o adaptador do WhatsApp para simular a entrega da Meta.
@@ -87,6 +87,9 @@ def abrir_sessao():
 PAPEIS = {"lead", "dashboard"}
 
 
+PRAZO_CREDENCIAL_S = 5
+
+
 @app.websocket("/ws")
 async def ws(sock: WebSocket, papel: str = "lead", id: str = "", token: str = ""):
     if papel not in PAPEIS:
@@ -95,17 +98,22 @@ async def ws(sock: WebSocket, papel: str = "lead", id: str = "", token: str = ""
     if papel == "lead" and not validar(id, token):
         await sock.close(code=4401)            # sessão não emitida por nós, ou expirada
         return
+    await sock.accept()
     # O painel recebe o espelho de TODAS as conversas (ver `on_msg` no lifespan): exige credencial
     # da equipe, senão qualquer um na rede abriria `?papel=dashboard` e leria os leads inteiros.
-    if papel == "dashboard" and not painel.valido(token):
+    # A credencial vem no PRIMEIRO quadro, nunca na URL: query string fica em log de proxy, no
+    # histórico do navegador e no Referer — e este token é o da equipe inteira, de longa duração.
+    # Nada é entregue antes de ela ser conferida.
+    if papel == "dashboard" and not await _credencial_do_painel(sock):
         await sock.close(code=4403)
         return
-    await sock.accept()
     chave = id if papel == "lead" else "dashboard"
     conexoes.setdefault(chave, set()).add(sock)
-    if papel == "lead":
-        await _entregar_pendentes(sock, chave)
     try:
+        if papel == "lead":
+            await _entregar_pendentes(sock, chave)
+        else:
+            await sock.send_text(json.dumps({"evento": "pronto"}))
         while True:
             body = json.loads(await sock.receive_text())
             # Só a conexão de um lead escreve, e só pela sessão dela. O painel é somente-leitura
@@ -128,8 +136,30 @@ async def ws(sock: WebSocket, papel: str = "lead", id: str = "", token: str = ""
                 await sock.send_text(json.dumps({"evento": "falha_envio", "ref": body.get("ref"),
                                                  "texto": "Não consegui registrar sua mensagem. Pode tentar de novo?"}))
     except WebSocketDisconnect:
+        pass
+    except Exception:
+        # Quadro malformado (JSON inválido, sem `texto`) derruba SÓ esta conexão, com log. Antes,
+        # a exceção escapava e o socket ficava registrado em `conexoes` para sempre: cada envio
+        # seguinte a esse lead tentava escrever num socket morto.
+        log.exception("conexão %s encerrada por quadro inválido", chave)
+        await sock.close(code=1003)            # 1003 = "dado que não aceito"; fecha de verdade
+    finally:
+        # Sempre sai do registro, seja qual for o motivo da saída. Um socket morto em `conexoes`
+        # é vazamento e é `_push` falhando em série a cada resposta da Mora.
         for s in conexoes.values():
             s.discard(sock)
+
+
+async def _credencial_do_painel(sock: WebSocket) -> bool:
+    """Primeiro quadro do painel: `{"token": "..."}`. Qualquer outra coisa, ou silêncio por
+    `PRAZO_CREDENCIAL_S`, é recusa — a conexão não fica pendurada esperando."""
+    try:
+        bruto = await asyncio.wait_for(sock.receive_text(), timeout=PRAZO_CREDENCIAL_S)
+        corpo = json.loads(bruto)
+    except (TimeoutError, asyncio.TimeoutError, WebSocketDisconnect, ValueError):
+        return False
+    credencial = corpo.get("token") if isinstance(corpo, dict) else None
+    return isinstance(credencial, str) and painel.valido(credencial)
 
 
 async def _entregar_pendentes(sock: WebSocket, chave: str) -> None:

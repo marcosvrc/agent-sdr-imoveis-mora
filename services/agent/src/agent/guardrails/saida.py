@@ -13,7 +13,7 @@ log = logging.getLogger("agent.guardrails")
 VAZAMENTO = re.compile(r"""(
     regras\s+de\s+seguranca
   | \bsystem\s*prompt\b | prompt\s+do\s+sistema
-  | <<<\s*(fim_)?cliente | \bCLIENTE_[0-9a-f]{8}
+  | <<<\s*(fim_)?(cliente|dado) | \b(CLIENTE|DADO)_[0-9a-f]{8}
   | minhas\s+instru[cç][õo]es\s+(dizem|s[ãa]o)
   | fui\s+(instru[ií]do|configurado|programado)\s+(a|para|com)
   | (voc[eê]\s+[ée]|sou)\s+o\s+roteador\s+interno

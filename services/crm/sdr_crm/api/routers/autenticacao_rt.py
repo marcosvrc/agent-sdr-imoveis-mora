@@ -8,7 +8,7 @@ from ...config import get_settings
 from ...db.connection import leitura, transacao
 from ...erros import NaoAutenticado
 from .. import auth as autenticacao
-from ..contexto import Contexto, Ctx, envelope
+from ..contexto import Contexto, Ctx, conferir_limite_de_login, envelope
 from ..esquemas import Login
 
 router = APIRouter(tags=["auth"])
@@ -18,13 +18,14 @@ DURACAO = timedelta(hours=12)
 
 
 @router.post("/auth/login")
-def entrar(corpo: Login, resposta: Response):
+def entrar(corpo: Login, request: Request, resposta: Response):
     """Mensagem única para usuário inexistente, senha errada e conta inativa.
 
     Distinguir os três diria a um estranho quais e-mails existem na base — e, num CRM, a lista de
     quem trabalha na imobiliária já é informação. A `conferir_senha` roda mesmo sem usuário para o
     tempo de resposta não entregar a mesma coisa.
     """
+    conferir_limite_de_login(request, corpo.email)      # antes de tocar no banco ou no argon2
     with leitura() as conn:
         usuario = conn.execute("SELECT * FROM users WHERE lower(btrim(email)) = %s",
                                (corpo.email.strip().lower(),)).fetchone()

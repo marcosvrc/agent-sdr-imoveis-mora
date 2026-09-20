@@ -17,7 +17,8 @@ errado é recusado ali, em vez de virar 401 na primeira tela). O campo de e-mail
   campo em branco envia.
 - **Fora do perfil local** — vazio não aceita nada: sem segredo configurado, ninguém entra.
 
-O mesmo token vale para o header `Authorization` da API e para a conexão WebSocket `papel=dashboard`.
+O mesmo token vale para o header `Authorization` da API e para a conexão WebSocket `papel=dashboard`
+— no WebSocket ele vai no primeiro quadro após abrir a conexão (`{"token": "..."}`), nunca na URL.
 Havia aqui um login por Amazon Cognito, via `aws-amplify`; saiu junto com o resto da AWS.
 
 !!! danger "Não use credenciais reais"

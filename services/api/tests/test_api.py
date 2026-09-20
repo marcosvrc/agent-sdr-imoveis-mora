@@ -764,3 +764,33 @@ def test_operacao_recusa_refresh_curto_demais():
 def test_operacao_recusa_motor_desconhecido():
     c = TestClient(app)
     assert c.put("/config/operacao", headers=H, json={"transcricao": "transcribe"}).status_code == 422
+
+
+def test_corpo_grande_e_recusado_antes_de_ler():
+    """O CRM tinha teto de corpo desde o início; esta API não tinha nenhum — e a auditoria lê o
+    corpo inteiro em memória antes de a rota rodar."""
+    c = TestClient(app)
+    grande = "x" * (300 * 1024)
+    r = c.post("/leads/qualquer/handoff", headers={**H, "Content-Length": str(len(grande) + 20)},
+               content=json.dumps({"texto": grande}))
+    assert r.status_code == 413
+    # a foto tem teto próprio, maior: 1,5 MB de imagem são ~2 MB em base64
+    r = c.post("/imoveis/SP-0001/fotos", headers={**H, "Content-Length": "2000000"}, content=b"")
+    assert r.status_code != 413
+    r = c.post("/imoveis/SP-0001/fotos", headers={**H, "Content-Length": "3000000"}, content=b"")
+    assert r.status_code == 413
+
+
+def test_foto_acima_do_teto_e_recusada_pelo_tamanho_do_base64(tmp_path, monkeypatch, caplog):
+    """Recusa pelo comprimento do texto, sem decodificar: 2 MB de base64 não viram 1,5 MB em RAM
+    só para receber um 413."""
+    import base64
+    from sdr_shared.config import get_settings
+    monkeypatch.setattr(get_settings(), "fotos_dir", str(tmp_path))
+    c = TestClient(app)
+    decodificacoes = []
+    original = base64.b64decode
+    monkeypatch.setattr("api.routers.imoveis.base64.b64decode", lambda s: decodificacoes.append(1) or original(s))
+    texto = base64.b64encode(b"\x89PNG" + b"\0" * 1_600_000).decode()
+    r = c.post("/imoveis/SP-0001/fotos", headers=H, json={"imagem": f"data:image/png;base64,{texto}"})
+    assert r.status_code == 413 and not decodificacoes
