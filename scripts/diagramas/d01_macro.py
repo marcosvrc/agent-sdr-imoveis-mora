@@ -97,7 +97,7 @@ def montar() -> Diagrama:
     # ---------------------------------------------------------------- legenda
     d.legenda([("azul", "Entrada e tempo real"), ("verde", "Retorno, agenda e CRM"),
                ("roxo", "Processamento de IA"), ("cinza", "Acesso a dados")], y=1400)
-    d.rodape("Mora · visão macro")
+    d.rodape("visão macro")
     return d
 
 

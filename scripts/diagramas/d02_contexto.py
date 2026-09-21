@@ -37,7 +37,7 @@ def montar() -> Diagrama:
 
     d.legenda([("azul", "Entrada e tempo real"), ("verde", "Retorno ao cliente"),
                ("roxo", "Modelo"), ("cinza", "Dados")], y=700)
-    d.rodape("Mora · contexto")
+    d.rodape("contexto")
     return d
 
 

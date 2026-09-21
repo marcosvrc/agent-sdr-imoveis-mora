@@ -33,7 +33,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="estados-codigo", titulo="Transições de Estagio, uma a uma",
         subtitulo="Quem escreve cada mudança — linha é de onde sai, coluna é para onde vai",
-        largura=1760, altura=960, rodape_dir="MORA · MÁQUINA DE ESTADOS",
+        largura=1760, altura=960,
         alt=("Matriz das transições de estágio do lead, com o nó do grafo responsável por cada "
              "mudança."))
 
@@ -86,7 +86,7 @@ def montar() -> Diagrama:
 
     d.legenda([("azul", "Avanço do atendimento"), ("ambar", "Silêncio do cliente"),
                ("verde", "Passagem ao humano"), ("cinza", "Lead sucessor")], y=910)
-    d.rodape("Mora · transições de estágio")
+    d.rodape("transições de estágio")
     return d
 
 

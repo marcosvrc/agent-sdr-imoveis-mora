@@ -22,7 +22,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="supervisor", titulo="Ordem de decisão do supervisor",
         subtitulo="Treze regras determinísticas antes de gastar um token",
-        largura=1700, altura=1800, rodape_dir="MORA · ROTEAMENTO",
+        largura=1700, altura=1800,
         alt=("Escada de decisão do supervisor: cada regra é avaliada na ordem; a primeira que "
              "casa define o especialista, e só o que sobra vai ao modelo de roteamento."))
 
@@ -51,7 +51,7 @@ def montar() -> Diagrama:
 
     d.legenda([("azul", "Atendimento"), ("verde", "Passagem ao humano"),
                ("ambar", "Iniciado pela Mora"), ("vermelho", "Fora de escopo")], y=1750)
-    d.rodape("Mora · supervisor")
+    d.rodape("supervisor")
     return d
 
 

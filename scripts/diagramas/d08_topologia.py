@@ -60,7 +60,7 @@ def montar() -> Diagrama:
         "crm-web e Langfuse publicam a mesma porta 3000 — os dois não sobem juntos. Postgres e Redis são publicados só em 127.0.0.1.",
         "Os serviços Python compartilham uma imagem (local/Dockerfile.python): o que muda entre containers é o comando, não a imagem.",
         "Mudança de schema ou de dependência exige docker compose up -d --build; restart não roda o db-init e o /health/ready reprova dizendo isso."])
-    d.rodape("Mora · topologia")
+    d.rodape("topologia")
     return d
 
 

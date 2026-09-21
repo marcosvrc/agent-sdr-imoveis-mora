@@ -6,7 +6,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="crm-publicacao", titulo="Publicação de um turno no CRM",
         subtitulo="A porta é o MCP; a falha não derruba a conversa, vai para a fila",
-        largura=1820, altura=1280, rodape_dir="MORA · PONTE COM O CRM",
+        largura=1820, altura=1280,
         alt=("Sequência da publicação no CRM: o handler despacha a resposta primeiro, o publicador "
              "abre uma sessão MCP e chama uma ferramenta por fato; se falhar, o turno vai para "
              "crm_pendencias."))

@@ -40,7 +40,7 @@ def montar() -> Diagrama:
         "O scheduler também publica em sdr:inbound: o follow-up vencido entra como um quadro comum, pelo mesmo caminho do cliente.",
         "Cada tópico tem um consumer group; no boot o worker retoma o que ficou pendente na PEL (id 0 e XAUTOCLAIM) — a mensagem",
         "entregue no instante de uma queda não fica sem resposta. O lock por lead vale pelo pior caso de um turno, não por um número fixo."])
-    d.rodape("Mora · mensageria")
+    d.rodape("mensageria")
     return d
 
 

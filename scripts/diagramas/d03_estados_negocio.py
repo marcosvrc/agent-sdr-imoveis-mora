@@ -6,7 +6,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="estados-negocio", titulo="Jornada do lead",
         subtitulo="Máquina de estados, na leitura de quem opera",
-        largura=1960, altura=1180, rodape_dir="MORA · VISÃO DE NEGÓCIO",
+        largura=1960, altura=1180,
         alt=("Jornada do lead: novo, qualificando, qualificado, agendado e handoff, com o desvio "
              "de inatividade e a volta por nova oportunidade."))
 
@@ -63,7 +63,7 @@ def montar() -> Diagrama:
     d.legenda([("tinta2", "Transição do lead"), ("ambar", "Ausência de resposta"),
                ("verde", "Volta ao atendimento"), ("cinza", "Nova oportunidade")],
               y=1130, tracejados={1, 3})
-    d.rodape("Mora · jornada do lead")
+    d.rodape("jornada do lead")
     return d
 
 

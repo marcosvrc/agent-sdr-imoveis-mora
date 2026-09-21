@@ -6,7 +6,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="turno", titulo="Fluxo do agente e do modelo",
         subtitulo="Um turno, do quadro que chega ao canal até a resposta entregue",
-        largura=2060, altura=1650, rodape_dir="MORA · VISÃO DE EXECUÇÃO",
+        largura=2060, altura=1650,
         alt=("Sequência de um turno: o canal publica no Redis, o handler prepara o contexto, o "
              "grafo decide e chama o modelo, e o handler persiste, despacha, espelha no CRM e "
              "reagenda o follow-up."))
@@ -53,7 +53,7 @@ def montar() -> Diagrama:
 
     d.legenda([("azul", "Chamada e publicação"), ("roxo", "Raciocínio e modelo"),
                ("verde", "Entrega, CRM e agenda"), ("cinza", "Persistência")], y=1600)
-    d.rodape("Mora · fluxo do agente")
+    d.rodape("fluxo do agente")
     return d
 
 

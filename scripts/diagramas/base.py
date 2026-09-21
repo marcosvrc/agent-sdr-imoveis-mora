@@ -92,7 +92,7 @@ class Diagrama:
     subtitulo: str
     largura: int
     altura: int
-    rodape_dir: str = "MORA · COMITÊ DE ARQUITETURA"
+    marca: str = "MORA"           # marca d'água no canto do cabeçalho
     _corpo: list[str] = field(default_factory=list)
     _defs: list[str] = field(default_factory=list)
     alt: str = ""
@@ -153,7 +153,7 @@ class Diagrama:
             f'<text x="60" y="{cab / 2 - 11}" class="t-cab">{escape(self.titulo)}</text>',
             f'<text x="61" y="{cab / 2 + 15}" class="t-cab-s">{escape(self.subtitulo)}</text>',
             f'<text x="{self.largura - 40}" y="{cab / 2}" class="t-cab-r" text-anchor="end">'
-            f'{escape(self.rodape_dir)}</text>',
+            f'{escape(self.marca)}</text>',
             *self._corpo,
         ]
         partes.append("</svg>")
