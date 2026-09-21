@@ -1,191 +1,171 @@
 # Mora — Agente SDR Imobiliário da Vértice Imóveis
 
-Prova de conceito (POC) de um SDR (Sales Development Representative) imobiliário com IA
-generativa. A agente virtual **Mora** atende o cliente, entende o que ele procura, recomenda
-imóveis do catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
+[![CI](https://github.com/marcosvrc/agent-sdr-imoveis-mora/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/marcosvrc/agent-sdr-imoveis-mora/actions/workflows/ci.yml)
+[![Docs](https://github.com/marcosvrc/agent-sdr-imoveis-mora/actions/workflows/docs.yml/badge.svg?branch=master)](https://marcosvrc.github.io/agent-sdr-imoveis-mora/)
+[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
 
-O repositório é um monorepo: cada componente vive na sua pasta, com dependências, testes e deploy
-independentes, comunicando-se apenas por contratos definidos em `shared/`.
+![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688?logo=fastapi&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-0.2+-1C3C3C?logo=langchain&logoColor=white)
+![Pydantic v2](https://img.shields.io/badge/Pydantic-v2-E92063?logo=pydantic&logoColor=white)
+![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![pgvector](https://img.shields.io/badge/pgvector-HNSW%20%C2%B7%201024d-4169E1)
+![Redis 7](https://img.shields.io/badge/Redis-7%20Streams-DC382D?logo=redis&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-servidor%20do%20CRM-6E56CF)
+![Anthropic](https://img.shields.io/badge/Claude-Anthropic-191919?logo=anthropic&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI-reserva-412991?logo=openai&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-bge--m3%20%C2%B7%20local-000000?logo=ollama&logoColor=white)
+![React 18](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript&logoColor=white)
+![Vite 7](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?logo=tailwindcss&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-Bot%20API-26A5E4?logo=telegram&logoColor=white)
+![MkDocs Material](https://img.shields.io/badge/MkDocs-Material-526CFE?logo=materialformkdocs&logoColor=white)
+![ruff](https://img.shields.io/badge/lint-ruff%20%C2%B7%20eslint-261230?logo=ruff&logoColor=white)
+![pyright](https://img.shields.io/badge/tipos-pyright%20b%C3%A1sico-3776AB)
 
-**Status:** POC (prova de conceito). A entrega roda inteira na máquina de quem avalia, por
-`docker compose`; **nada está implantado**, e isso é escolha, não pendência — quem abre o
-repositório sobe o sistema todo sem conta em provedor nenhum. Ver
-[Funcionalidades](#4-funcionalidades-implementadas).
+Prova de conceito (POC) de um **SDR (Sales Development Representative) imobiliário com IA
+generativa**. A agente virtual **Mora** atende o cliente pelo site e pelo Telegram, entende o que ele
+procura, recomenda imóveis do catálogo, agenda visitas e entrega o lead qualificado — com briefing —
+a um corretor humano. Um **CRM** à parte, com banco e login próprios, é onde a equipe opera; a Mora
+escreve nele por **MCP**, com credencial de serviço e limites explícitos.
 
-**CI:** GitHub Actions — testes de backend com cobertura (Python 3.12 + Postgres pgvector), harness
-de avaliação com dublês e build + `eslint` dos front-ends (`web` e `dashboard`). Ver
-[`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+**Status:** POC. A entrega inteira roda na máquina de quem avalia, por `docker compose`; nada está
+implantado, e isso é escolha (ver [Roadmap](docs/project/roadmap.md)).
 
-> ## 📖 Documentação completa (portal)
->
-> A documentação detalhada — arquitetura, manuais do agente/site/painel, referência da API, segurança,
-> performance e operação — vive em um **portal publicado no GitHub Pages**:
->
-> **➡️ https://<usuario-ou-organizacao>.github.io/agent-sdr-morai/** *(ajuste para o dono real do repositório)*
->
-> Este `README` é o **guia rápido**; o portal é a fonte principal da documentação. O conteúdo do portal
-> fica em [`docs/`](docs) e é construído com MkDocs Material (ver [`mkdocs.yml`](mkdocs.yml) e o workflow
-> [`.github/workflows/docs.yml`](.github/workflows/docs.yml)).
-
-**Documentação complementar:**
-[Portal (GitHub Pages)](https://marcosvrc.github.io/agent-sdr-imoveis-mora/) · [Arquitetura](docs/ARCHITECTURE.md) · [ADRs](docs/adr) · [Ambiente local](local/README.md) · [Observabilidade](docs/quality/observabilidade.md) · [Como contribuir](docs/project/contribuir.md)
-
----
+> **Este README é o guia de entrada.** Cada seção resume o assunto e aponta para a página
+> detalhada em [`docs/`](docs), publicada como portal em
+> **https://marcosvrc.github.io/agent-sdr-imoveis-mora/** (MkDocs Material, workflow
+> [`docs.yml`](.github/workflows/docs.yml)). Os documentos longos foram separados de propósito: o
+> manual do CRM sozinho tem mais de 600 linhas.
 
 ## Sumário
 
-1. [Contexto do projeto](#3-contexto-do-projeto)
-2. [Funcionalidades implementadas](#4-funcionalidades-implementadas)
-3. [Tecnologias utilizadas](#5-tecnologias-utilizadas)
-4. [Arquitetura da solução](#6-arquitetura-da-solução)
-5. [Decisões tecnológicas](#7-decisões-tecnológicas)
-6. [Pré-requisitos](#8-pré-requisitos)
-7. [Configuração das variáveis de ambiente](#9-configuração-das-variáveis-de-ambiente)
-8. [Como executar localmente](#10-como-executar-localmente)
-9. [Manual de uso](#11-manual-de-uso)
-10. [API](#12-api)
-11. [Performance](#13-performance)
-12. [Segurança e privacidade](#14-segurança-e-privacidade)
-13. [Testes e qualidade](#15-testes-e-qualidade)
-14. [Observabilidade e troubleshooting](#16-observabilidade-e-troubleshooting)
-15. [Estrutura do repositório](#17-estrutura-do-repositório)
-16. [Roadmap e limitações](#18-roadmap-e-limitações)
-17. [Contribuição](#19-contribuição)
-18. [Licença e responsáveis](#20-licença-e-responsáveis)
-19. [Pendências de documentação](#21-pendências-de-documentação)
+1. [Contexto do projeto](#1-contexto-do-projeto)
+2. [Tecnologias utilizadas](#2-tecnologias-utilizadas)
+3. [Pré-requisitos](#3-pré-requisitos)
+4. [Como executar](#4-como-executar)
+5. [Arquitetura](#5-arquitetura) · [5.1 Componentes](#51-componentes-da-arquitetura)
+6. [Funcionalidades do agente](#6-funcionalidades-implementadas-no-agente)
+7. [Modelos utilizados](#7-modelos-utilizados-decisões-e-comparativos)
+8. [Agente e subagentes por dentro](#8-detalhes-do-agente-e-subagentes)
+9. [Manual de uso](#9-manual-de-uso)
+10. [Regras de negócio](#10-regras-de-negócio)
+11. [Atividades futuras](#11-atividades-futuras)
+12. [Qualidade: testes, CI, segurança](#12-qualidade-testes-ci-e-segurança)
+13. [Estrutura do repositório](#13-estrutura-do-repositório)
+14. [Licença e autoria](#14-licença-e-autoria)
 
 ---
 
-## 3. Contexto do projeto
+## 1. Contexto do projeto
 
-**Problema.** No mercado imobiliário, o primeiro atendimento a um lead costuma ser lento e manual.
-O corretor perde tempo qualificando contatos que ainda não estão prontos e demora a responder quem
-já está. A proposta é automatizar a primeira etapa do funil (qualificação e recomendação) com uma
-assistente virtual, entregando ao corretor apenas leads já qualificados, com um resumo pronto.
+Imobiliárias perdem lead no intervalo entre o primeiro contato e a primeira resposta humana: o
+cliente escreve à noite, pelo celular, e quer saber na hora se o imóvel serve, quanto custa e quando
+pode visitar. O desafio (briefing em [`docs/agente-sdr-imobiliario.md`](docs/agente-sdr-imobiliario.md))
+pede um agente que faça esse primeiro atendimento com IA generativa, para a **Vértice Imóveis**, uma
+imobiliária fictícia de São Paulo, em três cenários: **compra**, **investimento** e **follow-up** de
+quem parou de responder.
 
-**Público-alvo.** Imobiliárias de pequeno e médio porte (o desenho assume escritório único) e seus
-corretores, que usam o painel administrativo. O cliente final conversa com a Mora pelo site ou pelo
-Telegram.
+O que a Mora faz, em uma frase por etapa:
 
-**Objetivos principais.**
-- Qualificar o lead em uma conversa natural (intenção, região, faixa de preço, quartos, urgência).
-- Recomendar imóveis do catálogo por busca semântica (RAG) calibrada por localidade.
-- Agendar visitas e encaminhar o lead qualificado ao corretor (handoff), com briefing automático.
-- Dar ao corretor visibilidade do funil, das conversas e do custo de IA por meio de um painel.
-
-**Proposta de valor.** Resposta imediata 24h, qualificação consistente e um painel que mostra o
-funil e a governança de consumo de LLM (Large Language Model, modelo de linguagem).
-
-**Escopo atual (POC).** Agente multiagente, site vitrine com chat, painel do corretor, canal
-Telegram, API REST, RAG híbrido, follow-up automático, governança de IA e uma camada de segurança
-determinística contra abuso de prompt.
-
-**Fora do escopo (avaliado e cortado — ver [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#8-o-que-ficou-fora-avaliado-e-cortado)).**
-App nativo (o PWA cobre), Voice AI em tempo real, multi-tenant e o canal WhatsApp — que exigia
-número de negócio verificado e webhook com URL pública, e por isso foi removido do código em favor
-do Telegram ([ADR-0007](docs/adr/0007-telegram-em-vez-de-whatsapp.md)).
-
----
-
-## 4. Funcionalidades implementadas
-
-A tabela abaixo reflete o estado descrito no repositório. Legenda: **Concluída** (implementada e com
-teste ou build associado), **Parcial** (escrita, mas sem teste automatizado ou dependente de serviço
-externo), **Planejada** (prevista, não implementada).
-
-### Agente de IA (`services/agent`)
-| Funcionalidade | Estado | Evidência |
+| Etapa | O que acontece | Quem decide |
 |---|---|---|
-| Grafo multiagente (supervisor, qualificador, consultor, agendador, follow-up, handoff, resumidor, reativador) | Concluída | `tests/test_cenarios.py` |
-| Reativação proativa: imóvel novo → leads adormecidos, com motivo, cadência e opt-out | Concluída | ADR-0013, `tests/test_reativacao_fluxo.py` |
-| RAG híbrido de imóveis com cascata por localidade (bairro → vizinhos → região → cidade) | Concluída | `tools/buscar_imoveis.py`, `test_cenarios.py` |
-| Agendamento de visita em dois turnos (oferta de horários → confirmação) | Concluída | `nodes/agendador.py` |
-| Scoring de temperatura do lead (quente/morno/frio) | Concluída | `test_cenarios.py` |
-| Guardrails de escopo, saneamento de saída e rate limiting | Concluída | `tests/test_seguranca.py` |
-| Governança de LLM: registro por chamada, custo por modelo, orçamento com degradação | Concluída | `tests/test_governanca.py` |
-| Transcrição de voz do Telegram com `faster-whisper` no próprio processo | Concluída | `tools/transcricao.py`, `tests/test_transcricao.py` |
-| RAG institucional sobre pgvector (piso de similaridade, reescrita de consulta) | Concluída | `shared/sdr_shared/conhecimento.py`, `tools/conhecimento.py` |
-| Fusão léxica (RRF) no RAG institucional | Parcial | implementada e testada, **desligada** por padrão atrás de `SDR_RAG_LEXICO`: o A/B piorou o recall (31,9% → 29,8%) |
+| Atendimento | Conversa em português pelo widget do site ou pelo Telegram (texto, botões e áudio) | Mora |
+| Qualificação | Preenche um **cartão** (intenção, região/bairros, orçamento, quartos, urgência; ou perfil, ticket e retorno esperado para investidor) sem interrogatório | Mora |
+| Recomendação | Busca híbrida (filtros + semântica) no catálogo, descendo de bairro para vizinhos, região e cidade, e **diz até onde precisou ir** | Mora |
+| Visita | Oferece horários reais (do CRM ou da agenda interna), reserva e **pede** a visita | Mora reserva; **pessoa confirma** |
+| Passagem | Encaminha ao corretor certo (região + carga), com briefing e análise da conversa | Mora encaminha; corretor assume |
+| Follow-up | Volta a falar com quem sumiu, na cadência da temperatura do lead, dentro do horário civilizado; reativa lead adormecido quando entra imóvel que combina | Mora, com opt-out do cliente |
+| Registro | Espelha lead, oportunidade, preferências, interações e interesses no CRM — até o estágio `qualified`, nunca além | Mora, com limites do CRM |
 
-### Site (`apps/web`)
-| Funcionalidade | Estado | Evidência |
+Limites deliberados: a Mora **não cadastra imóvel, não confirma visita, não muda o estágio além de
+qualificado e não inventa disponibilidade** — cada um desses é uma trava no código, não uma
+instrução no prompt. Mais em [Contexto](docs/overview/contexto.md) e
+[Decisões](docs/decisions.md).
+
+## 2. Tecnologias utilizadas
+
+| Camada | Tecnologia | Para quê |
 |---|---|---|
-| Landing com widget de chat, listagem, detalhe do imóvel, busca e filtros | Concluída | `npm run build` (TypeScript estrito) |
-| PWA, tracking de navegação, SEO/acessibilidade | Concluída | ADR-0012, `vite-plugin-pwa` |
-| CTA de continuidade no Telegram (mantém histórico) | Concluída | ADR-0006 |
+| Linguagens | Python 3.12 · TypeScript 5.5 | Serviços e front-ends |
+| Agente | LangGraph ≥0.2, LangChain Core ≥0.3, Pydantic v2 | Grafo supervisor + especialistas, saída estruturada, contratos |
+| LLM | Anthropic (Claude Sonnet/Haiku, padrão) · OpenAI (reserva) · Ollama (local, sem chave) | Conversa, roteamento/extração e análise, um modelo por papel |
+| Embeddings | `bge-m3` via Ollama ou `text-embedding-3-small` (OpenAI), 1024 dimensões | RAG de imóveis e da base institucional |
+| Voz | faster-whisper (CPU, `int8`) | Transcrição de áudio do Telegram |
+| Backend | FastAPI ≥0.115, Uvicorn, psycopg 3 (pool), redis-py, `mcp` SDK, argon2, cryptography | APIs, canais, workers, servidor MCP, senha e cifra |
+| Dados | PostgreSQL 16 + pgvector (HNSW, cosseno) — dois bancos: `sdr` (Mora) e `crm` | Relacional, vetores, checkpoint do grafo, observabilidade |
+| Fila | Redis 7 Streams (consumer groups, locks) | Canais → agente → canais; retomada de pendentes |
+| Front-ends | React 18, Vite 7, Tailwind 3.4, TanStack Query 5, React Router 6, Recharts, Zustand (site), vite-plugin-pwa | Site vitrine (PWA), painel da Mora, CRM |
+| Canais | Telegram Bot API (long polling) · WebSocket próprio (site) | Sem URL pública, sem túnel |
+| Execução | Docker Compose (uma imagem Python, um comando por container) | A entrega inteira |
+| Qualidade | pytest (650 testes, Postgres real), ruff, pyright básico, eslint, coverage com piso, harness de avaliação | CI no GitHub Actions |
+| Docs | MkDocs Material, ADRs, OpenAPI versionado | Portal no GitHub Pages |
 
-### Painel administrativo (`apps/dashboard`)
-| Funcionalidade | Estado | Evidência |
+Versões e finalidade de cada pacote: [Tecnologias](docs/technical-reference/tecnologias.md).
+
+## 3. Pré-requisitos
+
+**Para rodar (recomendado):**
+
+- Git, Docker e Docker Compose.
+- Uma chave de LLM — `ANTHROPIC_API_KEY` (padrão) ou `OPENAI_API_KEY` — **ou** nenhuma, usando o
+  perfil `ollama` do compose (modelo local, sem custo; mais lento e menos preciso).
+- Opcional: token de bot do Telegram (`@BotFather`) para o canal externo; sem ele sobra o chat do site.
+- Opcional: `CRM_MCP_TOKEN` para ligar a ponte com o CRM; sem ele a Mora roda sozinha.
+
+**Para desenvolver ou rodar os testes no host:** Python 3.12, `pip` ou `uv` (o `Makefile` usa `uv`),
+Node.js **20.19+** (exigência do Vite 7; a imagem `node:20-alpine` do compose atende).
+
+**Hardware:** não há medição versionada. Com Ollama local (bge-m3 + um modelo de chat) conte com
+vários GB de RAM a mais; com provedor hospedado, o compose roda confortavelmente em um notebook.
+Detalhes: [Pré-requisitos](docs/getting-started/pre-requisitos.md).
+
+## 4. Como executar
+
+```bash
+git clone https://github.com/marcosvrc/agent-sdr-imoveis-mora.git
+cd agent-sdr-imoveis-mora
+
+cp -n local/.env.example local/.env      # edite ANTHROPIC_API_KEY (e CRM_MCP_TOKEN, se for usar o CRM)
+make check-env                           # confere o local/.env antes de subir nada
+make local-ollama                        # sobe tudo (ou `make local`, sem o serviço do Ollama)
+
+# em OUTRO terminal, com o compose no ar:
+make preparar                            # bancos, schemas e massa, na ordem certa (idempotente)
+make crm-token                           # credencial da Mora no CRM — aparece UMA vez; cole em CRM_API_TOKEN
+cd local && docker compose up -d crm-mcp agent && cd ..
+make ollama-pull && make seed && make docs-kb   # embeddings, acervo e base institucional
+```
+
+`make` sozinho imprime essa ordem — é o alvo padrão e a fonte que se mantém em dia com o
+`Makefile`. Depois de mudar schema ou dependência Python: `cd local && docker compose up -d --build`
+(**não** `restart`, que não roda o `db-init`).
+
+| Serviço | URL | Saúde |
 |---|---|---|
-| Visão geral, leads, conversas ao vivo, agenda, imóveis, corretores | Concluída | `npm run build` |
-| Configurações do agente e governança de IA (tokens, custos, limites) | Concluída | `routers/config.py`, `routers/governanca.py` |
-| Auditoria e aba de saúde do sistema (observabilidade leve) | Concluída | ADR-0011, `routers/auditoria.py`, `routers/dashboard.py` |
+| Site (PWA + chat) | http://localhost:5173 | — |
+| Painel da Mora | http://localhost:5174 | — |
+| API da Mora (Swagger em `/docs`) | http://localhost:8000 | `GET /health` |
+| Canais (WebSocket do chat) | ws://localhost:8001/ws | `GET /health` |
+| CRM — interface | http://localhost:3000 | — |
+| CRM — API | http://localhost:8100 | `GET /health/ready` (confere o schema inteiro) |
+| CRM — servidor MCP | http://localhost:8200/mcp | `GET /saude` |
+| Postgres · Redis · Ollama | `127.0.0.1:5433` · `:6380` · `:11435` | só loopback |
 
-### Backend, integrações e execução
-| Funcionalidade | Estado | Evidência |
-|---|---|---|
-| API REST (imóveis públicos, leads, dashboard, handoff, eventos, config, governança, auditoria) | Concluída | `services/api`, `tests/test_api.py` |
-| Canal Telegram (long polling, `getUpdates`) | Concluída | `services/channels/telegram` |
-| Canal Web (WebSocket) | Concluída | `services/channels/local` |
-| Follow-up automático e ingestão de imóveis | Concluída | `services/scheduler`, `services/ingestion` |
-| Ponte com o CRM por MCP sobre HTTP | Concluída | `services/crm`, `shared/sdr_shared/adapters/crm/via_mcp.py` |
-| Integração Google Agenda do corretor | Parcial | `tools/agenda.py`, `adapters/google/calendario.py`; opcional, degrada para a agenda do próprio banco |
-| Ambiente completo em `docker compose` (banco, fila, workers, canais, API, front-ends e CRM) | Concluída | [`local/docker-compose.yml`](local/docker-compose.yml) |
+Variáveis de ambiente, uma a uma: [Configuração](docs/getting-started/configuracao.md). Execução
+fora do compose, validação e problemas comuns: [Primeiros passos](docs/getting-started/docker.md),
+[Validação](docs/getting-started/validacao.md), [Troubleshooting](docs/quality/troubleshooting.md).
 
-> As funcionalidades marcadas como **Parcial** não devem ser tratadas como prontas para produção.
+## 5. Arquitetura
 
----
-
-## 5. Tecnologias utilizadas
-
-Versões obtidas dos arquivos do projeto (`package.json`, `pyproject.toml`, `settings.py`,
-`local/docker-compose.yml`, `.github/workflows/ci.yml`). Onde a versão não está fixada no
-repositório, consta `A confirmar`.
-
-| Categoria | Tecnologia | Versão | Finalidade |
-|---|---|---:|---|
-| Frontend | React | ^18.3.1 | Interface do site e do painel |
-| Frontend | Vite | ^5.4.0 | Build e servidor de desenvolvimento |
-| Frontend | TypeScript | ^5.5.3 | Tipagem estática (build estrito) |
-| Frontend | Tailwind CSS | ^3.4.0 | Estilos |
-| Frontend | TanStack React Query | ^5.51.0 | Cache e sincronização de dados |
-| Frontend | Zustand | ^4.5.0 | Estado do chat (site) |
-| Frontend | Recharts | ^2.12.0 | Gráficos do painel |
-| Frontend | vite-plugin-pwa | ^0.20.0 | PWA do site |
-| Backend | Python | 3.12 | Linguagem dos serviços |
-| Backend | FastAPI | >=0.115 | API REST e app de canal (HTTP + WebSocket) |
-| LLM/IA | LangGraph | >=0.2 | Orquestração do grafo multiagente |
-| LLM/IA | LangChain Core | >=0.3 | Abstrações de mensagens/modelos |
-| LLM/IA | Anthropic — Claude Sonnet | `claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
-| LLM/IA | Anthropic — Claude Haiku | `claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
-| LLM/IA | Provedores aceitos | — | `anthropic` (padrão), `openai` e `ollama`, via `SDR_LLM_PROVIDER`; reserva em `SDR_LLM_PROVIDER_FALLBACK` |
-| RAG/Embeddings | Ollama bge-m3 | 1024 dims | Provedor único de embeddings — é o que dá as dimensões que o schema espera |
-| RAG | pgvector no mesmo Postgres | — | Imóveis e documentos institucionais (ADR-0001) |
-| Áudio | faster-whisper | in-process | Transcreve a voz do Telegram; `SDR_TRANSCRICAO_PROVIDER` |
-| Banco de dados | PostgreSQL + pgvector | `pgvector/pgvector:pg16` | Dados relacionais + vetores, na mesma base (ADR-0004) |
-| Fila / assíncrono | Redis Streams | `redis:7-alpine` | Tópicos e locks entre canais, agente e scheduler |
-| Autenticação | Token estático `SDR_PAINEL_TOKEN` | — | Acesso ao painel e ao WebSocket `papel=dashboard` (ADR-0008) |
-| Integração | MCP sobre HTTP | `services/crm` | Ponte da Mora com o CRM da imobiliária |
-| Containers | Docker + Docker Compose | — | Todo o ambiente de execução |
-| CI/CD | GitHub Actions | — | `ruff`, cobertura, harness com dublês, build + `eslint` dos front-ends |
-| Observabilidade | Postgres (tabelas de saúde) + `/health` + logs JSON | — | Observabilidade leve (ADR-0011) |
-| Observabilidade | Langfuse | `langfuse/langfuse:2` | Tracing de LLM (opcional, `--profile observability`) |
-| Testes | pytest | — | Testes de backend |
-
----
-
-## 6. Arquitetura da solução
-
-### Visão geral
-
-O sistema separa o **cérebro** (o agente) dos **canais** (Telegram, web, CLI). O agente não sabe por
-qual canal a mensagem chegou: cada canal traduz `evento do provedor → MensagemNormalizada` e
-`RespostaAgente → formato do canal`. A única dependência cruzada permitida é o pacote `shared/`.
-
-Tudo roda como container no [`local/docker-compose.yml`](local/docker-compose.yml). Cada dependência
-externa entra por uma porta (`shared/sdr_shared/ports`), resolvida por
-`shared/sdr_shared/adapters/`; hoje broker, scheduler e embeddings têm uma implementação cada, e
-`SDR_PROFILE` decide apenas se o token estático de desenvolvimento vale.
+O sistema separa o **cérebro** (o agente) dos **canais** (site, Telegram) e do **sistema comercial**
+(o CRM). O agente não sabe por qual canal a mensagem chegou: cada canal traduz o evento do provedor
+para uma `MensagemNormalizada` e a `RespostaAgente` de volta para o formato do canal. O CRM é um
+sistema à parte — banco, API, login e interface próprios — e a Mora entra nele por uma única porta,
+o servidor MCP, com credencial de serviço. A única dependência cruzada permitida entre serviços é o
+pacote `shared/`.
 
 ```mermaid
 flowchart LR
@@ -193,726 +173,273 @@ flowchart LR
     SITE["apps/web<br/>site vitrine + chat (:5173)"]
     TG["Telegram<br/>Bot API (long polling)"]
   end
-
   subgraph Canais["services/channels"]
-    CH["channels :8001<br/>HTTP + WebSocket (local)"]
-    TGW["telegram-in / telegram-out"]
+    CH["local :8001<br/>HTTP + WebSocket"]
+    TGW["telegram<br/>entrada / saída"]
   end
-
-  Q[["Redis Streams<br/>tópicos e locks"]]
-
-  subgraph Agente["services/agent — grafo LangGraph"]
-    SUP["Supervisor"]
-    NODES["Qualificador · Consultor<br/>Agendador · Follow-up<br/>Handoff · Resumidor<br/>Reativador"]
+  Q[["Redis Streams<br/>inbound · outbound-* · resumir<br/>lock por lead"]]
+  subgraph Agente["services/agent — LangGraph"]
+    SUP["Supervisor<br/>regras → LLM"]
+    NODES["Qualificador · Consultor · Agendador<br/>Informações · Handoff · Recusa<br/>Follow-up · Reativador · Resumidor"]
     SUP --> NODES
   end
-
-  LLM["LLM<br/>Anthropic · OpenAI · Ollama"]
-  DB[("Postgres 16 + pgvector<br/>container db")]
-  CRM["crm-mcp :8200<br/>servidor MCP do CRM"]
-  API["services/api :8000<br/>FastAPI"]
-  DASH["apps/dashboard :5174<br/>painel do corretor"]
-
-  SITE --> CH
-  TG --> TGW
-  CH --> Q
-  TGW --> Q
+  LLM["LLM por papel<br/>Anthropic · OpenAI · Ollama"]
+  DB[("Postgres 16 + pgvector<br/>banco sdr: leads, imóveis, docs,<br/>checkpoint, saúde")]
+  SCH["services/scheduler<br/>follow-up · saúde · pendências do CRM · acervo"]
+  API["services/api :8000"]
+  DASH["apps/dashboard :5174<br/>painel da Mora"]
+  subgraph CRMBOX["CRM da imobiliária (sistema à parte)"]
+    MCP["crm-mcp :8200<br/>18 ferramentas"]
+    CRMAPI["crm-api :8100"]
+    CRMDB[("banco crm")]
+    CRMWEB["apps/crm :3000"]
+    MCP --> CRMAPI --> CRMDB
+    CRMWEB --> CRMAPI
+  end
+  SITE --> CH --> Q
+  TG --> TGW --> Q
   Q --> Agente
   Agente --> LLM
   Agente --> DB
-  Agente --> CRM
+  Agente -->|porta CRM| MCP
   Agente -->|resposta neutra| Q
   Q --> CH
   Q --> TGW
   API --> DB
   DASH --> API
   DASH -->|tempo real| CH
+  SCH --> DB
+  SCH --> Q
+  SCH -->|reindexa acervo| MCP
 ```
 
-**Componentes e responsabilidades.**
-- **`apps/web`** — site vitrine, catálogo e widget de chat; porta de entrada do cliente.
-- **`apps/dashboard`** — painel do corretor (funil, conversas, agenda, imóveis, governança, auditoria).
-- **`services/channels/local`** — chat do site: HTTP + WebSocket (`:8001`).
-- **`services/channels/telegram`** — long polling de entrada e worker de saída.
-- **`services/agent`** — grafo multiagente; único componente que fala com o LLM.
-- **`services/api`** — API REST (imóveis públicos, leads, dashboard, handoff, config, governança).
-- **`services/scheduler`** — follow-up automático (agenda e cancela por lead).
-- **`services/ingestion`** — carga de imóveis e documentos, e geração de embeddings.
-- **`services/crm`** — o CRM da imobiliária: sistema à parte, com banco próprio, API REST e o
-  servidor MCP por onde a Mora entra.
-- **`shared/`** — modelos, contratos, repositórios (SQL + pgvector), portas e adaptadores.
-- **`local/`** — o `docker-compose.yml` que sobe tudo isso.
-
-### Fluxo principal de atendimento (máquina de estados do lead)
-
-```mermaid
-stateDiagram-v2
-  [*] --> Novo: primeira mensagem / navegação no site
-  Novo --> Qualificando: intenção identificada
-  Qualificando --> Qualificando: preenche cartão (região, preço, quartos, urgência)
-  Qualificando --> Inativo: sem resposta (2h / 24h / 72h)
-  Inativo --> Qualificando: follow-up respondido
-  Inativo --> Frio: 3 follow-ups sem resposta
-  Qualificando --> Qualificado: cartão completo + score
-  Qualificado --> Agendado: visita marcada
-  Qualificado --> Handoff: corretor assume
-  Agendado --> Handoff: resumo gerado para o corretor
-  Handoff --> [*]
-```
-
-O **cartão de qualificação** (`shared/sdr_shared/models/lead.py`) é a fonte da verdade: a cada turno o
-qualificador recebe a lista de campos faltantes e conduz a conversa para preenchê-los. O score de
-temperatura deriva do cartão mais sinais de comportamento (tempo de resposta, pediu visita, abriu
-imóveis no site).
-
-### Fluxo do agente / LLM
-
-```mermaid
-flowchart TD
-  MSG["MensagemNormalizada"] --> ESCOPO{"Guardrail de escopo<br/>(determinístico)"}
-  ESCOPO -->|fora do escopo / injeção| RECUSA["Recusa (texto fixo)<br/>sem chamar o LLM"]
-  ESCOPO -->|ok| SUP{"Supervisor<br/>roteamento"}
-  SUP -->|regra determinística| NODE["Nó especialista"]
-  SUP -->|ambíguo| HAIKU["Haiku decide<br/>(saída restrita a 4 nós)"]
-  HAIKU --> NODE
-  NODE --> RAG["RAG de imóveis<br/>(quando consultor)"]
-  NODE --> LLMCALL["Chamada ao LLM<br/>com persona + blindagem"]
-  LLMCALL --> SANEAR["Saneamento de saída<br/>(vazamento, PII, links)"]
-  SANEAR --> RESP["RespostaAgente"]
-```
-
-O texto do cliente nunca é concatenado cru no prompt: entra em um bloco delimitado por sentinela
-aleatória, com um cabeçalho de blindagem que instrui o modelo a tratá-lo como dado, não instrução. A
-resposta do modelo passa por um saneamento final antes de virar mensagem. Detalhes em
-[Segurança e privacidade](#14-segurança-e-privacidade).
-
-### Diagrama de execução (docker compose)
-
-```mermaid
-flowchart TB
-  subgraph Host["Máquina de quem avalia (docker compose)"]
-    subgraph Front["Front-ends (Vite)"]
-      W["web :5173"]
-      D["dashboard :5174"]
-      CW["crm-web :3000"]
-    end
-    A["api :8000"]
-    C["channels :8001 (HTTP + WS)"]
-    AG["agent (worker)"]
-    RS["resumidor (worker)"]
-    RT["reativador (worker)"]
-    SC["scheduler (worker)"]
-    TI["telegram-in / telegram-out<br/>(long polling)"]
-    CA["crm-api :8100"]
-    CM["crm-mcp :8200"]
-    PG[("db :5433 → 5432<br/>Postgres + pgvector<br/>bancos sdr e crm")]
-    RD[("redis :6380 → 6379")]
-    OL[("ollama :11435<br/>--profile ollama")]
-    LF["langfuse :3000<br/>--profile observability"]
-  end
-  W --> A
-  W --> C
-  D --> A
-  D --> C
-  CW --> CA
-  A --> PG
-  C --> RD
-  AG --> RD
-  AG --> PG
-  AG --> OL
-  AG --> CM
-  RS --> RD
-  RT --> RD
-  SC --> RD
-  SC --> PG
-  TI --> RD
-  CM --> CA
-  CA --> PG
-```
-
-As portas do host (5433, 6380, 11435) são deslocadas para não colidir com instâncias nativas de
-Postgres, Redis e Ollama e podem ser ajustadas por `DB_HOST_PORT`, `REDIS_HOST_PORT` e
-`OLLAMA_HOST_PORT`. O `crm-web` e o Langfuse disputam a porta 3000 — não suba os dois ao mesmo
-tempo. Ver [`local/README.md`](local/README.md).
-
----
-
-## 7. Decisões tecnológicas
-
-Cada decisão está registrada como ADR (Architecture Decision Record) em [`docs/adr`](docs/adr).
-Resumo das principais:
-
-- **RAG sobre Postgres + pgvector, com fusão de ranking** ([ADR-0001](docs/adr/0001-rag-com-postgres-pgvector.md)).
-  Imóvel e documento institucional no mesmo banco que o painel consulta, com piso de similaridade
-  (0,35) e reescrita de consulta. **Trade-off:** a fusão léxica (RRF) está implementada mas
-  desligada por padrão (`SDR_RAG_LEXICO`) — o A/B piorou o recall (31,9% → 29,8%).
-- **Runtime do agente: container local consumindo uma fila** ([ADR-0002](docs/adr/0002-runtime-do-agente-em-container.md)).
-  Um turno leva de 20 a 40 segundos e não cabe no fio da requisição HTTP; o agente é um worker que
-  consome o tópico `inbound` e publica na saída do canal.
-- **Canais como adaptadores sem lógica** ([ADR-0003](docs/adr/0003-canais-como-adaptadores.md)).
-  Permite trocar/adicionar canal sem tocar no agente.
-- **Um Postgres para tudo, em vez de um banco por finalidade** ([ADR-0004](docs/adr/0004-postgres-como-banco-unico.md)).
-  Registro transacional, vetores, agregação do painel e o checkpointer do grafo na mesma base.
-- **Telegram em vez de WhatsApp como canal externo** ([ADR-0007](docs/adr/0007-telegram-em-vez-de-whatsapp.md)).
-  Bot criado na hora pelo `@BotFather` e long polling, sem verificação de negócio e sem URL
-  pública. O WhatsApp saiu do código: voltar significa escrever o adaptador de novo.
-- **Cada porta privada carrega o seu próprio portão** ([ADR-0008](docs/adr/0008-portoes-de-autenticacao-proprios.md)).
-  Sem gateway único na frente, cada porta privada (API e WebSocket do painel) confere a credencial
-  por conta própria.
-- **Modelo por nível, editável no painel** ([ADR-0010](docs/adr/0010-modelo-por-nivel-e-troca-pelo-painel.md)).
-  Sonnet na conversa, Haiku em roteamento/extração; ajustável sem redeploy.
-- **Observabilidade leve no Postgres** ([ADR-0011](docs/adr/0011-observabilidade-leve-no-postgres.md)),
-  que **revogou** a stack OpenTelemetry+Grafana ([ADR-0005](docs/adr/0005-observabilidade-com-opentelemetry-e-grafana.md))
-  por consumo de recursos na máquina de desenvolvimento.
-
----
-
-## 8. Pré-requisitos
-
-**Para subir o ambiente (é o único caminho — não há nada implantado):**
-- Git.
-- Docker e Docker Compose.
-- Chave do provedor de LLM escolhido (`ANTHROPIC_API_KEY` ou `OPENAI_API_KEY`) — ou Ollama, para
-  rodar 100% local e sem custo, aceitando qualidade de conversa menor.
-- (Opcional) Token de bot do Telegram, obtido no `@BotFather`, para exercitar o canal externo. Sem
-  ele a Mora ainda atende pelo chat do site e pela CLI.
-
-**Para rodar os testes de backend ou executar serviços fora do compose:**
-- Python **3.12** (a versão da CI).
-- `pip` ou [`uv`](https://docs.astral.sh/uv/) como gerenciador de pacotes (o `Makefile` usa `uv`).
-- Node.js **20** para os front-ends.
-
-> Requisitos de hardware mínimo/recomendado: `A confirmar`. O uso de Ollama local aumenta bastante o
-> consumo de CPU/RAM (ver [`docs/quality/observabilidade.md`](docs/quality/observabilidade.md)).
-
----
-
-## 9. Configuração das variáveis de ambiente
-
-As variáveis do agente usam o prefixo `SDR_`; as chaves de provedor (`ANTHROPIC_API_KEY`,
-`OPENAI_API_KEY`) e as do CRM (`CRM_MCP_TOKEN`, `CRM_API_TOKEN`) não, porque são os nomes que as
-bibliotecas e o servidor MCP procuram. O arquivo de referência é [`.env.example`](.env.example); o
-ambiente do compose tem o seu em [`local/.env.example`](local/.env.example). Os valores abaixo são
-**fictícios** — não use segredos reais no repositório.
-
-Crie seu arquivo a partir do exemplo:
-
-```bash
-cp .env.example .env                    # execução fora do compose
-cp -n local/.env.example local/.env     # docker compose (-n não sobrescreve o que já existe)
-make check-env                          # confere o local/.env antes de subir nada
-```
-
-| Variável | Obrigatória | Exemplo seguro | Descrição |
-|---|---|---|---|
-| `SDR_ENV` | Não | `dev` | Ambiente lógico. Padrão `dev`. |
-| `SDR_PROFILE` | Não | `local` | `local` (padrão) ou `producao`. Decide **uma** coisa: se o token estático de desenvolvimento vale. |
-| `SDR_DATABASE_DSN` | Sim | `postgresql://sdr:sdr@localhost:5432/sdr` | DSN do Postgres. |
-| `SDR_LLM_PROVIDER` | Não | `anthropic` | `anthropic` (padrão), `openai` ou `ollama`. Outro valor levanta erro explicando. |
-| `SDR_LLM_PROVIDER_FALLBACK` | Não | `openai` | Provedor de reserva quando o primário falha. Vazio = sem reserva. |
-| `SDR_MODEL_CONVERSA` | Não | `claude-sonnet-4-5` | Modelo da conversa. |
-| `SDR_MODEL_ROTEAMENTO` | Não | `claude-haiku-4-5` | Modelo de roteamento/extração. |
-| `SDR_ANTHROPIC_WORKSPACE_ID` | Não | `wrkspc_exemplo` | Só para chave de organização; chave já escopada deixa vazio. |
-| `SDR_EMBEDDINGS_PROVIDER` | Não | `ollama` | Único valor aceito: o `bge-m3` dá as 1024 dimensões que o schema espera. |
-| `SDR_OLLAMA_EMBEDDING_MODEL` | Não | `bge-m3` | Trocar exige alterar `shared/sdr_shared/db/schema.sql`. |
-| `SDR_OLLAMA_URL` | Não | `http://localhost:11434` | Endereço do Ollama (no compose, `http://ollama:11434`). |
-| `SDR_RAG_LEXICO` | Não | *(vazio)* | `1` liga a fusão léxica (RRF) do RAG institucional, desligada por padrão. |
-| `SDR_TRANSCRICAO_PROVIDER` | Não | `auto` | `auto`, `whisper_local` ou `off` (não transcreve; o cliente é convidado a escrever). |
-| `SDR_WHISPER_MODEL` | Não | `small` | Tamanho do modelo faster-whisper (`tiny`…`large-v3`). |
-| `SDR_LLM_TIMEOUT_S` | Não | `45` | Timeout por turno; acima disso o cliente recebe o fallback. |
-| `SDR_REDIS_URL` | Não | `redis://localhost:6379/0` | Fila (no compose, `redis://redis:6379/0`). |
-| `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot, do `@BotFather`. Sem ele, sobram o chat do site e a CLI. |
-| `SDR_TELEGRAM_BOT_USERNAME` | Não | `mora_vertice_bot` | Usuário do bot, para montar o link `t.me/<usuario>`. |
-| `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site. Sem valor, as sessões caem a cada reinício. |
-| `SDR_PAINEL_TOKEN` | Sim (fora do perfil `local`) | `exemplo-token-painel` | Credencial do painel na API e no WebSocket `papel=dashboard`. No perfil `local`, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. |
-| `SDR_PUBLIC_API_URL` | Não | `http://localhost:8000` | Base para montar a URL absoluta das fotos (`/fotos/...`) fora da API. |
-| `SDR_CRM_URL` | Não | `http://crm-mcp:8200/mcp` | Endpoint do servidor **MCP** do CRM (não a REST). Vazio = ponte desligada. |
-| `SDR_CRM_TOKEN` | Não | *(o valor de `CRM_MCP_TOKEN`)* | Credencial do agente no servidor MCP. |
-| `SDR_CORS_ORIGINS` | Recomendada (produção) | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
-| `SDR_GOOGLE_CLIENT_ID` | Não | `exemplo.apps.googleusercontent.com` | OAuth do Google Agenda (opcional). |
-| `SDR_GOOGLE_CLIENT_SECRET` | Não | `exemplo-secret` | OAuth do Google Agenda (opcional). |
-| `SDR_GOOGLE_REDIRECT_URI` | Não | `http://localhost:8000/calendario/callback` | URI de retorno do OAuth. |
-
-Duas variáveis sem o prefixo `SDR_` completam a ponte com o CRM, e trocá-las uma pela outra dá 401
-sem explicação: **`CRM_API_TOKEN`** é a credencial do servidor MCP na REST do CRM (emitida por
-`make crm-token`) e **`CRM_MCP_TOKEN`** é a credencial de quem se conecta ao servidor MCP.
-
-Sem `SDR_GOOGLE_*`, a Mora usa a grade interna de horários e as visitas continuam sendo marcadas.
-Sem `CRM_MCP_TOKEN`, a Mora roda sozinha, sem CRM.
-
----
-
-## 10. Como executar localmente
-
-### Opção A — Docker Compose (caminho recomendado)
-
-```bash
-# 1. Clonar e entrar no diretório
-git clone <url-do-repositorio>
-cd agent-sdr-morai
-
-# 2. Configurar o ambiente e conferir antes de subir nada
-cp -n local/.env.example local/.env
-# edite local/.env: ANTHROPIC_API_KEY e, se for usar o CRM, CRM_MCP_TOKEN
-make check-env
-
-# 3. Subir tudo, em primeiro plano. `make local` sobe o mesmo sem o serviço do Ollama.
-make local-ollama
-# equivalente a: cd local && docker compose --profile ollama up --build
-
-# --- daqui em diante, em OUTRO terminal, com o compose no ar ---
-
-# 4. Bancos e massa, na ordem das dependências
-make preparar
-
-# 5. Credencial da Mora no CRM (aparece uma vez; cole em CRM_API_TOKEN no local/.env)
-make crm-token
-cd local && docker compose up -d crm-mcp agent && cd ..
-
-# 6. Índices: acervo e documentos institucionais
-make ollama-pull      # baixa o bge-m3 (embeddings); demora, uma vez só
-make seed
-make docs-kb
-
-# 7. Encerrar o ambiente
-cd local && docker compose down          # use down -v para apagar também os volumes (Postgres/Ollama)
-```
-
-`make` sozinho imprime essa ordem — é o alvo padrão, e é a fonte que se mantém em dia com o
-Makefile.
-
-`make local` e `make local-ollama` executam `scripts/check_env.py` antes de subir.
-
-**Sobre o schema:** `local/00-crm.sql` e `shared/sdr_shared/db/schema.sql` estão montados em
-`docker-entrypoint-initdb.d`, mas o Postgres só executa esses scripts quando o **volume é novo**.
-Num volume que já existia — o caso de quem acompanha o projeto há algum tempo — eles nunca rodam, e
-o sintoma é `FATAL: database "crm" does not exist` sem nada explicando a causa. Por isso `make
-preparar` cria e aplica tudo explicitamente, e é idempotente: rodar de novo não estraga nada.
-
-**Sem CRM:** a Mora roda sozinha. Pule os passos 4 e 5 (exceto `make migrate`, que o `preparar`
-inclui) e siga para o 6.
-
-### Opção B — Execução fora do compose (desenvolvimento)
-
-Requer Postgres com pgvector acessível e Python 3.12. Instale as dependências e aplique o schema:
-
-```bash
-make setup                                # instala serviços (uv/pip) e front-ends (npm)
-psql "$SDR_DATABASE_DSN" -f shared/sdr_shared/db/schema.sql
-```
-
-Suba cada processo em um terminal (os comandos espelham o `local/docker-compose.yml`):
-
-```bash
-# API REST
-cd services/api/src && uvicorn api.main:app --port 8000 --reload
-
-# Canais (HTTP + WebSocket)
-cd services/channels/local && uvicorn app:app --port 8001 --reload
-
-# Agente (worker)
-cd services/agent/src && python -c "from agent.handler import local_worker; local_worker()"
-
-# Front-ends
-cd apps/web && npm run dev
-cd apps/dashboard && npm run dev -- --port 5174
-```
-
-Uma alternativa via linha de comando, sem canais externos, é a CLI do agente:
-
-```bash
-make cli                                  # conversa com a Mora no terminal
-```
-
-### Sobre implantação
-
-Não há ambiente implantado, e isso é uma escolha: a entrega roda inteira na máquina de quem avalia,
-com `docker compose`, sem conta em provedor de nuvem, sem túnel e sem URL pública. O que existiu de
-infraestrutura como código foi removido do repositório junto com os adaptadores que a acompanhavam
-([ADR-0002](docs/adr/0002-runtime-do-agente-em-container.md)).
-
-### Serviços e portas
-
-| Serviço | URL local | Porta | Health check |
-|---|---|---:|---|
-| Site (PWA) | http://localhost:5173 | 5173 | — (Vite dev server) |
-| Painel | http://localhost:5174 | 5174 | — (Vite dev server) |
-| API | http://localhost:8000 | 8000 | `GET /health` (503 quando degradado) |
-| API (OpenAPI) | http://localhost:8000/docs | 8000 | — |
-| Canais (HTTP/WS) | http://localhost:8001 · ws://localhost:8001/ws | 8001 | `GET /health` (503 se o Redis cair) |
-| Agente | worker (sem HTTP) | — | via tabela de saúde no Postgres (ADR-0011) |
-| CRM — API | http://localhost:8100 | 8100 | `GET /health/ready` |
-| CRM — servidor MCP | http://localhost:8200/mcp | 8200 | `GET /saude` |
-| CRM — painel | http://localhost:3000 | 3000 | — (Vite dev server) |
-| Langfuse (opcional) | http://localhost:3000 | 3000 | — (mesma porta do painel do CRM) |
-| Postgres / Redis / Ollama | host: 5433 / 6380 / 11435 | — | `pg_isready` (db) |
-
-Validação rápida após subir:
-
-```bash
-curl -s http://localhost:8000/health      # {"ok": true, "agente": "Mora", ...}
-curl -s "http://localhost:8000/imoveis?limite=3"
-```
-
----
-
-## 11. Manual de uso
-
-### 11.1 Agente (Mora)
-
-- **Como iniciar.** Abra o site (`http://localhost:5173`) e clique em "Falar com a Mora", ou envie
-  uma mensagem ao bot do Telegram configurado. A Mora se apresenta na primeira mensagem.
-- **Capacidades.** Entende intenção (comprar, alugar, investir), coleta região, faixa de preço,
-  quartos e urgência, recomenda imóveis do catálogo com explicação, oferece horários de visita e
-  encaminha para um corretor quando solicitado.
-- **Exemplos de mensagens.**
-  - "Quero um apartamento de 2 quartos em Pinheiros até 700 mil."
-  - "Tem casa para alugar até 3 mil na zona sul?"
-  - "Quero investir, qual a rentabilidade?"
-  - "Gostaria de agendar uma visita."
-  - "Quero falar com um corretor."
-- **Comportamento esperado.** Respostas curtas (até 3 frases), uma pergunta por vez, sem inventar
-  imóveis, preços ou disponibilidade. Assuntos fora do mercado imobiliário são recusados com
-  educação e a conversa é reconduzida.
-- **Reiniciar/encerrar.** No site, a sessão é anônima e vinculada a um `session_id`; recarregar ou
-  limpar o armazenamento do navegador inicia uma nova conversa. No Telegram, a conversa segue o
-  histórico do chat.
-- **Respostas incorretas.** Se a resposta não fizer sentido ou o cliente insistir fora do escopo, a
-  Mora oferece o contato de um corretor humano. Falhas técnicas encaminham automaticamente ao corretor.
-- **Uso responsável.** A Mora é uma assistente de demonstração; o conteúdo gerado deve ser conferido
-  por um corretor antes de qualquer compromisso comercial.
-
-### 11.2 Site
-
-- **Acesso.** `http://localhost:5173` (não requer login).
-- **Navegação.** Página inicial com destaques, catálogo (`/imoveis`), detalhe do imóvel e favoritos.
-- **Pesquisa e filtros.** Busca por texto e filtros por operação (venda/aluguel), região, faixa de
-  preço e quartos.
-- **Resultados.** Cards com foto, preço e características; a página de detalhe traz galeria e CTA para
-  conversar com a Mora sobre aquele imóvel.
-- **Jornadas principais.** Buscar imóvel → abrir detalhe → conversar com a Mora → agendar visita, ou
-  continuar a conversa no Telegram mantendo o contexto.
-
-### 11.3 Painel administrativo
-
-- **Acesso e autenticação.** `http://localhost:5174`. A autenticação é um token estático
-  (`SDR_PAINEL_TOKEN`), que vale tanto para o header `Authorization` da API quanto para a conexão
-  WebSocket `papel=dashboard`. No perfil `local`, vazio vira `dev-token`; fora dele, vazio não
-  aceita nada (ADR-0008).
-- **Perfis e permissões.** A API distingue rotas públicas, de corretor, de administração e de
-  operação (ver tags em [API](#12-api)). O detalhamento de papéis por usuário é `A confirmar`.
-- **Cadastro e manutenção.** Gestão de imóveis (incluindo upload/reordenação de fotos), corretores e
-  configurações do agente.
-- **Configuração do agente.** Ajuste de follow-up, agenda, área de cobertura, handoff e modelos de IA
-  por nível — sem redeploy (ADR-0010).
-- **Acompanhamento.** Funil de leads, conversas ao vivo, ficha do cliente e agenda de visitas.
-- **Dashboards e governança.** Visão geral com KPIs e a aba de governança de IA (tokens, custo por
-  modelo, limites e orçamento com degradação automática).
-- **Auditoria.** Registro de tudo que altera o sistema, com exportação.
-- **Operações sensíveis.** Assumir/devolver lead e responder pelo corretor enviam mensagens reais aos
-  canais do lead; alterar limites de orçamento afeta o comportamento do agente (degradar/bloquear).
-
-> Não utilize credenciais reais no repositório nem em exemplos.
-
----
-
-## 12. API
-
-- **URL base (local):** `http://localhost:8000`
-- **Documentação interativa (OpenAPI):** `http://localhost:8000/docs`
-- **Autenticação:** rotas de corretor/admin exigem `Authorization: Bearer <SDR_PAINEL_TOKEN>` (em
-  desenvolvimento, `dev-token`) — o botão **Authorize** do Swagger aceita o mesmo valor. Rotas
-  públicas (`/imoveis`, `/eventos`, `/fotos/...`) não exigem credencial.
-
-Endpoints essenciais (a lista completa está no OpenAPI):
-
-| Método | Rota | Acesso | Descrição |
-|---|---|---|---|
-| GET | `/health` | público | Saúde do sistema; 503 quando degradado. |
-| GET | `/imoveis` | público | Lista imóveis com filtros (`operacao`, `regiao`, `preco_max`, `quartos`, `limite`). |
-| GET | `/imoveis/busca` | público | Busca com filtros adicionais (bairro etc.). |
-| GET | `/imoveis/{imovel_id}` | público | Detalhe do imóvel. |
-| POST | `/eventos` | público | Registra evento de navegação do site (alimenta o cartão do lead). |
-| GET | `/leads` | corretor | Lista leads por estágio/temperatura/corretor. |
-| GET | `/leads/{lead_id}` | corretor | Detalhe do lead. |
-| POST | `/leads/{lead_id}/analisar` | corretor | Solicita novo briefing/análise (assíncrono). |
-| POST | `/handoff/{lead_id}/assumir` | corretor | Corretor assume a conversa. |
-| POST | `/handoff/{lead_id}/responder` | corretor | Envia mensagem do corretor pelos canais do lead. |
-| GET | `/dashboard/metricas` | corretor | KPIs do período com variação. |
-| GET | `/governanca/uso` | admin | Consumo de LLM (tokens, custo, série diária). |
-| GET | `/auditoria` | admin | Registro de auditoria. |
-
-Exemplo de requisição/resposta (valores ilustrativos):
-
-```bash
-curl -s "http://localhost:8000/imoveis?operacao=venda&quartos=2&limite=1"
-```
-
-```json
-[
-  {
-    "id": "IMOVEL-001",
-    "titulo": "Apartamento 2q · Moema",
-    "preco": 800000,
-    "bairro": "Moema",
-    "operacao": "venda"
-  }
-]
-```
-
-**Códigos de status e erros.** A API usa os padrões do FastAPI: `200/201/202/204` para sucesso,
-`401` para não autenticado, `404` para recurso inexistente e `503` no `/health` quando degradado.
-
-> Consulte o OpenAPI em `/docs` para o contrato completo; este README lista apenas o essencial.
-
----
-
-## 13. Performance
-
-Estratégias observadas no código e na configuração:
-
-- **Roteamento econômico.** Roteamento e extração usam Haiku; a conversa usa Sonnet (ADR-0010) — reduz
-  custo e latência por turno.
-- **Roteamento determinístico primeiro.** O supervisor decide por regra e só chama o LLM na ambiguidade.
-- **RAG híbrido com cascata por localidade.** Evita buscas amplas desnecessárias.
-- **Timeout de LLM.** `SDR_LLM_TIMEOUT_S` (padrão 45s); ao estourar, o cliente recebe fallback e o
-  lead é encaminhado ao corretor.
-- **Provedor de fallback.** `SDR_LLM_PROVIDER_FALLBACK` assume quando o primário falha.
-- **Governança de orçamento.** Ao estourar o limite, o agente degrada (modelo econômico) ou bloqueia
-  (encaminha ao corretor).
-- **Rate limiting por lead.** 5 mensagens/10s e 60 mensagens/hora (`guardrails/vazao.py`).
-- **Cache de dados no front-end.** TanStack React Query.
-- **Cache HTTP de imagens.** `Cache-Control: public, max-age=86400` nas fotos.
-- **Paginação/limite.** Endpoints de listagem aceitam `limite` com teto (ex.: imóveis até 200).
-
-**Benchmarks.** Não há benchmarks de desempenho medidos e versionados no repositório. Procedimento
-reprodutível sugerido para obtê-los:
-
-1. Subir o ambiente e popular o catálogo (`make local-ollama`, depois `make preparar` e `make seed`).
-2. Medir a latência ponta a ponta de um turno com um provedor fixo (ex.: Anthropic API) capturando o
-   `duracao_ms` já registrado nos logs do agente e na tabela de saúde (ADR-0011).
-3. Repetir por cenário (qualificação, consulta com RAG, agendamento) e registrar p50/p95.
-
-| Cenário | Métrica | Resultado | Ambiente |
-|---|---|---:|---|
-| — | — | A confirmar | A confirmar |
-
----
-
-## 14. Segurança e privacidade
-
-Legenda: **Implementado**, **Parcial**, **Recomendado**. A existência de um controle não implica que o
-sistema seja seguro para produção — esta é uma POC.
-
-| Controle | Estado | Detalhe |
+**Fluxo de um turno.** O canal publica em `sdr:inbound`; o worker do agente toma o lock do lead,
+roda o grafo (supervisor decide por regras determinísticas antes de gastar modelo; especialistas
+respondem), grava lead e histórico, publica a resposta em `outbound-<canal>`, espelha o turno no
+CRM e reagenda o follow-up. Se o CRM está fora do ar, o turno vai para `crm_pendencias` e o
+scheduler o republica depois. Sequência completa em
+[Fluxo do agente](docs/architecture/fluxo-agente.md); diagramas C4 em
+[Diagramas](docs/architecture/diagramas.md) e [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+### 5.1 Componentes da arquitetura
+
+Resumo — a página [Componentes](docs/architecture/componentes.md) detalha cada um (tabelas,
+tópicos, ferramentas, limites, o que acontece em falha):
+
+| Componente | O que é | Pontos que importam |
 |---|---|---|
-| Autenticação do painel | Implementado | Token estático `SDR_PAINEL_TOKEN` na API e no WebSocket, fail-closed fora do perfil `local` — ADR-0008 |
-| Autorização por área | Implementado | Rotas separadas (público/corretor/admin/operação) |
-| Sessão assinada do chat do site | Implementado | `SDR_SESSAO_SECRET` impede sequestro de sessão |
-| Sanitização de entrada | Implementado | Contrato `MensagemNormalizada`: trunca tamanho, remove controles/invisíveis |
-| Guardrail de escopo (prompt injection) | Implementado | `guardrails/escopo.py`: recusa reprogramação, homóglifos e off-topic sem chamar o LLM |
-| Blindagem de prompt | Implementado | Persona + cabeçalho de regras; texto do cliente em bloco com sentinela aleatória |
-| Saneamento de saída | Implementado | `guardrails/saida.py`: descarta vazamento de instrução, mascara PII (CPF/cartão), remove tags/código/links |
-| Injeção indireta via RAG | Implementado | Descrição de imóvel neutralizada antes de entrar no prompt |
-| Rate limiting | Implementado | Por lead (rajada e hora) — `guardrails/vazao.py` |
-| Auditoria | Implementado | Middleware registra tudo que altera o sistema |
-| CORS | Implementado | `SDR_CORS_ORIGINS` (vazio = `*`, só em dev) |
-| Separação de segredos do CRM | Implementado | `CRM_MCP_TOKEN` (agente → servidor MCP) e `CRM_API_TOKEN` (servidor MCP → REST) são distintos; o servidor MCP recusa subir sem o seu |
-| Gerenciamento de secrets | Parcial | `.env` fora do versionamento; `scripts/check_env.py` recusa valores de exemplo. Não há cofre |
-| Criptografia em trânsito | Parcial | Tudo roda em `localhost`, em HTTP. Expor este ambiente exigiria TLS na frente |
-| Tratamento de PII / LGPD | Parcial | Mascaramento na saída; página de privacidade no site. Política de retenção formal: recomendada |
-| Análise de dependências | Recomendado | Não há varredura automatizada no CI |
+| **Banco** — Postgres 16 + pgvector | Dois bancos no mesmo servidor: `sdr` (Mora) e `crm` (CRM), schemas em `shared/sdr_shared/db/schema.sql` e `services/crm/sdr_crm/db/schema.sql` | Leads, mensagens, cartão, `imoveis` (réplica sincronizada do catálogo do CRM, com vetor na mesma linha), `documentos` (RAG institucional), visitas, corretores, `crm_vinculo`/`crm_pendencias`, observabilidade (`turnos`, `saude`, `uso_llm`, `batimentos`), checkpoint do LangGraph. Schema reaplicado pelo `db-init` a cada `up`; pool por processo (`SDR_DB_POOL_MAX`) |
+| **Fila** — Redis 7 Streams | Mensageria entre canais e agente; **não** é cache de dados de negócio | Tópicos `sdr:inbound`, `outbound-web`, `outbound-telegram`, `resumir`, `events`; consumer group por tópico; lock por lead com validade derivada do orçamento do turno; retomada de pendentes no boot (PEL + `XAUTOCLAIM`); `profundidade()` alimenta a tela Saúde |
+| **RAG** — pgvector + embeddings | Busca de imóveis e de trechos institucionais | Filtros SQL + cosseno na mesma consulta; cascata bairro → vizinhos → região → cidade com o nível informado ao modelo; um embedding por busca; sem embedder cai para filtros; texto externo neutralizado antes do prompt; fotos painel > CRM > arquivo (ADR-0015) |
+| **MCP** — ponte Mora ↔ CRM | Servidor MCP do CRM (`crm-mcp`, 18 ferramentas) + porta `ports/crm.py` + adaptador `via_mcp.py` | A decisão fica no código, o MCP é transporte; sessão por turno; sessão inerte quando o CRM cai; idempotência por `operation_id`/`external_event_id`; fila de pendências com backoff; `exigir_humano` — credencial de serviço nunca escreve o acervo |
+| **Agentes** — LangGraph | Supervisor + 9 especialistas sobre um estado único, checkpoint em Postgres | Regras antes do LLM; `MAX_SALTOS=4` e guarda de repetição; poda do histórico 40 → 24; prompts blindados com sentinela; modelo por papel com fallback de provedor; governança de custo por nó e lead |
+| **Canais** | WebSocket do site (`services/channels/local`) e Telegram (`services/channels/telegram`) | Sessão do widget assinada pelo servidor; credencial do painel no primeiro quadro, nunca na URL; entrega de respostas pendentes na reconexão; transcrição de áudio |
+| **APIs e front-ends** | API da Mora + painel; API do CRM + interface do CRM | Painel: token da equipe, tempo real, auditoria; CRM: login por usuário (argon2, sessão 12 h, teto de tentativas), credenciais de serviço com scopes, rate limit, teto de corpo, idempotência |
+| **Scheduler** | Laço de 30 s | Follow-ups vencidos, amostra de saúde, drenagem de `crm_pendencias`, reindexação incremental do acervo (15 min) |
+| **Observabilidade leve** | Tabelas no Postgres (ADR-0011) | Sem stack externa: `turnos` com caminho e duração, `saude` com filas e latência, `uso_llm` com custo; a tela Saúde dá o veredito e o porquê |
 
-**Riscos conhecidos.** Rate limiting é por processo (não distribuído entre múltiplos workers);
-transcrição de áudio como vetor de injeção não tem teste específico — a transcrição entra no prompt
-pela mesma blindagem do texto do cliente, mas sem caso dedicado. Ver os comentários em
-`services/agent/src/agent/guardrails/`.
+Decisões e alternativas descartadas: [ADRs](docs/architecture/decisoes.md) (15) e
+[Registro de decisões](docs/decisions.md) (D-01 … D-19).
 
----
+## 6. Funcionalidades implementadas no agente
 
-## 15. Testes e qualidade
+A lista completa, com "como funciona por baixo", limites numéricos e comportamento em falha para
+cada item, está em **[Funcionalidades](docs/overview/funcionalidades.md)** (≈440 linhas). O que a
+Mora faz:
 
-- **Tipos de teste.** Sete suítes de integração de backend com Postgres real (pgvector) e LLM falso
-  (grafo do agente, API, canais, CRM, governança, segurança); build com TypeScript estrito nos
-  front-ends; análise estática (`ruff` no Python, `eslint` nos front-ends) e cobertura combinada com
-  piso. O harness de avaliação (`make eval`, `make eval-rag`) mede o **modelo** e fica fora do CI de
-  propósito: custa dinheiro e varia entre execuções.
-- **Executar backend:**
+- **Roteamento** — uma dúzia de regras determinísticas em ordem fixa (pedido de humano, opt-out, escopo,
+  visita, escolha de horário, pedir opções, pergunta institucional…) antes de qualquer chamada de
+  modelo; o LLM de roteamento só decide o resto, entre 5 destinos.
+- **Qualificação** — extração estruturada do cartão a cada mensagem (modelo barato, saída tipada),
+  merge que nunca apaga o que já sabia, campos obrigatórios por intenção, normalização de local
+  (bairro, região, ponto de referência, fora de cobertura), absorção de nome/telefone/e-mail, nova
+  oportunidade quando a intenção muda em lead encerrado, apresentação só na primeira mensagem.
+- **Recomendação** — até 3 imóveis por turno com motivo, sem repetir o que o cliente já viu ou
+  descartou (`interesses`), alternativa no bairro pedido quando o perfil exato não existe, e um
+  contexto de busca que proíbe o modelo de afirmar disponibilidade que não veio da lista.
+- **Agendamento** — horários do CRM (até 8) ou da grade interna, como botões; reserva em um turno,
+  pedido de contato antes de reservar; a confirmação é humana, no CRM; remarcação e cancelamento são
+  operações do CRM, refletidas no índice.
+- **Handoff** — corretor escolhido por região e carga; briefing e análise (sentimento,
+  engajamento, perfil de decisão, como abordar) gerados fora do turno do cliente; enquanto o humano
+  está no controle, a Mora cala e só notifica.
+- **Follow-up e reativação** — cadência `[120, 1440, 4320]` min × ritmo por temperatura
+  (quente 0,25 · morno 1 · frio 2), janela 08:00–20:00 em São Paulo, desligável no painel;
+  reativação de lead adormecido quando entra imóvel compatível (ADR-0013), com opt-out em uma frase.
+- **Perguntas institucionais** — RAG sobre a base de conhecimento (fiador, IPTU, documentação,
+  pets…), com citação da fonte e resposta honesta quando não há base.
+- **Segurança da conversa** — porteiro de escopo (com contagem de recusas e homóglifos), prompts
+  blindados por sentinela aleatória, nome e cartão em marcador próprio, saída saneada contra
+  vazamento de instrução e dados sensíveis, vazão de 5 msg/10 s e 60 msg/h por lead.
+- **Canais** — texto, botões e áudio (Telegram: `voice`, `audio`, `video_note`) com recibo
+  imediato; widget web com reconexão e entrega de pendentes.
+- **Memória** — histórico por lead em checkpoint Postgres com poda, cartão persistido,
+  reconhecimento de cliente que o CRM já conhece.
+- **Governança** — modelo por papel trocável pelo painel sem reiniciar, orçamento mensal/diário
+  com alerta, degradação e bloqueio, registro de tokens/custo/latência por nó e lead, fallback de
+  provedor.
+- **Resiliência** — turno falhou → resposta de fallback e handoff; sem Redis → recusa antes de
+  gastar modelo; sem embedder → busca por filtros; sem CRM → conversa segue e o turno entra na fila.
 
-  ```bash
-  make test            # host, Python 3.12 (cria e usa o banco sdr_test)
-  make test-docker     # dentro do container do agente
-  ```
+## 7. Modelos utilizados (decisões e comparativos)
 
-  Os bancos são **`sdr_test`** e **`crm_test`** (o CRM é sistema à parte também na suíte): as suítes
-  apagam tabelas e uma trava recusa rodar contra um banco sem "test" no nome
-  (`SDR_TEST_ALLOW_WIPE=1` ignora a trava). A suíte roda em Python 3.12 sem avisos de depreciação.
+Página completa: **[Modelos de linguagem](docs/architecture/modelos.md)**.
 
-- **Front-ends:**
+- **Um modelo por papel** (ADR-0010): `conversa` (temperatura 0,6), `roteamento`/extração
+  (temperatura 0, saída estruturada) e `analise` (herda o de conversa se não configurado). Padrões
+  do `.env`: `claude-sonnet-4-5` para conversa e `claude-haiku-4-5` para roteamento; tudo trocável
+  pelo painel, que só aceita modelo com preço cadastrado (Ollama dispensa).
+- **Provedores**: Anthropic (padrão), OpenAI (reserva — é o próprio fornecedor, sem intermediário
+  no dado do cliente), Ollama (100 % local, sem chave), OpenRouter só para bancada (ADR-0009). O id
+  do modelo é traduzido entre famílias na troca de provedor.
+- **Comparativo**: o painel compara os modelos de um provedor pelo **custo do seu uso real** (mix
+  de tokens por papel dos últimos dias), pela **latência medida** e por um **contrafactual**
+  ("quanto custaria o mês com o modelo X"), com recomendações de uso. Com a tabela de preços atual, a
+  ordem por custo é a mesma em todos os papéis (há teste prendendo isso):
+  `gpt-5-nano` < `gpt-5.6-luna` < `gpt-5-mini` < `claude-haiku-3-5` < `claude-haiku-4-5` <
+  `claude-sonnet-5` < `gpt-5.6-terra` < `claude-sonnet-4/4-5/4-6` < `gpt-5.6-sol` < `claude-opus-5`
+  < `gpt-6-astra` < `claude-opus-4/4-1`.
+- **Timeout e retries**: 45 s por chamada (5–180 pelo painel), uma tentativa extra por provedor,
+  pior caso do turno derivado disso e usado como validade do lock por lead.
+- **Embeddings** `bge-m3` (Ollama) ou `text-embedding-3-small` a 1024 dimensões — a dimensão é
+  fixa no schema. **Transcrição** faster-whisper `small`, CPU, `int8`, português.
+- **Qualidade**: o harness de avaliação (`make eval`, `make eval-rag`) existe e é testado no CI com
+  dublês; **não há resultado com modelo real versionado** — a página diz isso em vez de inventar
+  benchmark.
 
-  ```bash
-  cd apps/web && npm run build
-  cd apps/dashboard && npm run build
-  npm run a11y         # (apps/web) verificação de acessibilidade
+## 8. Detalhes do agente e subagentes
 
-  # lint: as dependências ficam FORA do package.json — o container `web` do compose roda
-  # `npm install` a cada subida da demo e não deve carregar ferramenta de CI junto.
-  npm i --no-save --legacy-peer-deps eslint@9 typescript-eslint@8 @eslint/js eslint-plugin-react-hooks@5 globals
-  npm run lint
-  ```
+Página completa: **[Fluxo do agente](docs/architecture/fluxo-agente.md)** (≈890 linhas: sequência
+do turno, `handler.processar` passo a passo na ordem do código, estado do grafo, supervisor com as
+regexes, cada especialista, cartão, contexto dos prompts, guardrails, estágios, follow-up, CRM,
+governança e uma tabela "mensagem → caminho esperado" tirada dos testes).
 
-- **Análise estática e cobertura:**
+Em resumo, um turno é:
 
-  ```bash
-  make lint            # ruff em todo o Python; a régua e o porquê de cada regra desligada em ruff.toml
-  make cobertura       # as mesmas sete suítes, medindo cobertura; falha abaixo do piso (.coveragerc)
-  make eval-fake       # valida o HARNESS com LLM falso e embedder de trigramas (não mede qualidade)
-  make eval-rag        # qualidade do RAG institucional com o embedder de verdade (exige ollama-pull)
-  ```
+1. **Antes do grafo** (`handler.py`): transcrição se áudio → PING no barramento (sem Redis, o turno
+   é recusado antes de gastar modelo) → vazão → carrega/cria o lead → registra a mensagem → se o
+   corretor está no controle, cala e notifica → bloqueio por orçamento → reconhecimento no CRM.
+2. **Supervisor**: aplica as regras na ordem (opt-out → escopo → humano → visita/horário → opções
+   → institucional → …); só na ambiguidade chama o modelo de roteamento. Cada turno reseta
+   `saltos`, `resposta`, `cartao_extraido_de` e `ultimo_no`; o grafo encerra ao ver `resposta`, ao
+   bater `MAX_SALTOS=4` ou quando um nó devolve sem mudar a decisão.
+3. **Especialistas**: `qualificador` (extrai e pergunta o que falta; passa ao consultor quando o
+   cartão fecha, sem extrair a mesma frase duas vezes), `consultor` (busca e apresenta),
+   `agendador` (dois turnos: oferecer e reservar), `informacoes` (RAG institucional), `handoff`,
+   `recusa` (texto fixo, sem LLM), `followup`, `reativador`, `resumidor` (fora do turno do cliente).
+4. **Contexto**: persona + bloco de regras de segurança + prompt do nó; a mensagem do cliente entra
+   em bloco delimitado por sentinela aleatória, nome e cartão em marcador em linha; chave faltante
+   no template **estoura** em vez de virar instrução ilegível; histórico podado a 24 mensagens.
+5. **Depois do grafo**: score e temperatura → persistência → despacho ao canal → eventos →
+   espelho no CRM (ou fila) → follow-up reagendado → linha em `turnos` com caminho e duração.
 
-  O piso é **75%** e o estado atual é 81%. Ele existe para uma queda brusca aparecer na CI, não para
-  virar corrida por porcentagem — teste escrito para subir número não testa nada.
+## 9. Manual de uso
 
-- **CI.** [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda dois jobs a cada push/PR:
-  `python` (`make lint` → `make cobertura` → `make eval-fake` → conferência do `openapi.json`) e
-  `frontend` (build estrito + `eslint` em `web` e `dashboard`). O estático vem antes do teste: nome
-  indefinido aparece em segundos, sem esperar o banco subir.
+Um manual por aplicação, cobrindo cada tela, campo, validação e regra que a interface ou a API
+aplica (rótulos copiados do código):
 
----
-
-## 16. Observabilidade e troubleshooting
-
-A observabilidade em vigor é a **leve** (ADR-0011): tabelas no Postgres (`turnos`, `saude`,
-`batimentos`), `/health` que devolve 503 de verdade, logs estruturados em JSON e a aba **Saúde do
-sistema** no painel. Não há stack de métricas/tracing por padrão — a de OpenTelemetry+Grafana foi
-revogada (ADR-0005). O **Langfuse** é opcional (`--profile observability`) para tracing de prompt/LLM.
-
-- **Logs.** JSON estruturado por serviço (`shared/sdr_shared/log.py`); no compose use `docker compose logs -f <serviço>`.
-- **Health checks.** `GET /health` na API e nos canais (503 quando degradado).
-- **Uso de tokens.** Registrado por chamada e visível na aba de Governança do painel.
-
-| Problema | Possível causa | Solução |
+| Aplicação | Manual | O que cobre |
 |---|---|---|
-| `docker compose ps` mostra `channels` como `unhealthy` | Redis fora do ar | Verifique o container `redis`; `/health` do canal devolve 503 sem Redis |
-| Chat do site "sem conexão" | Canais (`:8001`) ou WebSocket indisponível | Confira `docker compose logs -f channels` e a variável `VITE_WS_URL` |
-| Catálogo vazio no site | Seed não executado | Rode `make seed` |
-| Agente responde fallback sempre | LLM inacessível, credenciais ou timeout | Confira `SDR_LLM_PROVIDER`/credenciais e `SDR_LLM_TIMEOUT_S`; veja logs do `agent` |
-| Painel retorna 401 | Token ausente/incorreto | Envie `Authorization: Bearer <SDR_PAINEL_TOKEN>` (ou `dev-token` no local) |
-| Porta 5432/6379/11434 ocupada | Instância nativa em conflito | Ajuste `DB_HOST_PORT`/`REDIS_HOST_PORT`/`OLLAMA_HOST_PORT` |
-| Resultados de busca "errados" após editar bairros | Embeddings desatualizados | Reindexe com `make seed` |
-| `make test` recusa rodar | Banco sem "test" no nome | Use o `sdr_test`; em último caso `SDR_TEST_ALLOW_WIPE=1` |
+| **Mora** (conversa) | [Agente](docs/user-guide/agente.md) | O que dizer por intenção, o que ela pede, como pedir imóveis, visita, corretor e informações; áudio; limites; o que o corretor recebe; privacidade |
+| **Site** | [Site](docs/user-guide/site.md) | Vitrine, busca e filtros, ficha, widget de chat (sessão, reconexão, botões), eventos de navegação que viram contexto, Telegram, PWA, SEO e acessibilidade |
+| **Painel da Mora** | [Painel administrativo](docs/user-guide/painel.md) | Login e tempo real; Visão geral, Leads (ficha, handoff, cartão, análise), Conversas, Imóveis (fotos), Corretores (carteira, Google Calendar), Governança de IA, Auditoria, Saúde, Configurações (persona, follow-up, agenda, cobertura, handoff, modelos, operação, canais) |
+| **CRM** | [CRM](docs/user-guide/crm.md) | Login por usuário, Visão geral, Funil, Clientes e Oportunidades, Imóveis (situação, cadastro com fotos, agenda), Visitas (confirmar, cancelar, remarcar), Encaminhamentos, Auditoria; papéis e permissões; como as coisas entram; erros e o que fazer |
+| Dúvidas | [FAQ](docs/user-guide/faq.md) | Perguntas frequentes |
 
----
+Roteiro de demonstração ponta a ponta (site → conversa → CRM → painel), em cinco momentos:
+[Roteiro](docs/overview/roteiro-demonstracao.md).
 
-## 17. Estrutura do repositório
+## 10. Regras de negócio
+
+O catálogo completo — cada regra com onde vale, fonte no código, o que acontece quando violada e o
+teste que a prende — está em **[Regras de negócio](docs/technical-reference/regras-de-negocio.md)**
+(≈1000 linhas, 22 seções). As que mais importam:
+
+| Regra | Onde |
+|---|---|
+| Oportunidade só nasce quando a intenção está clara; compra/aluguel exige região, orçamento, quartos e urgência; investimento exige perfil, ticket e retorno esperado | Agente |
+| Recomendação nunca afirma disponibilidade fora da lista devolvida; o nível da cascata (bairro, vizinhos, região, cidade) é dito ao cliente | Agente |
+| A Mora **reserva** horário e **pede** a visita; **confirmar é ato humano**, no CRM. Dois horários confirmados não coexistem no mesmo slot; o mesmo corretor não tem horários sobrepostos | Agente + CRM |
+| A Mora avança o estágio no CRM até `qualified`, um passo por vez; `visit_scheduled`, `won`, `lost` exigem pessoa | CRM |
+| Credencial de serviço **nunca** cadastra imóvel, foto, horário, nem confirma visita (`exigir_humano`); não existe "agindo em nome de" | CRM (ADR-0015) |
+| Imóvel sai do catálogo com motivo obrigatório e só sem visita confirmada futura; `reserved` é reversível; o índice da Mora acompanha em até 15 min | CRM → Mora |
+| Remarcação é uma operação atômica: humano remarcando confirmada gera visita já confirmada; agente gera solicitação; slot indisponível deixa a original intacta | CRM |
+| Handoff vai ao corretor ativo da região com menor carga; desativar corretor exige destino para a carteira; remover só com carteira vazia | Painel |
+| Follow-up respeita 08:00–20:00 (SP), cadência por temperatura, máximo de tentativas; reativação só por Telegram, com opt-out e limites por imóvel e por lead | Agente |
+| Assunto fora de imóveis é recusado (na 3ª recusa oferece o corretor em vez de repetir a negativa); pedido de humano é atendido sempre; 5 msg/10 s e 60/h por lead | Agente |
+| Orçamento de LLM: alerta a 80 %, degradação no teto, bloqueio a 150 % (encaminha sem chamar modelo) | Governança |
+| Modelo sem preço cadastrado é recusado no painel; campo vazio significa "não opinei" e o `.env` é o piso — nunca "desligado" | Painel (ADR-0010) |
+| Fotos: painel > CRM > arquivo, determinístico e testado | Mora (ADR-0015) |
+| Login do CRM: mensagem única de erro, 10 tentativas/min por IP e por e-mail, sessão de 12 h; escritas com `Idempotency-Key` valem 24 h | CRM |
+
+## 11. Atividades futuras
+
+Página completa, por horizonte, com motivo e onde mexe: **[Roadmap e limitações](docs/project/roadmap.md)**.
+
+- **Curto prazo:** `react-router` 6 → 7 nas três apps; OpenAPI do CRM versionada; sessão
+  individual no painel da Mora (hoje um token para a equipe); correlação de ids entre Mora e CRM
+  pelo MCP; escapar `%`/`_` na busca e CORS explícito fora do perfil local; screenshots no manual do CRM.
+- **Médio prazo:** retenção e exclusão de dados pessoais (LGPD); fonte única das fotos movendo o
+  upload para o CRM; rate limit distribuído (Redis); ferramenta de migração de schema; testes de
+  comportamento dos front-ends no CI; pacote de UI compartilhado.
+- **Longo prazo:** WhatsApp como adaptador (saiu por exigir URL pública — ADR-0007); implantação
+  com segredos de verdade e TLS; avaliação com modelo real versionada; revisitar a fusão léxica do
+  RAG com reranking; consumidor para `sdr:events` (webhooks/analytics).
+
+## 12. Qualidade: testes, CI e segurança
+
+- **Testes:** 650 testes em seis suítes com Postgres real e LLM falso — `channels/local` 10,
+  `channels/telegram` 10, `agent` 263, `api` 64, `crm` 133, `shared` 170 (incluindo a ponte com o
+  CRM contra a API real e o broker contra um `redis-server` descartável). `make test` cria e usa os
+  bancos `sdr_test` e `crm_test`; uma trava recusa rodar contra banco sem "test" no nome.
+- **Estático:** `make lint` (ruff), `make tipos` (pyright básico — foi o que achou um método
+  inexistente no caminho de reconhecimento pelo CRM), `eslint` nas três apps, build TypeScript
+  estrito, `npm run a11y` no site.
+- **CI** ([`ci.yml`](.github/workflows/ci.yml)): job `python` (ruff → pyright → cobertura com piso
+  → harness de avaliação com dublês → OpenAPI em dia) e job `frontend` (matriz `web`, `dashboard`,
+  `crm`: `npm ci`, build, eslint).
+- **Segurança:** portões próprios por porta (ADR-0008); sessão do widget assinada; credencial do
+  painel fora da URL; CRM com argon2, sessão revogável, rate limit, teto de corpo, idempotência,
+  scopes e `exigir_humano`; prompts blindados e saída saneada; refresh token do Google cifrado em
+  repouso; Postgres e Redis só em loopback; segredos fora do repositório (`.env.example` com valores
+  fictícios). Revisão completa de setembro/2026 com 16 correções aplicadas:
+  [`docs/quality/revisao-2026-09.md`](docs/quality/revisao-2026-09.md); página de referência:
+  [Segurança e privacidade](docs/quality/seguranca.md).
+- **Observabilidade:** [Observabilidade](docs/quality/observabilidade.md) e a tela Saúde.
+
+## 13. Estrutura do repositório
 
 ```
-agent-sdr-morai/
+agent-sdr-imoveis-mora/
 ├── apps/
 │   ├── web/          Site vitrine (React + Vite + PWA) com widget de chat
-│   ├── dashboard/    Painel do corretor (funil, conversas, governança, auditoria)
-│   └── crm/          Painel do CRM da imobiliária (React)
+│   ├── dashboard/    Painel da Mora (leads, handoff, governança, saúde, configurações)
+│   └── crm/          Interface do CRM (funil, clientes, imóveis, agenda, visitas)
 ├── services/
-│   ├── agent/        Grafo multiagente (LangGraph) — o cérebro; único que fala com o LLM
+│   ├── agent/        Grafo LangGraph — o cérebro; único que fala com o LLM (+ evals/)
 │   ├── channels/
 │   │   ├── local/    Chat do site: HTTP + WebSocket
 │   │   └── telegram/ Long polling de entrada e worker de saída
-│   ├── api/          API REST (FastAPI): imóveis, leads, dashboard, handoff, governança
-│   ├── crm/          CRM da imobiliária: REST, servidor MCP e banco próprios
-│   ├── scheduler/    Follow-up automático
+│   ├── api/          API REST da Mora (FastAPI): imóveis, leads, handoff, config, governança
+│   ├── crm/          CRM da imobiliária: REST, servidor MCP, seed e banco próprios
+│   ├── scheduler/    Follow-up, saúde, pendências do CRM e reindexação do acervo
 │   └── ingestion/    Carga de imóveis e documentos + embeddings
-├── shared/           Pacote Python comum: modelos, contratos, DB, config, ports/adapters
-├── local/            docker compose (Postgres+pgvector, Redis, workers, canais, apps) + Dockerfile.python
+├── shared/           Pacote Python comum: modelos, contratos, DB, config, ports/adapters, CRM, governança
+├── local/            docker-compose.yml (Postgres+pgvector, Redis, Ollama, workers, canais, apps)
 ├── data/             Base simulada de imóveis e documentos institucionais
-├── scripts/          Utilitários de dev (check_env, gerar_imoveis, gerar_openapi)
-├── tests/            Suíte de integração da raiz
-├── docs/             Arquitetura, ADRs e o portal MkDocs
-└── .github/          CI (GitHub Actions)
+├── scripts/          check_env, gerar_imoveis, gerar_openapi
+├── docs/             Portal MkDocs: arquitetura, ADRs, manuais, referência, qualidade
+├── pyrightconfig.json · ruff.toml · Makefile · mkdocs.yml
+└── .github/          CI e publicação do portal
 ```
 
-**Regras de dependência.** `shared/` é a única ponte entre serviços. Canais só traduzem mensagens e
-nunca chamam o LLM. O agente produz respostas neutras (`texto`, `opcoes`, `imoveis`, `acao`) e não
-sabe qual canal respondeu. Detalhes em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+**Regras de dependência.** `shared/` é a única ponte entre serviços. Canais só traduzem mensagens
+e nunca chamam o LLM. O agente produz respostas neutras (`texto`, `opcoes`, `imoveis`, `acao`) e não
+sabe qual canal respondeu. Os serviços Python compartilham uma imagem (`local/Dockerfile.python`);
+o que muda entre containers é o comando. Mais em [Estrutura](docs/technical-reference/estrutura.md).
 
-**Convenções relevantes.**
-- Cada serviço expõe um pacote com nome próprio (`agent`, `api`, `canal_telegram`, `sdr_scheduler`,
-  `sdr_ingestion`, `sdr_crm`) — nunca `src` — para evitar colisão no `sys.path`.
-- Os serviços Python compartilham **uma única imagem**, construída a partir da raiz do repositório
-  (todos dependem de `shared/`): `local/Dockerfile.python`, com o código montado por volume. O que
-  muda entre containers é o comando, não a imagem.
+## 14. Licença e autoria
 
-> A pasta `_to_delete/` e os arquivos `*.tgz` na raiz são material de trabalho descartável e não fazem
-> parte da aplicação.
-
----
-
-## 18. Roadmap e limitações
-
-Esta seção lista o que **não** está pronto — separada das funcionalidades implementadas.
-
-**Limitações conhecidas.**
-- Nada está implantado: o sistema só existe rodando no `docker compose` de quem o subir. É escolha
-  de escopo, não pendência — mas significa que não há ambiente público para demonstrar.
-- O único canal externo é o Telegram. O WhatsApp foi removido do código (exigia número de negócio
-  verificado e webhook com URL pública — ADR-0007); voltar significa escrever o adaptador de novo.
-- A fusão léxica (RRF) do RAG institucional está pronta e desligada: falta medi-la com um embedder
-  semântico de verdade (`SDR_RAG_LEXICO=1 make eval-rag`).
-- Rate limiting é por processo, não distribuído entre múltiplos workers.
-- Sem benchmarks de performance versionados.
-- Tudo trafega em HTTP no `localhost`; expor este ambiente exigiria TLS e revisão de CORS.
-
-**Débitos técnicos / itens em aberto.**
-- Não há varredura automatizada de dependências no CI (a cobertura, essa está: `make cobertura`).
-- Instrumentação de observabilidade de sistema (OTel/Grafana) foi revogada; existe apenas a leve.
-- Papéis/permissões granulares por usuário no painel: a definir.
-
-**Riscos e dependências externas.**
-- Disponibilidade e cota do provedor de LLM (mitigadas por `SDR_LLM_PROVIDER_FALLBACK`).
-- API do Telegram e, quando configurado, o Google Agenda do corretor.
-- O custo variável do sistema é só o do modelo — e cai a zero com o Ollama, em troca de qualidade
-  de conversa menor.
-
----
-
-## 19. Contribuição
-
-Não há um `CONTRIBUTING.md` formal no repositório; as práticas abaixo são inferidas do fluxo de CI e
-das convenções do projeto (marcado como inferência).
-
-- **Branches (inferido).** Crie uma branch a partir da principal para cada mudança
-  (ex.: `feat/nome-curto`, `fix/nome-curto`).
-- **Commits e Pull Requests (inferido).** Descreva o que muda e por quê; mantenha PRs focados.
-- **Validações obrigatórias.** O PR precisa passar na CI: `make lint`, `make cobertura` e
-  `make eval-fake` (backend) e `npm run build` + `npm run lint` (`web` e `dashboard`). Rode-os
-  localmente antes de abrir o PR.
-- **Antes de tocar em um serviço.** Leia [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e respeite as
-  regras de dependência entre camadas.
-- **Convenção de commits / template de PR / processo de revisão formais:** `A confirmar`.
-
----
-
-## 20. Licença e responsáveis
-
-- **Licença:** MIT — ver [`LICENSE`](LICENSE) e [Licença](docs/project/licenca.md).
-- **Responsáveis / equipe:** `A confirmar` (contexto acadêmico — FIAP, fase 5 — inferido pelo caminho
-  do projeto; não confirmado por arquivo no repositório).
-- **Canal de suporte / contato:** `A confirmar`. Os dados de contato exibidos no site
-  (`apps/web/src/lib/imobiliaria.ts`) são placeholders de demonstração, não canais de suporte reais.
-
----
-
-## 21. Pendências de documentação
-
-Informações que não puderam ser confirmadas apenas com o conteúdo do repositório:
-
-1. **Canal de suporte** oficial (licença: MIT, ver `LICENSE`; autoria: Marcos Ramos).
-2. **Requisitos de hardware** mínimo/recomendado (sobretudo com Ollama e o faster-whisper no mesmo
-   processo).
-3. **Papéis e permissões** granulares por usuário no painel (a API separa por área, mas o mapeamento
-   usuário → papel não está documentado).
-4. **Benchmarks de performance** (nenhum número medido versionado).
-5. **Convenção de commits, template de PR e processo de revisão** formais.
-6. **Política de retenção e exclusão de dados** (LGPD) formal.
-
-> Sugestão: converter estas pendências em issues e, quando resolvidas, atualizar as seções
-> correspondentes deste README.
+Código sob licença [MIT](LICENSE). POC acadêmica de **Marcos Ramos** (FIAP, fase 5). A Vértice
+Imóveis é fictícia; imóveis, corretores e documentos institucionais são sintéticos e marcados como
+tal. Como contribuir: [Contribuir](docs/project/contribuir.md).

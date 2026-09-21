@@ -139,6 +139,7 @@ nav:
       - Visão geral: architecture/index.md
       - Componentes: architecture/componentes.md
       - Fluxo do agente e LLM: architecture/fluxo-agente.md
+      - Modelos de linguagem: architecture/modelos.md
       - Dados e persistência: architecture/dados.md
       - Diagramas: architecture/diagramas.md
       - Referência completa (ARCHITECTURE.md): ARCHITECTURE.md
@@ -163,6 +164,7 @@ nav:
       - Agente (Mora): user-guide/agente.md
       - Site: user-guide/site.md
       - Painel administrativo: user-guide/painel.md
+      - CRM: user-guide/crm.md
       - Perguntas frequentes: user-guide/faq.md
   - Referência técnica:
       - Regras de negócio: technical-reference/regras-de-negocio.md
@@ -179,6 +181,7 @@ nav:
       - Observabilidade: quality/observabilidade.md
       - Observabilidade de sistema (referência): observabilidade.md
       - Troubleshooting: quality/troubleshooting.md
+      - Revisão de setembro/2026: quality/revisao-2026-09.md
   - Projeto:
       - Roadmap e limitações: project/roadmap.md
       - Como contribuir: project/contribuir.md

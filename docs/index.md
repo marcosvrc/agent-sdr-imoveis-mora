@@ -104,6 +104,10 @@ avalia, e **nada está implantado** — é escolha de escopo, não pendência. D
 - :material-sitemap: [Conhecer a arquitetura](architecture/index.md)
 - :material-robot: [Usar o agente](user-guide/agente.md)
 - :material-view-dashboard: [Acessar o painel administrativo](user-guide/painel.md)
+- :material-office-building: [Operar o CRM](user-guide/crm.md)
+- :material-brain: [Como o agente funciona por dentro](architecture/fluxo-agente.md)
+- :material-scale-balance: [Modelos: decisões e comparativos](architecture/modelos.md)
+- :material-gavel: [Regras de negócio](technical-reference/regras-de-negocio.md)
 - :material-api: [Consultar a API](technical-reference/api.md)
 - :material-source-pull: [Contribuir](project/contribuir.md)
 
