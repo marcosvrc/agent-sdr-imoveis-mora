@@ -76,11 +76,13 @@ function Consumo({ uso, dias, cotacao }: { uso: Uso; dias: number; cotacao: numb
         <StatTile label="Latência média" valor={`${Math.round(k.latencia.atual)} ms`} delta={variacao(k.latencia.atual, k.latencia.anterior)} subirEBom={false} icone="clock"
           ajuda={<>Tempo médio de cada chamada a modelo, incluindo as que falharam. Não é o tempo total que o cliente espera: um turno pode somar duas ou três chamadas (roteamento, extração e resposta).</>} />
       </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Chamadas ao modelo" valor={num(k.chamadas.atual)} delta={variacao(k.chamadas.atual, k.chamadas.anterior)} subirEBom={false}
           ajuda={<>Quantas vezes um modelo foi chamado no período. Cada mensagem do cliente costuma gerar mais de uma: roteamento e extração no modelo econômico, resposta no modelo de conversa.</>} />
         <StatTile label="Tokens de entrada" valor={fmtTokens(k.entrada.atual)}
           ajuda={<>O que foi enviado aos modelos: instruções, histórico da conversa e os imóveis encontrados. Cresce naturalmente conforme a conversa avança, porque o histórico vai junto a cada turno.</>} />
+        <StatTile label="Leitura de cache" valor={fmtTokens(k.cache_leitura.atual)}
+          ajuda={<>Tokens que o provedor releu do cache de prompt em vez de processar de novo — custam 10% da entrada. <b>Zero é um resultado válido:</b> o cache só engata quando o prefixo (instruções + histórico) passa do mínimo do provedor e o turno seguinte cai dentro dos 5 minutos de validade. Conversa com intervalo longo não aproveita. Desligue em <code>SDR_PROMPT_CACHE</code>.</>} />
         <StatTile label="Tokens de saída" valor={fmtTokens(k.saida.atual)}
           ajuda={<>O que os modelos escreveram. Custa bem mais caro por token que a entrada — é por isso que a persona limita as respostas a três frases.</>} />
         <StatTile label="Chamadas com erro" valor={num(k.erros.atual)} subirEBom={false}

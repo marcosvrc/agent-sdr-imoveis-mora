@@ -120,3 +120,82 @@ def test_catalogo_incorpora_precos_cadastrados_no_painel():
 
     c = catalogo_de_modelos({"claude-opus-9": (1.0, 2.0, 0.0, 0.0), "gpt-7-nova": (1.0, 2.0, 0.0, 0.0)})
     assert "claude-opus-9" in c["anthropic"] and "gpt-7-nova" in c["openai"]
+
+
+# --------------------------------------------------------------------- cache de prompt
+
+def test_marca_o_fim_do_system_e_o_fim_do_historico():
+    """Dois cortes: sem o do histórico, o prefixo fica abaixo do mínimo do provedor e não engata."""
+    from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+    from sdr_shared.ports.factory import marcar_cache
+
+    msgs = [SystemMessage(content="blindagem + persona"), HumanMessage(content="oi"),
+            AIMessage(content="olá"), HumanMessage(content="quero alugar")]
+    out = marcar_cache(msgs)
+
+    def marcado(m):
+        return isinstance(m.content, list) and "cache_control" in m.content[-1]
+
+    assert [marcado(m) for m in out] == [True, False, False, True]
+    assert out[0].content[-1]["text"] == "blindagem + persona"
+
+
+def test_nao_escreve_no_historico_do_checkpoint():
+    """As mensagens marcadas são cópias: o original vive no estado do grafo, e marcação é metadado
+    de transporte — gravá-la lá poluiria o checkpoint e mudaria o que o próximo turno relê."""
+    from langchain_core.messages import HumanMessage, SystemMessage
+    from sdr_shared.ports.factory import marcar_cache
+
+    msgs = [SystemMessage(content="persona"), HumanMessage(content="oi")]
+    marcar_cache(msgs)
+    assert [m.content for m in msgs] == ["persona", "oi"]
+
+
+def test_entrada_que_nao_e_lista_passa_intacta():
+    """O caminho `texto()` (supervisor, extração) manda string: não há prefixo a reaproveitar."""
+    from sdr_shared.ports.factory import marcar_cache
+    assert marcar_cache("decida o próximo nó") == "decida o próximo nó"
+    assert marcar_cache([]) == []
+
+
+def test_um_system_sozinho_leva_um_corte_so():
+    from langchain_core.messages import SystemMessage
+    from sdr_shared.ports.factory import marcar_cache
+    out = marcar_cache([SystemMessage(content="persona")])
+    assert len(out) == 1 and "cache_control" in out[0].content[-1]
+
+
+def test_so_a_anthropic_recebe_a_marca(monkeypatch):
+    """`cache_control` é campo da API da Anthropic: mandar para a OpenAI é erro de requisição."""
+    from sdr_shared.config import get_settings
+    from sdr_shared.ports import factory
+
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-teste")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-teste")
+    monkeypatch.setattr(get_settings(), "prompt_cache", True)
+    anthropic = factory._construir("anthropic", "claude-sonnet-4-5", 0.6, "conversa")
+    openai = factory._construir("openai", "gpt-5.6-terra", 0.6, "conversa")
+    assert isinstance(anthropic, factory.ModeloComCacheDePrompt)
+    assert not isinstance(openai, factory.ModeloComCacheDePrompt)
+
+
+def test_desligar_pelo_ambiente_devolve_o_modelo_cru(monkeypatch):
+    from sdr_shared.config import get_settings
+    from sdr_shared.ports import factory
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-teste")
+    monkeypatch.setattr(get_settings(), "prompt_cache", False)
+    assert not isinstance(factory._construir("anthropic", "claude-sonnet-4-5", 0.6, "conversa"),
+                          factory.ModeloComCacheDePrompt)
+
+
+def test_structured_output_continua_funcionando(monkeypatch):
+    """A extração do cartão depende de `with_structured_output` — o embrulho não pode escondê-lo."""
+    from sdr_shared.config import get_settings
+    from sdr_shared.models import CartaoQualificacao
+    from sdr_shared.ports import factory
+
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-teste")
+    monkeypatch.setattr(get_settings(), "prompt_cache", True)
+    m = factory._construir("anthropic", "claude-sonnet-4-5", 0.0, "roteamento")
+    assert isinstance(m.with_structured_output(CartaoQualificacao), factory.ModeloComCacheDePrompt)

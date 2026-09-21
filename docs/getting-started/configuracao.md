@@ -36,6 +36,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `OPENAI_API_KEY` | Se usar `openai` | `sk-…` | Chave da OpenAI. **Sem o prefixo `SDR_`** — é o nome que a biblioteca procura no ambiente, igual à `ANTHROPIC_API_KEY`. Instale o extra: `pip install -e "shared[openai]"`. |
 | `SDR_TRANSCRICAO_PROVIDER` | Não | `auto` | Motor de transcrição de áudio: `auto`, `whisper_local` ou `off`. |
 | `SDR_WHISPER_MODEL` | Não | `small` | Tamanho do faster-whisper (`tiny`…`large-v3`). |
+| `SDR_PROMPT_CACHE` | Não | `true` | Marca o prefixo do prompt para o cache do provedor (só Anthropic). Ligado é seguro: abaixo do mínimo de tokens a marca é ignorada sem erro. Se engatou, aparece em Governança → Leitura de cache. |
 | `SDR_LLM_TIMEOUT_S` | Não | `45` | Timeout por chamada ao modelo (1 tentativa extra por provedor). O pior caso de um turno e a validade do lock por lead derivam daqui. |
 | `SDR_DB_POOL_MAX` | Não | `4` | Conexões do pool **por processo**. O compose sobe para `12` na API, que atende painel, site e canal ao mesmo tempo. |
 | `SDR_REDIS_URL` | Não | `redis://localhost:6379/0` | Fila entre a API, os canais e os workers. |

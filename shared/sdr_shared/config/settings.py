@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Chave de organização (não escopada a um workspace) exige este header em toda requisição.
     anthropic_workspace_id: str | None = None
     ollama_url: str = "http://localhost:11434"
+    # Marca pontos de cache no prefixo do prompt (só Anthropic; ver ports/factory.py).
+    # Ligado é seguro: abaixo do mínimo do provedor a marcação é ignorada, sem erro.
+    prompt_cache: bool = True
     llm_timeout_s: float = 45.0             # acima disso o turno falha e o cliente recebe o fallback
     # Fotos enviadas pelo painel: gravadas em disco.
     fotos_dir: str = str(Path(__file__).resolve().parents[3] / "data" / "fotos")

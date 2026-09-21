@@ -375,6 +375,41 @@ qualidade citada nos ADRs é a do RRF léxico (recall 31,9% → 29,8%, em `decis
 o RAG, não sobre modelo de linguagem. Qualquer afirmação de "modelo X responde melhor" precisa
 sair de `make eval` rodado na sua máquina, com `-n 3` ou mais, como o README recomenda.
 
+## Cache de prompt
+
+Todo turno manda o mesmo prefixo: blindagem, persona, prompt do nó e o histórico podado. Sem
+marcação, esse prefixo é cobrado como entrada nova a cada chamada. A Anthropic cobra a **leitura**
+de cache por 10% do preço da entrada, e a governança já media esses tokens (`uso.py` lê
+`cache_read` e `cache_creation`; `precos.py` tem as quatro colunas) — só faltava marcar.
+
+`ModeloComCacheDePrompt` (`shared/sdr_shared/ports/factory.py`) põe **dois pontos de corte**: no fim
+da mensagem de sistema e no fim do histórico. Dois, e não um, porque medimos os prompts:
+
+| Prefixo | Tamanho | Engata no Sonnet (mínimo 1024 tokens)? |
+|---|---|---|
+| Blindagem + persona | ~640–740 tokens | não |
+| ... + prompt do nó | ~730–1160 tokens | só nos nós maiores (`analise`, `informacoes`, `extracao`, `qualificador`) |
+| ... + histórico podado | cresce com a conversa | sim, a partir de poucas trocas |
+
+Ou seja: o corte no sistema sozinho quase nunca pagaria. Quem faz a conta fechar é o corte no fim do
+histórico — ele deixa o turno seguinte do mesmo lead reler tudo até ali por 10%.
+
+**O que esperar.** O TTL do cache é de 5 minutos. Conversa de SDR tem intervalo de minutos entre
+mensagens e follow-up em horas, então a taxa de acerto é modesta por natureza: ganha nas trocas
+rápidas, não no acompanhamento. Por isso o indicador existe — **zero em "Leitura de cache" é um
+resultado, não um defeito**, e diz que o prefixo não passou do mínimo ou que o intervalo passou de
+5 minutos.
+
+**Cuidados no código.**
+
+- **Só Anthropic.** `cache_control` é campo da API dela; mandá-lo para a OpenAI é erro de
+  requisição — e a OpenAI já faz cache de prefixo sozinha, sem marcação. Ollama não tem o conceito.
+- **A marcação copia a mensagem.** O histórico vive no checkpoint do grafo; marcar o original
+  gravaria metadado de transporte dentro do estado da conversa. Há teste para isso.
+- **Entrada que não é lista passa intacta.** O caminho `texto()` (supervisor e extração do cartão)
+  manda uma string: ali não há prefixo reaproveitável.
+- **Desligar:** `SDR_PROMPT_CACHE=false`. O modelo volta a ser o objeto cru, sem embrulho.
+
 ## Como trocar de modelo na prática
 
 O caminho é o painel, área **Configuração do agente** (ver [Manual do painel](../user-guide/painel.md)),

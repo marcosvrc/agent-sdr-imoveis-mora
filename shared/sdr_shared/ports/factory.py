@@ -178,6 +178,79 @@ def orcamento_do_turno_s(timeout_s: float | None = None) -> float:
     return espera * (1 + MAX_RETRIES) * 2 + 30
 
 
+_EFEMERO = {"type": "ephemeral"}
+
+
+def _bloco_marcado(msg):
+    """CÓPIA da mensagem com `cache_control` no último bloco de texto.
+
+    Cópia, e não edição no lugar, porque estas mensagens são o histórico que vive no checkpoint do
+    grafo: marcá-las no original gravaria metadado de transporte dentro do estado da conversa.
+    """
+    conteudo = getattr(msg, "content", None)
+    if isinstance(conteudo, str) and conteudo:
+        blocos = [{"type": "text", "text": conteudo}]
+    elif isinstance(conteudo, list) and conteudo and isinstance(conteudo[-1], dict):
+        blocos = [dict(b) for b in conteudo]
+    else:
+        return msg                       # vazio, ou formato que não sabemos marcar: passa reto
+    if blocos[-1].get("type") != "text":
+        return msg
+    blocos[-1] = {**blocos[-1], "cache_control": _EFEMERO}
+    try:
+        return msg.model_copy(update={"content": blocos})
+    except AttributeError:               # não é mensagem do LangChain: não mexe
+        return msg
+
+
+def marcar_cache(entrada):
+    """Dois pontos de corte: fim do system e fim do histórico.
+
+    Um só no system quase nunca engata — medido: blindagem + persona + prompt do nó dão de 730 a
+    1160 tokens, e o mínimo da Anthropic é 1024 no Sonnet e 2048 no Haiku. Quem passa do mínimo é o
+    prefixo COM o histórico, e é por isso que o segundo corte existe: ele deixa o turno seguinte do
+    mesmo lead reler tudo até ali por 10% do preço, desde que caia dentro do TTL de 5 min.
+
+    Entrada que não é lista de mensagens (o caminho `texto()`, usado pelo supervisor e pela
+    extração) volta intacta: ali não há prefixo reaproveitável.
+    """
+    if not isinstance(entrada, list) or not entrada:
+        return entrada
+    cortes = {len(entrada) - 1}
+    for i, m in enumerate(entrada):
+        if getattr(m, "type", None) == "system":
+            cortes.add(i)
+            break
+    saida = list(entrada)
+    for i in cortes:
+        saida[i] = _bloco_marcado(saida[i])
+    return saida
+
+
+class ModeloComCacheDePrompt:
+    """Marca o prefixo do prompt para o cache do provedor. Só Anthropic.
+
+    `cache_control` é campo da API da Anthropic: mandá-lo para a OpenAI é erro de requisição, e a
+    OpenAI já faz cache de prefixo sozinha, sem marcação. Ollama não tem o conceito.
+
+    Ligar é seguro mesmo quando não engata: abaixo do mínimo de tokens o provedor ignora a marca em
+    silêncio, e o texto do prompt não muda — marcação é metadado, não conteúdo. Se engatou ou não
+    aparece em `uso_llm.tokens_cache_leitura`, que a tela de Governança já soma.
+    """
+
+    def __init__(self, modelo):
+        self._modelo = modelo
+
+    def invoke(self, entrada, *a, **kw):
+        return self._modelo.invoke(marcar_cache(entrada), *a, **kw)
+
+    def with_structured_output(self, schema, **kw):
+        return ModeloComCacheDePrompt(self._modelo.with_structured_output(schema, **kw))
+
+    def __getattr__(self, nome):
+        return getattr(self._modelo, nome)
+
+
 def _construir(provider: str, model: str, temp: float, papel: str):
     """Monta UM provedor. Separado de `get_chat_model` para o fallback montar o segundo pelo mesmo
     caminho — inclusive a tradução do ID do modelo, que é o pedaço chato de trocar de provedor e já
@@ -197,8 +270,9 @@ def _construir(provider: str, model: str, temp: float, papel: str):
         # timeout/retries curtos: melhor falhar rápido e acionar o fallback do que pendurar o cliente.
         # `MAX_RETRIES=1`: com 2, o pior caso era 45 s × 3 tentativas × 2 provedores = 270 s de
         # cliente olhando para "digitando" — e o lock por lead (180 s) expirava no meio.
-        return ChatAnthropic(model=model, temperature=temp, max_tokens=600, default_headers=headers, callbacks=cb,
-                             timeout=espera, max_retries=MAX_RETRIES)
+        modelo = ChatAnthropic(model=model, temperature=temp, max_tokens=600, default_headers=headers,
+                               callbacks=cb, timeout=espera, max_retries=MAX_RETRIES)
+        return ModeloComCacheDePrompt(modelo) if s.prompt_cache else modelo
     if provider == "ollama":
         from langchain_ollama import ChatOllama
         return ChatOllama(model=model, base_url=s.ollama_url, temperature=temp, callbacks=cb, client_kwargs={"timeout": espera})
