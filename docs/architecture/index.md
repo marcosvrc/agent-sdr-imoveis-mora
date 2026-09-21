@@ -31,47 +31,8 @@ vale.
 
 ## Diagrama de contexto
 
-```mermaid
-flowchart LR
-  subgraph Entrada["Porta de entrada"]
-    SITE["apps/web :5173<br/>site vitrine + chat"]
-    TG["Telegram Bot API<br/>long polling"]
-  end
-
-  subgraph Canais["services/channels"]
-    CH["local — channels :8001<br/>HTTP + WebSocket"]
-    TGW["telegram — in / out"]
-  end
-
-  Q[["redis<br/>Streams e locks"]]
-
-  subgraph Agente["services/agent — grafo LangGraph"]
-    SUP["Supervisor"]
-    NODES["Qualificador · Consultor<br/>Agendador · Follow-up<br/>Handoff · Resumidor<br/>Reativador"]
-    SUP --> NODES
-  end
-
-  LLM["LLM<br/>Anthropic · OpenAI · Ollama"]
-  DB[("Postgres 16 + pgvector<br/>container db")]
-  CRM["crm-mcp :8200<br/>servidor MCP do CRM"]
-  API["services/api :8000<br/>FastAPI"]
-  DASH["apps/dashboard :5174<br/>painel do corretor"]
-
-  SITE --> CH
-  TG --> TGW
-  CH --> Q
-  TGW --> Q
-  Q --> Agente
-  Agente --> LLM
-  Agente --> DB
-  Agente --> CRM
-  Agente -->|resposta neutra| Q
-  Q --> CH
-  Q --> TGW
-  API --> DB
-  DASH --> API
-  DASH -->|tempo real| CH
-```
+![Arquitetura macro do Mora](../assets/diagramas/macro-claro.svg#only-light)
+![Arquitetura macro do Mora](../assets/diagramas/macro-escuro.svg#only-dark)
 
 ### Leitura do diagrama
 

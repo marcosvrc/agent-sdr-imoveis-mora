@@ -1,0 +1,111 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1960 1060" width="1960" height="1060" role="img" aria-label="Serviços do docker compose agrupados em front-ends, serviços HTTP, workers e infraestrutura." xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTpjZGExMTczNi03MWUwLTQ1NmEtYTE4Yi1kOTFmYTQ0NWFiODEAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaEzfkTGdaSn7hOSUOabdpjYAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpiN2VmMmMyZS1kYzMzLTQzY2ItOWEyYi1mOTNmZWJiMjBjMWRscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoWLcGAySsgHpkt/+JvluSUQAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggFYYHd45/XNkqseP33d9BqpW22cI39fOw/n8k4j7FkHakZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaIVsxEu+iVonl0vLahRZLvYAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYINvY9moJ4l2IsOpyZYAc8xKCXacaZcvi5XBjHAYf6NXbZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GQERZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmNkYTExNzM2LTcxZTAtNDU2YS1hMThiLWQ5MWZhNDQ1YWI4MS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjM0ZTcwMDg0LTlmOTItNDk0My1iMDg3LTUzNmNlZGIwOWY3MnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCAVhgd3jn9c2Sqx4/fd30GqlbbZwjf187D+fyTiPsWQdqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggS7/UPYYRPQILLJ4Cp+UN1j9eZ9Md3JnxEByYTVaMfdaiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggSj9vYZ4gKOZ5qyV+D3nAiMjHW9SKmt7uCRjQuzEjlil0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQLIsucgXV6fQBwzinb555XtFaiqEtGiGU8vTkgLOep/ehqr08YPOeUWkNod6MuLjDjomAn8brhOzgcZif+QKCzo=</c2pa:manifest></metadata>
+<style>
+  text{font-family:Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;dominant-baseline:middle}
+  .t-tit{font-size:17px;font-weight:600;fill:#E6EEF4}
+  .t-tit-s{font-size:14.5px;font-weight:600;fill:#E6EEF4}
+  .t-sub{font-size:12px;font-weight:400;fill:#A2B5C3}
+  .t-sub-s{font-size:11px;font-weight:400;fill:#A2B5C3}
+  .t-mini{font-size:10.5px;font-weight:400;fill:#7A8D9C}
+  .t-grp{font-size:12px;font-weight:700;fill:#8FB8D6;letter-spacing:.07em}
+  .t-grp-s{font-size:11px;font-weight:400;fill:#7A8D9C}
+  .t-seta{font-size:11.5px;font-weight:500}
+  .t-leg{font-size:11.5px;font-weight:500;fill:#A2B5C3}
+  .t-rod{font-size:10px;font-weight:700;fill:#7A8D9C;letter-spacing:.09em}
+  .t-cab{font-size:27px;font-weight:700;fill:#EAF2F7}
+  .t-cab-s{font-size:13.5px;font-weight:400;fill:#7E97A8}
+  .t-cab-r{font-size:10.5px;font-weight:700;fill:#7E97A8;letter-spacing:.09em}
+  .cartao{fill:#16222B;stroke:#2A3843;stroke-width:1}
+  .grupo{fill:#121E27;stroke:#223039;stroke-width:1}
+  .linha{stroke:#243139;stroke-width:1}
+  .s-azul{stroke:#5FA8E4} .f-azul{fill:#5FA8E4} .x-azul{fill:#5FA8E4}
+  .s-verde{stroke:#41BFA9} .f-verde{fill:#41BFA9} .x-verde{fill:#41BFA9}
+  .s-roxo{stroke:#A88BE6} .f-roxo{fill:#A88BE6} .x-roxo{fill:#A88BE6}
+  .s-cinza{stroke:#93A7B8} .f-cinza{fill:#93A7B8} .x-cinza{fill:#93A7B8}
+  .s-ambar{stroke:#DCA94F} .f-ambar{fill:#DCA94F} .x-ambar{fill:#DCA94F}
+  .s-vermelho{stroke:#E0796A} .f-vermelho{fill:#E0796A} .x-vermelho{fill:#E0796A}
+  .s-tinta2{stroke:#A2B5C3} .f-tinta2{fill:#A2B5C3} .x-tinta2{fill:#A2B5C3}
+  .aresta{fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<defs><marker id="p-azul" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-azul"/></marker><marker id="p-verde" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-verde"/></marker><marker id="p-roxo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-roxo"/></marker><marker id="p-cinza" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-cinza"/></marker><marker id="p-ambar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-ambar"/></marker><marker id="p-vermelho" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-vermelho"/></marker><marker id="p-tinta2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-tinta2"/></marker></defs>
+<rect width="1960" height="1060" fill="#0C151C"/>
+<rect width="1960" height="92" fill="#060F16"/>
+<rect x="40" y="26" width="5" height="40" rx="2.5" fill="#3FC7B4"/>
+<text x="60" y="35.0" class="t-cab">Topologia do docker compose</text>
+<text x="61" y="61.0" class="t-cab-s">Não há um segundo ambiente: isto é o sistema inteiro</text>
+<text x="1920" y="46.0" class="t-cab-r" text-anchor="end">MORA · COMITÊ DE ARQUITETURA</text>
+<rect x="40" y="150" width="620" height="292" rx="14" class="grupo"/>
+<text x="60" y="172" class="t-grp">01 FRONT-ENDS (VITE)</text>
+<text x="60" y="190" class="t-grp-s">servidos em modo desenvolvimento</text>
+<rect x="64.0" y="212" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="236" class="t-tit-s">web :5173</text>
+<text x="82.0" y="258" class="t-sub">site vitrine + widget</text>
+<rect x="64.0" y="286" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="310" class="t-tit-s">dashboard :5174</text>
+<text x="82.0" y="332" class="t-sub">painel da Mora</text>
+<rect x="64.0" y="360" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="384" class="t-tit-s">crm-web :3000</text>
+<text x="82.0" y="406" class="t-sub">interface do CRM</text>
+<rect x="700" y="150" width="620" height="366" rx="14" class="grupo"/>
+<text x="720" y="172" class="t-grp">02 SERVIÇOS HTTP</text>
+<text x="720" y="190" class="t-grp-s">FastAPI e servidor MCP</text>
+<rect x="724.0" y="212" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="742.0" y="236" class="t-tit-s">api :8000</text>
+<text x="742.0" y="258" class="t-sub">REST da Mora</text>
+<rect x="724.0" y="286" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="742.0" y="310" class="t-tit-s">channels :8001</text>
+<text x="742.0" y="332" class="t-sub">HTTP + WebSocket</text>
+<rect x="724.0" y="360" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="742.0" y="384" class="t-tit-s">crm-api :8100</text>
+<text x="742.0" y="406" class="t-sub">REST do CRM</text>
+<rect x="724.0" y="434" width="572.0" height="62" rx="11" class="cartao"/>
+<text x="742.0" y="458" class="t-tit-s">crm-mcp :8200</text>
+<text x="742.0" y="480" class="t-sub">porta MCP do CRM</text>
+<rect x="1360" y="150" width="560" height="292" rx="14" class="grupo"/>
+<text x="1380" y="172" class="t-grp">03 INFRAESTRUTURA</text>
+<text x="1380" y="190" class="t-grp-s">portas do host deslocadas</text>
+<rect x="1384.0" y="212" width="512.0" height="62" rx="11" class="cartao"/>
+<text x="1402.0" y="236" class="t-tit-s">db  5433 → 5432</text>
+<text x="1402.0" y="258" class="t-sub">Postgres 16 + pgvector · bancos sdr e crm</text>
+<rect x="1384.0" y="286" width="512.0" height="62" rx="11" class="cartao"/>
+<text x="1402.0" y="310" class="t-tit-s">redis  6380 → 6379</text>
+<text x="1402.0" y="332" class="t-sub">Streams e locks</text>
+<rect x="1384.0" y="360" width="512.0" height="62" rx="11" class="cartao"/>
+<text x="1402.0" y="384" class="t-tit-s">ollama  11435 → 11434</text>
+<text x="1402.0" y="406" class="t-sub">perfil ollama · modelos locais</text>
+<rect x="40" y="590" width="1280" height="292" rx="14" class="grupo"/>
+<text x="60" y="612" class="t-grp">04 WORKERS (SEM PORTA)</text>
+<text x="60" y="630" class="t-grp-s">consomem a fila e o relógio</text>
+<rect x="64.0" y="652" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="676" class="t-tit-s">agent</text>
+<text x="82.0" y="698" class="t-sub">grafo LangGraph · tópico inbound</text>
+<rect x="688.0" y="652" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="706.0" y="676" class="t-tit-s">resumidor</text>
+<text x="706.0" y="698" class="t-sub">tópico resumir</text>
+<rect x="64.0" y="726" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="750" class="t-tit-s">reativador</text>
+<text x="82.0" y="772" class="t-sub">tópico imovel-novo</text>
+<rect x="688.0" y="726" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="706.0" y="750" class="t-tit-s">scheduler</text>
+<text x="706.0" y="772" class="t-sub">laço de 30 s</text>
+<rect x="64.0" y="800" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="82.0" y="824" class="t-tit-s">telegram-in</text>
+<text x="82.0" y="846" class="t-sub">long polling · getUpdates</text>
+<rect x="688.0" y="800" width="608.0" height="62" rx="11" class="cartao"/>
+<text x="706.0" y="824" class="t-tit-s">telegram-out</text>
+<text x="706.0" y="846" class="t-sub">envio pela Bot API</text>
+<rect x="1360" y="590" width="560" height="218" rx="14" class="grupo"/>
+<text x="1380" y="612" class="t-grp">05 OPCIONAIS</text>
+<text x="1380" y="630" class="t-grp-s">sobem por perfil</text>
+<rect x="1384.0" y="652" width="512.0" height="62" rx="11" class="cartao"/>
+<text x="1402.0" y="676" class="t-tit-s">langfuse :3000</text>
+<text x="1402.0" y="698" class="t-sub">perfil observability · tracing de LLM</text>
+<rect x="1384.0" y="726" width="512.0" height="62" rx="11" class="cartao"/>
+<text x="1402.0" y="750" class="t-tit-s">db-init</text>
+<text x="1402.0" y="772" class="t-sub">aplica os schemas a cada up</text>
+<rect x="60.0" y="920" width="1840" height="78" rx="7" class="cartao"/>
+<text x="980" y="935" class="t-sub-s" text-anchor="middle">As portas do host (5433, 6380, 11435) evitam colidir com instâncias nativas de Postgres, Redis e Ollama, e mudam por DB_HOST_PORT, REDIS_HOST_PORT e OLLAMA_HOST_PORT.</text>
+<text x="980" y="951" class="t-sub-s" text-anchor="middle">crm-web e Langfuse publicam a mesma porta 3000 — os dois não sobem juntos. Postgres e Redis são publicados só em 127.0.0.1.</text>
+<text x="980" y="967" class="t-sub-s" text-anchor="middle">Os serviços Python compartilham uma imagem (local/Dockerfile.python): o que muda entre containers é o comando, não a imagem.</text>
+<text x="980" y="983" class="t-sub-s" text-anchor="middle">Mudança de schema ou de dependência exige docker compose up -d --build; restart não roda o db-init e o /health/ready reprova dizendo isso.</text>
+<text x="40" y="1040" class="t-rod">MORA · TOPOLOGIA</text>
+</svg>

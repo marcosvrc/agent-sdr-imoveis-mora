@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2060 1650" width="2060" height="1650" role="img" aria-label="Sequência de um turno: o canal publica no Redis, o handler prepara o contexto, o grafo decide e chama o modelo, e o handler persiste, despacha, espelha no CRM e reagenda o follow-up." xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTplNTRmNDk4Ny1jN2FmLTQ5MTItYWE0Zi01ZjUwMjE0MWEwNWUAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaOkIcvlIOqA7ln+JU0kHqycAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpkYTVmZmU3Yi1iNzFkLTQ3NmQtYTc2My1lYzY2ZDRhYTRlNGJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoXoupjbh4OgFdG9wPAWCNSgAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggg5xQ6ANqiwcWp7OxoFUOaiG15JPVRXIkV24YtQ5cHD+kZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaLLlTgnxUDL8LwLXyxIMcSIAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYII57fyYmK0ZUD/b9PmG3IHd9stjDdBsOKjV9/EexvNC/ZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GQFqZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmU1NGY0OTg3LWM3YWYtNDkxMi1hYTRmLTVmNTAyMTQxYTA1ZS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjdhNzNjYWY2LTUxMzQtNDk2ZS05MWMwLTEwYzc3YjliNGVjNXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCDnFDoA2qLBxans7GgVQ5qIbXkk9VFciRXbhi1DlwcP6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggM/nX2wNWX0RnpADHwiFJA26I2TiD/A45w1N38No8kA6iY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggezFmSPdTBZ5r3dYMxy5azKJ508yW+Ii++ncwiRchmkJ0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQEliImajVLW5cBqwf10Vm1votCFRTrV/+c1YYOvOJrIf+0SLfOi3QIa92TLMzdiBwYmmZRvRwjcaYxM5Dp+tLs4=</c2pa:manifest></metadata>
+<style>
+  text{font-family:Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;dominant-baseline:middle}
+  .t-tit{font-size:17px;font-weight:600;fill:#E6EEF4}
+  .t-tit-s{font-size:14.5px;font-weight:600;fill:#E6EEF4}
+  .t-sub{font-size:12px;font-weight:400;fill:#A2B5C3}
+  .t-sub-s{font-size:11px;font-weight:400;fill:#A2B5C3}
+  .t-mini{font-size:10.5px;font-weight:400;fill:#7A8D9C}
+  .t-grp{font-size:12px;font-weight:700;fill:#8FB8D6;letter-spacing:.07em}
+  .t-grp-s{font-size:11px;font-weight:400;fill:#7A8D9C}
+  .t-seta{font-size:11.5px;font-weight:500}
+  .t-leg{font-size:11.5px;font-weight:500;fill:#A2B5C3}
+  .t-rod{font-size:10px;font-weight:700;fill:#7A8D9C;letter-spacing:.09em}
+  .t-cab{font-size:27px;font-weight:700;fill:#EAF2F7}
+  .t-cab-s{font-size:13.5px;font-weight:400;fill:#7E97A8}
+  .t-cab-r{font-size:10.5px;font-weight:700;fill:#7E97A8;letter-spacing:.09em}
+  .cartao{fill:#16222B;stroke:#2A3843;stroke-width:1}
+  .grupo{fill:#121E27;stroke:#223039;stroke-width:1}
+  .linha{stroke:#243139;stroke-width:1}
+  .s-azul{stroke:#5FA8E4} .f-azul{fill:#5FA8E4} .x-azul{fill:#5FA8E4}
+  .s-verde{stroke:#41BFA9} .f-verde{fill:#41BFA9} .x-verde{fill:#41BFA9}
+  .s-roxo{stroke:#A88BE6} .f-roxo{fill:#A88BE6} .x-roxo{fill:#A88BE6}
+  .s-cinza{stroke:#93A7B8} .f-cinza{fill:#93A7B8} .x-cinza{fill:#93A7B8}
+  .s-ambar{stroke:#DCA94F} .f-ambar{fill:#DCA94F} .x-ambar{fill:#DCA94F}
+  .s-vermelho{stroke:#E0796A} .f-vermelho{fill:#E0796A} .x-vermelho{fill:#E0796A}
+  .s-tinta2{stroke:#A2B5C3} .f-tinta2{fill:#A2B5C3} .x-tinta2{fill:#A2B5C3}
+  .aresta{fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<defs><marker id="p-azul" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-azul"/></marker><marker id="p-verde" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-verde"/></marker><marker id="p-roxo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-roxo"/></marker><marker id="p-cinza" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-cinza"/></marker><marker id="p-ambar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-ambar"/></marker><marker id="p-vermelho" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-vermelho"/></marker><marker id="p-tinta2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-tinta2"/></marker></defs>
+<rect width="2060" height="1650" fill="#0C151C"/>
+<rect width="2060" height="92" fill="#060F16"/>
+<rect x="40" y="26" width="5" height="40" rx="2.5" fill="#3FC7B4"/>
+<text x="60" y="35.0" class="t-cab">Fluxo do agente e do modelo</text>
+<text x="61" y="61.0" class="t-cab-s">Um turno, do quadro que chega ao canal até a resposta entregue</text>
+<text x="2020" y="46.0" class="t-cab-r" text-anchor="end">MORA · VISÃO DE EXECUÇÃO</text>
+<rect x="37.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(53.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 3.5 2.5 10.2l6.6 2.3 2.3 6.6z M9.1 12.5 21.5 3.5"/></g>
+<text x="83.0" y="154" class="t-tit-s">Canal</text>
+<text x="53.0" y="188" class="t-mini">Telegram · web</text>
+<rect x="259.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(275.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 3 8l9 4.5L21 8zM3 12.5 12 17l9-4.5M3 16.5 12 21l9-4.5"/></g>
+<text x="305.0" y="154" class="t-tit-s">Redis</text>
+<text x="275.0" y="188" class="t-mini">broker · inbound</text>
+<rect x="481.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(497.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 8 4.5 12l4 4M15.5 8l4 4-4 4"/></g>
+<text x="527.0" y="154" class="t-tit-s">Handler</text>
+<text x="497.0" y="188" class="t-mini">handler.processar</text>
+<rect x="703.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(719.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5c4.4 0 8 1.2 8 2.7S16.4 9 12 9 4 7.7 4 6.2 7.6 3.5 12 3.5zM4 6.2v11.6c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7V6.2M4 12c0 1.5 3.6 2.7 8 2.7s8-1.2 8-2.7"/></g>
+<text x="749.0" y="154" class="t-tit-s">Postgres</text>
+<text x="719.0" y="188" class="t-mini">lead · auditoria · turnos</text>
+<rect x="925.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(941.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 13.9 9 19.8 10.9 13.9 12.8 12 18.6 10.1 12.8 4.2 10.9 10.1 9z"/></g>
+<text x="971.0" y="154" class="t-tit-s">Grafo</text>
+<text x="941.0" y="188" class="t-mini">supervisor + especialistas</text>
+<rect x="1147.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(1163.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 13.9 9 19.8 10.9 13.9 12.8 12 18.6 10.1 12.8 4.2 10.9 10.1 9z"/></g>
+<text x="1193.0" y="154" class="t-tit-s">Modelo</text>
+<text x="1163.0" y="188" class="t-mini">conversa · roteamento</text>
+<rect x="1369.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(1385.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h11"/></g>
+<text x="1415.0" y="154" class="t-tit-s">Saída</text>
+<text x="1385.0" y="188" class="t-mini">outbound · events · resumir</text>
+<rect x="1591.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(1607.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 19.5 9.5M9.5 14.5 4.5 19.5M10.5 6.5l7 7-2.6 2.6a4.95 4.95 0 0 1-7-7zM13.5 17.5l-7-7"/></g>
+<text x="1637.0" y="154" class="t-tit-s">CRM</text>
+<text x="1607.0" y="188" class="t-mini">porta MCP</text>
+<rect x="1813.0" y="128" width="210" height="88" rx="10" class="cartao"/>
+<g transform="translate(1829.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7.2V12l3.2 2"/></g>
+<text x="1859.0" y="154" class="t-tit-s">Scheduler</text>
+<text x="1829.0" y="188" class="t-mini">follow-up</text>
+<line x1="142.0" y1="216" x2="142.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="364.0" y1="216" x2="364.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="586.0" y1="216" x2="586.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="808.0" y1="216" x2="808.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1030.0" y1="216" x2="1030.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1252.0" y1="216" x2="1252.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1474.0" y1="216" x2="1474.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1696.0" y1="216" x2="1696.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1918.0" y1="216" x2="1918.0" y2="1512" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<rect x="24" y="246" width="2012" height="394" rx="12" fill="#13293A" opacity="0.55"/>
+<text x="48" y="266" class="t-grp">01 RECEPÇÃO E CONTEXTO</text>
+<rect x="149.54" y="298" width="206.92000000000002" height="30" rx="7" class="cartao"/>
+<text x="253.0" y="313" class="t-sub-s" text-anchor="middle">MensagemNormalizada (JSON)</text>
+<path d="M149.0 332H357.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<circle cx="149.0" cy="332" r="11" class="f-azul"/>
+<text x="149.0" y="332.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">1</text>
+<rect x="580.0" y="368" width="12" height="1094" rx="5" fill="#13293A" stroke="#5FA8E4" stroke-width="1"/>
+<rect x="345.86" y="352" width="258.28" height="30" rx="7" class="cartao"/>
+<text x="475.0" y="367" class="t-sub-s" text-anchor="middle">consume("inbound") · lock por lead</text>
+<path d="M371.0 386H579.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<circle cx="371.0" cy="386" r="11" class="f-azul"/>
+<text x="371.0" y="386.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">2</text>
+<path d="M593.0 439h26a5 5 0 0 1 5 5v16a5 5 0 0 1-5 5h-26" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<rect x="640.0" y="430" width="354.58000000000004" height="46" rx="7" class="cartao"/>
+<text x="817.29" y="445" class="t-sub-s" text-anchor="middle">transcrever se áudio · PING no broker · vazão</text>
+<text x="817.29" y="461" class="t-sub-s" text-anchor="middle">sem barramento o turno é recusado antes do modelo</text>
+<circle cx="593.0" cy="465" r="11" class="f-azul"/>
+<text x="593.0" y="465.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">3</text>
+<rect x="487.61" y="496" width="418.78000000000003" height="30" rx="7" class="cartao"/>
+<text x="697.0" y="511" class="t-sub-s" text-anchor="middle">carregar/criar lead · registrar msg "in" · marcar atividade</text>
+<path d="M593.0 530H801.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<circle cx="593.0" cy="530" r="11" class="f-azul"/>
+<text x="593.0" y="530.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">4</text>
+<rect x="944.45" y="562" width="393.1" height="30" rx="7" class="cartao"/>
+<text x="1141.0" y="577" class="t-sub-s" text-anchor="middle">reconhecer(lead) — só com contato e ainda não procurado</text>
+<path d="M593.0 596H1689.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="593.0" cy="596" r="11" class="f-verde"/>
+<text x="593.0" y="596.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">5</text>
+<rect x="24" y="660" width="2012" height="420" rx="12" fill="#241E38" opacity="0.55"/>
+<text x="48" y="680" class="t-grp">02 RACIOCÍNIO E RESPOSTA</text>
+<rect x="659.6" y="712" width="296.8" height="30" rx="7" class="cartao"/>
+<text x="808.0" y="727" class="t-sub-s" text-anchor="middle">invoke(entrada_grafo, thread_id=lead.id)</text>
+<path d="M593.0 746H1023.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<circle cx="593.0" cy="746" r="11" class="f-roxo"/>
+<text x="593.0" y="746.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">6</text>
+<rect x="1024.0" y="734" width="12" height="301" rx="5" fill="#241E38" stroke="#A88BE6" stroke-width="1"/>
+<path d="M1037.0 799h26a5 5 0 0 1 5 5v16a5 5 0 0 1-5 5h-26" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<rect x="1084.0" y="790" width="393.1" height="46" rx="7" class="cartao"/>
+<text x="1280.55" y="805" class="t-sub-s" text-anchor="middle">supervisor: regras determinísticas → porteiro de escopo</text>
+<text x="1280.55" y="821" class="t-sub-s" text-anchor="middle">→ modelo de roteamento só na ambiguidade</text>
+<circle cx="1037.0" cy="825" r="11" class="f-roxo"/>
+<text x="1037.0" y="825.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">7</text>
+<rect x="902.72" y="860" width="476.56" height="30" rx="7" class="cartao"/>
+<text x="1141.0" y="875" class="t-sub-s" text-anchor="middle">especialista chama o modelo (persona + blindagem + histórico podado)</text>
+<path d="M1037.0 894H1245.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<circle cx="1037.0" cy="894" r="11" class="f-roxo"/>
+<text x="1037.0" y="894.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">8</text>
+<rect x="1069.64" y="924" width="142.72" height="30" rx="7" class="cartao"/>
+<text x="1141.0" y="939" class="t-sub-s" text-anchor="middle">texto → sanear()</text>
+<path d="M1245.0 958H1037.0" class="aresta s-roxo" stroke-dasharray="7 5" marker-end="url(#p-roxo)"/>
+<circle cx="1245.0" cy="958" r="11" class="f-roxo"/>
+<text x="1245.0" y="958.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">9</text>
+<rect x="691.7" y="988" width="232.60000000000002" height="30" rx="7" class="cartao"/>
+<text x="808.0" y="1003" class="t-sub-s" text-anchor="middle">{lead, resposta, próximo, ...}</text>
+<path d="M1023.0 1022H593.0" class="aresta s-roxo" stroke-dasharray="7 5" marker-end="url(#p-roxo)"/>
+<circle cx="1023.0" cy="1022" r="11" class="f-roxo"/>
+<text x="1023.0" y="1022.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">10</text>
+<rect x="24" y="1100" width="2012" height="420" rx="12" fill="#0F2B29" opacity="0.55"/>
+<text x="48" y="1120" class="t-grp">03 PERSISTÊNCIA, DESPACHO E ENCERRAMENTO</text>
+<rect x="484.4" y="1152" width="425.20000000000005" height="30" rx="7" class="cartao"/>
+<text x="697.0" y="1167" class="t-sub-s" text-anchor="middle">score e temperatura · upsert do lead · auditoria · msg "out"</text>
+<path d="M593.0 1186H801.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<circle cx="593.0" cy="1186" r="11" class="f-cinza"/>
+<text x="593.0" y="1186.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">11</text>
+<rect x="814.19" y="1216" width="431.62" height="30" rx="7" class="cartao"/>
+<text x="1030.0" y="1231" class="t-sub-s" text-anchor="middle">despachar(outbound-canal) · publicar_eventos(events, resumir)</text>
+<path d="M593.0 1250H1467.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="593.0" cy="1250" r="11" class="f-verde"/>
+<text x="593.0" y="1250.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">12</text>
+<rect x="909.14" y="1280" width="463.72" height="30" rx="7" class="cartao"/>
+<text x="1141.0" y="1295" class="t-sub-s" text-anchor="middle">publicar_turno — depois do despacho; falha vai para crm_pendencias</text>
+<path d="M593.0 1314H1689.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="593.0" cy="1314" r="11" class="f-verde"/>
+<text x="593.0" y="1314.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">13</text>
+<rect x="1145.33" y="1344" width="213.34" height="30" rx="7" class="cartao"/>
+<text x="1252.0" y="1359" class="t-sub-s" text-anchor="middle">reagendar_followup / cancel</text>
+<path d="M593.0 1378H1911.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="593.0" cy="1378" r="11" class="f-verde"/>
+<text x="593.0" y="1378.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">14</text>
+<rect x="577.49" y="1406" width="239.02" height="30" rx="7" class="cartao"/>
+<text x="697.0" y="1421" class="t-sub-s" text-anchor="middle">registrar_turno (tabela turnos)</text>
+<path d="M593.0 1440H801.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<circle cx="593.0" cy="1440" r="11" class="f-cinza"/>
+<text x="593.0" y="1440.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">15</text>
+<rect x="627.5" y="1466" width="361.0" height="30" rx="7" class="cartao"/>
+<text x="808.0" y="1481" class="t-sub-s" text-anchor="middle">RespostaAgente renderizada pelo adaptador do canal</text>
+<path d="M1467.0 1500H149.0" class="aresta s-verde" stroke-dasharray="7 5" marker-end="url(#p-verde)"/>
+<circle cx="1467.0" cy="1500" r="11" class="f-verde"/>
+<text x="1467.0" y="1500.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">16</text>
+<line x1="40" y1="1574" x2="2020" y2="1574" class="linha"/>
+<path d="M42.0 1600h34" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="88.0" y="1600" class="t-leg">Chamada e publicação</text>
+<path d="M527.0 1600h34" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<text x="573.0" y="1600" class="t-leg">Raciocínio e modelo</text>
+<path d="M1012.0 1600h34" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<text x="1058.0" y="1600" class="t-leg">Entrega, CRM e agenda</text>
+<path d="M1497.0 1600h34" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="1543.0" y="1600" class="t-leg">Persistência</text>
+<text x="40" y="1630" class="t-rod">MORA · FLUXO DO AGENTE</text>
+</svg>

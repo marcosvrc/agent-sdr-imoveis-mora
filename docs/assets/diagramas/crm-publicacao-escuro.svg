@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1820 1280" width="1820" height="1280" role="img" aria-label="Sequência da publicação no CRM: o handler despacha a resposta primeiro, o publicador abre uma sessão MCP e chama uma ferramenta por fato; se falhar, o turno vai para crm_pendencias." xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTphMDMwYzYxYS1jYTMxLTQwOTEtYWVkNS0wMTI2MGY5OTYzNTIAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaH0SltS/JnAYpME/YO/3gPYAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDo4OTYyNzg0Ni04Yzc1LTQ5OGUtODk5YS0yNzViYmYzYTNmNzNscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNo+cnGIEg5fsm1l5e92Asj3QAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggFF8u8lGldgo+Cyj/wE51EhFVHrvapQSNgZX8pLDsIaakZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaGJ29tA+1IN4y3zXllWpGGsAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYIJ6u2jSSOtpqQmKtHFMWo27QxN87cPcur5f7q3/d5a5YZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GQFsZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOmEwMzBjNjFhLWNhMzEtNDA5MS1hZWQ1LTAxMjYwZjk5NjM1Mi9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOjcyM2IwYjQ3LWNlMWItNDgzYy04OTUzLTY3ZDcyN2FmMzkzNnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCAUXy7yUaV2Cj4LKP/ATnUSEVUeu9qlBI2BlfyksOwhpqJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggoI87wbZg/CRA8JkIeGSRMp1z7dgmfRY6bnSG7nO4CW2iY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggGYIhm4BiEdA6TMLlXrbA8EQuYtxgiUIoIAd2pVjShbN0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQEzvz06AjK83HS9mzH3W5QcJKanTCeNoSUWvwOmWDXRdW81+Ig6aaWFRofRUM1s4LagKGdWPkBEX0bVmzt6+tG8=</c2pa:manifest></metadata>
+<style>
+  text{font-family:Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;dominant-baseline:middle}
+  .t-tit{font-size:17px;font-weight:600;fill:#E6EEF4}
+  .t-tit-s{font-size:14.5px;font-weight:600;fill:#E6EEF4}
+  .t-sub{font-size:12px;font-weight:400;fill:#A2B5C3}
+  .t-sub-s{font-size:11px;font-weight:400;fill:#A2B5C3}
+  .t-mini{font-size:10.5px;font-weight:400;fill:#7A8D9C}
+  .t-grp{font-size:12px;font-weight:700;fill:#8FB8D6;letter-spacing:.07em}
+  .t-grp-s{font-size:11px;font-weight:400;fill:#7A8D9C}
+  .t-seta{font-size:11.5px;font-weight:500}
+  .t-leg{font-size:11.5px;font-weight:500;fill:#A2B5C3}
+  .t-rod{font-size:10px;font-weight:700;fill:#7A8D9C;letter-spacing:.09em}
+  .t-cab{font-size:27px;font-weight:700;fill:#EAF2F7}
+  .t-cab-s{font-size:13.5px;font-weight:400;fill:#7E97A8}
+  .t-cab-r{font-size:10.5px;font-weight:700;fill:#7E97A8;letter-spacing:.09em}
+  .cartao{fill:#16222B;stroke:#2A3843;stroke-width:1}
+  .grupo{fill:#121E27;stroke:#223039;stroke-width:1}
+  .linha{stroke:#243139;stroke-width:1}
+  .s-azul{stroke:#5FA8E4} .f-azul{fill:#5FA8E4} .x-azul{fill:#5FA8E4}
+  .s-verde{stroke:#41BFA9} .f-verde{fill:#41BFA9} .x-verde{fill:#41BFA9}
+  .s-roxo{stroke:#A88BE6} .f-roxo{fill:#A88BE6} .x-roxo{fill:#A88BE6}
+  .s-cinza{stroke:#93A7B8} .f-cinza{fill:#93A7B8} .x-cinza{fill:#93A7B8}
+  .s-ambar{stroke:#DCA94F} .f-ambar{fill:#DCA94F} .x-ambar{fill:#DCA94F}
+  .s-vermelho{stroke:#E0796A} .f-vermelho{fill:#E0796A} .x-vermelho{fill:#E0796A}
+  .s-tinta2{stroke:#A2B5C3} .f-tinta2{fill:#A2B5C3} .x-tinta2{fill:#A2B5C3}
+  .aresta{fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<defs><marker id="p-azul" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-azul"/></marker><marker id="p-verde" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-verde"/></marker><marker id="p-roxo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-roxo"/></marker><marker id="p-cinza" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-cinza"/></marker><marker id="p-ambar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-ambar"/></marker><marker id="p-vermelho" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-vermelho"/></marker><marker id="p-tinta2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-tinta2"/></marker></defs>
+<rect width="1820" height="1280" fill="#0C151C"/>
+<rect width="1820" height="92" fill="#060F16"/>
+<rect x="40" y="26" width="5" height="40" rx="2.5" fill="#3FC7B4"/>
+<text x="60" y="35.0" class="t-cab">Publicação de um turno no CRM</text>
+<text x="61" y="61.0" class="t-cab-s">A porta é o MCP; a falha não derruba a conversa, vai para a fila</text>
+<text x="1780" y="46.0" class="t-cab-r" text-anchor="end">MORA · PONTE COM O CRM</text>
+<rect x="233.0" y="128" width="250" height="88" rx="10" class="cartao"/>
+<g transform="translate(249.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 8 4.5 12l4 4M15.5 8l4 4-4 4"/></g>
+<text x="279.0" y="154" class="t-tit-s">handler</text>
+<text x="249.0" y="188" class="t-mini">agent.handler</text>
+<rect x="509.0" y="128" width="250" height="88" rx="10" class="cartao"/>
+<g transform="translate(525.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h17M3.5 12h17M3.5 17.5h11"/></g>
+<text x="555.0" y="154" class="t-tit-s">publicador</text>
+<text x="525.0" y="188" class="t-mini">shared/crm</text>
+<rect x="785.0" y="128" width="250" height="88" rx="10" class="cartao"/>
+<g transform="translate(801.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5 19.5 9.5M9.5 14.5 4.5 19.5M10.5 6.5l7 7-2.6 2.6a4.95 4.95 0 0 1-7-7zM13.5 17.5l-7-7"/></g>
+<text x="831.0" y="154" class="t-tit-s">CRMviaMCP</text>
+<text x="801.0" y="188" class="t-mini">sessão por turno</text>
+<rect x="1061.0" y="128" width="250" height="88" rx="10" class="cartao"/>
+<g transform="translate(1077.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4zM19.4 14.6a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1v.2a2 2 0 0 1-4 0v-.1a1.6 1.6 0 0 0-2.8-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0-1.1-2.7h-.2a2 2 0 0 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3h.1A1.6 1.6 0 0 0 10 3.1v-.2a2 2 0 0 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0 1.1 2.7h.2a2 2 0 0 1 0 4h-.1a1.6 1.6 0 0 0-1.3 1z"/></g>
+<text x="1107.0" y="154" class="t-tit-s">crm-mcp</text>
+<text x="1077.0" y="188" class="t-mini">:8200/mcp</text>
+<rect x="1337.0" y="128" width="250" height="88" rx="10" class="cartao"/>
+<g transform="translate(1353.0,143.0) scale(0.8750)" fill="none" stroke="#5FA8E4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 20.5V5.2l8-2.7v18M12.5 20.5h7V9.5h-7M7.5 8.5h2M7.5 12h2M7.5 15.5h2M15 12.5h1.5M15 16h1.5M2.5 20.5h19"/></g>
+<text x="1383.0" y="154" class="t-tit-s">crm-api</text>
+<text x="1353.0" y="188" class="t-mini">:8100 · REST</text>
+<line x1="358.0" y1="216" x2="358.0" y2="1150" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="634.0" y1="216" x2="634.0" y2="1150" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="910.0" y1="216" x2="910.0" y2="1150" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1186.0" y1="216" x2="1186.0" y2="1150" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<line x1="1462.0" y1="216" x2="1462.0" y2="1150" stroke="#2A3843" stroke-width="1.2" stroke-dasharray="4 6"/>
+<rect x="352.0" y="268" width="12" height="162" rx="5" fill="#13293A" stroke="#5FA8E4" stroke-width="1"/>
+<path d="M365.0 287h26a5 5 0 0 1 5 5v16a5 5 0 0 1-5 5h-26" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<rect x="412.0" y="278" width="380.26000000000005" height="46" rx="7" class="cartao"/>
+<text x="602.13" y="293" class="t-sub-s" text-anchor="middle">despacha a resposta ao cliente — o CRM vem depois,</text>
+<text x="602.13" y="309" class="t-sub-s" text-anchor="middle">para que um CRM fora do ar nunca atrase o atendimento</text>
+<circle cx="365.0" cy="313" r="11" class="f-azul"/>
+<text x="365.0" y="313.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">1</text>
+<rect x="325.13" y="366" width="341.74" height="30" rx="7" class="cartao"/>
+<text x="496.0" y="381" class="t-sub-s" text-anchor="middle">publicar_turno(lead, entrada, texto_saida, ...)</text>
+<path d="M365.0 400H627.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<circle cx="365.0" cy="400" r="11" class="f-azul"/>
+<text x="365.0" y="400.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">2</text>
+<rect x="628.0" y="388" width="12" height="702" rx="5" fill="#0F2B29" stroke="#41BFA9" stroke-width="1"/>
+<rect x="613.97" y="436" width="316.06" height="30" rx="7" class="cartao"/>
+<text x="772.0" y="451" class="t-sub-s" text-anchor="middle">sessao() — uma conexão para o turno inteiro</text>
+<path d="M641.0 470H903.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="641.0" cy="470" r="11" class="f-verde"/>
+<text x="641.0" y="470.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">3</text>
+<rect x="904.0" y="458" width="12" height="542" rx="5" fill="#0F2B29" stroke="#41BFA9" stroke-width="1"/>
+<rect x="909.23" y="506" width="277.54" height="30" rx="7" class="cartao"/>
+<text x="1048.0" y="521" class="t-sub-s" text-anchor="middle">MCP initialize (Bearer SDR_CRM_TOKEN)</text>
+<path d="M917.0 540H1179.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<circle cx="917.0" cy="540" r="11" class="f-verde"/>
+<text x="917.0" y="540.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">4</text>
+<rect x="430" y="596" width="1330" height="330" rx="10" fill="none" stroke="#A88BE6" stroke-width="1.2" stroke-dasharray="7 5" opacity="0.7"/>
+<rect x="430" y="596" width="161.35500000000002" height="26" rx="8" fill="#241E38"/>
+<text x="443" y="609" class="t-seta x-roxo" style="font-weight:700">para cada fato do turno</text>
+<rect x="562.61" y="618" width="418.78000000000003" height="46" rx="7" class="cartao"/>
+<text x="772.0" y="633" class="t-sub-s" text-anchor="middle">garantir_lead · garantir_oportunidade · registrar_interacao</text>
+<text x="772.0" y="649" class="t-sub-s" text-anchor="middle">atualizar_preferencias · mover_estagio · encaminhar</text>
+<path d="M641.0 668H903.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<circle cx="641.0" cy="668" r="11" class="f-roxo"/>
+<text x="641.0" y="668.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">5</text>
+<rect x="889.97" y="718" width="316.06" height="30" rx="7" class="cartao"/>
+<text x="1048.0" y="733" class="t-sub-s" text-anchor="middle">tools/call {operation_id, expected_version}</text>
+<path d="M917.0 752H1179.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<circle cx="917.0" cy="752" r="11" class="f-roxo"/>
+<text x="917.0" y="752.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">6</text>
+<rect x="1127.45" y="790" width="393.1" height="30" rx="7" class="cartao"/>
+<text x="1324.0" y="805" class="t-sub-s" text-anchor="middle">REST: Bearer CRM_API_TOKEN · Idempotency-Key · If-Match</text>
+<path d="M1193.0 824H1455.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<circle cx="1193.0" cy="824" r="11" class="f-roxo"/>
+<text x="1193.0" y="824.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">7</text>
+<rect x="1220.54" y="844" width="206.92000000000002" height="30" rx="7" class="cartao"/>
+<text x="1324.0" y="859" class="t-sub-s" text-anchor="middle">{ok, data} ou {error.code}</text>
+<path d="M1455.0 878H1193.0" class="aresta s-roxo" stroke-dasharray="7 5" marker-end="url(#p-roxo)"/>
+<circle cx="1455.0" cy="878" r="11" class="f-roxo"/>
+<text x="1455.0" y="878.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">8</text>
+<rect x="973.4300000000001" y="874" width="149.14" height="30" rx="7" class="cartao"/>
+<text x="1048.0" y="889" class="t-sub-s" text-anchor="middle">structuredContent</text>
+<path d="M1179.0 908H917.0" class="aresta s-roxo" stroke-dasharray="7 5" marker-end="url(#p-roxo)"/>
+<rect x="430" y="966" width="1330" height="124" rx="10" fill="none" stroke="#E0796A" stroke-width="1.2" stroke-dasharray="7 5" opacity="0.7"/>
+<rect x="430" y="966" width="302.595" height="26" rx="8" fill="#2E1A18"/>
+<text x="443" y="979" class="t-seta x-vermelho" style="font-weight:700">se a sessão veio inerte ou algum fato não subiu</text>
+<path d="M641.0 1017h26a5 5 0 0 1 5 5v16a5 5 0 0 1-5 5h-26" class="aresta s-vermelho" marker-end="url(#p-vermelho)"/>
+<rect x="688.0" y="1008" width="341.74" height="46" rx="7" class="cartao"/>
+<text x="858.87" y="1023" class="t-sub-s" text-anchor="middle">grava em crm_pendencias — o scheduler republica</text>
+<text x="858.87" y="1039" class="t-sub-s" text-anchor="middle">com espera dobrada, até 1 h, por 30 tentativas</text>
+<circle cx="641.0" cy="1043" r="11" class="f-vermelho"/>
+<text x="641.0" y="1043.5" text-anchor="middle" style="font-size:11px;font-weight:700;fill:#fff">9</text>
+<rect x="60.0" y="1150" width="1700" height="46" rx="7" class="cartao"/>
+<text x="910" y="1165" class="t-sub-s" text-anchor="middle">sessao() nunca levanta: com o CRM fora do ar ela entrega uma sessão inerte, e é o publicador voltar sem lead criado que denuncia a queda.</text>
+<text x="910" y="1181" class="t-sub-s" text-anchor="middle">Repetir é seguro — operation_id e external_event_id são derivados do lead e do fato, não de um contador nem do relógio.</text>
+<line x1="40" y1="1214" x2="1780" y2="1214" class="linha"/>
+<path d="M42.0 1240h34" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="88.0" y="1240" class="t-leg">Turno do cliente</text>
+<path d="M467.0 1240h34" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<text x="513.0" y="1240" class="t-leg">Abertura da sessão</text>
+<path d="M892.0 1240h34" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<text x="938.0" y="1240" class="t-leg">Uma ferramenta por fato</text>
+<path d="M1317.0 1240h34" class="aresta s-vermelho" marker-end="url(#p-vermelho)"/>
+<text x="1363.0" y="1240" class="t-leg">Fila de pendências</text>
+</svg>

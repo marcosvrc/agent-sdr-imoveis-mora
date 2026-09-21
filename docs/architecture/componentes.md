@@ -26,36 +26,8 @@ apontada.
 | Scheduler | `services/scheduler/sdr_scheduler/local_worker.py` | `scheduler` |
 | Observabilidade leve | `shared/sdr_shared/db/monitoramento.py` | (sem processo próprio) |
 
-```mermaid
-flowchart LR
-  subgraph Canais
-    WEB["channels :8001<br/>WebSocket"]
-    TGI["telegram-in"]
-    TGO["telegram-out"]
-  end
-  R[["redis<br/>sdr:inbound · sdr:outbound-web<br/>sdr:outbound-telegram · sdr:resumir<br/>sdr:imovel-novo · sdr:events"]]
-  subgraph Agente["services/agent"]
-    AG["agent (grafo)"]
-    RS["resumidor"]
-    RT["reativador"]
-  end
-  SCH["scheduler<br/>laço de 30 s"]
-  PG[("Postgres<br/>bancos sdr e crm")]
-  MCP["crm-mcp :8200<br/>/mcp"]
-  CRMAPI["crm-api :8100"]
-  API["api :8000"]
-  WEB --> R --> AG
-  TGI --> R
-  AG --> R --> WEB
-  R --> TGO
-  R --> RS
-  R --> RT
-  SCH --> R
-  AG --> PG
-  API --> PG
-  SCH --> PG
-  AG -->|porta CRM| MCP --> CRMAPI --> PG
-```
+![Tópicos do Redis, produtores e consumidores](../assets/diagramas/mensageria-claro.svg#only-light)
+![Tópicos do Redis, produtores e consumidores](../assets/diagramas/mensageria-escuro.svg#only-dark)
 
 ## Banco de dados (Postgres + pgvector)
 
@@ -284,28 +256,8 @@ entra nele **por MCP sobre HTTP**: o serviço `crm-mcp` (`python -m sdr_crm.mcp 
 expõe um servidor MCP que traduz cada ferramenta numa chamada à REST do CRM (`crm-api:8100`). O mesmo
 servidor sobe por stdio no perfil `mcp` (`crm-mcp-stdio`), para um cliente MCP externo.
 
-```mermaid
-sequenceDiagram
-  participant H as agent.handler
-  participant P as publicador (shared/crm)
-  participant A as CRMviaMCP (sessão por turno)
-  participant M as crm-mcp :8200/mcp
-  participant R as crm-api :8100
-  H->>H: despacha resposta ao cliente
-  H->>P: publicar_turno(lead, entrada, ...)
-  P->>A: sessao()
-  A->>M: MCP initialize (Bearer SDR_CRM_TOKEN)
-  loop uma ferramenta por fato
-    P->>A: garantir_lead / registrar_interacao / mover_estagio ...
-    A->>M: tools/call {operation_id, expected_version}
-    M->>R: REST (Bearer CRM_API_TOKEN, Idempotency-Key, If-Match)
-    R-->>M: {ok, data | error.code}
-    M-->>A: structuredContent
-  end
-  alt falha ou sessão inerte
-    P->>P: crm_pendencias (scheduler drena depois)
-  end
-```
+![Publicação de um turno no CRM](../assets/diagramas/crm-publicacao-claro.svg#only-light)
+![Publicação de um turno no CRM](../assets/diagramas/crm-publicacao-escuro.svg#only-dark)
 
 **Servidor MCP** (`services/crm/sdr_crm/mcp/servidor.py`, `http.py`, `cliente.py`). Usa
 `mcp.server.lowlevel.Server` com `tools/list` e `tools/call` registrados à mão, para devolver erro

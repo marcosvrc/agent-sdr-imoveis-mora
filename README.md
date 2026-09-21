@@ -167,51 +167,12 @@ sistema à parte — banco, API, login e interface próprios — e a Mora entra 
 o servidor MCP, com credencial de serviço. A única dependência cruzada permitida entre serviços é o
 pacote `shared/`.
 
-```mermaid
-flowchart LR
-  subgraph Entrada["Porta de entrada"]
-    SITE["apps/web<br/>site vitrine + chat (:5173)"]
-    TG["Telegram<br/>Bot API (long polling)"]
-  end
-  subgraph Canais["services/channels"]
-    CH["local :8001<br/>HTTP + WebSocket"]
-    TGW["telegram<br/>entrada / saída"]
-  end
-  Q[["Redis Streams<br/>inbound · outbound-* · resumir<br/>lock por lead"]]
-  subgraph Agente["services/agent — LangGraph"]
-    SUP["Supervisor<br/>regras → LLM"]
-    NODES["Qualificador · Consultor · Agendador<br/>Informações · Handoff · Recusa<br/>Follow-up · Reativador · Resumidor"]
-    SUP --> NODES
-  end
-  LLM["LLM por papel<br/>Anthropic · OpenAI · Ollama"]
-  DB[("Postgres 16 + pgvector<br/>banco sdr: leads, imóveis, docs,<br/>checkpoint, saúde")]
-  SCH["services/scheduler<br/>follow-up · saúde · pendências do CRM · acervo"]
-  API["services/api :8000"]
-  DASH["apps/dashboard :5174<br/>painel da Mora"]
-  subgraph CRMBOX["CRM da imobiliária (sistema à parte)"]
-    MCP["crm-mcp :8200<br/>18 ferramentas"]
-    CRMAPI["crm-api :8100"]
-    CRMDB[("banco crm")]
-    CRMWEB["apps/crm :3000"]
-    MCP --> CRMAPI --> CRMDB
-    CRMWEB --> CRMAPI
-  end
-  SITE --> CH --> Q
-  TG --> TGW --> Q
-  Q --> Agente
-  Agente --> LLM
-  Agente --> DB
-  Agente -->|porta CRM| MCP
-  Agente -->|resposta neutra| Q
-  Q --> CH
-  Q --> TGW
-  API --> DB
-  DASH --> API
-  DASH -->|tempo real| CH
-  SCH --> DB
-  SCH --> Q
-  SCH -->|reindexa acervo| MCP
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagramas/macro-escuro.svg">
+    <img alt="Arquitetura macro do Mora" src="docs/assets/diagramas/macro-claro.svg" width="100%">
+  </picture>
+</p>
 
 **Fluxo de um turno.** O canal publica em `sdr:inbound`; o worker do agente toma o lock do lead,
 roda o grafo (supervisor decide por regras determinísticas antes de gastar modelo; especialistas

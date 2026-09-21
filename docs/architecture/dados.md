@@ -24,18 +24,12 @@ num volume que já existia, quem aplica é `make migrate` (idempotente), que o `
 A recomendação de imóveis combina filtros estruturados com busca vetorial, expandindo a área de busca
 em cascata quando necessário:
 
-```mermaid
-flowchart LR
-  Q[Consulta do lead] --> B[Bairro]
-  B -->|poucos resultados| V[Bairros vizinhos]
-  V -->|poucos resultados| R[Região]
-  R -->|poucos resultados| C[Cidade]
-  B & V & R & C --> RANK[Ranking por similaridade + filtros]
-  RANK --> OUT[Imóveis recomendados]
-```
+![Cascata da busca de imóveis](../assets/diagramas/busca-cascata-claro.svg#only-light)
+![Cascata da busca de imóveis](../assets/diagramas/busca-cascata-escuro.svg#only-dark)
 
-- **Embeddings.** Ollama `bge-m3`, provedor único — e não por falta de opção: o schema espera 1024
-  dimensões, que é o que esse modelo dá. Baixe uma vez com `make ollama-pull`.
+- **Embeddings.** Dois provedores, mesma dimensão: Ollama `bge-m3` (padrão, local) ou OpenAI
+  `text-embedding-3-small` com `dimensions=1024` — o schema espera 1024, e trocar de modelo sem
+  trocar essa coluna dá resultado errado sem erro nenhum. O local baixa com `make ollama-pull`.
 - **Um caminho de RAG.** Busca vetorial direta no Postgres, no mesmo banco que o painel consulta
   (ADR-0001) — é o caminho testado, e é o único.
 

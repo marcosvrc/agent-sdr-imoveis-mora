@@ -80,19 +80,8 @@ Registro por chamada, custo por modelo e orçamento com degradação automática
 O sistema separa o **cérebro** (o agente) dos **canais** (site e Telegram). O agente não sabe por qual
 canal a mensagem chegou: cada canal traduz o evento do provedor para um formato neutro e vice-versa.
 
-```mermaid
-flowchart LR
-    U[Usuário] --> SITE[Site :5173 ou Telegram]
-    SITE --> CH[Canais<br/>channels :8001 · telegram-in/out]
-    CH --> Q[[Redis Streams]]
-    Q --> AGENT[Agente de IA<br/>worker em container]
-    AGENT --> LLM[LLM<br/>Anthropic · OpenAI · Ollama]
-    AGENT --> DATA[(Postgres + pgvector)]
-    AGENT -->|resposta neutra| Q
-    Q --> CH
-    DASH[Painel do corretor :5174] --> API[API REST :8000]
-    API --> DATA
-```
+![Mora em uma olhada](assets/diagramas/contexto-claro.svg#only-light)
+![Mora em uma olhada](assets/diagramas/contexto-escuro.svg#only-dark)
 
 Tudo isso são containers de um único `docker compose`: o sistema roda inteiro na máquina de quem
 avalia, e **nada está implantado** — é escolha de escopo, não pendência. Detalhes em

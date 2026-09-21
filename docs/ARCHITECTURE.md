@@ -15,58 +15,8 @@
 
 ## 2. Visão macro
 
-```mermaid
-flowchart LR
-  subgraph Entrada["Porta de entrada"]
-    SITE[apps/web :5173<br/>site vitrine PWA + widget chat]
-    TG[(Telegram Bot API<br/>long polling · getUpdates)]
-  end
-
-  subgraph Canais["services/channels"]
-    WS[channels :8001<br/>HTTP + WebSocket]
-    TGI[telegram-in / telegram-out]
-  end
-
-  Q[[redis<br/>Streams: inbound · saída dos canais]]
-
-  subgraph Agente["services/agent (worker em container)"]
-    SUP[Supervisor] --> QUAL[Qualificador]
-    SUP --> CONS[Consultor de Imóveis]
-    SUP --> AGD[Agendador]
-    FUP[Follow-up] --> SUP
-    RES[Resumidor]
-  end
-
-  subgraph IA["Modelos"]
-    LLM[Anthropic · OpenAI · Ollama<br/>conversa e roteamento]
-    EMB[Ollama bge-m3<br/>embeddings]
-  end
-
-  subgraph Dados
-    PG[(Postgres 16 + pgvector<br/>container db)]
-    FOTOS[(data/fotos<br/>servidas pela API em /fotos)]
-  end
-
-  SCH[scheduler<br/>one-shot por lead no Postgres] --> Q
-  CRM[crm-mcp :8200<br/>servidor MCP do CRM]
-  DASH[apps/dashboard :5174<br/>painel do corretor]
-  API[services/api :8000<br/>FastAPI]
-
-  SITE -->|t.me/bot?start=imovel| TG
-  SITE -->|WS| WS
-  TG --> TGI --> Q --> Agente
-  WS --> Q
-  Agente --> LLM
-  CONS --> EMB --> PG
-  Agente --> PG
-  Agente --> CRM
-  Agente -->|resposta neutra| Q
-  Q --> Canais
-  Agente -->|inativo| SCH
-  FOTOS --> API
-  DASH --> API --> PG
-  DASH -->|tempo real| WS
-```
+![Arquitetura macro do Mora](assets/diagramas/macro-claro.svg#only-light)
+![Arquitetura macro do Mora](assets/diagramas/macro-escuro.svg#only-dark)
 
 ## 3. Componentes e como cada um executa
 
@@ -106,20 +56,8 @@ containers é o comando. Os nomes abaixo são os serviços de
 
 ## 4. Fluxo de negócio (máquina de estados do lead)
 
-```mermaid
-stateDiagram-v2
-  [*] --> Novo: primeira mensagem / navegação no site
-  Novo --> Qualificando: intenção identificada
-  Qualificando --> Qualificando: preenche cartão (região, preço, quartos, urgência…)
-  Qualificando --> Inativo: sem resposta (2h / 24h / 72h)
-  Inativo --> Qualificando: follow-up respondido
-  Inativo --> Frio: 3 follow-ups sem resposta
-  Qualificando --> Qualificado: cartão completo + score
-  Qualificado --> Agendado: visita / reunião marcada
-  Qualificado --> Handoff: corretor assume
-  Agendado --> Handoff: resumo gerado para o corretor
-  Handoff --> [*]
-```
+![Jornada do lead](assets/diagramas/estados-negocio-claro.svg#only-light)
+![Jornada do lead](assets/diagramas/estados-negocio-escuro.svg#only-dark)
 
 O cartão de qualificação (`shared/sdr_shared/models/lead.py`) é a fonte de verdade:
 a cada turno o Qualificador recebe a lista de campos faltantes e conduz a conversa

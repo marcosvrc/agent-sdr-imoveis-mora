@@ -1,0 +1,200 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1700 1800" width="1700" height="1800" role="img" aria-label="Escada de decisão do supervisor: cada regra é avaliada na ordem; a primeira que casa define o especialista, e só o que sobra vai ao modelo de roteamento." xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTowNDc5YmE3OC1lYzAwLTRjNmMtYWU3NS1iMjNkOWY2NzgzNDUAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaMMd5P5regrpv187TyIT5OAAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpkNzVlYjQzYy1iZDU0LTQ0ZTEtYmIyNC05ZmY1YTUzMTIxMzJscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoaiyuCxBoafl6HIqYKXQB2QAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFggHp/i2nIH48pFdXC65b/Vx7YGDX7Y8K6h3l5sZlbqQMukZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaLbEG2MER+ji4uEd1hygzFEAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYICenKwR3o5fm3LjbaCx91NeLLvEucsa7j7O/Cv97H1EDZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GQFPZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjA0NzliYTc4LWVjMDAtNGM2Yy1hZTc1LWIyM2Q5ZjY3ODM0NS9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmZkYjUyYjcyLWNjMWMtNDM3ZC05N2ZiLTY2MmNkMzliZGVjMnJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCAen+LacgfjykV1cLrlv9XHtgYNftjwrqHeXmxmVupAy6JjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFgg8XdxS4km8v0iPP4nYzYRzubymMFwARbZZ0/jYqK/0E2iY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggRmezL4sWn7B3mGtQ497DJ3M6yG4ITj+d2SzKnIj75PF0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQFSKZ93GJDcM3IHgb7IF+ctpA16Edji8dyqxCzsI2y8EcrfN7w9wgs671ah/JVG+4Vc7IAEF2unGBPDE3YI5m9k=</c2pa:manifest></metadata>
+<style>
+  text{font-family:Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;dominant-baseline:middle}
+  .t-tit{font-size:17px;font-weight:600;fill:#E6EEF4}
+  .t-tit-s{font-size:14.5px;font-weight:600;fill:#E6EEF4}
+  .t-sub{font-size:12px;font-weight:400;fill:#A2B5C3}
+  .t-sub-s{font-size:11px;font-weight:400;fill:#A2B5C3}
+  .t-mini{font-size:10.5px;font-weight:400;fill:#7A8D9C}
+  .t-grp{font-size:12px;font-weight:700;fill:#8FB8D6;letter-spacing:.07em}
+  .t-grp-s{font-size:11px;font-weight:400;fill:#7A8D9C}
+  .t-seta{font-size:11.5px;font-weight:500}
+  .t-leg{font-size:11.5px;font-weight:500;fill:#A2B5C3}
+  .t-rod{font-size:10px;font-weight:700;fill:#7A8D9C;letter-spacing:.09em}
+  .t-cab{font-size:27px;font-weight:700;fill:#EAF2F7}
+  .t-cab-s{font-size:13.5px;font-weight:400;fill:#7E97A8}
+  .t-cab-r{font-size:10.5px;font-weight:700;fill:#7E97A8;letter-spacing:.09em}
+  .cartao{fill:#16222B;stroke:#2A3843;stroke-width:1}
+  .grupo{fill:#121E27;stroke:#223039;stroke-width:1}
+  .linha{stroke:#243139;stroke-width:1}
+  .s-azul{stroke:#5FA8E4} .f-azul{fill:#5FA8E4} .x-azul{fill:#5FA8E4}
+  .s-verde{stroke:#41BFA9} .f-verde{fill:#41BFA9} .x-verde{fill:#41BFA9}
+  .s-roxo{stroke:#A88BE6} .f-roxo{fill:#A88BE6} .x-roxo{fill:#A88BE6}
+  .s-cinza{stroke:#93A7B8} .f-cinza{fill:#93A7B8} .x-cinza{fill:#93A7B8}
+  .s-ambar{stroke:#DCA94F} .f-ambar{fill:#DCA94F} .x-ambar{fill:#DCA94F}
+  .s-vermelho{stroke:#E0796A} .f-vermelho{fill:#E0796A} .x-vermelho{fill:#E0796A}
+  .s-tinta2{stroke:#A2B5C3} .f-tinta2{fill:#A2B5C3} .x-tinta2{fill:#A2B5C3}
+  .aresta{fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+</style>
+<defs><marker id="p-azul" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-azul"/></marker><marker id="p-verde" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-verde"/></marker><marker id="p-roxo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-roxo"/></marker><marker id="p-cinza" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-cinza"/></marker><marker id="p-ambar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-ambar"/></marker><marker id="p-vermelho" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-vermelho"/></marker><marker id="p-tinta2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-tinta2"/></marker></defs>
+<rect width="1700" height="1800" fill="#0C151C"/>
+<rect width="1700" height="92" fill="#060F16"/>
+<rect x="40" y="26" width="5" height="40" rx="2.5" fill="#3FC7B4"/>
+<text x="60" y="35.0" class="t-cab">Ordem de decisão do supervisor</text>
+<text x="61" y="61.0" class="t-cab-s">Treze regras determinísticas antes de gastar um token</text>
+<text x="1660" y="46.0" class="t-cab-r" text-anchor="end">MORA · ROTEAMENTO</text>
+<rect x="60" y="190" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="190" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="226.0" class="t-tit-s">Já existe resposta neste turno, ou saltos &gt; 1?</text>
+<text x="34" y="226" class="t-mini" text-anchor="middle">1</text>
+<path d="M960.0 226.0 L1100.0 226.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="1030" y="210" class="t-seta x-cinza" text-anchor="middle">sim</text>
+<rect x="1100" y="196" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="196" width="4" height="60" rx="2" class="f-cinza"/>
+<text x="1250.0" y="226.0" class="t-tit-s" text-anchor="middle">encerra o turno</text>
+<path d="M510.0 262.0 L510.0 290.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="276" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="290" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="290" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="326.0" class="t-tit-s">O canal é SISTEMA (pedido interno de briefing)?</text>
+<text x="34" y="326" class="t-mini" text-anchor="middle">2</text>
+<path d="M960.0 326.0 L1100.0 326.0" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<text x="1030" y="310" class="t-seta x-roxo" text-anchor="middle">sim</text>
+<rect x="1100" y="296" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="296" width="4" height="60" rx="2" class="f-roxo"/>
+<text x="1250.0" y="326.0" class="t-tit-s" text-anchor="middle">resumidor</text>
+<path d="M510.0 362.0 L510.0 390.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="376" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="390" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="390" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="426.0" class="t-tit-s">A mensagem é do tipo FOLLOWUP?</text>
+<text x="34" y="426" class="t-mini" text-anchor="middle">3</text>
+<path d="M960.0 426.0 L1100.0 426.0" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
+<text x="1030" y="410" class="t-seta x-ambar" text-anchor="middle">sim</text>
+<rect x="1100" y="396" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="396" width="4" height="60" rx="2" class="f-ambar"/>
+<text x="1250.0" y="426.0" class="t-tit-s" text-anchor="middle">followup</text>
+<path d="M510.0 462.0 L510.0 490.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="476" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="490" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="490" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="526.0" class="t-tit-s">A mensagem é do tipo REATIVACAO?</text>
+<text x="34" y="526" class="t-mini" text-anchor="middle">4</text>
+<path d="M960.0 526.0 L1100.0 526.0" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
+<text x="1030" y="510" class="t-seta x-ambar" text-anchor="middle">sim</text>
+<rect x="1100" y="496" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="496" width="4" height="60" rx="2" class="f-ambar"/>
+<text x="1250.0" y="526.0" class="t-tit-s" text-anchor="middle">reativador</text>
+<path d="M510.0 562.0 L510.0 590.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="576" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="590" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="590" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="626.0" class="t-tit-s">PEDE_SAIR — o cliente pediu para não receber avisos?</text>
+<text x="34" y="626" class="t-mini" text-anchor="middle">5</text>
+<path d="M960.0 626.0 L1100.0 626.0" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
+<text x="1030" y="610" class="t-seta x-ambar" text-anchor="middle">sim</text>
+<rect x="1100" y="596" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="596" width="4" height="60" rx="2" class="f-ambar"/>
+<text x="1250.0" y="626.0" class="t-tit-s" text-anchor="middle">reativador</text>
+<path d="M510.0 662.0 L510.0 690.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="676" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="690" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="690" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="726.0" class="t-tit-s">O porteiro de escopo reprovou e não houve PEDE_HUMANO?</text>
+<text x="34" y="726" class="t-mini" text-anchor="middle">6</text>
+<path d="M960.0 726.0 L1100.0 726.0" class="aresta s-vermelho" marker-end="url(#p-vermelho)"/>
+<text x="1030" y="710" class="t-seta x-vermelho" text-anchor="middle">sim</text>
+<rect x="1100" y="696" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="696" width="4" height="60" rx="2" class="f-vermelho"/>
+<text x="1250.0" y="726.0" class="t-tit-s" text-anchor="middle">recusa</text>
+<path d="M510.0 762.0 L510.0 790.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="776" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="790" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="790" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="826.0" class="t-tit-s">"Falar com corretor", PEDE_HUMANO ou estágio HANDOFF?</text>
+<text x="34" y="826" class="t-mini" text-anchor="middle">7</text>
+<path d="M960.0 826.0 L1100.0 826.0" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<text x="1030" y="810" class="t-seta x-verde" text-anchor="middle">sim</text>
+<rect x="1100" y="796" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="796" width="4" height="60" rx="2" class="f-verde"/>
+<text x="1250.0" y="826.0" class="t-tit-s" text-anchor="middle">handoff</text>
+<path d="M510.0 862.0 L510.0 890.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="876" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="890" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="890" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="926.0" class="t-tit-s">Pergunta institucional, sem prefixo slot: e sem horários oferecidos?</text>
+<text x="34" y="926" class="t-mini" text-anchor="middle">8</text>
+<path d="M960.0 926.0 L1100.0 926.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="910" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="896" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="896" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="926.0" class="t-tit-s" text-anchor="middle">informacoes</text>
+<path d="M510.0 962.0 L510.0 990.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="976" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="990" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="990" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="1026.0" class="t-tit-s">Prefixo slot:, ou horários oferecidos + ESCOLHE_HORARIO?</text>
+<text x="34" y="1026" class="t-mini" text-anchor="middle">9</text>
+<path d="M960.0 1026.0 L1100.0 1026.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="1010" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="996" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="996" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="1026.0" class="t-tit-s" text-anchor="middle">agendador</text>
+<path d="M510.0 1062.0 L510.0 1090.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="1076" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="1090" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="1090" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="1126.0" class="t-tit-s">"Agendar visita", PEDE_VISITA ou pediu_visita — e estágio ≠ AGENDADO?</text>
+<text x="34" y="1126" class="t-mini" text-anchor="middle">10</text>
+<path d="M960.0 1126.0 L1100.0 1126.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="1110" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="1096" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="1096" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="1126.0" class="t-tit-s" text-anchor="middle">agendador</text>
+<path d="M510.0 1162.0 L510.0 1190.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="1176" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="1190" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="1190" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="1226.0" class="t-tit-s">"Ver outros" ou PEDE_OPCOES?</text>
+<text x="34" y="1226" class="t-mini" text-anchor="middle">11</text>
+<path d="M960.0 1226.0 L1100.0 1226.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="1210" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="1196" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="1196" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="1226.0" class="t-tit-s" text-anchor="middle">consultor</text>
+<path d="M510.0 1262.0 L510.0 1290.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="1276" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="1290" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="1290" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="1326.0" class="t-tit-s">Cartão completo e ainda sem imóveis sugeridos?</text>
+<text x="34" y="1326" class="t-mini" text-anchor="middle">12</text>
+<path d="M960.0 1326.0 L1100.0 1326.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="1310" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="1296" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="1296" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="1326.0" class="t-tit-s" text-anchor="middle">consultor</text>
+<path d="M510.0 1362.0 L510.0 1390.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="1376" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="1390" width="900" height="72" rx="11" class="cartao"/>
+<rect x="60" y="1390" width="4.5" height="72" rx="2.2" class="f-azul"/>
+<text x="78" y="1426.0" class="t-tit-s">Cartão incompleto?</text>
+<text x="34" y="1426" class="t-mini" text-anchor="middle">13</text>
+<path d="M960.0 1426.0 L1100.0 1426.0" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="1030" y="1410" class="t-seta x-azul" text-anchor="middle">sim</text>
+<rect x="1100" y="1396" width="300" height="60" rx="9" class="cartao"/>
+<rect x="1100" y="1396" width="4" height="60" rx="2" class="f-azul"/>
+<text x="1250.0" y="1426.0" class="t-tit-s" text-anchor="middle">qualificador</text>
+<path d="M510.0 1462.0 L510.0 1500.0" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="524" y="1484" class="t-seta x-cinza" text-anchor="start">não</text>
+<rect x="60" y="1500" width="900" height="96" rx="11" class="cartao"/>
+<rect x="60" y="1500" width="4.5" height="96" rx="2.2" class="f-roxo"/>
+<rect x="76" y="1517" width="34" height="34" rx="9" fill="#241E38"/>
+<g transform="translate(82.0,1523.0) scale(0.9167)" fill="none" stroke="#A88BE6" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 13.9 9 19.8 10.9 13.9 12.8 12 18.6 10.1 12.8 4.2 10.9 10.1 9z"/></g>
+<text x="120" y="1526" class="t-tit-s">Modelo de roteamento (papel barato, temperatura 0)</text>
+<text x="120" y="1548" class="t-sub">Resposta restrita a qualificador, consultor, agendador, handoff ou informacoes —</text>
+<text x="120" y="1564" class="t-sub">qualquer outra coisa vira qualificador. Lead AGENDADO nunca volta ao agendador.</text>
+<rect x="60.0" y="1630" width="1580" height="62" rx="7" class="cartao"/>
+<text x="850" y="1645" class="t-sub-s" text-anchor="middle">A ordem importa: PEDE_SAIR vem antes do porteiro de escopo (senão “não quero mais nada” seria recusado como fora de assunto), e o pedido de humano</text>
+<text x="850" y="1661" class="t-sub-s" text-anchor="middle">vence a recusa. Depois do especialista, _rotear encerra o turno quando há resposta, quando saltos chega a MAX_SALTOS = 4, ou quando o nó devolveu</text>
+<text x="850" y="1677" class="t-sub-s" text-anchor="middle">sem mudar a decisão — repetição sem mudança é fim de turno, não nova tentativa.</text>
+<line x1="40" y1="1724" x2="1660" y2="1724" class="linha"/>
+<path d="M42.0 1750h34" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="88.0" y="1750" class="t-leg">Atendimento</text>
+<path d="M437.0 1750h34" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<text x="483.0" y="1750" class="t-leg">Passagem ao humano</text>
+<path d="M832.0 1750h34" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
+<text x="878.0" y="1750" class="t-leg">Iniciado pela Mora</text>
+<path d="M1227.0 1750h34" class="aresta s-vermelho" marker-end="url(#p-vermelho)"/>
+<text x="1273.0" y="1750" class="t-leg">Fora de escopo</text>
+<text x="40" y="1780" class="t-rod">MORA · SUPERVISOR</text>
+</svg>

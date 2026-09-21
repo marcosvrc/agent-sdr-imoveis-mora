@@ -28,36 +28,8 @@ O canal (Telegram, web) publica no tópico `inbound` do broker; o worker do agen
 supervisor e um ou mais especialistas; o `dispatch.py` entrega a resposta no tópico
 `outbound-<canal>`, publica eventos, espelha no CRM e reagenda o follow-up.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant Canal as Canal (Telegram/Web)
-  participant Redis as Broker (inbound)
-  participant H as handler.processar
-  participant DB as Postgres
-  participant G as Grafo (supervisor + especialistas)
-  participant LLM as LLM (conversa/roteamento)
-  participant Out as Broker (outbound-canal / events / resumir)
-  participant CRM as CRM (MCP)
-  participant Sch as Scheduler
-
-  Canal->>Redis: MensagemNormalizada (JSON)
-  Redis->>H: consume("inbound") com lock por lead
-  H->>H: transcrever se áudio · PING no broker · vazão
-  H->>DB: carregar/criar lead · registrar msg "in" · marcar atividade
-  H->>CRM: reconhecer(lead) (só se há contato e ainda não procurado)
-  H->>G: invoke(entrada_grafo, thread_id=lead.id)
-  G->>G: supervisor (regras → porteiro de escopo → LLM se ambíguo)
-  G->>LLM: especialista chama modelo (persona + blindagem + histórico)
-  LLM-->>G: texto → sanear()
-  G-->>H: {lead, resposta, ...}
-  H->>DB: calcular score/temperatura · upsert lead · auditoria · msg "out"
-  H->>Out: despachar(outbound-canal) · publicar_eventos (events, resumir)
-  H->>CRM: publicar_turno (após o despacho; falha vai para a fila)
-  H->>Sch: reagendar_followup / cancel
-  H->>DB: registrar_turno (tabela turnos)
-  Out-->>Canal: RespostaAgente renderizada pelo adaptador
-```
+![Sequência de um turno do agente](../assets/diagramas/turno-claro.svg#only-light)
+![Sequência de um turno do agente](../assets/diagramas/turno-escuro.svg#only-dark)
 
 Três pontos de projeto que atravessam tudo:
 
@@ -163,35 +135,8 @@ Tipos registrados no serializador (`allowed_msgpack_modules`): `Lead`, `Estagio`
 Arquivo: `services/agent/src/agent/nodes/supervisor.py`. É o ponto de entrada do grafo em todo turno
 e o único nó com arestas condicionais.
 
-```mermaid
-flowchart TD
-  S[supervisor.run] --> A{resposta ou saltos > 1?}
-  A -- sim --> FIM([só incrementa saltos → _rotear encerra])
-  A -- não --> B{canal SISTEMA?}
-  B -- sim --> RES[resumidor]
-  B -- não --> C{tipo FOLLOWUP / REATIVACAO?}
-  C -- FOLLOWUP --> FU[followup]
-  C -- REATIVACAO --> RE[reativador]
-  C -- não --> D{PEDE_SAIR?}
-  D -- sim --> RE
-  D -- não --> E{escopo.avaliar falhou e não PEDE_HUMANO?}
-  E -- sim --> REC[recusa]
-  E -- não --> F{"'Falar com corretor' / PEDE_HUMANO / estágio HANDOFF?"}
-  F -- sim --> HO[handoff]
-  F -- não --> G{"pergunta_institucional, sem prefixo slot: e sem horarios_oferecidos?"}
-  G -- sim --> INF[informacoes]
-  G -- não --> H{"prefixo slot: ou horarios_oferecidos + ESCOLHE_HORARIO?"}
-  H -- sim --> AG[agendador]
-  H -- não --> I{"'Agendar visita' / PEDE_VISITA / pediu_visita e não AGENDADO?"}
-  I -- sim --> AG
-  I -- não --> J{"'Ver outros' / PEDE_OPCOES?"}
-  J -- sim --> CO[consultor]
-  J -- não --> K{cartão completo e sem imoveis_sugeridos?}
-  K -- sim --> CO
-  K -- não --> L{cartão incompleto?}
-  L -- sim --> QU[qualificador]
-  L -- não --> M[LLM de roteamento]
-```
+![Ordem de decisão do supervisor](../assets/diagramas/supervisor-claro.svg#only-light)
+![Ordem de decisão do supervisor](../assets/diagramas/supervisor-escuro.svg#only-dark)
 
 ### Regras determinísticas, em ordem de precedência
 
@@ -651,30 +596,8 @@ Turnos iniciados pelo agente não contam.
 
 ### Máquina `Estagio`
 
-```mermaid
-stateDiagram-v2
-  [*] --> NOVO: _carregar_lead (lead inexistente)
-  NOVO --> QUALIFICANDO: qualificador (intenção != indefinida)
-  NOVO --> QUALIFICADO: consultor (cartão completo)
-  QUALIFICANDO --> QUALIFICADO: consultor (cartão completo)
-  NOVO --> INATIVO: followup (tentativa < total)
-  QUALIFICANDO --> INATIVO: followup
-  QUALIFICADO --> INATIVO: followup
-  INATIVO --> INATIVO: followup
-  INATIVO --> FRIO: followup (tentativa >= total)
-  QUALIFICANDO --> AGENDADO: agendador (reserva)
-  QUALIFICADO --> AGENDADO: agendador (reserva)
-  INATIVO --> AGENDADO: agendador (reserva)
-  NOVO --> HANDOFF: handoff / fallback / orçamento
-  QUALIFICANDO --> HANDOFF: handoff / fallback / orçamento
-  QUALIFICADO --> HANDOFF: handoff / fallback / orçamento
-  AGENDADO --> HANDOFF: handoff (pedido do cliente)
-  INATIVO --> HANDOFF: handoff
-  HANDOFF --> [*]: agente silencia; corretor responde
-  AGENDADO --> QUALIFICANDO: nova oportunidade (sucessora), se mudou a intenção
-  HANDOFF --> QUALIFICANDO: nova oportunidade (sucessora)
-  FRIO --> QUALIFICANDO: nova oportunidade (sucessora)
-```
+![Transições de Estagio](../assets/diagramas/estados-codigo-claro.svg#only-light)
+![Transições de Estagio](../assets/diagramas/estados-codigo-escuro.svg#only-dark)
 
 Quem escreve `lead.estagio` no código do agente (verificado por busca):
 
