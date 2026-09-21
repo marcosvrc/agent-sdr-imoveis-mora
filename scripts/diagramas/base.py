@@ -127,7 +127,7 @@ class Diagrama:
   .t-rod{{font-size:10px;font-weight:700;fill:{c['tinta3']};letter-spacing:.09em}}
   .t-cab{{font-size:27px;font-weight:700;fill:{c['cabecalho-txt']}}}
   .t-cab-s{{font-size:13.5px;font-weight:400;fill:{c['cabecalho-sub']}}}
-  .t-cab-r{{font-size:10.5px;font-weight:700;fill:{c['cabecalho-sub']};letter-spacing:.09em}}
+  .t-cab-r{{font-size:13px;font-weight:700;fill:{c['cabecalho-sub']};letter-spacing:.34em;opacity:.72}}
   .cartao{{fill:{c['cartao']};stroke:{c['cartao-linha']};stroke-width:1}}
   .grupo{{fill:{c['grupo']};stroke:{c['grupo-linha']};stroke-width:1}}
   .linha{{stroke:{c['regua']};stroke-width:1}}
