@@ -168,10 +168,7 @@ o servidor MCP, com credencial de serviço. A única dependência cruzada permit
 pacote `shared/`.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/diagramas/macro-escuro.svg">
-    <img alt="Arquitetura macro do Mora" src="docs/assets/diagramas/macro-claro.svg" width="100%">
-  </picture>
+  <img alt="Arquitetura macro do Mora" src="docs/assets/diagramas/macro.svg" width="100%">
 </p>
 
 **Fluxo de um turno.** O canal publica em `sdr:inbound`; o worker do agente toma o lock do lead,

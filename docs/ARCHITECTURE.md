@@ -15,8 +15,7 @@
 
 ## 2. Visão macro
 
-![Arquitetura macro do Mora](assets/diagramas/macro-claro.svg#only-light)
-![Arquitetura macro do Mora](assets/diagramas/macro-escuro.svg#only-dark)
+![Arquitetura macro do Mora](assets/diagramas/macro.svg)
 
 ## 3. Componentes e como cada um executa
 
@@ -56,8 +55,7 @@ containers é o comando. Os nomes abaixo são os serviços de
 
 ## 4. Fluxo de negócio (máquina de estados do lead)
 
-![Jornada do lead](assets/diagramas/estados-negocio-claro.svg#only-light)
-![Jornada do lead](assets/diagramas/estados-negocio-escuro.svg#only-dark)
+![Jornada do lead](assets/diagramas/estados-negocio.svg)
 
 O cartão de qualificação (`shared/sdr_shared/models/lead.py`) é a fonte de verdade:
 a cada turno o Qualificador recebe a lista de campos faltantes e conduz a conversa

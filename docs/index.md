@@ -80,8 +80,7 @@ Registro por chamada, custo por modelo e orçamento com degradação automática
 O sistema separa o **cérebro** (o agente) dos **canais** (site e Telegram). O agente não sabe por qual
 canal a mensagem chegou: cada canal traduz o evento do provedor para um formato neutro e vice-versa.
 
-![Mora em uma olhada](assets/diagramas/contexto-claro.svg#only-light)
-![Mora em uma olhada](assets/diagramas/contexto-escuro.svg#only-dark)
+![Mora em uma olhada](assets/diagramas/contexto.svg)
 
 Tudo isso são containers de um único `docker compose`: o sistema roda inteiro na máquina de quem
 avalia, e **nada está implantado** — é escolha de escopo, não pendência. Detalhes em

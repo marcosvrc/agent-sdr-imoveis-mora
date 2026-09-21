@@ -24,8 +24,7 @@ num volume que já existia, quem aplica é `make migrate` (idempotente), que o `
 A recomendação de imóveis combina filtros estruturados com busca vetorial, expandindo a área de busca
 em cascata quando necessário:
 
-![Cascata da busca de imóveis](../assets/diagramas/busca-cascata-claro.svg#only-light)
-![Cascata da busca de imóveis](../assets/diagramas/busca-cascata-escuro.svg#only-dark)
+![Cascata da busca de imóveis](../assets/diagramas/busca-cascata.svg)
 
 - **Embeddings.** Dois provedores, mesma dimensão: Ollama `bge-m3` (padrão, local) ou OpenAI
   `text-embedding-3-small` com `dimensions=1024` — o schema espera 1024, e trocar de modelo sem

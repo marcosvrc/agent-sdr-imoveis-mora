@@ -18,7 +18,7 @@ def main() -> None:
         mod = importlib.import_module(nome)
         for caminho in gerar(mod.montar(), destino):
             total += 1
-    print(f"{total} arquivos em {destino}/ ({len(MODULOS)} diagramas, claro e escuro)")
+    print(f"{total} diagramas em {destino}/")
 
 
 if __name__ == "__main__":

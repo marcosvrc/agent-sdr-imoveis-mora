@@ -1,8 +1,8 @@
 """Sistema visual dos diagramas do Mora.
 
-Um diagrama é escrito como código (ver os módulos `d01_*.py` … `d12_*.py`) e sai como dois SVG,
-claro e escuro. O SVG é texto: entra no diff, renderiza no GitHub e no portal sem plugin, e não
-depende de ferramenta externa para ser regerado — `make diagramas` refaz todos.
+Um diagrama é escrito como código (ver os módulos `d01_*.py` … `d10_*.py`) e sai como um SVG. O
+SVG é texto: entra no diff, renderiza no GitHub e no portal sem plugin, e não depende de ferramenta
+externa para ser regerado — `make diagramas` refaz todos.
 
 Por que não Mermaid: o Mermaid resolve o layout sozinho, e é justamente isso que impede o
 controle de leitura que estes diagramas precisam (agrupamento, hierarquia tipográfica, cor com
@@ -16,7 +16,7 @@ from xml.sax.saxutils import escape
 
 # --------------------------------------------------------------------------- paleta
 
-CLARO = {
+PALETA = {
     "fundo": "#F4F7FA", "cabecalho": "#0E2433", "cabecalho-txt": "#FFFFFF",
     "cabecalho-sub": "#9DB3C4", "acento": "#3FC7B4",
     "tinta": "#12293C", "tinta2": "#5B7387", "tinta3": "#8497A8",
@@ -30,22 +30,6 @@ CLARO = {
     "vermelho": "#B04437", "vermelho-suave": "#FAE6E3",
     "regua": "#DCE4EC",
 }
-
-ESCURO = {
-    "fundo": "#0C151C", "cabecalho": "#060F16", "cabecalho-txt": "#EAF2F7",
-    "cabecalho-sub": "#7E97A8", "acento": "#3FC7B4",
-    "tinta": "#E6EEF4", "tinta2": "#A2B5C3", "tinta3": "#7A8D9C",
-    "cartao": "#16222B", "cartao-linha": "#2A3843", "sombra": "#00000040",
-    "grupo": "#121E27", "grupo-linha": "#223negative", "grupo-rotulo": "#8FB8D6",
-    "azul": "#5FA8E4", "azul-suave": "#13293A",
-    "verde": "#41BFA9", "verde-suave": "#0F2B29",
-    "roxo": "#A88BE6", "roxo-suave": "#241E38",
-    "cinza": "#93A7B8", "cinza-suave": "#1B262E",
-    "ambar": "#DCA94F", "ambar-suave": "#2A2114", "ambar-linha": "#3D3120",
-    "vermelho": "#E0796A", "vermelho-suave": "#2E1A18",
-    "regua": "#243139",
-}
-ESCURO["grupo-linha"] = "#223039"
 
 FONTE = "Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif"
 
@@ -386,17 +370,15 @@ def _unit(dx, dy):
 
 
 def gerar(d: Diagrama, destino: str = "docs/assets/diagramas") -> list[str]:
-    """Escreve <nome>-claro.svg e <nome>-escuro.svg."""
+    """Escreve <nome>.svg. Tema único: o desenho é claro nos dois temas do portal — foi uma
+    escolha, para não manter dois arquivos por diagrama e duas chances de eles divergirem."""
     import pathlib
-    out = []
-    for sufixo, tema in (("claro", CLARO), ("escuro", ESCURO)):
-        svg = d.svg(tema)
-        # as primitivas usam var(--x); resolvemos para valor literal, porque o SVG é consumido
-        # via <img> (GitHub e portal) e não herda variáveis da página.
-        for chave, valor in tema.items():
-            svg = svg.replace(f"var(--{chave})", valor)
-        p = pathlib.Path(destino) / f"{d.nome}-{sufixo}.svg"
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(svg, encoding="utf-8")
-        out.append(str(p))
-    return out
+    svg = d.svg(PALETA)
+    # as primitivas usam var(--x); resolvemos para valor literal, porque o SVG é consumido
+    # via <img> (GitHub e portal) e não herda variáveis da página.
+    for chave, valor in PALETA.items():
+        svg = svg.replace(f"var(--{chave})", valor)
+    p = pathlib.Path(destino) / f"{d.nome}.svg"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(svg, encoding="utf-8")
+    return [str(p)]

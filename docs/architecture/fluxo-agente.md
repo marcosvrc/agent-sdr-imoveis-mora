@@ -28,8 +28,7 @@ O canal (Telegram, web) publica no tópico `inbound` do broker; o worker do agen
 supervisor e um ou mais especialistas; o `dispatch.py` entrega a resposta no tópico
 `outbound-<canal>`, publica eventos, espelha no CRM e reagenda o follow-up.
 
-![Sequência de um turno do agente](../assets/diagramas/turno-claro.svg#only-light)
-![Sequência de um turno do agente](../assets/diagramas/turno-escuro.svg#only-dark)
+![Sequência de um turno do agente](../assets/diagramas/turno.svg)
 
 Três pontos de projeto que atravessam tudo:
 
@@ -135,8 +134,7 @@ Tipos registrados no serializador (`allowed_msgpack_modules`): `Lead`, `Estagio`
 Arquivo: `services/agent/src/agent/nodes/supervisor.py`. É o ponto de entrada do grafo em todo turno
 e o único nó com arestas condicionais.
 
-![Ordem de decisão do supervisor](../assets/diagramas/supervisor-claro.svg#only-light)
-![Ordem de decisão do supervisor](../assets/diagramas/supervisor-escuro.svg#only-dark)
+![Ordem de decisão do supervisor](../assets/diagramas/supervisor.svg)
 
 ### Regras determinísticas, em ordem de precedência
 
@@ -596,8 +594,7 @@ Turnos iniciados pelo agente não contam.
 
 ### Máquina `Estagio`
 
-![Transições de Estagio](../assets/diagramas/estados-codigo-claro.svg#only-light)
-![Transições de Estagio](../assets/diagramas/estados-codigo-escuro.svg#only-dark)
+![Transições de Estagio](../assets/diagramas/estados-codigo.svg)
 
 Quem escreve `lead.estagio` no código do agente (verificado por busca):
 

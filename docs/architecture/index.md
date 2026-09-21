@@ -31,8 +31,7 @@ vale.
 
 ## Diagrama de contexto
 
-![Arquitetura macro do Mora](../assets/diagramas/macro-claro.svg#only-light)
-![Arquitetura macro do Mora](../assets/diagramas/macro-escuro.svg#only-dark)
+![Arquitetura macro do Mora](../assets/diagramas/macro.svg)
 
 ### Leitura do diagrama
 

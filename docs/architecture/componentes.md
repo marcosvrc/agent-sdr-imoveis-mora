@@ -26,8 +26,7 @@ apontada.
 | Scheduler | `services/scheduler/sdr_scheduler/local_worker.py` | `scheduler` |
 | Observabilidade leve | `shared/sdr_shared/db/monitoramento.py` | (sem processo próprio) |
 
-![Tópicos do Redis, produtores e consumidores](../assets/diagramas/mensageria-claro.svg#only-light)
-![Tópicos do Redis, produtores e consumidores](../assets/diagramas/mensageria-escuro.svg#only-dark)
+![Tópicos do Redis, produtores e consumidores](../assets/diagramas/mensageria.svg)
 
 ## Banco de dados (Postgres + pgvector)
 
@@ -256,8 +255,7 @@ entra nele **por MCP sobre HTTP**: o serviço `crm-mcp` (`python -m sdr_crm.mcp 
 expõe um servidor MCP que traduz cada ferramenta numa chamada à REST do CRM (`crm-api:8100`). O mesmo
 servidor sobe por stdio no perfil `mcp` (`crm-mcp-stdio`), para um cliente MCP externo.
 
-![Publicação de um turno no CRM](../assets/diagramas/crm-publicacao-claro.svg#only-light)
-![Publicação de um turno no CRM](../assets/diagramas/crm-publicacao-escuro.svg#only-dark)
+![Publicação de um turno no CRM](../assets/diagramas/crm-publicacao.svg)
 
 **Servidor MCP** (`services/crm/sdr_crm/mcp/servidor.py`, `http.py`, `cliente.py`). Usa
 `mcp.server.lowlevel.Server` com `tools/list` e `tools/call` registrados à mão, para devolver erro
