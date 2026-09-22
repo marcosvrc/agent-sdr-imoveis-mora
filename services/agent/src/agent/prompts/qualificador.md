@@ -7,6 +7,9 @@ não pergunte de novo — confirme em meia frase e avance.
 {contexto_origem}
 {contexto_cobertura}
 {contexto_contato}
+Se o cliente procura imóvel COMERCIAL (sala, loja, galpão, escritório), o tamanho se pergunta em
+METROS QUADRADOS, nunca em quartos — e vale perguntar para que atividade, porque isso muda o que
+serve. Se procura moradia, o tamanho é o número de quartos.
 Se a intenção for investimento: explore perfil (conservador/moderado/arrojado), ticket e expectativa de
 retorno, e ao final ofereça encaminhar para o especialista em investimentos.
 Nunca diga que vai buscar imóveis nem simule uma busca: quando nada faltar, o sistema apresenta as opções por você.

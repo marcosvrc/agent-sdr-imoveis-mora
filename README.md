@@ -73,7 +73,7 @@ O que a Mora faz, em uma frase por etapa:
 | Etapa | O que acontece | Quem decide |
 |---|---|---|
 | Atendimento | Conversa em português pelo widget do site ou pelo Telegram (texto, botões e áudio) | Mora |
-| Qualificação | Preenche um **cartão** (intenção, região/bairros, orçamento, quartos, urgência; ou perfil, ticket e retorno esperado para investidor) sem interrogatório | Mora |
+| Qualificação | Preenche um **cartão** (intenção, região/bairros, orçamento, quartos, urgência — **área mínima no lugar dos quartos quando o imóvel é comercial**; ou perfil, ticket e retorno esperado para investidor) sem interrogatório | Mora |
 | Recomendação | Busca híbrida (filtros + semântica) no catálogo, descendo de bairro para vizinhos, região e cidade, e **diz até onde precisou ir** | Mora |
 | Visita | Oferece horários reais (do CRM ou da agenda interna), reserva e **pede** a visita | Mora reserva; **pessoa confirma** |
 | Passagem | Encaminha ao corretor certo (região + carga), com briefing e análise da conversa | Mora encaminha; corretor assume |
@@ -315,7 +315,7 @@ teste que a prende — está em **[Regras de negócio](docs/technical-reference/
 
 | Regra | Onde |
 |---|---|
-| Oportunidade só nasce quando a intenção está clara; compra/aluguel exige região, orçamento, quartos e urgência; investimento exige perfil, ticket e retorno esperado | Agente |
+| Oportunidade só nasce quando a intenção está clara; compra/aluguel exige região, orçamento, quartos (ou **área mínima**, no segmento comercial) e urgência; investimento exige perfil, ticket e retorno esperado | Agente |
 | Recomendação nunca afirma disponibilidade fora da lista devolvida; o nível da cascata (bairro, vizinhos, região, cidade) é dito ao cliente | Agente |
 | A Mora **reserva** horário e **pede** a visita; **confirmar é ato humano**, no CRM. Dois horários confirmados não coexistem no mesmo slot; o mesmo corretor não tem horários sobrepostos | Agente + CRM |
 | A Mora avança o estágio no CRM até `qualified`, um passo por vez; `visit_scheduled`, `won`, `lost` exigem pessoa | CRM |

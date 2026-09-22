@@ -36,6 +36,8 @@ export function NovoImovel() {
   };
 
   const aluguel = f.purpose === "rent";
+  // O segmento é LIDO do tipo, como no resto do sistema (sdr_shared/models::segmento_do_tipo).
+  const comercial = /sala|loja|galp|conjunto|escrit|dep[óo]sito|comercial/i.test(f.type);
   const precoOk = centavos(f.preco) !== null && (centavos(f.preco) ?? 0) > 0;
   const podeSalvar = f.code.trim() && f.title.trim() && f.neighborhood.trim() && precoOk;
 
@@ -52,7 +54,7 @@ export function NovoImovel() {
         condo_monthly_cents: aluguel ? centavos(f.condominio) : null,
         property_tax_monthly_cents: aluguel ? centavos(f.iptu) : null,
         other_monthly_cents: aluguel ? centavos(f.outros) : null,
-        bedrooms: Number(f.bedrooms) || 0, parking: Number(f.parking) || 0,
+        bedrooms: comercial ? 0 : Number(f.bedrooms) || 0, parking: Number(f.parking) || 0,
         area_m2: f.area ? Number(f.area.replace(",", ".")) : null,
         status: f.status,
         photos: fotos.filter((x) => x.url.trim()),
@@ -103,7 +105,8 @@ export function NovoImovel() {
             </Campo>
             <Campo rotulo="Tipo">
               <select className={entradaCls} value={f.type} onChange={(e) => set("type", e.target.value)}>
-                {["apartamento", "casa", "studio", "cobertura", "sobrado", "kitnet"].map((t) => (
+                {["apartamento", "casa", "studio", "cobertura", "sobrado", "kitnet",
+                  "sala comercial", "conjunto comercial", "loja", "galpão"].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
@@ -150,10 +153,14 @@ export function NovoImovel() {
                   </Campo>
                 </>
               )}
-              <Campo rotulo="Quartos">
-                <input className={entradaCls} type="number" min={0} max={30} value={f.bedrooms}
-                       onChange={(e) => set("bedrooms", e.target.value)} />
-              </Campo>
+              {/* Sala, loja e galpão não têm dormitório. O campo some em vez de pedir um zero que
+                  parece dado preenchido — e o valor vai zerado mesmo se alguém já tinha digitado. */}
+              {!comercial && (
+                <Campo rotulo="Quartos">
+                  <input className={entradaCls} type="number" min={0} max={30} value={f.bedrooms}
+                         onChange={(e) => set("bedrooms", e.target.value)} />
+                </Campo>
+              )}
               <Campo rotulo="Vagas">
                 <input className={entradaCls} type="number" min={0} max={30} value={f.parking}
                        onChange={(e) => set("parking", e.target.value)} />

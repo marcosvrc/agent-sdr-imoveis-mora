@@ -328,3 +328,70 @@ def test_historico_longo_e_podado_e_o_cartao_sobrevive(infra):
     assert not any("zona sul" in t for t in textos)
     lead = LeadRepository().get("l8")
     assert lead.cartao.regiao == "zona_sul" and lead.nome == "Marcos", "o cartão não depende do histórico"
+
+
+# --------------------------------------------------------------- imóveis comerciais
+
+def test_quem_procura_sala_nao_e_perguntado_sobre_quartos(infra):
+    """O bug de produto que a separação por segmento evita: até setembro/2026 `quartos` era campo
+    obrigatório de toda compra/aluguel, então o cartão de um lead comercial nunca fechava e a Mora
+    insistia em perguntar dormitório para quem quer uma loja."""
+    from sdr_shared.models import Segmento
+    processar(msg("l-com", "Procuro uma sala comercial em Pinheiros para o meu escritório"))
+    lead = LeadRepository().get("l-com")
+    assert lead.cartao.segmento_efetivo() == Segmento.COMERCIAL, "o tipo pedido já declara o segmento"
+    assert "quartos" not in lead.cartao.campos_faltantes()
+    assert "area_min" in lead.cartao.campos_faltantes(), "o tamanho se pergunta em metros quadrados"
+
+
+def test_cartao_comercial_fecha_com_area_e_leva_ao_consultor(infra):
+    broker, _ = infra
+    processar(msg("l-com2", "Quero alugar uma loja no Tatuapé"))
+    processar(msg("l-com2", "até 8 mil por mês, uns 60 metros, é urgente"))
+    lead = LeadRepository().get("l-com2")
+    assert lead.cartao.completo(), lead.cartao.campos_faltantes()
+    assert lead.estagio == Estagio.QUALIFICADO
+    r = ultima(broker)
+    assert r["imoveis"], "o consultor apresentou opções sem nunca ter perguntado quartos"
+
+
+def test_busca_comercial_nao_devolve_apartamento_e_vice_versa(infra):
+    """Os dois lados do catálogo são estanques: quem procura sala não recebe apartamento, e quem
+    procura apartamento não recebe galpão quando deixa de informar quartos."""
+    from agent.tools.buscar_imoveis import buscar_com_contexto
+    from sdr_shared.models import CartaoQualificacao, Intencao, segmento_do_tipo, Segmento
+
+    comercial = CartaoQualificacao(intencao=Intencao.ALUGUEL, tipo_imovel="sala comercial",
+                                   regiao="zona_oeste", preco_max=20000, area_min=30, urgencia="imediata")
+    cards = buscar_com_contexto(comercial, limite=6)["cards"]
+    assert cards, "o acervo tem comerciais (ver scripts/gerar_imoveis.py)"
+    assert all(segmento_do_tipo(c.titulo.split()[0]) == Segmento.COMERCIAL
+               or "comercial" in c.titulo.lower() or c.titulo.lower().startswith(("loja", "galpão"))
+               for c in cards), [c.titulo for c in cards]
+
+    residencial = CartaoQualificacao(intencao=Intencao.ALUGUEL, regiao="zona_oeste",
+                                     preco_max=20000, urgencia="imediata")   # sem quartos de propósito
+    titulos = [c.titulo for c in buscar_com_contexto(residencial, limite=6)["cards"]]
+    assert titulos and not any(t.lower().startswith(("sala", "loja", "galpão", "conjunto")) for t in titulos), titulos
+
+
+def test_card_de_comercial_se_mede_em_metros_nao_em_quartos(infra):
+    from agent.tools.buscar_imoveis import montar_card
+    from sdr_shared.models import Imovel
+    sala = Imovel(id="CJ-X", tipo="sala comercial", operacao="aluguel", cidade="São Paulo",
+                  regiao="zona_oeste", bairro="Pinheiros", quartos=0, suites=0, vagas=2,
+                  area_m2=45, preco=4200, descricao="Sala mobiliada.")
+    assert montar_card(sala).titulo == "Sala comercial 45 m² · Pinheiros"
+
+
+def test_segmento_comercial_sobrevive_aos_turnos_seguintes(infra):
+    """Regressão de um defeito real: `model_copy(update=...)` não roda validadores, então um
+    segmento gravado por validador sumia no merge do turno seguinte e o cartão voltava a exigir
+    quartos no meio de uma conversa sobre loja. Hoje o segmento é derivado no ponto de uso."""
+    from sdr_shared.models import Segmento
+    processar(msg("l-com3", "Quero alugar uma loja no Tatuapé"))
+    processar(msg("l-com3", "é urgente"))
+    processar(msg("l-com3", "até 9 mil por mês"))
+    cartao = LeadRepository().get("l-com3").cartao
+    assert cartao.segmento_efetivo() == Segmento.COMERCIAL
+    assert "quartos" not in cartao.campos_faltantes()

@@ -1,10 +1,16 @@
-import { brl, type Cartao } from "../lib/api";
+import { brl, ehComercial, type Cartao } from "../lib/api";
 import { INTENCAO, REGIAO } from "../lib/format";
 import { Badge } from "./ui";
 import { Ic } from "./Icons";
 
 const ROTULO_CAMPO: Record<string, string> = { intencao: "intenção", regiao: "região", preco_max: "orçamento", quartos: "quartos",
-  urgencia: "prazo", perfil_investidor: "perfil de investidor", ticket: "ticket", retorno_esperado: "retorno esperado" };
+  area_min: "área mínima", urgencia: "prazo", perfil_investidor: "perfil de investidor", ticket: "ticket", retorno_esperado: "retorno esperado" };
+
+/** Mesma derivação do backend (`segmento_efetivo`): o segmento afirmado vale; senão, o tipo decide.
+ *  Repetir a regra aqui é o preço de não guardar o segmento no cartão — e guardá-lo custaria mais
+ *  (duas verdades sobre o mesmo imóvel). A tela só a usa para saber o que perguntar. */
+const comercial = (c: Cartao) =>
+  c.segmento ? c.segmento === "comercial" : ehComercial(c.tipo_imovel ?? "");
 
 /** Mostra o que o lead JÁ disse e, separado, o que ainda falta perguntar — o vazio vira ação, não traço. */
 export function CartaoLead({ c }: { c: Cartao }) {
@@ -14,6 +20,7 @@ export function CartaoLead({ c }: { c: Cartao }) {
     ["Bairros", c.bairros.join(", ")],
     ["Orçamento", c.preco_max ? `até ${brl(c.preco_max)}` : ""],
     ["Quartos", c.quartos ? `${c.quartos}+` : ""],
+    ["Área mínima", c.area_min ? `${c.area_min} m²` : ""],
     ["Tipo", c.tipo_imovel ?? ""],
     ["Prazo", c.urgencia?.replace(/_/g, " ") ?? ""],
     ["Perfil de investidor", c.perfil_investidor ?? ""],
@@ -23,7 +30,9 @@ export function CartaoLead({ c }: { c: Cartao }) {
 
   const obrigatorios = c.intencao === "investimento"
     ? ["intencao", "perfil_investidor", "ticket", "retorno_esperado"]
-    : ["intencao", "regiao", "preco_max", "quartos", "urgencia"];
+    : comercial(c)
+      ? ["intencao", "regiao", "preco_max", "area_min", "urgencia"]
+      : ["intencao", "regiao", "preco_max", "quartos", "urgencia"];
   const faltam = obrigatorios.filter((k) => {
     const v = (c as unknown as Record<string, unknown>)[k];
     return v == null || v === "" || v === "indefinida";

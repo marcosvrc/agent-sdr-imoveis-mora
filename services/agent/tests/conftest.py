@@ -2,6 +2,7 @@
 Requer SDR_DATABASE_DSN apontando para um Postgres com o schema aplicado."""
 import os
 import json
+import re
 import pytest
 os.environ.setdefault("SDR_DATABASE_DSN", "postgresql://sdr:sdr@localhost:5433/sdr_test")
 from sdr_shared.db.guarda_teste import exigir_banco_de_teste; exigir_banco_de_teste()   # nunca rodar contra o banco de dev
@@ -37,9 +38,19 @@ class _Extractor:
         elif "alugar" in m: c.intencao = Intencao.ALUGUEL
         elif "apartamento" in m or "comprar" in m: c.intencao = Intencao.COMPRA
         if "zona sul" in m or "brooklin" in m: c.regiao = "zona_sul"
+        # Bairro citado vai para `bairros`, como o prompt de extração manda — quem traduz para zona
+        # é o `sdr_shared.geo`, e deixar isso com o dublê pularia justamente o código que importa.
+        for b in ("pinheiros", "tatuapé", "perdizes", "moema"):
+            if b in m: c.bairros = [b]; break
         if "800" in m: c.preco_max = 800000
         if "2 quartos" in m: c.quartos = 2
+        # Comercial: o dublê reconhece o tipo e a área, como o modelo real faz pelo prompt de
+        # extração. O `segmento` sai sozinho do tipo (validador do cartão).
+        for t in ("sala comercial", "loja", "galpão", "conjunto comercial", "escritório"):
+            if t in m: c.tipo_imovel = t; break
+        if (área := re.search(r"(\d{2,4})\s*(?:m2|m²|metros)", m)): c.area_min = float(área.group(1))
         if "urgente" in m or "esse mês" in m: c.urgencia = "imediata"
+        if (aluguel := re.search(r"at[ée]\s*(\d+)\s*mil\s*por m[êe]s", m)): c.preco_max = float(aluguel.group(1)) * 1000
         if "moderado" in m: c.perfil_investidor = "moderado"
         if "500 mil" in m: c.ticket = 500000
         if "0,6%" in m or "6%" in m: c.retorno_esperado = "0,6% a.m."

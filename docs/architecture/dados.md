@@ -68,7 +68,7 @@ rodam **dentro do container** do agente, e não no host: ali os padrões de cone
 seria falhar, e o pior, numa máquina com Postgres nativo, seria indexar no banco errado em silêncio.
 
 ```bash
-make seed        # 200 imóveis determinísticos + embeddings
+make seed        # 240 imóveis determinísticos (200 residenciais + 40 comerciais) + embeddings
 make docs-kb     # documentos institucionais → tabela `documentos`
 ```
 

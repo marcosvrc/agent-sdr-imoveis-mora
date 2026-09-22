@@ -3,7 +3,7 @@ import re
 
 from sdr_shared.db import ClienteRepository, auditar, nova_oportunidade_se_mudou_intencao
 from sdr_shared.messaging import RespostaAgente
-from sdr_shared.models import CartaoQualificacao, Estagio, Intencao
+from sdr_shared.models import CartaoQualificacao, Estagio, Intencao, Segmento
 from ..llm import llm_conversa, llm_roteamento
 from ..prompts import carregar, texto
 from ..state import AgentState
@@ -20,7 +20,7 @@ def _extrair(cartao: CartaoQualificacao, mensagem: str) -> CartaoQualificacao:
     if not isinstance(novo, CartaoQualificacao):        # saída estruturada pode vir como dict cru
         return cartao
     dados = {k: v for k, v in novo.model_dump().items()
-             if v not in (None, [], False, Intencao.INDEFINIDA, 0)}
+             if v not in (None, [], False, Intencao.INDEFINIDA, Segmento.INDEFINIDO, 0)}
     dados["imoveis_visualizados"] = list(dict.fromkeys(cartao.imoveis_visualizados + novo.imoveis_visualizados))
     return cartao.model_copy(update=dados)
 

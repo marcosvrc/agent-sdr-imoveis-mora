@@ -9,6 +9,7 @@ from api.main import app
 import api.routers.handoff as h
 
 H = {"Authorization": "Bearer dev-token"}
+IMOVEIS_DA_FIXTURE = 0          # preenchido no setup_module, a partir do arquivo
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +51,10 @@ def setup_module(m):
                   "corretores", "configuracoes", "imoveis", "uso_llm", "turnos", "saude", "batimentos"):
             c.execute(f"DELETE FROM {t}")
     data = pathlib.Path(__file__).parents[2] / "agent/tests/fixtures/imoveis.json"
-    for x in json.load(open(data, encoding="utf-8")):
+    global IMOVEIS_DA_FIXTURE
+    acervo = json.load(open(data, encoding="utf-8"))
+    IMOVEIS_DA_FIXTURE = len(acervo)
+    for x in acervo:
         ImovelRepository().upsert(Imovel(**x))
     LeadRepository().upsert(Lead(id="l1", nome="Marcos", telefone="5511999990000"))
     CanalRepository().vincular("l1", "telegram", "5511999990000")
@@ -91,7 +95,10 @@ def test_painel_admin():
     # métricas: estrutura completa e coerente com o seed (1 lead, 3 imóveis)
     m = c.get("/dashboard/metricas", headers=H, params={"dias": 7}).json()
     assert m["periodo_dias"] == 7 and set(m["kpis"]) >= {"leads", "qualificados", "visitas", "handoffs", "msgs_in", "msgs_out", "resposta_seg"}
-    assert m["kpis"]["leads"]["atual"] == 1 and len(m["serie"]) == 7 and m["totais"]["imoveis"] == 3
+    # O total sai da fixture, e não de um 3 escrito à mão: acrescentar imóvel de teste não pode
+    # quebrar um teste que não fala de acervo.
+    assert m["kpis"]["leads"]["atual"] == 1 and len(m["serie"]) == 7
+    assert m["totais"]["imoveis"] == IMOVEIS_DA_FIXTURE
     assert "por_canal" in m and m["por_canal"].get("telegram") == 1
     assert c.get("/dashboard/metricas", headers=H, params={"dias": 0}).status_code == 422
 

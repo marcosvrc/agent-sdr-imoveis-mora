@@ -11,17 +11,36 @@ import logging
 from sdr_shared.config import get_settings
 from sdr_shared.db import ImovelRepository
 from sdr_shared.geo import Local, resolver, resolver_varios, vizinhos
-from sdr_shared.models import CartaoQualificacao, ImovelCard, Intencao, Imovel
+from sdr_shared.models import (CartaoQualificacao, ImovelCard, Imovel, Intencao, Segmento,
+                               TIPOS_COMERCIAIS, TIPOS_RESIDENCIAIS)
 
 
 log = logging.getLogger("agent.busca")
 
 
 def _filtros(cartao: CartaoQualificacao, bairros: list[str] | None = None, regiao: str | None = "=") -> dict:
+    """O segmento decide QUAL filtro de tamanho vale.
+
+    Comercial não é residencial sem quartos: quem procura sala decide por metro quadrado, e o
+    `quartos` do cartão (que nesse caso não existe) não pode virar `quartos >= None` em silêncio
+    nem, pior, restar de uma conversa anterior e esconder o acervo comercial inteiro.
+    """
+    comercial = cartao.segmento_efetivo() == Segmento.COMERCIAL
     return {"operacao": "aluguel" if cartao.intencao == Intencao.ALUGUEL else "venda",
             "regiao": cartao.regiao if regiao == "=" else regiao,
             "bairros": bairros or None,
-            "preco_max": cartao.preco_max or cartao.ticket, "quartos": cartao.quartos}
+            "preco_max": cartao.preco_max or cartao.ticket,
+            "quartos": None if comercial else cartao.quartos,
+            "area_min": cartao.area_min if comercial else None,
+            "tipos": list(TIPOS_COMERCIAIS if comercial else TIPOS_RESIDENCIAIS)}
+
+
+def _medida(i: Imovel) -> str:
+    """Como o imóvel se mede na frase do corretor: apartamento por quartos, sala por metro."""
+    from sdr_shared.models import segmento_do_tipo
+    if segmento_do_tipo(i.tipo) == Segmento.COMERCIAL or not i.quartos:
+        return f"{i.area_m2:.0f} m²"
+    return f"{i.quartos}q"
 
 
 def montar_card(i: Imovel, motivo: str | None = None) -> ImovelCard:
@@ -30,7 +49,7 @@ def montar_card(i: Imovel, motivo: str | None = None) -> ImovelCard:
     # (injeção de segunda ordem via RAG) em nenhum consumidor deste card.
     from ..util import neutralizar_texto_externo
     bruto = motivo if motivo is not None else (i.descricao or "")[:160]
-    return ImovelCard(id=i.id, titulo=f"{i.tipo.capitalize()} {i.quartos}q · {i.bairro}", preco=i.preco,
+    return ImovelCard(id=i.id, titulo=f"{i.tipo.capitalize()} {_medida(i)} · {i.bairro}", preco=i.preco,
                       foto=(i.fotos_absolutas(get_settings().public_api_url) or [None])[0],
                       motivo=neutralizar_texto_externo(bruto, limite=200))
 
@@ -138,7 +157,10 @@ def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], vetor: list[flo
     É o que um bom corretor diz: 'de 2 quartos não tenho aí, mas tenho este de 1'."""
     if not pedidos:
         return []
-    if cartao.quartos and (r := _executar(vetor, _filtros(cartao.model_copy(update={"quartos": None}), pedidos), 3)):
+    comercial = cartao.segmento_efetivo() == Segmento.COMERCIAL
+    afrouxar = {"area_min": None} if comercial else {"quartos": None}
+    if (cartao.area_min if comercial else cartao.quartos) and \
+            (r := _executar(vetor, _filtros(cartao.model_copy(update=afrouxar), pedidos), 3)):
         return r
     if cartao.preco_max and (r := _executar(vetor, _filtros(cartao.model_copy(update={"preco_max": None, "ticket": None}), pedidos), 3)):
         return r

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, type Interesse, type SituacaoInteresse } from "../lib/api";
+import { api, ehComercial, type Interesse, type SituacaoInteresse } from "../lib/api";
 import { brl, relativo } from "../lib/format";
 import { Badge, EmptyState, Paginacao, Select, Skeleton, Temperatura, cx, usePaginacao } from "./ui";
 import { Ic } from "./Icons";
@@ -69,7 +69,7 @@ export function InteressesDoLead({ leadId }: { leadId: string }) {
             </p>
           </div>
           <p className="text-xs text-ink-muted">
-            {i.quartos} quarto{i.quartos === 1 ? "" : "s"} · {i.area_m2} m² · <span className="font-mono">{i.imovel_id}</span>
+            {ehComercial(i.tipo) ? "" : `${i.quartos} quarto${i.quartos === 1 ? "" : "s"} · `}{i.area_m2} m² · <span className="font-mono">{i.imovel_id}</span>
           </p>
           {i.motivo && <p className="text-xs italic text-ink-muted">“{i.motivo}”</p>}
           <div className="flex flex-wrap items-center gap-2 pt-0.5">

@@ -331,7 +331,7 @@ Card **Identificação**:
 | Título | sim | texto 1–300 | |
 | Cidade | sim | texto 1–120 | padrão "São Paulo" |
 | Bairro | sim | texto 1–120 | dica: "A Mora deduz a região a partir daqui." |
-| Tipo | — | apartamento, casa, studio, cobertura, sobrado, kitnet | padrão apartamento |
+| Tipo | — | residenciais: apartamento, casa, studio, cobertura, sobrado, kitnet; comerciais: sala comercial, conjunto comercial, loja, galpão | padrão apartamento; um **tipo comercial esconde o campo Quartos** e grava `bedrooms = 0` — sala, loja e galpão não têm dormitório, e pedir um zero na tela pareceria dado preenchido |
 | Finalidade | — | Aluguel / Compra | padrão Aluguel |
 | Descrição | não | texto até 4000 | dica: "O que a Mora vai ler para descrever o imóvel na conversa." |
 
@@ -344,7 +344,7 @@ Card **Valores e medidas** (reais digitados, gravados em centavos; aceita "3.500
 | Condomínio (R$) | não (só Aluguel) | ≥ 0 | "Em branco = desconhecido. Zero = afirma que não há." |
 | IPTU mensal (R$) | não (só Aluguel) | ≥ 0 | "Em branco = desconhecido." |
 | Outros custos (R$) | não (só Aluguel) | ≥ 0 | |
-| Quartos | — | 0–30 | padrão 0 |
+| Quartos | — | 0–30 | padrão 0; **não aparece em tipo comercial** (vai 0) |
 | Vagas | — | 0–30 | padrão 0 |
 
 Em Compra os três custos mensais vão como nulos ("não se aplica"). Em branco grava **nulo**, e o

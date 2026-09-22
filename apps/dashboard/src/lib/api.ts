@@ -13,7 +13,7 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   return r.status === 204 ? (undefined as T) : r.json();
 }
 
-export type Cartao = { intencao: string; regiao?: string; bairros: string[]; preco_min?: number; preco_max?: number; quartos?: number; tipo_imovel?: string; urgencia?: string;
+export type Cartao = { intencao: string; segmento?: string; regiao?: string; bairros: string[]; preco_min?: number; preco_max?: number; quartos?: number; area_min?: number; tipo_imovel?: string; urgencia?: string;
   perfil_investidor?: string; ticket?: number; retorno_esperado?: string; imoveis_visualizados: string[]; pediu_visita: boolean };
 export type AnaliseLead = { sentimento: string; sentimento_tendencia: string; confianca: number; engajamento: string; perfil_decisao: string; estilo_comunicacao: string;
   motivadores: string[]; objecoes: string[]; sinais_alerta: string[]; como_abordar: string[]; resumo_perfil: string };
@@ -157,7 +157,7 @@ export const api = {
   responder: (id: string, texto: string) => req(`/handoff/${id}/responder`, { method: "POST", body: JSON.stringify({ texto }) }),
   devolver: (id: string) => req(`/handoff/${id}/devolver`, { method: "POST" }),
   crmSync: () => req<{ exportados: number }>("/leads/crm/sync", { method: "POST" }),
-  imoveis: (f: { operacao?: string; regiao?: string; preco_max?: number; quartos?: number; limite?: number } = {}) => req<Imovel[]>(`/imoveis${qs({ limite: 200, ...f })}`),
+  imoveis: (f: { operacao?: string; regiao?: string; preco_max?: number; quartos?: number; limite?: number } = {}) => req<Imovel[]>(`/imoveis${qs({ limite: 400, ...f })}`),
   imovel: (id: string) => req<Imovel>(`/imoveis/${id}`),
   enviarFotoImovel: (id: string, imagem: string) => req<Imovel>(`/imoveis/${id}/fotos`, { method: "POST", body: JSON.stringify({ imagem }) }),
   removerFotoImovel: (id: string, url: string) => req<Imovel>(`/imoveis/${id}/fotos/${url.split("/").pop()}`, { method: "DELETE" }),
@@ -220,3 +220,8 @@ export const ESTAGIOS = ["novo", "qualificando", "qualificado", "agendado", "han
 // "Agendado" na tela contradiria o que o próprio agente diz ao cliente.
 export const ROTULO: Record<string, string> = { novo: "Novo", qualificando: "Qualificando", qualificado: "Qualificado", agendado: "Visita reservada", handoff: "Com corretor", inativo: "Inativo", frio: "Frio" };
 export const REGIOES = ["zona_sul", "zona_oeste", "zona_norte", "zona_leste", "centro"];
+// Tipos por segmento. O painel mostra o acervo inteiro, e ele tem imóveis comerciais: um filtro
+// com três tipos residenciais esconderia 40 imóveis que a Mora pode oferecer.
+export const TIPOS_RESIDENCIAIS = ["apartamento", "casa", "studio"] as const;
+export const TIPOS_COMERCIAIS = ["sala comercial", "conjunto comercial", "loja", "galpão"] as const;
+export const ehComercial = (tipo: string) => (TIPOS_COMERCIAIS as readonly string[]).includes(tipo.toLowerCase());

@@ -16,7 +16,7 @@ sem garantia.
 
 ## O que a licença NÃO cobre
 
-- **Dados de demonstração.** O catálogo de 200 imóveis em `data/imoveis/` é gerado por script e
+- **Dados de demonstração.** O catálogo de 240 imóveis em `data/imoveis/` é gerado por script e
   fictício. Preços, endereços e descrições não correspondem a imóveis reais. É o mesmo arquivo que
   popula o acervo do CRM, então a ficção vale para os dois sistemas.
 - **Massa do CRM.** Clientes, oportunidades, interações, visitas e tarefas do CRM são gerados pelo

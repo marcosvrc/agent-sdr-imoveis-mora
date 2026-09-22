@@ -1,6 +1,11 @@
 Extraia da mensagem do cliente APENAS os campos que ele informou explicitamente nesta mensagem.
 Não infira, não repita valores já presentes, não invente. Deixe nulo o que não foi dito.
 Convenções: intencao ∈ compra|aluguel|investimento;
+SEGMENTO: segmento ∈ residencial|comercial. Marque `comercial` quando o cliente falar de sala, loja,
+galpão, escritório, depósito, conjunto ou ponto comercial — ou disser que é para o negócio/empresa dele.
+Na dúvida deixe nulo: quem procura moradia raramente diz "residencial", e o padrão já é esse;
+TAMANHO: para moradia use `quartos` (número de dormitórios). Para comercial use `area_min` em metros
+quadrados ("preciso de uns 60 metros" → 60); nunca traduza área em quartos nem o contrário;
 LOCAL: copie para `bairros` exatamente o lugar que o cliente citou (bairro, apelido, cidade ou ponto de
 referência — "Pinheiros", "Vila Madalena", "perto da Faria Lima", "Osasco"), sem traduzir para zona e sem
 corrigir a grafia. Deixe `regiao` nulo, a não ser que ele diga literalmente "zona sul/oeste/norte/leste"

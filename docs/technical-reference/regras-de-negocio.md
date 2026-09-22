@@ -94,10 +94,25 @@ mensagem atual**, mais nome/telefone/e-mail informados (`nodes/qualificador.py::
 O cartão é a fonte de verdade da qualificação (`shared/sdr_shared/models/lead.py`). **Cartão
 obrigatório por intenção:**
 
-| Intenção | Campos obrigatórios | Quantos |
+| Caso | Campos obrigatórios | Quantos |
 | --- | --- | --- |
-| compra, aluguel **e indefinida** | `intencao`, `regiao`, `preco_max`, `quartos`, `urgencia` | 5 |
+| compra, aluguel **e indefinida** — segmento residencial | `intencao`, `regiao`, `preco_max`, `quartos`, `urgencia` | 5 |
+| compra e aluguel — segmento **comercial** | `intencao`, `regiao`, `preco_max`, `area_min`, `urgencia` | 5 |
 | investimento | `intencao`, `perfil_investidor`, `ticket`, `retorno_esperado` | 4 |
+
+A intenção é conferida primeiro: investimento tem a sua lista qualquer que seja o segmento.
+
+**O segmento** (`Segmento`: `indefinido`, `residencial`, `comercial`) não é perguntado — é
+**derivado** por `segmento_efetivo()`: vale o que o cliente afirmou e, na falta disso, o que o
+`tipo_imovel` diz (`segmento_do_tipo()`, por lista de tipos comerciais: sala e conjunto comercial,
+loja, galpão, depósito, escritório, prédio e ponto comercial, terreno comercial, laje corporativa).
+Tipo desconhecido cai em **residencial**, por ser o acervo majoritário — um tipo que ninguém previu
+não vira comercial por acidente. O padrão do campo é `indefinido`, e não `residencial`, pelo mesmo
+motivo de `Intencao.INDEFINIDA`: o merge da extração descarta o "não informado" para não apagar o
+que o cliente já disse. E o segmento é derivado **no ponto de uso**, nunca gravado por validador —
+`model_copy(update=...)` do Pydantic v2 **não roda validadores**, então um segmento calculado em
+validador se perderia no turno seguinte (teste de regressão:
+`test_cenarios.py::test_segmento_comercial_sobrevive_aos_turnos_seguintes`).
 
 - `completo()` = nenhum obrigatório faltando (`campos_faltantes()` testa `None` e `indefinida`).
   **Contato não entra nessa conta.**
@@ -233,7 +248,9 @@ Resultado limitado a 0–100. Temperatura: **quente ≥ 60**, **morno 30–59**,
 | --- | --- | --- | --- |
 | Operação | `aluguel` se a intenção é aluguel; **`venda` para compra e investimento** | `tools/buscar_imoveis.py::_filtros` | `test_cenarios.py::test_cenario_investimento` |
 | Teto de preço | `preco_max` ou `ticket`, com **tolerância de +15%** (`preco <= preco_max * 1.15`) | `shared/sdr_shared/db/repositories.py::buscar_hibrido` | sem teste |
-| Quartos | filtro de **mínimo** (`>=`) | idem | sem teste |
+| Quartos | filtro de **mínimo** (`>=`) — **só no segmento residencial** | idem | sem teste |
+| Área mínima | `area_m2 >= area_min` — **só no segmento comercial**, no lugar dos quartos | idem | `test_cenarios.py::test_busca_comercial_nao_devolve_apartamento_e_vice_versa` |
+| Tipo | a busca restringe aos tipos do segmento efetivo (`lower(tipo) = ANY(...)`), para não misturar loja com apartamento | `tools/buscar_imoveis.py::_filtros` | `test_cenarios.py::test_busca_comercial_nao_devolve_apartamento_e_vice_versa` |
 | Resultados buscados | 6 (o consultor pede 6; a função tem padrão 5) | `nodes/consultor.py` | — |
 | Imóveis apresentados | **no máximo 3** | `nodes/consultor.py` | `test_cenarios.py::test_cenario_compra` |
 | Sem embedder | a busca cai para `buscar_por_filtros` (SQL puro, preço crescente) em vez de derrubar o turno | `tools/buscar_imoveis.py::_vetor` | `test_geo.py::test_sem_embedder_a_busca_cai_para_os_filtros_em_vez_de_derrubar_o_turno`, `::test_turno_inteiro_sobrevive_sem_embedder` |
@@ -915,7 +932,9 @@ Pontos onde o comportamento surpreende. São bons candidatos a teste — e algun
 2. **A taxa de falha da aba Saúde conta como falha tudo que não é `ok`** — inclusive `handoff`,
    `orcamento`, `reativacao` e `barramento`.
 3. **`campos_faltantes()` testa `None`; o score testa "valor verdadeiro".** Com `quartos = 0` o
-   cartão fica completo e o critério de quartos vale 0 ponto.
+   cartão fica completo e o critério de quartos vale 0 ponto — é o caso normal do segmento
+   comercial, que não conta quartos: o cartão fecha por `area_min`, e esses 10 pontos ficam de fora
+   do score.
 4. **`urgencia = "sem_prazo"` completa o cartão valendo zero ponto.**
 5. **Ação `alertar` nunca muda o modo**, nem acima de 150%. O teto vira apenas visual.
 6. **`TETO_DURO` (150%) só existe para `degradar`.** Com `bloquear`, o bloqueio é em 100%.

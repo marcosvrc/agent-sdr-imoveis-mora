@@ -10,11 +10,14 @@ import pytest
 
 from sdr_crm.db.connection import leitura
 from sdr_crm.seed.aplicar import aplicar
-from sdr_crm.seed.gerar import Plano
+from sdr_crm.seed.gerar import Plano, ler_acervo
 
 PLANO = Plano(seed=42, referencia=datetime(2026, 9, 17, 12, tzinfo=UTC), dataset_id="teste")
 
-ESPERADO = {"users": 4, "properties": 200, "leads": 100, "opportunities": 120,
+# `properties` vem do arquivo, e não de um literal: o acervo é a fonte (o próprio seed o lê com
+# `ler_acervo()`) e cresce quando entram tipos novos — os comerciais, por exemplo. Um 200 fixo aqui
+# transformaria "o acervo mudou" em "o seed quebrou".
+ESPERADO = {"users": 4, "properties": len(ler_acervo()), "leads": 100, "opportunities": 120,
             "interactions": 300, "visits": 20, "tasks": 30, "handoffs": 10}
 
 

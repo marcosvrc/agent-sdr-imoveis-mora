@@ -296,6 +296,7 @@ class ImovelRepository:
       AND (%(regiao)s::text   IS NULL OR regiao = %(regiao)s)
       AND (%(bairro)s::text   IS NULL OR unaccent(lower(bairro)) = unaccent(lower(%(bairro)s)))
       AND (%(tipo)s::text     IS NULL OR tipo = %(tipo)s)
+      AND (%(segmento_tipos)s::text[] IS NULL OR lower(tipo) = ANY(%(segmento_tipos)s))
       AND (%(preco_max)s::numeric IS NULL OR preco <= %(preco_max)s)
       AND (%(preco_min)s::numeric IS NULL OR preco >= %(preco_min)s)
       AND (%(quartos)s::int   IS NULL OR quartos >= %(quartos)s)
@@ -321,6 +322,8 @@ class ImovelRepository:
         """
         p = {k: filtros.get(k) for k in ("operacao", "regiao", "bairro", "tipo", "preco_max",
                                          "preco_min", "quartos", "suites", "vagas", "area_min", "texto")}
+        # Lista vazia é o mesmo que "sem filtro": senão um segmento desconhecido zeraria o catálogo.
+        p["segmento_tipos"] = list(filtros.get("segmento_tipos") or []) or None
         ordem = self.ORDENACOES.get(ordenar, self.ORDENACOES["relevancia"])
         with _conn() as c:
             itens = c.execute(f"""SELECT {self.COLS} FROM imoveis WHERE {self._FILTROS_PUBLICOS}
@@ -337,7 +340,9 @@ class ImovelRepository:
         """Fallback pgvector (ADR-0001): filtro SQL + ordenação por similaridade cosseno.
         Preço tolera +15% para não descartar bons imóveis por pouco.
         `bairros` restringe ao que o cliente pediu — sem isso a busca devolve a zona inteira e o
-        agente conclui, errado, que não há imóvel no bairro pedido."""
+        agente conclui, errado, que não há imóvel no bairro pedido.
+        `tipos` separa residencial de comercial: sem ele, quem procura sala recebe apartamento — e
+        quem procura apartamento recebe galpão assim que deixar de informar quartos."""
         with _conn() as c:
             register_vector(c)
             rows = c.execute(f"""
@@ -348,10 +353,13 @@ class ImovelRepository:
                   AND (%(bairros)s::text[] IS NULL OR bairro = ANY(%(bairros)s))
                   AND (%(preco_max)s::numeric IS NULL OR preco <= %(preco_max)s * 1.15)
                   AND (%(quartos)s::int IS NULL OR quartos >= %(quartos)s)
+                  AND (%(area_min)s::numeric IS NULL OR area_m2 >= %(area_min)s)
+                  AND (%(tipos)s::text[] IS NULL OR lower(tipo) = ANY(%(tipos)s))
                 ORDER BY embedding <=> %(emb)s LIMIT %(limite)s
             """, {"emb": np.array(embedding, dtype=np.float32), "limite": limite, "operacao": filtros.get("operacao"), "regiao": filtros.get("regiao"),
                   "bairros": filtros.get("bairros") or None,
-                  "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos")}).fetchall()
+                  "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos"),
+                  "area_min": filtros.get("area_min"), "tipos": filtros.get("tipos") or None}).fetchall()
         return [self._row(r) for r in rows]
 
     def buscar_por_filtros(self, filtros: dict, limite: int = 5) -> list[Imovel]:
@@ -368,10 +376,13 @@ class ImovelRepository:
                   AND (%(bairros)s::text[] IS NULL OR bairro = ANY(%(bairros)s))
                   AND (%(preco_max)s::numeric IS NULL OR preco <= %(preco_max)s * 1.15)
                   AND (%(quartos)s::int IS NULL OR quartos >= %(quartos)s)
+                  AND (%(area_min)s::numeric IS NULL OR area_m2 >= %(area_min)s)
+                  AND (%(tipos)s::text[] IS NULL OR lower(tipo) = ANY(%(tipos)s))
                 ORDER BY preco ASC, id LIMIT %(limite)s
             """, {"limite": limite, "operacao": filtros.get("operacao"), "regiao": filtros.get("regiao"),
                   "bairros": filtros.get("bairros") or None,
-                  "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos")}).fetchall()
+                  "preco_max": filtros.get("preco_max"), "quartos": filtros.get("quartos"),
+                  "area_min": filtros.get("area_min"), "tipos": filtros.get("tipos") or None}).fetchall()
         return [self._row(r) for r in rows]
 
     def atualizar_fotos(self, imovel_id: str, fotos: list[str]) -> None:

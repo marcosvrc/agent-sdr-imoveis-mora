@@ -33,7 +33,7 @@ def _publico(im: Imovel, request: Request) -> ImovelPublico:
 
 @router.get("", response_model=list[ImovelPublico])
 def listar(request: Request, operacao: str | None = None, regiao: str | None = None, preco_max: float | None = None,
-           quartos: int | None = None, limite: int = Query(60, le=200)):
+           quartos: int | None = None, limite: int = Query(60, le=400)):
     return [_publico(i, request) for i in ImovelRepository().listar_publico(operacao=operacao, regiao=regiao, preco_max=preco_max, quartos=quartos, limite=limite)]
 
 
@@ -47,10 +47,20 @@ class Busca(BaseModel):
     offset: int
 
 
+def _tipos_do_segmento(segmento: str | None) -> list[str] | None:
+    from sdr_shared.models import TIPOS_COMERCIAIS, TIPOS_RESIDENCIAIS
+    if segmento == "comercial":
+        return list(TIPOS_COMERCIAIS)
+    if segmento == "residencial":
+        return list(TIPOS_RESIDENCIAIS)
+    return None
+
+
 @router.get("/busca", response_model=Busca)
 def busca(request: Request,
           operacao: str | None = None, regiao: str | None = None, bairro: str | None = None,
-          tipo: str | None = None, preco_min: float | None = Query(None, ge=0),
+          tipo: str | None = None, segmento: str | None = Query(None, pattern="^(residencial|comercial)$"),
+          preco_min: float | None = Query(None, ge=0),
           preco_max: float | None = Query(None, ge=0), quartos: int | None = Query(None, ge=0, le=10),
           suites: int | None = Query(None, ge=0, le=10), vagas: int | None = Query(None, ge=0, le=10),
           area_min: float | None = Query(None, ge=0), texto: str | None = Query(None, max_length=80),
@@ -62,7 +72,12 @@ def busca(request: Request,
     if ordenar not in ImovelRepository.ORDENACOES:
         raise HTTPException(422, f"ordenação inválida: {ordenar}")
     r = ImovelRepository().buscar_publico(
-        {"operacao": operacao, "regiao": regiao, "bairro": bairro, "tipo": tipo, "preco_min": preco_min,
+        {"operacao": operacao, "regiao": regiao, "bairro": bairro, "tipo": tipo,
+         # `segmento` vira a lista de tipos daquele lado do catálogo: é o mesmo dado que o agente
+         # usa (`models.TIPOS_COMERCIAIS`), para o site e a Mora nunca discordarem sobre o que é
+         # comercial. `tipo` continua valendo junto, para filtrar um tipo específico dentro dele.
+         "segmento_tipos": _tipos_do_segmento(segmento),
+         "preco_min": preco_min,
          "preco_max": preco_max, "quartos": quartos, "suites": suites, "vagas": vagas,
          "area_min": area_min, "texto": texto},
         ordenar=ordenar, limite=limite, offset=offset)

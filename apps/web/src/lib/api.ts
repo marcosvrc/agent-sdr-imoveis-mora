@@ -7,7 +7,7 @@ export type Imovel = {
 /** Filtros da vitrine. Espelham 1:1 os parâmetros de `GET /imoveis/busca` — quando um campo novo
  *  entra na API ele entra aqui, e a tela ganha o controle correspondente. */
 export type Filtros = {
-  operacao?: string; regiao?: string; bairro?: string; tipo?: string;
+  operacao?: string; regiao?: string; bairro?: string; tipo?: string; segmento?: Segmento;
   preco_min?: number; preco_max?: number; quartos?: number; suites?: number; vagas?: number;
   area_min?: number; texto?: string;
 };
@@ -50,7 +50,25 @@ export const REGIOES: Record<string, string> = { zona_sul: "Zona Sul", zona_oest
 /** "na Zona Sul", mas "no Centro". Sem isto o rodapé escrevia "Imóveis na Centro". */
 export const preposicaoRegiao = (regiao: string) => (regiao === "centro" ? "no" : "na");
 
-export const TIPOS: Record<string, string> = { apartamento: "Apartamento", casa: "Casa", studio: "Studio" };
+export type Segmento = "residencial" | "comercial";
+
+/** O segmento é LIDO do tipo, nunca guardado ao lado dele — mesma regra do backend
+ *  (`sdr_shared/models/lead.py::segmento_do_tipo`). Duas verdades sobre "isto é comercial?"
+ *  divergiriam no primeiro cadastro fora do padrão. */
+export const TIPOS_POR_SEGMENTO: Record<Segmento, Record<string, string>> = {
+  residencial: { apartamento: "Apartamento", casa: "Casa", studio: "Studio" },
+  comercial: {
+    "sala comercial": "Sala comercial", "conjunto comercial": "Conjunto comercial",
+    loja: "Loja", "galpão": "Galpão",
+  },
+};
+export const TIPOS: Record<string, string> = { ...TIPOS_POR_SEGMENTO.residencial, ...TIPOS_POR_SEGMENTO.comercial };
+export const segmentoDoTipo = (tipo: string): Segmento =>
+  tipo.toLowerCase() in TIPOS_POR_SEGMENTO.comercial ? "comercial" : "residencial";
+
+export const SEGMENTOS: { v: Segmento | ""; r: string }[] = [
+  { v: "", r: "Tudo" }, { v: "residencial", r: "Para morar" }, { v: "comercial", r: "Para o negócio" },
+];
 
 export const ORDENACOES: { v: Ordenacao; r: string }[] = [
   { v: "relevancia", r: "Mais relevantes" },

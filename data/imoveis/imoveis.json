@@ -3798,5 +3798,765 @@
       "https://picsum.photos/seed/sp0296/800/600"
     ],
     "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0001",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 506.0,
+    "preco": 14210.0,
+    "condominio": null,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0001/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0002",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 150.0,
+    "preco": 13670.0,
+    "condominio": 2880.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0002/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0003",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 68.0,
+    "preco": 6920.0,
+    "condominio": 1100.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0003/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0004",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 112.0,
+    "preco": 11440.0,
+    "condominio": 2760.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0004/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0005",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Tatuapé",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 139.0,
+    "preco": 10090.0,
+    "condominio": 2900.0,
+    "descricao": "Galpão com doca e acesso para carga e descarga.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0005/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0006",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 532.0,
+    "preco": 12340.0,
+    "condominio": null,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0006/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0007",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 51.0,
+    "preco": 395000.0,
+    "condominio": 760.0,
+    "descricao": "Conjunto com copa, dois banheiros e divisórias removíveis.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0007/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0008",
+    "tipo": "conjunto comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 102.0,
+    "preco": 617000.0,
+    "condominio": 1440.0,
+    "descricao": "Galpão com doca e acesso para carga e descarga.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0008/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0009",
+    "tipo": "loja",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Bela Vista",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 104.0,
+    "preco": 11630.0,
+    "condominio": 1610.0,
+    "descricao": "Sala em prédio comercial com recepção e elevador social.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0009/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0010",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Lapa",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 108.0,
+    "preco": 1352000.0,
+    "condominio": 1630.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0010/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0011",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 132.0,
+    "preco": 12860.0,
+    "condominio": 2600.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0011/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0012",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 54.0,
+    "preco": 540000.0,
+    "condominio": 1180.0,
+    "descricao": "Sala em prédio comercial com recepção e elevador social.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0012/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0013",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 165.0,
+    "preco": 14790.0,
+    "condominio": 2940.0,
+    "descricao": "Sala em prédio comercial com recepção e elevador social.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0013/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0014",
+    "tipo": "galpão",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 456.0,
+    "preco": 3390000.0,
+    "condominio": null,
+    "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0014/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0015",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 53.0,
+    "preco": 3550.0,
+    "condominio": 990.0,
+    "descricao": "Conjunto com copa, dois banheiros e divisórias removíveis.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0015/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0016",
+    "tipo": "galpão",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 589.0,
+    "preco": 3787000.0,
+    "condominio": null,
+    "descricao": "Sala em prédio comercial com recepção e elevador social.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0016/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0017",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 587.0,
+    "preco": 15980.0,
+    "condominio": null,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0017/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0018",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 361.0,
+    "preco": 11870.0,
+    "condominio": null,
+    "descricao": "Sala em prédio comercial com recepção e elevador social.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0018/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0019",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 39.0,
+    "preco": 318000.0,
+    "condominio": 950.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0019/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0020",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 96.0,
+    "preco": 8930.0,
+    "condominio": 1460.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0020/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0021",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 223.0,
+    "preco": 5230.0,
+    "condominio": null,
+    "descricao": "Galpão com doca e acesso para carga e descarga.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0021/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0022",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Santana",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 72.0,
+    "preco": 5360.0,
+    "condominio": 1920.0,
+    "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0022/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0023",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 49.0,
+    "preco": 3430.0,
+    "condominio": 730.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0023/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0024",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Casa Verde",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 83.0,
+    "preco": 8480.0,
+    "condominio": 1850.0,
+    "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0024/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0025",
+    "tipo": "loja",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 172.0,
+    "preco": 15470.0,
+    "condominio": 3470.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0025/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0026",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 77.0,
+    "preco": 7880.0,
+    "condominio": 1420.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0026/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0027",
+    "tipo": "conjunto comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 147.0,
+    "preco": 1265000.0,
+    "condominio": 2810.0,
+    "descricao": "Galpão com doca e acesso para carga e descarga.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0027/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0028",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "Consolação",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 145.0,
+    "preco": 901000.0,
+    "condominio": 3940.0,
+    "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0028/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0029",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 130.0,
+    "preco": 8050.0,
+    "condominio": 2280.0,
+    "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0029/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0030",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Mooca",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 179.0,
+    "preco": 14130.0,
+    "condominio": 3780.0,
+    "descricao": "Conjunto com copa, dois banheiros e divisórias removíveis.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0030/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0031",
+    "tipo": "loja",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Brooklin",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 164.0,
+    "preco": 1688000.0,
+    "condominio": 4060.0,
+    "descricao": "Conjunto com copa, dois banheiros e divisórias removíveis.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0031/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0032",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 417.0,
+    "preco": 13480.0,
+    "condominio": null,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0032/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0033",
+    "tipo": "loja",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Itaim Bibi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 106.0,
+    "preco": 10720.0,
+    "condominio": 1810.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0033/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0034",
+    "tipo": "galpão",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "centro",
+    "bairro": "República",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 2,
+    "area_m2": 325.0,
+    "preco": 7280.0,
+    "condominio": null,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0034/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0035",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_sul",
+    "bairro": "Vila Mariana",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 1,
+    "area_m2": 50.0,
+    "preco": 425000.0,
+    "condominio": 1060.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0035/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0036",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_leste",
+    "bairro": "Anália Franco",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 0,
+    "area_m2": 38.0,
+    "preco": 2170.0,
+    "condominio": 540.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0036/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0037",
+    "tipo": "sala comercial",
+    "operacao": "venda",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Butantã",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 55.0,
+    "preco": 400000.0,
+    "condominio": 950.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0037/800/600"
+    ],
+    "destaque_investimento": false
+  },
+  {
+    "id": "CJ-0038",
+    "tipo": "conjunto comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Perdizes",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 3,
+    "area_m2": 32.0,
+    "preco": 2740.0,
+    "condominio": 710.0,
+    "descricao": "Laje corporativa com ar-condicionado central e cabeamento estruturado.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0038/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0039",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_oeste",
+    "bairro": "Pinheiros",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 142.0,
+    "preco": 13550.0,
+    "condominio": 2190.0,
+    "descricao": "Galpão com doca e acesso para carga e descarga.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0039/800/600"
+    ],
+    "destaque_investimento": true
+  },
+  {
+    "id": "CJ-0040",
+    "tipo": "sala comercial",
+    "operacao": "aluguel",
+    "cidade": "São Paulo",
+    "regiao": "zona_norte",
+    "bairro": "Tucuruvi",
+    "quartos": 0,
+    "suites": 0,
+    "vagas": 4,
+    "area_m2": 45.0,
+    "preco": 3980.0,
+    "condominio": 1240.0,
+    "descricao": "Pé-direito alto, pronto para layout aberto.",
+    "fotos": [
+      "https://picsum.photos/seed/cj0040/800/600"
+    ],
+    "destaque_investimento": false
   }
 ]

@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { REGIOES, TIPOS, brl, buscarImoveis, nomeImovel, obterImovel, type Imovel } from "../lib/api";
+import { REGIOES, TIPOS, brl, buscarImoveis, nomeImovel, obterImovel, segmentoDoTipo, type Imovel } from "../lib/api";
 import { caminhoImovel, idDoSlug } from "../lib/slug";
 import { SITE, trilhaJsonLd, useSeo } from "../lib/seo";
 import { registrarVisto } from "../lib/vistos";
@@ -92,9 +92,14 @@ export function ImovelDetalhe() {
   }
 
   const aluguel = im.operacao === "aluguel";
+  const comercial = segmentoDoTipo(im.tipo) === "comercial";
+  // Sala e galpão não têm dormitório. Mostrar "Quartos: 0" não é neutro — sugere que o dado existe
+  // e vale zero, quando ele simplesmente não se aplica àquele imóvel.
   const atributos = [
-    { i: <Ic.cama size={18} />, r: "Quartos", v: im.quartos },
-    { i: <Ic.banho size={18} />, r: "Suítes", v: im.suites },
+    ...(comercial ? [] : [
+      { i: <Ic.cama size={18} />, r: "Quartos", v: im.quartos },
+      { i: <Ic.banho size={18} />, r: "Suítes", v: im.suites },
+    ]),
     { i: <Ic.carro size={18} />, r: "Vagas", v: im.vagas },
     { i: <Ic.regua size={18} />, r: "Área", v: `${im.area_m2} m²` },
   ];
@@ -230,6 +235,7 @@ export function ImovelDetalhe() {
  *  preço e moeda é o que permite o resultado rico mostrar o valor. Só entram campos que existem no
  *  cadastro — nada de disponibilidade ou avaliação inventada. */
 function fichaJsonLd(im: Imovel) {
+  const comercial = segmentoDoTipo(im.tipo) === "comercial";
   return {
     "@context": "https://schema.org",
     "@type": "RealEstateListing",
@@ -245,9 +251,12 @@ function fichaJsonLd(im: Imovel) {
       ...(im.operacao === "aluguel" ? { businessFunction: "http://purl.org/goodrelations/v1#LeaseOut" } : {}),
     },
     about: {
-      "@type": im.tipo === "casa" ? "House" : "Apartment",
-      numberOfRoomsTotal: im.quartos,
-      numberOfBathroomsTotal: im.suites || undefined,
+      // Declarar uma loja como Apartment é dado estruturado errado — o buscador acredita.
+      "@type": comercial ? "LocalBusiness" : im.tipo === "casa" ? "House" : "Apartment",
+      ...(comercial ? {} : {
+        numberOfRoomsTotal: im.quartos,
+        numberOfBathroomsTotal: im.suites || undefined,
+      }),
       floorSize: { "@type": "QuantitativeValue", value: im.area_m2, unitCode: "MTK" },
       address: {
         "@type": "PostalAddress",

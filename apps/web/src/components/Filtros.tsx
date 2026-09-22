@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { REGIOES, TIPOS, brl, type Filtros as F } from "../lib/api";
+import { REGIOES, SEGMENTOS, TIPOS, TIPOS_POR_SEGMENTO, brl, type Filtros as F } from "../lib/api";
 import { Botao, Campo, Chip, Entrada, Escolha, cx } from "../lib/ui";
 import { Ic } from "./Icones";
 
@@ -60,10 +60,23 @@ export function Filtros({ value, bairros, onChange, total }: {
           </Escolha>
         </Campo>
 
+        <Campo rotulo="Para" id={`${id}-seg`}>
+          <Escolha id={`${id}-seg`} value={value.segmento ?? ""}
+                   onChange={(e) => {
+                     // Trocar de segmento zera o tipo: "Studio" não existe no comercial, e deixar o
+                     // filtro antigo cruzado com o novo devolveria zero resultado sem explicar por quê.
+                     set("segmento", e.target.value);
+                     set("tipo", "");
+                   }}>
+            {SEGMENTOS.map((s) => <option key={s.v} value={s.v}>{s.r}</option>)}
+          </Escolha>
+        </Campo>
+
         <Campo rotulo="Tipo" id={`${id}-tipo`}>
           <Escolha id={`${id}-tipo`} value={value.tipo ?? ""} onChange={(e) => set("tipo", e.target.value)}>
             <option value="">Qualquer tipo</option>
-            {Object.entries(TIPOS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            {Object.entries(value.segmento ? TIPOS_POR_SEGMENTO[value.segmento] : TIPOS)
+              .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Escolha>
         </Campo>
 
@@ -87,6 +100,8 @@ export function Filtros({ value, bairros, onChange, total }: {
             {Object.entries(REGIOES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Escolha>
         </Campo>
+        {/* Sala e galpão não têm dormitório: manter os campos ali só produziria busca vazia. */}
+        {value.segmento !== "comercial" && (<>
         <Campo rotulo="Quartos (mínimo)" id={`${id}-q`}>
           <Escolha id={`${id}-q`} value={value.quartos ?? ""} onChange={(e) => set("quartos", e.target.value)}>
             <option value="">Qualquer</option>
@@ -99,6 +114,7 @@ export function Filtros({ value, bairros, onChange, total }: {
             {[1, 2, 3].map((n) => <option key={n} value={n}>{n}+</option>)}
           </Escolha>
         </Campo>
+        </>)}
         <Campo rotulo="Vagas (mínimo)" id={`${id}-v`}>
           <Escolha id={`${id}-v`} value={value.vagas ?? ""} onChange={(e) => set("vagas", e.target.value)}>
             <option value="">Qualquer</option>
@@ -160,6 +176,7 @@ function descreverFiltros(f: F): { k: keyof F; rotulo: string; valor: string }[]
   add("tipo", "Tipo", f.tipo ? TIPOS[f.tipo] ?? f.tipo : undefined);
   add("bairro", "Bairro", f.bairro);
   add("regiao", "Região", f.regiao ? REGIOES[f.regiao] ?? f.regiao : undefined);
+  add("segmento", "Para", f.segmento === "comercial" ? "o negócio" : f.segmento === "residencial" ? "morar" : undefined);
   add("quartos", "Quartos", f.quartos ? `${f.quartos}+` : undefined);
   add("suites", "Suítes", f.suites ? `${f.suites}+` : undefined);
   add("vagas", "Vagas", f.vagas ? `${f.vagas}+` : undefined);

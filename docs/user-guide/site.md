@@ -39,14 +39,20 @@ Barra de filtros (**Filtros de busca**):
 | --- | --- | --- |
 | **Bairro, tipo ou palavra-chave** | texto livre, com autocompletar de bairros; espera 350 ms após parar de digitar | `texto` (até 80 caracteres) |
 | **Operação** | Comprar ou alugar / **Comprar** / **Alugar** | `operacao` = `venda` \| `aluguel` |
-| **Tipo** | Qualquer tipo / Apartamento / Casa / Studio | `tipo` |
+| **Para** | **Tudo** / **Para morar** / **Para o negócio** | `segmento` = `residencial` \| `comercial` |
+| **Tipo** | a lista muda com o segmento: residencial (Apartamento, Casa, Studio) ou comercial (Sala comercial, Conjunto comercial, Loja, Galpão); em **Tudo**, os dois | `tipo` |
 | **Mais filtros** → **Região** | Toda a cidade / Zona Sul / Zona Oeste / Zona Norte / Zona Leste / Centro | `regiao` |
-| **Quartos (mínimo)** | Qualquer, 1+ a 4+ | `quartos` (0–10) |
-| **Suítes (mínimo)**, **Vagas (mínimo)** | Qualquer, 1+ a 3+ | `suites`, `vagas` (0–10) |
+| **Quartos (mínimo)** | Qualquer, 1+ a 4+ — **oculto em "Para o negócio"** | `quartos` (0–10) |
+| **Suítes (mínimo)**, **Vagas (mínimo)** | Qualquer, 1+ a 3+ — **ocultos em "Para o negócio"** | `suites`, `vagas` (0–10) |
 | **Preço mínimo**, **Preço máximo** | número, passo de R$ 50 000 | `preco_min`, `preco_max` (≥ 0) |
 | **Área mínima (m²)** | número | `area_min` (≥ 0) |
 | **Bairro exato** | lista com contagem | `bairro` |
 | **Ordenar por** | **Mais relevantes**, **Menor preço**, **Maior preço**, **Maior área** | `ordenar` = `relevancia` \| `preco_asc` \| `preco_desc` \| `area_desc` |
+
+Trocar o segmento **zera o tipo escolhido**: "Studio" não existe no comercial, e um tipo do outro
+segmento devolveria lista vazia sem explicar por quê. Em **Para o negócio** os campos de quartos,
+suítes e vagas saem da tela — sala comercial e galpão se medem em metros, e a **Área mínima** é o
+critério de tamanho que vale.
 
 Filtros ativos viram chips removíveis (*Operação: Comprar*, *Até: R$ 800.000*…) com **Limpar todos**.
 Sem resultado: **"Nenhum imóvel com esses filtros"**, com **Perguntar à Mora** (abre o chat) e

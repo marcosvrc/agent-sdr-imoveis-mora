@@ -31,11 +31,12 @@ def montar() -> Diagrama:
                      rot_xy=(x + larg + gap / 2, 266), rot_linhas=["sem resultado"])
         d.aresta([(x + larg / 2, 346), (x + larg / 2, 430)], "cinza", ponta=False)
 
-    d.cartao(380, 430, 1510, 96, "Filtros SQL + similaridade de cosseno, na mesma consulta",
-             ["operação · região · bairros · preço (+15 %) · quartos mínimos — ImovelRepository.buscar_hibrido"],
+    d.cartao(380, 430, 1510, 116, "Filtros SQL + similaridade de cosseno, na mesma consulta",
+             ["operação · região · bairros · preço (+15 %) · quartos mínimos — ou área mínima e os tipos",
+              "do segmento, quando o imóvel é comercial — ImovelRepository.buscar_hibrido"],
              "banco", "cinza", pequeno=True)
     d.cartao(380, 588, 740, 110, "Imóveis recomendados", ["Até 3 por turno, sem repetir o que já foi visto", "ou descartado (tabela interesses)"], "certo", "verde", pequeno=True)
-    d.cartao(1150, 588, 740, 110, "Alternativa no bairro pedido", ["Relaxa quartos e depois preço: “de 2 quartos não", "tenho aí, mas tenho este de 1”"], "mao", "verde", pequeno=True)
+    d.cartao(1150, 588, 740, 110, "Alternativa no bairro pedido", ["Relaxa o tamanho (quartos ou área) e depois o preço:", "“de 2 quartos não tenho aí, mas tenho este de 1”"], "mao", "verde", pequeno=True)
 
     d.aresta([(296, 291), (380, 291)], "azul")
     d.aresta([(296, 448), (340, 448), (340, 478), (380, 478)], "roxo", raio=10)

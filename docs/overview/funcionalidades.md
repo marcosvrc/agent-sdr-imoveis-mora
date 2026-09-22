@@ -89,20 +89,22 @@ O modelo `CartaoQualificacao` está em `shared/sdr_shared/models/lead.py`:
 
 | Grupo | Campos |
 |---|---|
-| Busca | `intencao` (`compra`, `aluguel`, `investimento`, `indefinida`), `regiao`, `bairros[]`, `preco_min`, `preco_max`, `quartos`, `tipo_imovel`, `urgencia` |
+| Busca | `intencao` (`compra`, `aluguel`, `investimento`, `indefinida`), `segmento` (`indefinido`, `residencial`, `comercial`), `regiao`, `bairros[]`, `preco_min`, `preco_max`, `quartos`, `area_min`, `tipo_imovel`, `urgencia` |
 | Investidor | `perfil_investidor`, `ticket`, `retorno_esperado` |
 | Contato | `nome_informado`, `telefone_informado`, `email_informado` |
 | Sinais | `imoveis_visualizados[]`, `pediu_visita` |
 
 - `OBRIGATORIOS_COMPRA_ALUGUEL = ("intencao", "regiao", "preco_max", "quartos", "urgencia")`
+- `OBRIGATORIOS_COMERCIAL = ("intencao", "regiao", "preco_max", "area_min", "urgencia")`
 - `OBRIGATORIOS_INVESTIMENTO = ("intencao", "perfil_investidor", "ticket", "retorno_esperado")`
-- `campos_faltantes()` escolhe a lista pela intenção e devolve os que estão `None` ou `INDEFINIDA`; `completo()` é `not campos_faltantes()`.
+- `campos_faltantes()` escolhe a lista pela intenção e, dentro de compra/aluguel, pelo **segmento**; devolve os que estão `None` ou `INDEFINIDA`; `completo()` é `not campos_faltantes()`. Sala comercial e galpão não se medem em quartos: no comercial o obrigatório é `area_min`.
+- `segmento_efetivo()` é o segmento que vale agora: o afirmado pelo cliente ou, na falta dele, o que o `tipo_imovel` diz (`segmento_do_tipo()`, com lista de tipos comerciais; desconhecido cai em residencial). É **derivado no ponto de uso** — `model_copy(update=...)` do Pydantic v2 não roda validadores, então gravar o segmento num validador o perderia no turno seguinte.
 - `tem_contato()` é verdadeiro com telefone **ou** e-mail informado.
 - Validadores `mode="before"` removem caracteres de controle e cortam texto livre em 120 caracteres (bairros: 80 cada, no máximo 20) — o cartão é interpolado em prompts, e uma quebra de linha ali viraria "instrução".
 
 **Regras.**
 
-- A extração só sobrescreve com valor não vazio (`None`, `[]`, `False`, `INDEFINIDA` e `0` são ignorados); `imoveis_visualizados` é união sem duplicatas.
+- A extração só sobrescreve com valor não vazio (`None`, `[]`, `False`, `INDEFINIDA`, `Segmento.INDEFINIDO` e `0` são ignorados); `imoveis_visualizados` é união sem duplicatas.
 - **Absorção de contato** (`_absorver_contato`): `nome_informado` vira `lead.nome` (80 caracteres); telefone só entra se tiver entre **10 e 13 dígitos**; e-mail em minúsculas, 120 caracteres. Só preenche campo vazio do lead. Com telefone ou e-mail novo, `ClienteRepository().vincular` tenta reconhecer a mesma pessoa vinda de outro canal e audita `cliente.reconhecido`.
 - **Normalização de local** (`_normalizar_local` + `shared/sdr_shared/geo.py`): o LLM extrai o lugar como o cliente falou; quem decide bairro/região é o catálogo. `resolver()` reconhece nome exato, apelido (`itaim`, `bixiga`), ponto de referência (`faria lima`, `ibirapuera`), região (`zona sul`, `zs`), cidade atendida, cidade **fora de cobertura** (`osasco`, `guarulhos`, `alphaville`… cada uma com a região sugerida mais próxima) e erro de digitação (`get_close_matches`, corte 0,82). Sem bairro reconhecido, a frase inteira é varrida em janelas de 3, 2 e 1 palavras. O catálogo tem **18 bairros** em cinco regiões, e é da POC (São Paulo capital).
 - **Fora de cobertura**: bairros e região são zerados e o prompt recebe a instrução de dizer isso em uma frase e sugerir a região mais próxima — sem prometer busca lá.
@@ -124,7 +126,9 @@ do bairro pedido, de vizinhos, da região ou de outra parte da cidade.
 (`tools/buscar_imoveis.py`) com `limite=6`. A busca é a do ADR-0001: um embedding da consulta
 (preferência do cliente + tipo + bairros, mais "para renda de aluguel" para investidor) e
 `ImovelRepository.buscar_hibrido` — filtros SQL (`operacao`, `regiao`, `bairros`, `preco <= preco_max * 1.15`,
-`quartos >=`) ordenados por distância cosseno. A cascata desce em `nivel`:
+`quartos >=` ou `area_m2 >= area_min` no comercial, e a lista de tipos do segmento) ordenados por
+distância cosseno. O segmento decide **qual filtro de tamanho vale** e restringe os tipos, para que
+uma busca por sala comercial não devolva apartamento — nem o contrário. A cascata desce em `nivel`:
 
 1. `bairro` — exatamente o pedido;
 2. `vizinhos` — mesma região, os citados como referência entre si primeiro (`geo.vizinhos`);
@@ -139,7 +143,7 @@ Cidade fora de cobertura pula a cascata e busca na região sugerida (`nivel = "f
 - **Um embedding por busca** (`_vetor`), reaproveitado nas até seis consultas da cascata.
 - **Já vistos e descartados** (`InteresseRepository.por_situacao`): o que está `descartado` na tabela `interesses` nunca volta; o que já foi `sugerido` (nesta sessão ou em sessões anteriores) fica para o fim, e só reaparece quando as novidades acabam (`[:3] or todos[:3]`).
 - **Contexto de busca** (`_contexto_da_busca`): o nível vira uma instrução explícita no prompt — "estes são exatamente em X", "ATENÇÃO: não há no perfil pedido em X; os abaixo são de vizinhos", "não invente motivo (reserva, atualização de sistema)". O modelo só pode falar de disponibilidade com base nisso.
-- **Alternativa no bairro** (`_alternativa`): quando a cascata ampliou, procura no bairro pedido relaxando primeiro `quartos`, depois `preco_max` (3 resultados), e o prompt oferece as duas primeiras como "opções fora do perfil".
+- **Alternativa no bairro** (`_alternativa`): quando a cascata ampliou, procura no bairro pedido relaxando primeiro o critério de tamanho (`quartos`, ou `area_min` no comercial), depois `preco_max` (3 resultados), e o prompt oferece as duas primeiras como "opções fora do perfil".
 - **Motivo neutralizado** (`montar_card`): a descrição do anúncio entra no card por `neutralizar_texto_externo(…, limite=200)` — defesa de injeção de segunda ordem via RAG.
 - **Mudança de critério depois de qualificado** (`_absorver_mudanca`): o consultor reextrai o cartão da mensagem, mas **não** toca a intenção (isso é papel do qualificador).
 - Ao mostrar cards com cartão completo, `NOVO/QUALIFICANDO → QUALIFICADO`. Os cards mostrados viram `interesses` com situação `sugerido` (best-effort).

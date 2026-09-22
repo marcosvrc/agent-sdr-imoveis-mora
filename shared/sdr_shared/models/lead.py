@@ -19,6 +19,39 @@ def _limpar_identidade(valor: str | None, limite: int) -> str | None:
     return limpo or None
 
 
+class Segmento(StrEnum):
+    # INDEFINIDO é o padrão, e não RESIDENCIAL, pelo mesmo motivo de `Intencao.INDEFINIDA`: o merge
+    # da extração descarta o que veio "não informado" para não apagar o que o cliente já disse. Com
+    # RESIDENCIAL por padrão, cada turno seguinte sobrescrevia em silêncio o comercial do turno
+    # anterior — e o cartão voltava a pedir quartos no meio da conversa.
+    INDEFINIDO = "indefinido"
+    RESIDENCIAL = "residencial"
+    COMERCIAL = "comercial"
+
+
+# O segmento é DERIVADO do tipo do imóvel, não guardado ao lado dele. Guardar os dois criaria duas
+# verdades que podem discordar — uma "loja" marcada como residencial — e esse é justamente o tipo de
+# divergência silenciosa que já custou caro neste projeto (ver as fotos em ADR-0015). O tipo é o
+# dado que a pessoa preenche; o segmento é leitura dele.
+TIPOS_COMERCIAIS: tuple[str, ...] = (
+    "sala comercial", "conjunto comercial", "loja", "galpao", "galpão", "deposito", "depósito",
+    "escritorio", "escritório", "predio comercial", "prédio comercial", "ponto comercial",
+    "terreno comercial", "laje corporativa",
+)
+TIPOS_RESIDENCIAIS: tuple[str, ...] = (
+    "apartamento", "casa", "studio", "cobertura", "sobrado", "kitnet", "flat", "terreno",
+)
+
+
+def segmento_do_tipo(tipo: str | None) -> Segmento:
+    """Residencial é o padrão deliberado: o acervo é todo residencial e um tipo desconhecido não
+    pode virar comercial por acidente — erraria para o lado que esconde imóvel de quem quer morar."""
+    if not tipo:
+        return Segmento.RESIDENCIAL
+    t = tipo.strip().lower()
+    return Segmento.COMERCIAL if any(c in t for c in TIPOS_COMERCIAIS) else Segmento.RESIDENCIAL
+
+
 class Intencao(StrEnum):
     COMPRA = "compra"
     ALUGUEL = "aluguel"
@@ -50,7 +83,11 @@ class CartaoQualificacao(BaseModel):
     preco_min: float | None = None
     preco_max: float | None = None
     quartos: int | None = None
-    tipo_imovel: str | None = None          # apartamento, casa, studio...
+    area_min: float | None = None           # m² — é o "quartos" de quem procura sala, loja ou galpão
+    tipo_imovel: str | None = None          # apartamento, casa, studio, sala comercial, loja...
+    # Só o que o cliente AFIRMOU ("é para o meu negócio"). Quando ele não afirma, o segmento sai do
+    # tipo pedido — ver `segmento_efetivo()`, que é por onde todo mundo deve perguntar.
+    segmento: Segmento = Segmento.INDEFINIDO
     urgencia: str | None = None             # imediata, 3 meses, 6 meses, sem prazo
     # Investidor
     perfil_investidor: str | None = None    # conservador, moderado, arrojado
@@ -64,7 +101,11 @@ class CartaoQualificacao(BaseModel):
     imoveis_visualizados: list[str] = Field(default_factory=list)
     pediu_visita: bool = False
 
+    # Três conjuntos, porque qualificar é perguntar o que decide a escolha — e o que decide muda.
+    # Quem procura moradia decide por quartos; quem procura sala ou galpão decide por área. Perguntar
+    # "quantos quartos?" a quem quer uma loja é o bug de produto que esta separação evita.
     OBRIGATORIOS_COMPRA_ALUGUEL: ClassVar[tuple[str, ...]] = ("intencao", "regiao", "preco_max", "quartos", "urgencia")
+    OBRIGATORIOS_COMERCIAL: ClassVar[tuple[str, ...]] = ("intencao", "regiao", "preco_max", "area_min", "urgencia")
     OBRIGATORIOS_INVESTIMENTO: ClassVar[tuple[str, ...]] = ("intencao", "perfil_investidor", "ticket", "retorno_esperado")
 
     # O cartão inteiro é interpolado no prompt do consultor/follow-up/resumidor sem envelope, e o
@@ -83,13 +124,29 @@ class CartaoQualificacao(BaseModel):
             return v
         return [b for b in (_limpar_identidade(x, 80) for x in v) if b][:20]
 
+    def segmento_efetivo(self) -> Segmento:
+        """O segmento que vale agora: o afirmado pelo cliente ou, na falta dele, o que o tipo diz.
+
+        Derivar AQUI, e não gravar no campo, é deliberado. O cartão é remontado a cada turno com
+        `model_copy(update=...)`, que **não roda validadores** — um campo preenchido por validador
+        sobreviveria à ida ao banco e sumiria no merge, e o sintoma seria a Mora voltar a perguntar
+        quartos no meio de uma conversa sobre loja. Já aconteceu; por isso existe teste.
+        """
+        if self.segmento != Segmento.INDEFINIDO:
+            return self.segmento
+        return segmento_do_tipo(self.tipo_imovel)
+
     def tem_contato(self) -> bool:
         """Um lead só é aproveitável pelo corretor se der para falar com ele."""
         return bool(self.telefone_informado or self.email_informado)
 
     def campos_faltantes(self) -> list[str]:
-        campos = (self.OBRIGATORIOS_INVESTIMENTO if self.intencao == Intencao.INVESTIMENTO
-                  else self.OBRIGATORIOS_COMPRA_ALUGUEL)
+        if self.intencao == Intencao.INVESTIMENTO:
+            campos = self.OBRIGATORIOS_INVESTIMENTO
+        elif self.segmento_efetivo() == Segmento.COMERCIAL:
+            campos = self.OBRIGATORIOS_COMERCIAL
+        else:
+            campos = self.OBRIGATORIOS_COMPRA_ALUGUEL
         return [c for c in campos if getattr(self, c) in (None, Intencao.INDEFINIDA)]
 
     def completo(self) -> bool:

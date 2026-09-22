@@ -21,6 +21,8 @@ function dosParams(sp: URLSearchParams): F {
   for (const k of ["operacao", "regiao", "bairro", "tipo", "texto"] as const) {
     const v = sp.get(k); if (v) f[k] = v;
   }
+  const seg = sp.get("segmento");
+  if (seg === "residencial" || seg === "comercial") f.segmento = seg;
   for (const k of NUMERICOS) {
     const v = sp.get(k); if (v && !Number.isNaN(Number(v))) f[k] = Number(v);
   }
@@ -159,8 +161,9 @@ const desslug = (s: string) => s.split("-").map((p) => p.charAt(0).toUpperCase()
 /** Título que descreve a busca — "Apartamentos de 2 quartos em Perdizes" em vez de "Imóveis".
  *  Vale para a pessoa (sabe o que está vendo) e para o buscador (h1 e <title> diferentes por página). */
 function tituloDaBusca(f: F, _total?: number): string {
-  const tipo = f.tipo ? `${TIPOS[f.tipo] ?? f.tipo}s` : "Imóveis";
-  const quartos = f.quartos ? ` de ${f.quartos}+ quartos` : "";
+  const tipo = f.tipo ? `${TIPOS[f.tipo] ?? f.tipo}s`
+    : f.segmento === "comercial" ? "Imóveis comerciais" : "Imóveis";
+  const quartos = f.segmento === "comercial" || !f.quartos ? "" : ` de ${f.quartos}+ quartos`;
   const onde = f.bairro ? ` em ${f.bairro}`
     : f.regiao ? ` ${preposicaoRegiao(f.regiao)} ${REGIOES[f.regiao] ?? f.regiao}` : " em São Paulo";
   const op = f.operacao === "aluguel" ? " para alugar" : f.operacao === "venda" ? " à venda" : "";

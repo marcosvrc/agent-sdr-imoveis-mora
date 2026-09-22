@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { api, REGIOES, type Imovel } from "../lib/api";
+import { api, ehComercial, REGIOES, TIPOS_COMERCIAIS, TIPOS_RESIDENCIAIS, type Imovel } from "../lib/api";
 import { brl, num, REGIAO } from "../lib/format";
 import { Badge, Button, Card, ConfirmDialog, EmptyState, Input, Modal, PageHeader, Paginacao, Select, Skeleton, StatTile, Table, usePaginacao, cx } from "../components/ui";
 import { InteressadosNoImovel, SeloInteressados } from "../components/Interesses";
@@ -37,7 +37,7 @@ export function Imoveis() {
         acoes={<div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-xs">{(["tabela", "cards"] as const).map((v) => <button key={v} onClick={() => setVisao(v)} className={cx("rounded-md px-2.5 py-1.5 font-medium capitalize", visao === v ? "bg-brand text-brand-ink" : "text-ink-muted")}>{v}</button>)}</div>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Imóveis no filtro" valor={num(resumo.total)} icone="building"
-          ajuda={<>Quantos imóveis atendem aos filtros e à busca aplicados agora. É o mesmo conjunto que a Mora tem para oferecer ao cliente com esses critérios. A base carrega até 200 imóveis por vez.</>} />
+          ajuda={<>Quantos imóveis atendem aos filtros e à busca aplicados agora. É o mesmo conjunto que a Mora tem para oferecer ao cliente com esses critérios. A base carrega até 400 imóveis por vez.</>} />
         <StatTile label="À venda" valor={num(resumo.venda)}
           ajuda={<>Dos imóveis no filtro, quantos são de venda. Útil para conferir se o catálogo cobre a demanda: muitos leads de compra e poucos imóveis à venda na região explicam o agente não achar opções.</>} />
         <StatTile label="Para alugar" valor={num(resumo.aluguel)}
@@ -52,7 +52,7 @@ export function Imoveis() {
           <div className="relative min-w-[200px] flex-1"><Ic.search size={15} className="pointer-events-none absolute left-2.5 top-2.5 text-ink-faint" /><Input className="pl-8" placeholder="Buscar por código, bairro, descrição…" value={busca} onChange={(e) => { setBusca(e.target.value); pag.setPagina(1); }} /></div>
           <Select aria-label="Filtrar por operação" className="w-40" value={f.operacao ?? ""} onChange={(e) => { setF({ ...f, operacao: e.target.value || undefined }); pag.setPagina(1); }}><option value="">Venda e aluguel</option><option value="venda">Venda</option><option value="aluguel">Aluguel</option></Select>
           <Select aria-label="Filtrar por região" className="w-44" value={f.regiao ?? ""} onChange={(e) => { setF({ ...f, regiao: e.target.value || undefined }); pag.setPagina(1); }}><option value="">Todas as regiões</option>{REGIOES.map((r) => <option key={r} value={r}>{REGIAO[r]}</option>)}</Select>
-          <Select aria-label="Filtrar por tipo de imóvel" className="w-40" value={f.tipo ?? ""} onChange={(e) => { setF({ ...f, tipo: e.target.value || undefined }); pag.setPagina(1); }}><option value="">Todos os tipos</option><option value="apartamento">Apartamento</option><option value="casa">Casa</option><option value="studio">Studio</option></Select>
+          <Select aria-label="Filtrar por tipo de imóvel" className="w-40" value={f.tipo ?? ""} onChange={(e) => { setF({ ...f, tipo: e.target.value || undefined }); pag.setPagina(1); }}><option value="">Todos os tipos</option>{[...TIPOS_RESIDENCIAIS, ...TIPOS_COMERCIAIS].map((t) => <option key={t} value={t} className="capitalize">{t[0].toUpperCase() + t.slice(1)}</option>)}</Select>
           <Select aria-label="Filtrar por número de quartos" className="w-36" value={f.quartos ?? ""} onChange={(e) => { setF({ ...f, quartos: e.target.value ? Number(e.target.value) : undefined }); pag.setPagina(1); }}><option value="">Quartos</option>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>{q}+ quartos</option>)}</Select>
           {(busca || Object.values(f).some(Boolean)) && <Button variante="fantasma" tamanho="sm" onClick={limpar}>Limpar</Button>}
         </div>
@@ -65,7 +65,7 @@ export function Imoveis() {
                   <td className={C}><span className="inline-flex items-center gap-1.5"><span className="font-medium capitalize">{i.tipo} · {i.bairro}</span>{i.destaque_investimento && <Ic.spark size={13} className="text-warn" aria-label="destaque para investidor" />}{i.fotos.length > 0 && <span className="text-[10px] text-ink-muted" title={`${i.fotos.length} foto(s)`}>· {i.fotos.length} 📷</span>}</span></td>
                   <td className={C}>{i.operacao === "aluguel" ? <Badge tom="info">aluguel</Badge> : <Badge>venda</Badge>}</td>
                   <td className={cx(C, "text-ink-muted")}>{REGIAO[i.regiao] ?? i.regiao}</td>
-                  <td className={cx(C, "tabular-nums")}>{i.quartos}q · {i.suites}s · {i.vagas}v</td>
+                  <td className={cx(C, "tabular-nums")}>{ehComercial(i.tipo) ? "—" : `${i.quartos}q · ${i.suites}s · ${i.vagas}v`}</td>
                   <td className={cx(C, "tabular-nums")}>{num(i.area_m2)} m²</td>
                   <td className={cx(C, "font-medium tabular-nums")}>{brl(i.preco)}{i.operacao === "aluguel" && <span className="text-xs font-normal text-ink-muted">/mês</span>}</td>
                   <td className={cx(C, "tabular-nums text-ink-muted")}>{i.condominio ? brl(i.condominio) : "—"}</td>
@@ -79,7 +79,7 @@ export function Imoveis() {
                 <button key={i.id} onClick={() => setSel(i)} className="overflow-hidden rounded-xl border border-line bg-surface text-left transition hover:shadow-md">
                   {i.fotos[0] ? <img src={i.fotos[0]} alt="" className="h-36 w-full object-cover" loading="lazy" /> : <div className="grid h-36 w-full place-items-center bg-canvas text-ink-muted"><Ic.building size={22} /></div>}
                   <div className="p-3"><div className="flex items-start justify-between gap-2"><p className="font-medium capitalize">{i.tipo} · {i.bairro}</p><span className="font-mono text-[10px] text-ink-muted">{i.id}</span></div>
-                    <p className="text-xs text-ink-muted">{i.quartos} quartos · {num(i.area_m2)} m² · {REGIAO[i.regiao]}</p>
+                    <p className="text-xs text-ink-muted">{ehComercial(i.tipo) ? "" : `${i.quartos} quartos · `}{num(i.area_m2)} m² · {REGIAO[i.regiao]}</p>
                     <p className="mt-1.5 text-sm font-semibold tabular-nums">{brl(i.preco)}{i.operacao === "aluguel" && <span className="text-xs font-normal text-ink-muted">/mês</span>}</p></div>
                 </button>))}
             </div>
@@ -140,7 +140,7 @@ function DetalheImovel({ imovel, onFechar, onAtualizar }: { imovel: Imovel | nul
           <div className="flex flex-wrap items-center gap-2"><Badge tom={sel.operacao === "aluguel" ? "info" : "neutro"}>{sel.operacao}</Badge><Badge>{sel.tipo}</Badge><Badge>{REGIAO[sel.regiao]}</Badge>{sel.destaque_investimento && <Badge tom="warn" icone={<Ic.spark size={10} />}>destaque para investidor</Badge>}</div>
           <p className="text-2xl font-semibold tabular-nums">{brl(sel.preco)}{sel.operacao === "aluguel" && <span className="text-sm font-normal text-ink-muted">/mês</span>}{sel.condominio ? <span className="ml-2 text-sm font-normal text-ink-muted">+ {brl(sel.condominio)} cond.</span> : null}</p>
           <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
-            {[["Quartos", String(sel.quartos)], ["Suítes", String(sel.suites)], ["Vagas", String(sel.vagas)], ["Área", `${num(sel.area_m2)} m²`], ["R$/m²", brl(sel.preco / sel.area_m2)], ["Cidade", sel.cidade]].map(([k, v]) => <div key={k}><dt className="text-xs text-ink-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
+            {[...(ehComercial(sel.tipo) ? [] : [["Quartos", String(sel.quartos)], ["Suítes", String(sel.suites)]]), ["Vagas", String(sel.vagas)], ["Área", `${num(sel.area_m2)} m²`], ["R$/m²", brl(sel.preco / sel.area_m2)], ["Cidade", sel.cidade]].map(([k, v]) => <div key={k}><dt className="text-xs text-ink-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
           </dl>
           <div><p className="mb-1 text-xs font-medium text-ink-muted">Descrição (texto que alimenta o embedding)</p><p className="rounded-lg bg-canvas p-3 text-sm">{sel.descricao}</p></div>
           {/* A pergunta que o corretor faz olhando um imóvel é "com quem eu falo sobre ele". */}
