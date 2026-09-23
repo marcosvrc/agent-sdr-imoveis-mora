@@ -62,8 +62,15 @@ def test_cenario_investimento(infra):
     processar(msg("l2", "quero falar com um corretor especialista"))
     assert LeadRepository().get("l2").estagio == Estagio.HANDOFF
     assert ultima(broker)["acao"] == "handoff"
-    processar(msg("l2", "ok, aguardo"))                                      # em handoff o agente fica em silêncio
-    assert ultima(broker)["acao"] == "handoff"                               # nenhuma resposta nova
+    # Em handoff o agente não conduz mais a conversa — mas o silêncio ABSOLUTO era um beco: quem
+    # caía lá por engano escrevia e nada acontecia. A primeira mensagem depois do encaminhamento
+    # recebe UM aviso, que diz que o corretor foi chamado e como voltar para a Mora.
+    processar(msg("l2", "ok, aguardo"))
+    aviso = MensagemRepository().historico("l2")[-1]
+    assert aviso["direcao"] == "out" and aviso["meta"]["motivo"] == "handoff_aviso"
+    assert "continuar com a Mora" in aviso["conteudo"]
+
+    processar(msg("l2", "e aí, alguma novidade?"))                           # daí em diante, silêncio
     assert MensagemRepository().historico("l2")[-1]["direcao"] == "in"
 
 
@@ -396,3 +403,67 @@ def test_segmento_comercial_sobrevive_aos_turnos_seguintes(infra):
     cartao = LeadRepository().get("l-com3").cartao
     assert cartao.segmento_efetivo() == Segmento.COMERCIAL
     assert "quartos" not in cartao.campos_faltantes()
+
+
+# --------------------------------------------------------- a porta de volta do handoff
+
+def _em_handoff(lead_id="l_volta", nome="Marcos"):
+    from sdr_shared.models import Lead
+    lead = Lead(id=lead_id, nome=nome, estagio=Estagio.HANDOFF)
+    lead.cartao.intencao = Intencao.ALUGUEL
+    lead.cartao.regiao = "zona_oeste"
+    lead.cartao.preco_max = 3000
+    lead.cartao.quartos = 2
+    lead.cartao.urgencia = "imediata"
+    LeadRepository().upsert(lead)
+    return lead
+
+
+def test_quem_caiu_no_handoff_por_engano_consegue_voltar(infra):
+    """Handoff era porta de mão única: a Mora cala e o cliente não tem como pedir para voltar.
+
+    Um "dim" — erro de digitação — encaminhou um lead de verdade a um corretor; ele perguntou
+    "pode falar mais sobre o imóvel?" e não recebeu resposta de ninguém.
+    """
+    broker, _ = infra
+    _em_handoff()
+    processar(msg("l_volta", "quero continuar com a Mora", canal=Canal.WEB))
+    lead = LeadRepository().get("l_volta")
+    assert lead.estagio != Estagio.HANDOFF, "o cliente pediu a assistente de volta"
+    assert lead.estagio == Estagio.QUALIFICADO, "cartão completo: volta já qualificado"
+    assert ultima(broker, "outbound-web")["texto"], "e o turno segue: ele recebe resposta agora"
+
+
+def test_mensagem_qualquer_no_handoff_nao_tira_o_lead_do_corretor(infra):
+    """A porta de volta é para quem PEDE. Handoff existe porque alguém quis uma pessoa — um "oi"
+    não desfaz isso."""
+    _em_handoff("l_fica")
+    processar(msg("l_fica", "oi, tudo bem?", canal=Canal.WEB))
+    assert LeadRepository().get("l_fica").estagio == Estagio.HANDOFF
+
+
+def test_no_handoff_o_cliente_recebe_um_aviso_so_e_ele_ensina_a_voltar(infra):
+    """Silêncio total é o que transformava o handoff acidental em beco. Um aviso — e um só —
+    diz o que esperar e como sair. Repetir a cada mensagem seria a Mora falando por cima da
+    equipe."""
+    broker, _ = infra
+    _em_handoff("l_aviso")
+    processar(msg("l_aviso", "e aí?", canal=Canal.WEB))
+    aviso = ultima(broker, "outbound-web")["texto"]
+    assert "continuar com a Mora" in aviso, "o aviso precisa ensinar o caminho de volta"
+    antes = len([b for t, b, _ in broker.msgs if t == "outbound-web"])
+
+    processar(msg("l_aviso", "alguém aí?", canal=Canal.WEB))
+    depois = len([b for t, b, _ in broker.msgs if t == "outbound-web"])
+    assert depois == antes, "o aviso é uma vez por handoff, não a cada mensagem"
+
+
+def test_aviso_nao_atropela_o_corretor_que_ja_respondeu(infra):
+    """Se a equipe já está na conversa, a Mora não interrompe: aí o silêncio dela é o certo."""
+    broker, _ = infra
+    _em_handoff("l_corretor")
+    MensagemRepository().registrar("l_corretor", Canal.WEB, "corretor", "Oi! Sou a Camila, vi seu caso.")
+    antes = len([b for t, b, _ in broker.msgs if t == "outbound-web"])
+    processar(msg("l_corretor", "oi Camila", canal=Canal.WEB))
+    depois = len([b for t, b, _ in broker.msgs if t == "outbound-web"])
+    assert depois == antes, "quem está atendendo é a pessoa; a Mora fica quieta"

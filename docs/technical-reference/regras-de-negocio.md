@@ -412,17 +412,33 @@ que se move numa desativação) é mais ampla: leads abertos + visitas futuras. 
 | **Assumir** | estágio vira `handoff`; corretor: body → o já vinculado (se existir no cadastro) → roteamento por região → **fila da equipe** (`corretor_id` nulo); visitas futuras acompanham; **follow-ups são cancelados** | `routers/handoff.py::assumir` | `services/api/tests/test_api.py::test_corretor_auth_e_handoff` |
 | **Responder** | envia por **todos** os canais do lead, sem passar pelo agente; registra como `corretor`; sem canal → **409** | `routers/handoff.py::responder` | idem |
 | **Devolver** | volta para `qualificado` (cartão completo) ou `qualificando`; o corretor **continua** vinculado | `routers/handoff.py::devolver` | idem |
+| **Devolver a pedido do cliente** | o cliente pede a assistente de volta na conversa (`PEDE_MORA`) → mesmo destino do devolver; audita `lead.devolvido_ao_agente` e notifica o corretor; o turno **segue** e a Mora responde na hora | `handler.py::_devolver_a_mora` | `test_cenarios.py::test_quem_caiu_no_handoff_por_engano_consegue_voltar` |
 | **Trocar corretor** | `PUT /leads/{id}/corretor`; corretor precisa existir; `null` desvincula | `routers/leads.py` | `test_api.py::test_lead_corretor` |
 
 O usuário logado é um **ator de auditoria**, nunca vira o `corretor_id` do lead
 (`test_api.py::test_apagar_corretor_no_banco_nao_deixa_lead_fantasma`).
 
-Enquanto o lead está em `handoff`, a Mora **não responde**: a mensagem é registrada, o follow-up é
-cancelado e o corretor recebe `lead.respondeu` — **no máximo um a cada 15 minutos por lead**
-(`handler.py`, chave `int(time.time()) // 900`). Testes:
+Enquanto o lead está em `handoff`, a Mora **não conduz a conversa**: a mensagem é registrada, o
+follow-up é cancelado e o corretor recebe `lead.respondeu` — **no máximo um a cada 15 minutos por
+lead** (`handler.py`, chave `int(time.time()) // 900`). Testes:
 `test_notificacoes.py::test_cliente_que_responde_em_handoff_avisa_de_novo`,
 `test_followup.py::test_cliente_que_responde_em_handoff_nao_leva_followup_por_cima`,
 `test_monitoramento_turno.py::test_turno_que_morre_em_handoff_tambem_conta`.
+
+**Silêncio, mas não beco.** A primeira mensagem do cliente depois do encaminhamento recebe **um**
+aviso — e só um por handoff — dizendo que o corretor foi chamado e como voltar para a assistente
+("continuar com a Mora"). Se alguém da equipe já respondeu (mensagem com direção `corretor`), a Mora
+não diz nada: interromper quem está atendendo é pior que o silêncio. O motivo fica em
+`meta.motivo = "handoff_aviso"`, que é como o aviso sabe que já saiu.
+
+A razão de existir disto: handoff era porta de mão única. Um cliente digitou "dim" — erro de
+digitação — o roteador leu como assunto fora de imóveis, o lead foi para um corretor, e quando ele
+escreveu "não entendi, pode falar mais sobre o imóvel?" não recebeu resposta de ninguém, nem forma de
+pedir a Mora de volta. O `PEDE_MORA` exige pedido explícito ("continuar com a Mora", "não quero falar
+com corretor"): "oi" não tira ninguém do corretor, porque handoff existe para quem quis uma pessoa.
+Testes: `test_cenarios.py::test_no_handoff_o_cliente_recebe_um_aviso_so_e_ele_ensina_a_voltar`,
+`::test_mensagem_qualquer_no_handoff_nao_tira_o_lead_do_corretor`,
+`::test_aviso_nao_atropela_o_corretor_que_ja_respondeu`.
 
 **No CRM**, o encaminhamento é publicado no fim do turno com resumo (o da Mora ou o cartão) e o
 destinatário resolvido por `corretores.crm_user_id`; sem ponte, sobe sem destinatário (fila aberta).

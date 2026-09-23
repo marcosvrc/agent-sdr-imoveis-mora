@@ -1,5 +1,6 @@
 """Entrada do agente: recebe MensagemNormalizada, roda o grafo, persiste, despacha ao canal, agenda follow-up."""
 import logging
+import re
 import time
 import traceback
 
@@ -135,11 +136,14 @@ def processar(entrada: MensagemNormalizada) -> None:
     if lead.estagio == Estagio.HANDOFF and not iniciada_pelo_agente:
         cancelar_followup(lead.id)           # o cliente está falando: nada de follow-up por cima
         quem = lead.nome or lead.telefone or lead.id
-        notificar(tipo="lead.respondeu", corretor_id=lead.corretor_id, lead_id=lead.id,
-                  titulo=f"{quem} respondeu", detalhe=(entrada.conteudo or "")[:160] or None,
-                  chave=str(int(time.time()) // 900))   # no máximo um aviso por lead a cada 15 min
-        _fim("handoff", lead)
-        return
+        voltou = PEDE_MORA.search(entrada.conteudo or "") and _devolver_a_mora(lead, entrada)
+        if not voltou:
+            notificar(tipo="lead.respondeu", corretor_id=lead.corretor_id, lead_id=lead.id,
+                      titulo=f"{quem} respondeu", detalhe=(entrada.conteudo or "")[:160] or None,
+                      chave=str(int(time.time()) // 900))   # no máximo um aviso por lead a cada 15 min
+            _avisar_que_o_corretor_foi_chamado(lead, entrada, msgs)
+            _fim("handoff", lead)
+            return
 
     # Governança: orçamento muito acima do teto → não chama modelo, encaminha ao corretor.
     if not iniciada_pelo_agente and _bloqueado_por_orcamento(lead, entrada):
@@ -235,6 +239,70 @@ def _dentro_da_vazao(entrada: MensagemNormalizada) -> bool:
         except Exception:
             log.exception("falha ao avisar o lead %s sobre a vazão", entrada.lead_id)
     return False
+
+
+# Pedido EXPLÍCITO de voltar para a assistente. Só isso tira o lead do corretor — "oi" ou "e aí?"
+# não tiram, porque handoff existe para quem quis uma pessoa.
+PEDE_MORA = re.compile(
+    r"(\b(volt|continu|segu)\w*\b[^.!?]{0,24}\b(mora|assistente|rob[ôo]|bot|virtual|ia)\b"
+    r"|\bfalar com a mora\b|\bquero (a mora|o bot|a assistente)\b"
+    r"|\bn[ãa]o quero (mais )?(falar com )?(o |um |a )?(corretor|humano|atendente|pessoa)\b"
+    r"|\bcancela(r)? o (atendimento )?(humano|corretor)\b)", re.I)
+
+AVISO_ESPERA = "handoff_aviso"
+
+
+def _devolver_a_mora(lead: Lead, entrada: MensagemNormalizada) -> bool:
+    """O cliente pediu a assistente de volta. Devolve e deixa o turno seguir normalmente.
+
+    Sem isto, handoff é uma porta de mão única: a Mora cala, e quem caiu lá por engano — um "dim"
+    que o roteador leu como assunto fora de imóveis — não tem como pedir para voltar. O corretor
+    continua sabendo de tudo (fica avisado, e o histórico é o mesmo); o que muda é quem responde
+    agora.
+    """
+    lead.estagio = Estagio.QUALIFICADO if lead.cartao.completo() else Estagio.QUALIFICANDO
+    LeadRepository().upsert(lead)
+    auditar(acao="lead.devolvido_ao_agente", entidade="lead", entidade_id=lead.id, ator_tipo="cliente",
+            ator_nome=lead.nome or lead.id, origem=str(entrada.canal.value), resultado="ok",
+            detalhe="o cliente pediu para continuar com a Mora",
+            dados={"corretor_id": lead.corretor_id, "para": str(lead.estagio.value)})
+    notificar(tipo="lead.devolvido", corretor_id=lead.corretor_id, lead_id=lead.id,
+              titulo=f"{lead.nome or lead.id} preferiu seguir com a Mora",
+              detalhe="O cliente pediu para continuar com a assistente. A conversa segue no painel.",
+              chave=f"devolvido-{int(time.time()) // 900}")
+    log.info("lead %s devolvido ao agente a pedido do cliente", lead.id)
+    return True
+
+
+def _avisar_que_o_corretor_foi_chamado(lead: Lead, entrada: MensagemNormalizada, msgs) -> None:
+    """Uma única mensagem enquanto ninguém da equipe respondeu — e nunca por cima do corretor.
+
+    O silêncio total era o que transformava um handoff acidental em beco: o cliente escrevia, nada
+    acontecia, e não havia nada na tela dizendo o que esperar nem como sair. Aqui ele fica sabendo
+    que o corretor foi avisado e que pode continuar com a Mora se preferir. Se o corretor já falou,
+    esta função não abre a boca: interromper quem está atendendo seria pior que o silêncio.
+    """
+    historico = msgs.historico(lead.id, limite=30)
+    for m in reversed(historico):
+        if m["direcao"] == "corretor":
+            return                                    # a equipe já está na conversa
+        if (m.get("meta") or {}).get("motivo") == AVISO_ESPERA:
+            return                                    # já avisamos uma vez neste handoff
+    nome = f", {lead.nome.split()[0]}" if lead.nome else ""
+    from sdr_shared.db import CorretorRepository
+    responsavel = CorretorRepository().get(lead.corretor_id) if lead.corretor_id else None
+    corretor = responsavel.nome.split()[0] if responsavel else None
+    texto = (f"Recebi sua mensagem{nome}! "
+             + (f"{corretor} já foi avisada e responde por aqui mesmo. " if corretor
+                else "Um corretor da equipe já foi avisado e responde por aqui mesmo. ")
+             + "Se preferir continuar comigo enquanto isso, é só dizer \"continuar com a Mora\".")
+    from sdr_shared.messaging import RespostaAgente
+    try:
+        msgs.registrar(lead.id, entrada.canal, "out", texto, {"motivo": AVISO_ESPERA})
+        despachar(entrada.canal, entrada.identificador_canal,
+                  RespostaAgente(lead_id=lead.id, texto=texto))
+    except Exception:
+        log.exception("falha ao avisar o lead %s de que o corretor foi chamado", lead.id)
 
 
 def _responder_falha(lead: Lead, entrada: MensagemNormalizada) -> None:
