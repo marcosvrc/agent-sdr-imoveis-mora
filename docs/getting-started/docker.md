@@ -57,8 +57,33 @@ só quando o volume é novo; `make preparar` cuida do caso de um volume que já 
 ```bash
 make migrate      # (re)aplica o schema no Postgres do compose — idempotente
 make seed         # recarrega imóveis e regenera embeddings
+make corretores   # cria a equipe de 20 corretores e casa com os usuários do CRM
 make docs-kb      # reindexa os documentos institucionais (make docs-secos lista sem indexar)
 ```
+
+## O que recarrega sozinho, e o que não
+
+O código é montado no container, então editar arquivo no host é o suficiente — **para os três
+serviços que rodam com `--reload`**: `api`, `crm-api` e `channels`. Eles vigiam o próprio serviço e
+também `/app/shared`, e o compose liga `WATCHFILES_FORCE_POLLING` neles: o `--reload` sozinho usa
+inotify, e evento de inotify não atravessa bind mount de forma confiável no Docker Desktop do macOS
+— o arquivo muda, o processo segue com o código antigo e nada avisa.
+
+Os **workers não recarregam nunca**: `agent`, `scheduler`, `telegram-in`, `telegram-out`,
+`resumidor` e `reativador` são processos Python comuns. Mudou o código deles, reinicie:
+
+```bash
+cd local && docker compose restart agent scheduler resumidor reativador telegram-in telegram-out
+```
+
+Mudança em variável de ambiente ou no próprio `docker-compose.yml` exige **recriar**, não reiniciar:
+
+```bash
+cd local && docker compose up -d
+```
+
+Sinal de que o processo está velho: peça o `GET /openapi.json` e confira se uma mudança sua aparece
+lá. Rota nova que responde `{"detail":"Not Found"}` é rota que não existe no processo em memória.
 
 ## Serviços e portas (perfil local)
 

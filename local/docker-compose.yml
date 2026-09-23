@@ -19,6 +19,12 @@ x-py: &py
     # AGENTE no servidor MCP; CRM_API_TOKEN autentica o SERVIDOR MCP na REST do CRM.
     SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
     SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
+    # O `--reload` do uvicorn usa inotify, e evento de inotify NÃO atravessa bind mount de forma
+    # confiável no Docker Desktop do macOS: o arquivo muda no host, o container continua com o
+    # código antigo em memória e nada avisa. Custou uma sessão inteira de "rodei tudo e não
+    # refletiu" — a rota nova respondia 404 porque o processo era o de antes. Polling resolve, e o
+    # custo é varrer alguns diretórios Python a cada meio segundo.
+    WATCHFILES_FORCE_POLLING: "true"
   # `whisper` é o cache do modelo de transcrição. Volume nomeado porque o download passa de meio
   # giga e sem ele CADA `--force-recreate` baixa tudo de novo — inclusive na véspera de uma
   # demonstração, com o cliente esperando a resposta do primeiro áudio.
@@ -106,7 +112,9 @@ services:
 
   channels:                    # substitui API Gateway HTTP + WebSocket + Lambdas de canal
     <<: *py
+    # --reload-dir: o uvicorn vigia só o working_dir, e metade do código vive em /app/shared.
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
+             --reload-dir /app/services/channels/local --reload-dir /app/shared
     working_dir: /app/services/channels/local
     ports: ["8001:8001"]
     # /health devolve 503 se o Redis cair — `docker compose ps` passa a mostrar (unhealthy) em vez
@@ -136,9 +144,10 @@ services:
   api:                         # substitui API Gateway + Lambda FastAPI + Cognito (auth: token estático em dev)
     <<: *py
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+             --reload-dir /app/services/api/src --reload-dir /app/shared
     working_dir: /app/services/api/src
     # A API atende painel, site e canal ao mesmo tempo; o pool padrão (4) é o do worker.
-    environment: { SDR_DB_POOL_MAX: "12" }
+    environment: { SDR_DB_POOL_MAX: "12", WATCHFILES_FORCE_POLLING: "true" }
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)\""]
@@ -150,6 +159,7 @@ services:
   crm-api:                     # CRM da imobiliária — sistema À PARTE, com banco próprio (D-01/D-02)
     <<: *py
     command: uvicorn sdr_crm.api.main:app --host 0.0.0.0 --port 8100 --reload
+             --reload-dir /app/services/crm --reload-dir /app/shared
     working_dir: /app/services/crm
     # Ambiente PRÓPRIO, sem herdar o do agente: o CRM não pode enxergar o DSN da Mora. A separação
     # é o que impede uma consulta cruzada de aparecer "sem querer" um dia.
@@ -157,6 +167,7 @@ services:
       CRM_DATABASE_DSN: postgresql://sdr:sdr@db:5432/crm
       CRM_APP_ENV: development
       PYTHONPATH: /app/services/crm
+      WATCHFILES_FORCE_POLLING: "true"
     ports: ["8100:8100"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8100/health/ready', timeout=3).status==200 else 1)\""]

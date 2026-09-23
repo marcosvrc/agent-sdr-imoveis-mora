@@ -10,6 +10,8 @@ description: Problemas comuns do Mora no perfil local e como resolvê-los.
 | `docker compose ps` mostra `channels` como `unhealthy` | Redis fora do ar | Verifique o container `redis`; o `/health` do canal devolve 503 sem Redis |
 | Chat do site "sem conexão" | Canais (`:8001`) ou WebSocket indisponível | Confira `docker compose logs -f channels` e a variável `VITE_WS_URL` |
 | Catálogo vazio no site | Seed não executado | Rode `make seed` |
+| **Mudei o código (ou as fotos do acervo) e nada mudou na tela** | O processo no container é o de antes. O `--reload` do uvicorn depende de inotify, que não atravessa bind mount de forma confiável no Docker Desktop do macOS | `cd local && docker compose up -d api crm-api channels` (recria com `WATCHFILES_FORCE_POLLING`). Os **workers** (`agent`, `scheduler`, `telegram-*`, `resumidor`, `reativador`) não recarregam nunca — mudou o código deles, reinicie-os |
+| Foto de imóvel some (quadro cinza no card) | A rota `/acervo/...` não existe no processo em memória — resposta é o 404 padrão, `{"detail":"Not Found"}` | Mesmo caso acima: recrie a `api`. Para confirmar, `curl -s localhost:8000/openapi.json \| grep -o '"maximum":[0-9]*'` — se o `limite` de `/imoveis` ainda diz 200, o processo é velho |
 | Agente responde fallback sempre | LLM inacessível, credenciais ou timeout | Confira `SDR_LLM_PROVIDER` / credenciais e `SDR_LLM_TIMEOUT_S`; veja os logs do `agent` |
 | Painel retorna 401 | Token ausente / incorreto | Envie `Authorization: Bearer <SDR_PAINEL_TOKEN>` (ou `dev-token` no local) |
 | Porta 5432 / 6379 / 11434 ocupada | Instância nativa em conflito | Ajuste `DB_HOST_PORT` / `REDIS_HOST_PORT` / `OLLAMA_HOST_PORT` |
