@@ -184,7 +184,16 @@ O supervisor decide por regra determinística; o modelo só entra no último cas
 | 10 | pede outras opções | consultor |
 | 11 | cartão completo e nada sugerido ainda | consultor |
 | 12 | cartão incompleto | qualificador |
-| 13 | resto | **modelo decide** entre qualificador, consultor, agendador, handoff e informacoes; resposta desconhecida cai em qualificador; **`agendador` com lead já `agendado` é trocado** por consultor/qualificador |
+| 13 | resto | **modelo decide** entre qualificador, consultor, agendador, handoff e informacoes; resposta desconhecida cai em qualificador; **`agendador` com lead já `agendado` é trocado** por consultor/qualificador; **`handoff` em mensagem de até 3 palavras que não pede pessoa é trocado** por consultor/qualificador |
+
+**Handoff pede corroboração** (linha 13). O modelo mandava para o corretor tudo que não reconhecia
+como assunto de imóvel, e "dim" — erro de digitação de "sim", logo depois de uma visita reservada —
+encaminhou um lead a um humano. Para o cliente isso é sem volta: a Mora silencia e ele passa a
+esperar uma pessoa. Ruído de até três palavras que não contém pedido de atendente volta para o
+especialista do contexto, que responde pedindo para repetir. Pedido explícito (`PEDE_HUMANO`, botão)
+nem chega ao modelo — é a linha 6 — e reclamação em frase inteira continua virando handoff
+(`test_graph_routing.py::test_erro_de_digitacao_nao_manda_o_cliente_para_um_humano`,
+`::test_quem_pede_uma_pessoa_continua_chegando_ao_handoff`).
 
 Precedências que são decisão de negócio, com o teste que as prende:
 

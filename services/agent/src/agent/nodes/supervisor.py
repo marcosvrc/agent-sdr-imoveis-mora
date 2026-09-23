@@ -96,4 +96,15 @@ def run(state: AgentState) -> dict:
     # só quis mudar de bairro, recebe dias de visita que não pediu.
     if decisao == "agendador" and lead.estagio == Estagio.AGENDADO:
         decisao = "consultor" if lead.cartao.completo() else "qualificador"
+    # Passar para um humano é caro e, para o cliente, sem volta: a Mora silencia e quem responde
+    # passa a ser uma pessoa que pode demorar. O modelo mandava para lá qualquer coisa que não
+    # reconhecesse como assunto de imóvel — e um cliente digitou "dim" (provavelmente "sim") logo
+    # depois de reservar a visita, virou handoff, perguntou "não entendi, pode falar mais sobre o
+    # imóvel?" e não recebeu resposta de ninguém.
+    #
+    # Mensagem de até três palavras que não pede pessoa nenhuma é erro de digitação, resposta curta
+    # ou ruído — não é reclamação nem pedido de atendente. Pedido explícito continua passando:
+    # `PEDE_HUMANO` e o botão "Falar com corretor" são tratados lá em cima, antes do modelo.
+    if decisao == "handoff" and len(txt.split()) <= 3 and not PEDE_HUMANO.search(txt):
+        decisao = "consultor" if lead.cartao.completo() else "qualificador"
     return {"proximo": decisao, "saltos": saltos}

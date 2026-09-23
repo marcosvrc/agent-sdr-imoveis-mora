@@ -14,11 +14,11 @@ def test_cartao_investimento_completo():
 
 # --------------------------------------------------------- a rota que ficava grudada
 
-def _estado(texto: str, lead):
+def _estado(texto: str, lead, **extra):
     from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
     entrada = MensagemNormalizada(lead_id=lead.id, canal=Canal.TELEGRAM, tipo=TipoMensagem.TEXTO,
                                   identificador_canal="123", conteudo=texto)
-    return {"lead": lead, "entrada": entrada, "messages": [], "saltos": 0}
+    return {"lead": lead, "entrada": entrada, "messages": [], "saltos": 0, **extra}
 
 
 def _lead_com_visita_reservada():
@@ -122,3 +122,43 @@ def test_ultima_pergunta_ignora_o_que_o_cliente_disse():
                  HumanMessage(content="Tucuruvi")]
     assert ultima_pergunta(historico) == "Em qual região?"
     assert ultima_pergunta([("ai", "Quantos quartos?"), ("user", "1")]) == "Quantos quartos?"
+
+
+def test_erro_de_digitacao_nao_manda_o_cliente_para_um_humano(monkeypatch):
+    """Relato do cliente: digitou "dim" (por "sim") logo depois de reservar a visita, o roteador
+    leu como assunto fora de imóveis e encaminhou ao corretor. A Mora silenciou; ele escreveu
+    "não entendi, pode falar mais sobre o imóvel?" e não recebeu resposta de ninguém.
+
+    Handoff é caro e, para quem está do outro lado, sem volta. Ruído de três palavras não é
+    reclamação nem pedido de atendente.
+    """
+    from agent.nodes import supervisor
+
+    class Falso:
+        def invoke(self, _):
+            return type("M", (), {"content": "handoff"})()
+
+    monkeypatch.setattr(supervisor, "llm_roteamento", lambda: Falso())
+    lead = _lead_com_visita_reservada()
+    lead.cartao.pediu_visita = False                   # força a decisão a cair no modelo
+    for ruido in ("dim", "ok", "???", "aa bb cc"):
+        destino = supervisor.run(_estado(ruido, lead, imoveis_sugeridos=["SP-0001"]))["proximo"]
+        assert destino != "handoff", f"{ruido!r} não é pedido de atendimento humano"
+
+
+def test_quem_pede_uma_pessoa_continua_chegando_ao_handoff(monkeypatch):
+    """A correção não pode fechar a porta: pedir gente é legítimo, e curto."""
+    from agent.nodes import supervisor
+
+    class Falso:
+        def invoke(self, _):
+            return type("M", (), {"content": "handoff"})()
+
+    monkeypatch.setattr(supervisor, "llm_roteamento", lambda: Falso())
+    lead = _lead_com_visita_reservada()
+    lead.cartao.pediu_visita = False
+    for pedido in ("quero um corretor", "Falar com corretor", "me passa um humano"):
+        assert supervisor.run(_estado(pedido, lead))["proximo"] == "handoff"
+    # Frase longa de reclamação continua sob a alçada do modelo: o guarda só vale para ruído curto.
+    longo = "isso aqui não está me ajudando em nada, estou perdendo meu tempo com esse atendimento"
+    assert supervisor.run(_estado(longo, lead, imoveis_sugeridos=["SP-0001"]))["proximo"] == "handoff"
