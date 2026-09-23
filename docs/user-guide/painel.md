@@ -249,10 +249,10 @@ por nome); à direita a transcrição do selecionado, renovada a cada 5 s, com *
 
 Descrição: *"Catálogo indexado para o RAG da Mora — o que o agente pode oferecer aos leads"*. Alternância
 **tabela** / **cards**. Indicadores sobre o recorte atual: **Imóveis no filtro**, **À venda**,
-**Para alugar**, **Mediana venda**, **Mediana aluguel** (a base carrega até 400 imóveis por vez, teto do endpoint — o acervo da POC tem 240).
+**Para alugar**, **Mediana venda**, **Mediana aluguel** (a base carrega até 400 imóveis por vez, teto do endpoint — é exatamente o tamanho do acervo da POC).
 
 Filtros: busca *Buscar por código, bairro, descrição…*, **Venda e aluguel** (Venda / Aluguel),
-**Todas as regiões**, **Todos os tipos** (residenciais e comerciais: Apartamento, Casa, Studio, Sala comercial, Conjunto comercial, Loja, Galpão), **Quartos** (1+ a 4+), **Limpar**.
+**Todas as regiões**, **Todos os tipos** (residenciais: Apartamento, Casa, Sobrado, Studio, Kitnet, Cobertura; comerciais: Sala comercial, Conjunto comercial, Loja, Galpão, Laje corporativa), **Quartos** (1+ a 4+), **Limpar**.
 Colunas da tabela: **Código**, **Imóvel**, **Operação**, **Região**, **Quartos** (`Nq · Ns · Nv`),
 **Área**, **Preço**, **Cond.**, **Detalhes**. Vazio: *"Rode `make seed` para carregar a base simulada
 ou ajuste os filtros."*

@@ -49,5 +49,5 @@ bairros ou descrições, e os documentos com `make docs-kb`. Veja
 [Dados e persistência](../architecture/dados.md).
 
 !!! info "Ingestão"
-    `services/ingestion` carrega imóveis e gera embeddings. No local, `make seed` cria 240 imóveis
+    `services/ingestion` carrega imóveis e gera embeddings. No local, `make seed` cria 400 imóveis
     determinísticos.

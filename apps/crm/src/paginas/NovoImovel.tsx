@@ -37,7 +37,7 @@ export function NovoImovel() {
 
   const aluguel = f.purpose === "rent";
   // O segmento é LIDO do tipo, como no resto do sistema (sdr_shared/models::segmento_do_tipo).
-  const comercial = /sala|loja|galp|conjunto|escrit|dep[óo]sito|comercial/i.test(f.type);
+  const comercial = /sala|loja|galp|conjunto|escrit|laje|dep[óo]sito|comercial/i.test(f.type);
   const precoOk = centavos(f.preco) !== null && (centavos(f.preco) ?? 0) > 0;
   const podeSalvar = f.code.trim() && f.title.trim() && f.neighborhood.trim() && precoOk;
 
@@ -106,7 +106,8 @@ export function NovoImovel() {
             <Campo rotulo="Tipo">
               <select className={entradaCls} value={f.type} onChange={(e) => set("type", e.target.value)}>
                 {["apartamento", "casa", "studio", "cobertura", "sobrado", "kitnet",
-                  "sala comercial", "conjunto comercial", "loja", "galpão"].map((t) => (
+                  "sala comercial", "conjunto comercial", "loja", "galpão",
+                  "laje corporativa"].map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>

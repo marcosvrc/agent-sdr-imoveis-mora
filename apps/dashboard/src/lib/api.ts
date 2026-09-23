@@ -222,6 +222,7 @@ export const ROTULO: Record<string, string> = { novo: "Novo", qualificando: "Qua
 export const REGIOES = ["zona_sul", "zona_oeste", "zona_norte", "zona_leste", "centro"];
 // Tipos por segmento. O painel mostra o acervo inteiro, e ele tem imóveis comerciais: um filtro
 // com três tipos residenciais esconderia 40 imóveis que a Mora pode oferecer.
-export const TIPOS_RESIDENCIAIS = ["apartamento", "casa", "studio"] as const;
-export const TIPOS_COMERCIAIS = ["sala comercial", "conjunto comercial", "loja", "galpão"] as const;
+export const TIPOS_RESIDENCIAIS = ["apartamento", "casa", "sobrado", "studio", "kitnet", "cobertura"] as const;
+export const TIPOS_COMERCIAIS = ["sala comercial", "conjunto comercial", "loja", "galpão",
+                                 "laje corporativa"] as const;
 export const ehComercial = (tipo: string) => (TIPOS_COMERCIAIS as readonly string[]).includes(tipo.toLowerCase());

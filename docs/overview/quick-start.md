@@ -37,7 +37,7 @@ make local-ollama
 # 5. Baixar o modelo de embeddings (demora, uma vez só)
 make ollama-pull
 
-# 6. Popular o catálogo (240 imóveis determinísticos + embeddings) e os documentos institucionais
+# 6. Popular o catálogo (400 imóveis determinísticos + embeddings) e os documentos institucionais
 make seed && make docs-kb
 ```
 

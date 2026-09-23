@@ -115,7 +115,7 @@ def _interacoes(p: Plano, leads, oportunidades, conn) -> int:
               "Obrigado, vou pensar e retorno.",
               "Registro interno: cliente respondeu por telefone."]
     total = 0
-    for i in range(300):
+    for i in range(gerar.INTERACOES):
         op = oportunidades[i % len(oportunidades)]
         direcao = ["inbound", "outbound", "internal"][i % 3]
         conn.execute(
@@ -131,14 +131,15 @@ def _interacoes(p: Plano, leads, oportunidades, conn) -> int:
 
 
 def _visitas(p: Plano, oportunidades, slots, imoveis, conn) -> int:
-    """20 visitas: 15 confirmadas nas oportunidades `visit_scheduled` e 5 solicitadas em
-    `qualified` (seção 9). Encerradas não recebem visita futura ativa."""
+    """Uma visita confirmada por oportunidade em `visit_scheduled` e mais
+    `gerar.VISITAS_SOLICITADAS` solicitadas em `qualified` (seção 9). Encerradas não recebem visita
+    futura ativa."""
     agendadas = [o for o in oportunidades if o["stage"] == "visit_scheduled"]
     qualificadas = [o for o in oportunidades if o["stage"] == "qualified"]
     proposito = {x["id"]: x["purpose"] for x in imoveis}
     total = 0
     usados = set()
-    for i, op in enumerate(agendadas + qualificadas[:5]):
+    for i, op in enumerate(agendadas + qualificadas[:gerar.VISITAS_SOLICITADAS]):
         confirmada = i < len(agendadas)
         # Cada visita confirmada em um slot diferente (o índice único parcial do banco recusaria
         # duas) E com o imóvel do mesmo propósito da oportunidade — visitar um imóvel de venda numa
@@ -161,7 +162,7 @@ def _tarefas(p: Plano, leads, oportunidades, conn) -> int:
     bloqueados = {x["id"] for x in leads if x["contact_policy"] == "blocked"}
     r = random.Random(f"{p.seed}:tarefas")
     total = 0
-    for i in range(30):
+    for i in range(gerar.TAREFAS):
         op = oportunidades[(i * 7) % len(oportunidades)]
         # Contato bloqueado nunca recebe `follow_up` — nem no seed. Uma massa que viola a própria
         # regra de negócio faz o primeiro teste de regressão falhar sem nenhum bug no código.
@@ -179,7 +180,7 @@ def _tarefas(p: Plano, leads, oportunidades, conn) -> int:
 
 
 def _handoffs(p: Plano, oportunidades, conn) -> int:
-    alvos = [o for o in oportunidades if o["stage"] in {"negotiation", "qualified"}][:10]
+    alvos = [o for o in oportunidades if o["stage"] in {"negotiation", "qualified"}][:gerar.HANDOFFS]
     total = 0
     for i, op in enumerate(alvos):
         conn.execute(

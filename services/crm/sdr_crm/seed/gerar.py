@@ -29,8 +29,19 @@ BAIRROS = ["Brooklin", "Vila Mariana", "Pinheiros", "Moema", "Tatuapé", "Santan
            "Butantã", "Perdizes", "Ipiranga", "Lapa"]
 TIPOS = ["apartamento", "casa", "studio", "cobertura"]
 CANAIS = ["telegram", "site", "telefone", "e-mail"]
-ESTAGIOS = [("new", 20), ("in_service", 25), ("qualified", 25), ("visit_scheduled", 15),
-            ("negotiation", 15), ("won", 10), ("lost", 10)]
+# --- volume da massa ---------------------------------------------------------------------------
+# Os números ficam aqui, e não em `range(100)` dentro de cada função: a massa cresceu junto com a
+# equipe (4 → 24 pessoas) e o acervo (200 → 400 imóveis), e volume que se muda em cinco arquivos
+# não se muda. Os testes conferem contra estas constantes, não contra literais copiados.
+LEADS = 300
+INTERACOES = 900
+TAREFAS = 90
+HANDOFFS = 30
+SLOTS = 120                 # agenda: trilha própria por corretor, sem sobreposição por construção
+VISITAS_SOLICITADAS = 15    # em `qualified`; as confirmadas são uma por oportunidade em `visit_scheduled`
+ESTAGIOS = [("new", 60), ("in_service", 75), ("qualified", 75), ("visit_scheduled", 45),
+            ("negotiation", 45), ("won", 30), ("lost", 30)]
+OPORTUNIDADES = sum(n for _, n in ESTAGIOS)
 MOTIVOS_PERDA = ["comprou com outra imobiliária", "desistiu da mudança", "sem retorno",
                  "orçamento incompatível"]
 
@@ -62,12 +73,46 @@ class Plano:
         return random.Random(f"{self.seed}:{sufixo}")
 
 
+EQUIPE_PADRAO = pathlib.Path(__file__).resolve().parents[4] / "data" / "equipe" / "corretores.json"
+
+
+def ler_equipe(caminho: pathlib.Path | None = None) -> list[dict]:
+    """A equipe da imobiliária, do mesmo arquivo que a Mora usa (data/equipe/corretores.json).
+
+    Mesma razão do acervo: `scripts/semear_corretores.py` cria estas pessoas do lado da Mora e liga
+    as duas pontas pelo **e-mail**. Duas listas de equipe, uma em cada serviço, descreveriam a mesma
+    imobiliária com gente diferente, e `crm_user_id` não casaria com ninguém — encaminhamento sem
+    destinatário. Arquivo ausente não derruba o seed: fica só a equipe original de quatro.
+    """
+    caminho = caminho or pathlib.Path(os.environ.get("CRM_EQUIPE_JSON", "") or EQUIPE_PADRAO)
+    if not caminho.is_file():
+        return []
+    return json.loads(caminho.read_text(encoding="utf-8"))
+
+
+# Os quatro primeiros são os originais e ficam NESTA ordem: `owner_id` das oportunidades sai de
+# `det(seed, "user", i)` por índice, e a documentação e os testes citam estes nomes.
+USUARIOS_BASE = [("Ana Ribeiro", "admin"), ("Bruno Carvalho", "broker"),
+                 ("Carla Mendes", "broker"), ("Diego Alves", "broker")]
+
+
 def usuarios(p: Plano) -> list[dict]:
-    base = [("Ana Ribeiro", "admin"), ("Bruno Carvalho", "broker"),
-            ("Carla Mendes", "broker"), ("Diego Alves", "broker")]
-    return [{"id": det(p.seed, "user", i), "name": nome,
-             "email": f"{nome.split()[0].lower()}@example.com", "role": papel, "active": True}
-            for i, (nome, papel) in enumerate(base)]
+    base = [{"name": nome, "email": f"{nome.split()[0].lower()}@example.com", "role": papel}
+            for nome, papel in USUARIOS_BASE]
+    equipe = [{"name": x["nome"], "email": x["email"], "role": "broker", "active": x["ativo"]}
+              for x in ler_equipe()]
+    return [{"id": det(p.seed, "user", i), "active": True, **u}
+            for i, u in enumerate(base + equipe)]
+
+
+def indices_de_corretor(p: Plano) -> list[int]:
+    """Índices dos usuários que podem receber lead e visita: todo mundo menos o administrador.
+
+    Antes era `1 + (i % 3)`, com os três corretores originais na mão. Com a equipe vinda do arquivo,
+    fixar 3 concentraria toda a carteira em três pessoas de vinte e quatro — e a distribuição por
+    corretor, que é justamente o que a massa maior existe para mostrar, ficaria falsa.
+    """
+    return [i for i, u in enumerate(usuarios(p)) if u["role"] == "broker" and u.get("active", True)]
 
 
 ACERVO_PADRAO = pathlib.Path(__file__).resolve().parents[4] / "data" / "imoveis" / "imoveis.json"
@@ -168,7 +213,7 @@ def _conferir_fixtures(linhas: list[dict]) -> None:
 def leads(p: Plano) -> list[dict]:
     r = p.rnd("leads")
     saida = []
-    for i in range(100):
+    for i in range(LEADS):
         # Telefone nulo na base comum (seção 9). Dois leads recebem telefone só para o cenário de
         # conflito entre identificadores existir num lugar conhecido.
         telefone = f"+5511{90000000 + i:08d}" if i in (0, 1) else None
@@ -194,6 +239,11 @@ def oportunidades(p: Plano, leads_: list[dict]) -> list[dict]:
         ordem.extend([estagio] * quantas)
 
     ativos = [x for x in leads_ if not x["archived"]]
+    corretores = indices_de_corretor(p)
+    # O primeiro `qualified` é o caso "atendimento humano", e é o mesmo alvo do primeiro handoff: os
+    # dois fatos precisam casar, senão a massa tem atendimento humano sem encaminhamento. Era o
+    # índice 45 escrito à mão, que só era o primeiro `qualified` enquanto ESTAGIOS somasse 20+25.
+    humano = ordem.index("qualified")
     saida = []
     for i, estagio in enumerate(ordem):
         # O lead 2 recebe DUAS oportunidades (aluguel e compra): é o "investidor" da lista de
@@ -205,13 +255,11 @@ def oportunidades(p: Plano, leads_: list[dict]) -> list[dict]:
         saida.append({
             "id": det(p.seed, "opportunity", i),
             "lead_id": lead["id"],
-            "owner_id": det(p.seed, "user", 1 + (i % 3)),
+            "owner_id": det(p.seed, "user", corretores[i % len(corretores)]),
             "purpose": "buy" if compra else "rent",
             "stage": estagio,
-            # Uma oportunidade em atendimento humano (cenário obrigatório). O índice 45 é o
-            # primeiro `qualified`, que é também o primeiro alvo de handoff — os dois fatos
-            # precisam casar: atendimento humano sem encaminhamento seria massa incoerente.
-            "atendimento": "human" if i == 45 else "agent",
+            # Uma oportunidade em atendimento humano (cenário obrigatório), no primeiro `qualified`.
+            "atendimento": "human" if i == humano else "agent",
             "lost_reason": MOTIVOS_PERDA[i % len(MOTIVOS_PERDA)] if estagio == "lost" else None,
             "closed_at": criada + timedelta(days=5) if fechada else None,
             "created_at": criada,
@@ -259,12 +307,15 @@ def slots(p: Plano, imoveis_: list[dict]) -> list[dict]:
     if not all(por_proposito.values()):
         raise SystemExit("✗ o acervo precisa ter imóveis disponíveis de aluguel E de compra.")
 
-    base = p.referencia.replace(hour=13, minute=0, second=0, microsecond=0)
+    base = p.referencia.replace(hour=0, minute=0, second=0, microsecond=0)
+    corretores = indices_de_corretor(p)
     saida = []
-    for i in range(40):
-        corretor = 1 + (i % 3)
-        passo = i // 3                          # posição dentro da trilha daquele corretor
-        inicio = base + timedelta(days=1 + passo, hours=corretor)
+    for i in range(SLOTS):
+        corretor = corretores[i % len(corretores)]
+        passo = i // len(corretores)            # posição dentro da trilha daquele corretor
+        # Hora fixa por pessoa, dentro do horário comercial, e um dia por passo: dois slots do mesmo
+        # corretor nunca se sobrepõem, e nenhum cai às três da manhã numa tela de demonstração.
+        inicio = base + timedelta(days=1 + passo, hours=9 + (corretor % 9))
         fila = por_proposito["rent" if i % 2 == 0 else "buy"]
         saida.append({
             "id": det(p.seed, "slot", i),
@@ -278,6 +329,6 @@ def slots(p: Plano, imoveis_: list[dict]) -> list[dict]:
     disputa = saida[0]["starts_at"]
     saida.append({"id": det(p.seed, "slot", "disputa"),
                   "property_id": saida[0]["property_id"],
-                  "broker_id": det(p.seed, "user", 2),
+                  "broker_id": det(p.seed, "user", corretores[1]),
                   "starts_at": disputa, "ends_at": disputa + timedelta(hours=1)})
     return saida

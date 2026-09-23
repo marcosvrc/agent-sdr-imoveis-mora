@@ -14,7 +14,9 @@
     "condominio": 900,
     "descricao": "Andar alto, varanda gourmet, condomínio com piscina e academia, a 5 minutos da estação Brooklin.",
     "fotos": [
-      "https://picsum.photos/seed/sp0001/800/600"
+      "https://picsum.photos/seed/sp0001-1/1200/800",
+      "https://picsum.photos/seed/sp0001-2/1200/800",
+      "https://picsum.photos/seed/sp0001-3/1200/800"
     ],
     "destaque_investimento": true
   },
@@ -33,7 +35,9 @@
     "condominio": 650,
     "descricao": "Studio mobiliado, prédio novo com coworking e lavanderia, ideal para quem trabalha na Faria Lima.",
     "fotos": [
-      "https://picsum.photos/seed/sp0002/800/600"
+      "https://picsum.photos/seed/sp0002-1/1200/800",
+      "https://picsum.photos/seed/sp0002-2/1200/800",
+      "https://picsum.photos/seed/sp0002-3/1200/800"
     ],
     "destaque_investimento": false
   },
@@ -52,7 +56,9 @@
     "condominio": null,
     "descricao": "Casa em rua tranquila, quintal com churrasqueira, próxima a escolas e ao Parque do Chuvisco.",
     "fotos": [
-      "https://picsum.photos/seed/sp0003/800/600"
+      "https://picsum.photos/seed/sp0003-1/1200/800",
+      "https://picsum.photos/seed/sp0003-2/1200/800",
+      "https://picsum.photos/seed/sp0003-3/1200/800"
     ],
     "destaque_investimento": false
   },
@@ -71,7 +77,9 @@
     "condominio": 900.0,
     "descricao": "Sala em prédio comercial com recepção e elevador social.",
     "fotos": [
-      "https://picsum.photos/seed/cj0001/800/600"
+      "https://picsum.photos/seed/cj0001-1/1200/800",
+      "https://picsum.photos/seed/cj0001-2/1200/800",
+      "https://picsum.photos/seed/cj0001-3/1200/800"
     ],
     "destaque_investimento": false
   },
@@ -90,7 +98,9 @@
     "condominio": 1200.0,
     "descricao": "Piso térreo com vitrine para a rua, ótimo fluxo de pedestres.",
     "fotos": [
-      "https://picsum.photos/seed/cj0002/800/600"
+      "https://picsum.photos/seed/cj0002-1/1200/800",
+      "https://picsum.photos/seed/cj0002-2/1200/800",
+      "https://picsum.photos/seed/cj0002-3/1200/800"
     ],
     "destaque_investimento": true
   }

@@ -1,0 +1,210 @@
+[
+  {
+    "id": "cor_adriana-coelho",
+    "nome": "Adriana Coelho",
+    "email": "adriana.coelho@example.com",
+    "telefone": "5511999990001",
+    "regioes": [
+      "zona_sul"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_bruno-sanches",
+    "nome": "Bruno Sanches",
+    "email": "bruno.sanches@example.com",
+    "telefone": "5511999990002",
+    "regioes": [
+      "zona_sul"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_camila-veiga",
+    "nome": "Camila Veiga",
+    "email": "camila.veiga@example.com",
+    "telefone": "5511999990003",
+    "regioes": [
+      "zona_sul",
+      "centro"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_daniel-aragao",
+    "nome": "Daniel Aragão",
+    "email": "daniel.aragao@example.com",
+    "telefone": "5511999990004",
+    "regioes": [
+      "zona_sul"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_eduarda-pontes",
+    "nome": "Eduarda Pontes",
+    "email": "eduarda.pontes@example.com",
+    "telefone": "5511999990005",
+    "regioes": [
+      "zona_oeste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_fabio-quintela",
+    "nome": "Fábio Quintela",
+    "email": "fabio.quintela@example.com",
+    "telefone": "5511999990006",
+    "regioes": [
+      "zona_oeste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_gabriela-marchi",
+    "nome": "Gabriela Marchi",
+    "email": "gabriela.marchi@example.com",
+    "telefone": "5511999990007",
+    "regioes": [
+      "zona_oeste",
+      "zona_norte"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_henrique-balbino",
+    "nome": "Henrique Balbino",
+    "email": "henrique.balbino@example.com",
+    "telefone": "5511999990008",
+    "regioes": [
+      "zona_oeste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_isabela-trindade",
+    "nome": "Isabela Trindade",
+    "email": "isabela.trindade@example.com",
+    "telefone": "5511999990009",
+    "regioes": [
+      "zona_norte"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_joaquim-estrela",
+    "nome": "Joaquim Estrela",
+    "email": "joaquim.estrela@example.com",
+    "telefone": "5511999990010",
+    "regioes": [
+      "zona_norte"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_karina-bellucci",
+    "nome": "Karina Bellucci",
+    "email": "karina.bellucci@example.com",
+    "telefone": "5511999990011",
+    "regioes": [
+      "zona_leste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_leandro-vasques",
+    "nome": "Leandro Vasques",
+    "email": "leandro.vasques@example.com",
+    "telefone": "5511999990012",
+    "regioes": [
+      "zona_leste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_mariana-pecanha",
+    "nome": "Mariana Peçanha",
+    "email": "mariana.pecanha@example.com",
+    "telefone": "5511999990013",
+    "regioes": [
+      "zona_leste",
+      "zona_norte"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_nelson-fraga",
+    "nome": "Nelson Fraga",
+    "email": "nelson.fraga@example.com",
+    "telefone": "5511999990014",
+    "regioes": [
+      "centro"
+    ],
+    "ativo": false
+  },
+  {
+    "id": "cor_olivia-rezende",
+    "nome": "Olívia Rezende",
+    "email": "olivia.rezende@example.com",
+    "telefone": "5511999990015",
+    "regioes": [
+      "centro",
+      "zona_oeste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_paulo-sampaio",
+    "nome": "Paulo Sampaio",
+    "email": "paulo.sampaio@example.com",
+    "telefone": "5511999990016",
+    "regioes": [
+      "centro"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_renata-barcelos",
+    "nome": "Renata Barcelos",
+    "email": "renata.barcelos@example.com",
+    "telefone": "5511999990017",
+    "regioes": [
+      "zona_sul",
+      "zona_oeste"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_sergio-delmonte",
+    "nome": "Sérgio Delmonte",
+    "email": "sergio.delmonte@example.com",
+    "telefone": "5511999990018",
+    "regioes": [
+      "zona_leste",
+      "centro"
+    ],
+    "ativo": true
+  },
+  {
+    "id": "cor_tatiana-vilhena",
+    "nome": "Tatiana Vilhena",
+    "email": "tatiana.vilhena@example.com",
+    "telefone": "5511999990019",
+    "regioes": [
+      "zona_norte",
+      "zona_leste"
+    ],
+    "ativo": false
+  },
+  {
+    "id": "cor_vicente-aldaz",
+    "nome": "Vicente Aldaz",
+    "email": "vicente.aldaz@example.com",
+    "telefone": "5511999990020",
+    "regioes": [
+      "zona_sul",
+      "zona_leste"
+    ],
+    "ativo": true
+  }
+]

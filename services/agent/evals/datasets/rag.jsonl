@@ -55,7 +55,7 @@
 // ---------------------------------------------------------------- o corpus NÃO cobre: abstenção
 {"id": "neg-seguro-auto", "pergunta": "vocês fazem seguro de automóvel?", "responde": false}
 {"id": "neg-consorcio", "pergunta": "trabalham com consórcio de carro?", "responde": false}
-{"id": "neg-mudanca", "pergunta": "vocês indicam empresa de mudança?", "responde": false}
+{"id": "neg-mudanca", "pergunta": "vocês indicam empresa de mudança?", "responde": false, "tipo": "adjacente"}
 {"id": "neg-reforma", "pergunta": "fazem reforma de cozinha?", "responde": false}
 {"id": "neg-rural", "pergunta": "avaliam fazenda no interior?", "responde": false}
 {"id": "neg-emprego", "pergunta": "tem vaga de emprego aí?", "responde": false}
@@ -64,9 +64,13 @@
 // Negativas ADJACENTES: assunto vizinho ao corpus, onde a resposta certa é discutível. Reportadas
 // à parte de propósito — um agente que abstém aqui é conservador, um que responde pode estar
 // extrapolando. A escolha entre os dois é de produto, e não deve se esconder dentro de uma média.
-{"id": "adj-fgts", "pergunta": "posso usar o FGTS na entrada?", "responde": false, "tipo": "adjacente"}
-{"id": "adj-iptu-quem-paga", "pergunta": "quem paga o IPTU, eu ou o dono?", "responde": false, "tipo": "adjacente"}
-{"id": "adj-seguro-incendio", "pergunta": "o seguro incêndio está incluso?", "responde": false, "tipo": "adjacente"}
+// Três casos saíram desta lista quando os documentos de financiamento, condomínio e venda entraram:
+// FGTS, IPTU e seguro-incêndio deixaram de ser assunto vizinho e passaram a ter seção própria (viraram
+// positivos, abaixo). Negativa sobre assunto que o corpus cobre não mede abstenção: mede o eval
+// desatualizado, e reprova o comportamento certo.
+{"id": "adj-corretor-avalia", "pergunta": "vocês fazem laudo de avaliação do meu imóvel?", "responde": false, "tipo": "adjacente"}
+{"id": "adj-mei", "pergunta": "abro o CNPJ antes ou depois de alugar a sala?", "responde": false, "tipo": "adjacente"}
+{"id": "adj-zoneamento", "pergunta": "qual a zona de uso desse endereço na prefeitura?", "responde": false, "tipo": "adjacente"}
 
 // ---------------------------------------------------------------- perguntas que dependem do turno anterior
 // Medem a REESCRITA de consulta. A pergunta sozinha não tem assunto: "e se eu sair antes?" não diz
@@ -98,3 +102,88 @@
 {"id": "lit-comissao", "pergunta": "qual a comissão na venda?", "tipo": "literal", "fonte": "Qual a comissão na venda?"}
 {"id": "lit-reajuste", "pergunta": "qual o índice de reajuste do aluguel?", "tipo": "literal", "fonte": "Como funciona o reajuste do aluguel?"}
 {"id": "lit-pet", "pergunta": "aceitam animais de estimação?", "tipo": "literal", "fonte": "Aceitam animais de estimação?"}
+
+// ---------------------------------------------------------------- locação comercial
+{"id": "com-prazo-1", "pergunta": "por quantos anos fecha o contrato de uma loja?", "fonte": "Qual o prazo usual do contrato?"}
+{"id": "com-carencia-1", "pergunta": "consigo uns dias sem pagar pra fazer a obra da sala?", "fonte": "Existe carência no início do contrato?"}
+{"id": "com-carencia-2", "pergunta": "vou precisar montar tudo antes de abrir, dá desconto nesse período?", "fonte": "Existe carência no início do contrato?"}
+{"id": "com-luvas-1", "pergunta": "tem que pagar alguma coisa pelo ponto?", "fonte": "O que são luvas e quando são cobradas?"}
+{"id": "com-encargos-1", "pergunta": "no comercial quem arca com o imposto e o condomínio?", "fonte": "Quem paga IPTU, condomínio e taxas no comercial?"}
+{"id": "com-docs-1", "pergunta": "minha empresa é nova, o que vocês pedem pra analisar?", "fonte": "Quais documentos a empresa precisa apresentar?"}
+{"id": "com-garantia-1", "pergunta": "pessoa jurídica pode dar seguro fiança?", "fonte": "Que garantias são aceitas para empresa?"}
+{"id": "com-atividade-1", "pergunta": "hoje é escritório, posso abrir um restaurante ali?", "fonte": "Posso mudar a atividade do imóvel depois?"}
+{"id": "com-transferir-1", "pergunta": "se eu passar o negócio pra frente, o contrato vai com ele?", "fonte": "Posso transferir o contrato se vender o negócio?"}
+{"id": "com-galpao-1", "pergunta": "recebo caminhão todo dia, uma loja de rua resolve?", "fonte": "O imóvel comercial serve para ponto de retirada ou depósito?"}
+{"id": "com-diferenca-1", "pergunta": "alugar uma sala é igual a alugar apartamento?", "fonte": "O que muda em relação ao aluguel residencial?"}
+
+// ---------------------------------------------------------------- condomínio, obras e uso
+{"id": "cond-inclui-1", "pergunta": "o que vem dentro desse valor mensal do prédio?", "fonte": "O que o valor do condomínio inclui?"}
+{"id": "cond-branco-1", "pergunta": "esse anúncio não mostra condomínio, então não tem?", "fonte": "O anúncio mostra o condomínio de todos os imóveis?"}
+{"id": "cond-rateio-1", "pergunta": "chegou uma cobrança extra de obra na fachada, é minha?", "fonte": "E se o condomínio cobrar uma parcela extra?"}
+{"id": "cond-iptu-1", "pergunta": "quem paga o IPTU, eu ou o dono?", "fonte": "Quem paga o IPTU do imóvel alugado?"}
+{"id": "cond-incendio-1", "pergunta": "o seguro incêndio está incluso?", "fonte": "O seguro contra incêndio está incluído no condomínio?"}
+{"id": "cond-mudanca-1", "pergunta": "como reservo o elevador no dia que eu me mudar?", "fonte": "Quem paga a taxa de mudança e como marco o elevador?"}
+{"id": "cond-pintura-1", "pergunta": "posso pintar a parede da sala de outra cor?", "fonte": "Posso pintar as paredes ou trocar o piso do imóvel alugado?"}
+{"id": "cond-ar-1", "pergunta": "dá pra colocar um split na janela do quarto?", "fonte": "Posso instalar ar-condicionado, suporte de TV ou tela de proteção?"}
+{"id": "cond-benfeitoria-1", "pergunta": "se eu reformar o banheiro, desconta no aluguel?", "fonte": "Obra que valoriza o imóvel é reembolsada?"}
+{"id": "cond-sublocar-1", "pergunta": "posso dividir o apartamento com outra pessoa e cobrar dela?", "fonte": "Posso alugar um quarto ou subalugar o imóvel?"}
+{"id": "cond-homeoffice-1", "pergunta": "trabalho por conta, posso atender cliente em casa?", "fonte": "Posso trabalhar em casa ou receber clientes no imóvel residencial?"}
+{"id": "cond-manutencao-1", "pergunta": "o chuveiro queimou, quem conserta?", "fonte": "Quem cuida de manutenção durante a locação?"}
+
+// ---------------------------------------------------------------- documentação da venda
+{"id": "ven-docs-comprador-1", "pergunta": "vou comprar, o que preciso separar de papelada?", "fonte": "Quais documentos o comprador apresenta?"}
+{"id": "ven-docs-vendedor-1", "pergunta": "estou vendendo, que certidões vão me pedir?", "fonte": "Quais documentos o vendedor precisa reunir?"}
+{"id": "ven-matricula-1", "pergunta": "como sei se o imóvel tem dívida ou penhora?", "fonte": "O que é a matrícula do imóvel e por que ela importa?"}
+{"id": "ven-itbi-1", "pergunta": "quanto de imposto se paga pra transferir o imóvel?", "fonte": "Quanto custa o ITBI e quem paga?"}
+{"id": "ven-cartorio-1", "pergunta": "quanto sai de cartório na compra?", "fonte": "Quais são os custos de escritura e registro?"}
+{"id": "ven-etapas-1", "pergunta": "qual a diferença entre dar sinal e assinar a escritura?", "fonte": "Qual a diferença entre sinal, contrato e escritura?"}
+{"id": "ven-prazo-1", "pergunta": "pagando à vista, em quanto tempo fica no meu nome?", "fonte": "Quanto tempo leva uma compra à vista?"}
+{"id": "ven-inventario-1", "pergunta": "o imóvel é de herança e o inventário não acabou, complica?", "fonte": "Compra de imóvel em inventário ou com pendência dá para fazer?"}
+{"id": "ven-inquilino-1", "pergunta": "tem inquilino morando, ele precisa sair pra eu comprar?", "fonte": "O imóvel pode ser vendido com o inquilino dentro?"}
+
+// ---------------------------------------------------------------- financiamento: etapas e prazos
+{"id": "fin-etapas-1", "pergunta": "como é o processo do começo até pegar a chave?", "fonte": "Quais são as etapas do financiamento, na ordem?"}
+{"id": "fin-prazo-1", "pergunta": "demora quanto pro banco liberar o dinheiro?", "fonte": "Quanto tempo leva do pedido até a liberação?"}
+{"id": "fin-validade-1", "pergunta": "fui aprovado mês passado, ainda vale?", "fonte": "Por quanto tempo vale a aprovação do crédito?"}
+{"id": "fin-avaliacao-1", "pergunta": "e se o banco achar que o imóvel vale menos do que eu ofereci?", "fonte": "Para que serve a avaliação do imóvel e o que acontece se vier abaixo?"}
+{"id": "fin-fgts-1", "pergunta": "posso usar o FGTS na entrada?", "fonte": "Posso usar o FGTS na compra?"}
+{"id": "fin-portabilidade-1", "pergunta": "consigo levar meu financiamento pra outro banco com juro menor?", "fonte": "O que é portabilidade do financiamento?"}
+{"id": "fin-custos-1", "pergunta": "além da prestação, tem mais o que pagar todo mês?", "fonte": "Que custos existem além da parcela?"}
+{"id": "fin-comercial-1", "pergunta": "banco financia sala comercial também?", "fonte": "O imóvel comercial também pode ser financiado?"}
+{"id": "fin-banco-1", "pergunta": "vocês já têm um banco fechado pra indicar?", "fonte": "A imobiliária escolhe o banco para mim?"}
+
+// ---------------------------------------------------------------- atendimento e corretores
+{"id": "ate-horario-1", "pergunta": "vocês abrem sábado?", "fonte": "Em que horário a imobiliária atende?"}
+{"id": "ate-resposta-1", "pergunta": "mandei mensagem ontem à noite, quando alguém responde?", "fonte": "Em quanto tempo um corretor responde?"}
+{"id": "ate-canais-1", "pergunta": "comecei pelo site, consigo continuar no telegram?", "fonte": "Por quais canais vocês atendem?"}
+{"id": "ate-escolha-1", "pergunta": "quem vai cuidar do meu caso?", "fonte": "Como um corretor é escolhido para o meu atendimento?"}
+{"id": "ate-trocar-1", "pergunta": "não gostei do atendimento, pode ser outra pessoa?", "fonte": "Posso trocar de corretor?"}
+{"id": "ate-regiao-1", "pergunta": "vocês têm imóvel em Osasco?", "fonte": "Quais regiões vocês atendem?"}
+{"id": "ate-custo-1", "pergunta": "procurar imóvel com vocês custa alguma coisa pra mim?", "fonte": "A imobiliária cobra algo do cliente que procura imóvel?"}
+{"id": "ate-humano-1", "pergunta": "quero falar com uma pessoa de verdade", "fonte": "Consigo falar com uma pessoa direto, sem passar pela Mora?"}
+{"id": "ate-alcada-1", "pergunta": "você mesma consegue fechar a proposta?", "fonte": "O que a Mora resolve sozinha?"}
+{"id": "ate-reserva-1", "pergunta": "então o horário de sábado já está garantido?", "fonte": "A visita que a Mora marca está confirmada?"}
+
+// ---------------------------------------------------------------- privacidade e dados
+{"id": "priv-dados-1", "pergunta": "o que vocês guardam sobre mim?", "fonte": "Que dados a Vértice guarda de quem conversa com a Mora?"}
+{"id": "priv-cpf-1", "pergunta": "vou ter que passar meu CPF aqui no chat?", "fonte": "A Mora pede CPF, renda ou documento?"}
+{"id": "priv-bot-1", "pergunta": "você é um robô?", "fonte": "Estou falando com uma pessoa ou com um sistema?"}
+{"id": "priv-terceiros-1", "pergunta": "essa conversa vai pra outra empresa?", "fonte": "A conversa é lida por outra empresa?"}
+{"id": "priv-quem-ve-1", "pergunta": "quem aí dentro consegue ler o que eu escrevi?", "fonte": "Quem da imobiliária vê minha conversa?"}
+{"id": "priv-optout-1", "pergunta": "não quero mais receber mensagem de vocês", "fonte": "Posso pedir para não receber mais mensagens?"}
+{"id": "priv-retencao-1", "pergunta": "por quanto tempo isso fica salvo?", "fonte": "Quanto tempo o histórico fica guardado?"}
+{"id": "priv-exclusao-1", "pergunta": "quero apagar meu cadastro de vocês", "fonte": "Como pedir correção ou exclusão dos meus dados?"}
+{"id": "priv-automatico-1", "pergunta": "é você que decide se eu sou aprovado?", "fonte": "A Mora decide algo sobre mim automaticamente?"}
+
+// ---------------------------------------------------------------- literais dos documentos novos
+{"id": "lit-itbi", "pergunta": "quanto custa o ITBI e quem paga?", "tipo": "literal", "fonte": "Quanto custa o ITBI e quem paga?"}
+{"id": "lit-luvas", "pergunta": "o que são luvas?", "tipo": "literal", "fonte": "O que são luvas e quando são cobradas?"}
+{"id": "lit-portabilidade", "pergunta": "o que é portabilidade do financiamento?", "tipo": "literal", "fonte": "O que é portabilidade do financiamento?"}
+{"id": "lit-horario", "pergunta": "qual o horário de atendimento?", "tipo": "literal", "fonte": "Em que horário a imobiliária atende?"}
+{"id": "lit-carencia", "pergunta": "tem carência no contrato comercial?", "tipo": "literal", "fonte": "Existe carência no início do contrato?"}
+
+// ---------------------------------------------------------------- sequência, nos documentos novos
+{"id": "seq-luvas", "pergunta": "e isso é comum?", "historico": ["tem que pagar pelo ponto da loja?"], "fonte": "O que são luvas e quando são cobradas?"}
+{"id": "seq-itbi", "pergunta": "e quem paga isso?", "historico": ["quanto de imposto tem na transferência do imóvel?"], "fonte": "Quanto custa o ITBI e quem paga?"}
+{"id": "seq-optout", "pergunta": "e como eu saio dessa lista?", "historico": ["vocês mandam aviso de imóvel novo?"], "fonte": "Posso pedir para não receber mais mensagens?"}
+{"id": "seq-fin-prazo", "pergunta": "e leva quanto tempo?", "historico": ["como funciona o financiamento com vocês?"], "fonte": "Quanto tempo leva do pedido até a liberação?"}

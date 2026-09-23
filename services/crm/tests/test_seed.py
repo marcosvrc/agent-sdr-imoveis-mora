@@ -10,15 +10,18 @@ import pytest
 
 from sdr_crm.db.connection import leitura
 from sdr_crm.seed.aplicar import aplicar
-from sdr_crm.seed.gerar import Plano, ler_acervo
+from sdr_crm.seed import gerar
+from sdr_crm.seed.gerar import Plano, ler_acervo, ler_equipe, usuarios
 
 PLANO = Plano(seed=42, referencia=datetime(2026, 9, 17, 12, tzinfo=UTC), dataset_id="teste")
 
-# `properties` vem do arquivo, e não de um literal: o acervo é a fonte (o próprio seed o lê com
-# `ler_acervo()`) e cresce quando entram tipos novos — os comerciais, por exemplo. Um 200 fixo aqui
-# transformaria "o acervo mudou" em "o seed quebrou".
-ESPERADO = {"users": 4, "properties": len(ler_acervo()), "leads": 100, "opportunities": 120,
-            "interactions": 300, "visits": 20, "tasks": 30, "handoffs": 10}
+# Nada de literal aqui: cada número sai da mesma fonte que o seed usa — o acervo e a equipe vêm de
+# arquivo, os volumes são constantes do gerador. Um 200 fixo transformaria "o acervo mudou" em "o
+# seed quebrou", e foi exatamente o que aconteceu quando entraram os imóveis comerciais.
+VISITAS = dict(gerar.ESTAGIOS)["visit_scheduled"] + gerar.VISITAS_SOLICITADAS
+ESPERADO = {"users": len(usuarios(PLANO)), "properties": len(ler_acervo()), "leads": gerar.LEADS,
+            "opportunities": gerar.OPORTUNIDADES, "interactions": gerar.INTERACOES,
+            "visits": VISITAS, "tasks": gerar.TAREFAS, "handoffs": gerar.HANDOFFS}
 
 
 @pytest.fixture
@@ -40,8 +43,7 @@ def test_distribuicao_do_funil(semeado):
     with leitura() as conn:
         por_estagio = {x["stage"]: x["n"] for x in conn.execute(
             "SELECT stage, count(*) AS n FROM opportunities GROUP BY stage").fetchall()}
-    assert por_estagio == {"new": 20, "in_service": 25, "qualified": 25, "visit_scheduled": 15,
-                           "negotiation": 15, "won": 10, "lost": 10}
+    assert por_estagio == dict(gerar.ESTAGIOS)
 
 
 def test_aplicar_duas_vezes_nao_duplica_e_mantem_os_ids(semeado):
@@ -69,15 +71,15 @@ def test_mesmos_parametros_geram_os_mesmos_identificadores():
     assert [x["id"] for x in a] != [x["id"] for x in outro]
 
 
-def test_15_visit_scheduled_tem_visita_confirmada_e_as_outras_5_sao_solicitadas(semeado):
+def test_toda_visit_scheduled_tem_visita_confirmada_e_as_qualified_ficam_solicitadas(semeado):
     with leitura() as conn:
         confirmadas = conn.execute(
             """SELECT count(*) AS n FROM visits v JOIN opportunities o ON o.id = v.opportunity_id
                 WHERE v.status = 'confirmed' AND o.stage = 'visit_scheduled'""").fetchone()["n"]
         solicitadas = conn.execute(
             "SELECT count(*) AS n FROM visits WHERE status = 'requested'").fetchone()["n"]
-    assert confirmadas == 15
-    assert solicitadas == 5
+    assert confirmadas == dict(gerar.ESTAGIOS)["visit_scheduled"]
+    assert solicitadas == gerar.VISITAS_SOLICITADAS
 
 
 def test_encerradas_nao_tem_visita_futura_ativa(semeado):
@@ -156,3 +158,24 @@ def test_tudo_e_sintetico_e_sem_dado_real(semeado):
         com_telefone = conn.execute(
             "SELECT count(*) AS n FROM leads WHERE phone_e164 IS NOT NULL").fetchone()["n"]
         assert com_telefone == 2
+
+
+def test_a_equipe_do_arquivo_virou_usuario_do_crm(semeado):
+    """O vínculo entre os dois sistemas é o e-mail (data/equipe/README.md). Se a equipe do arquivo
+    não existir como `users` aqui, `semear_corretores.py --vincular-crm` não casa com ninguém e o
+    encaminhamento sobe sem destinatário — falha silenciosa, do tipo que só aparece na demonstração.
+    """
+    equipe = ler_equipe()
+    assert equipe, "data/equipe/corretores.json ausente ou vazio"
+    with leitura() as conn:
+        emails = {r["email"] for r in conn.execute("SELECT email FROM users").fetchall()}
+    assert {x["email"] for x in equipe} <= emails
+
+
+def test_a_carteira_se_espalha_pela_equipe_inteira(semeado):
+    """A massa maior existe para mostrar distribuição. Toda oportunidade em três donos seria o
+    mesmo dado de antes, com mais linhas."""
+    with leitura() as conn:
+        donos = conn.execute(
+            "SELECT count(DISTINCT owner_id) AS n FROM opportunities").fetchone()["n"]
+    assert donos >= 20

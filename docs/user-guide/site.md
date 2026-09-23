@@ -40,7 +40,7 @@ Barra de filtros (**Filtros de busca**):
 | **Bairro, tipo ou palavra-chave** | texto livre, com autocompletar de bairros; espera 350 ms após parar de digitar | `texto` (até 80 caracteres) |
 | **Operação** | Comprar ou alugar / **Comprar** / **Alugar** | `operacao` = `venda` \| `aluguel` |
 | **Para** | **Tudo** / **Para morar** / **Para o negócio** | `segmento` = `residencial` \| `comercial` |
-| **Tipo** | a lista muda com o segmento: residencial (Apartamento, Casa, Studio) ou comercial (Sala comercial, Conjunto comercial, Loja, Galpão); em **Tudo**, os dois | `tipo` |
+| **Tipo** | a lista muda com o segmento: residencial (Apartamento, Casa, Sobrado, Studio, Kitnet, Cobertura) ou comercial (Sala comercial, Conjunto comercial, Loja, Galpão, Laje corporativa); em **Tudo**, os dez | `tipo` |
 | **Mais filtros** → **Região** | Toda a cidade / Zona Sul / Zona Oeste / Zona Norte / Zona Leste / Centro | `regiao` |
 | **Quartos (mínimo)** | Qualquer, 1+ a 4+ — **oculto em "Para o negócio"** | `quartos` (0–10) |
 | **Suítes (mínimo)**, **Vagas (mínimo)** | Qualquer, 1+ a 3+ — **ocultos em "Para o negócio"** | `suites`, `vagas` (0–10) |

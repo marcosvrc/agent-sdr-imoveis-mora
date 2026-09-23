@@ -1,0 +1,8 @@
+{
+  "_sobre": "Gerado por scripts/indexar_fotos.py a partir de data/fotos-acervo/. Consumido por scripts/gerar_imoveis.py. Não editar à mão.",
+  "_servido_por": "GET /acervo/{categoria}/{arquivo} (services/api), de SDR_FOTOS_ACERVO_DIR",
+  "residencial": [],
+  "sala-comercial": [],
+  "loja": [],
+  "galpao": []
+}

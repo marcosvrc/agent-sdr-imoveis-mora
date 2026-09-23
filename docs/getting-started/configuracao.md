@@ -58,6 +58,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_RAG_LEXICO` | *(vazio)* | Liga a fusão léxica (RRF) na busca institucional. Desligada por padrão: no A/B o recall caiu de 31,9% para 29,8%. |
 | `SDR_PUBLIC_API_URL` | `http://localhost:8000` | Base para montar URL absoluta de foto nos cards que a Mora envia pelo Telegram. |
 | `SDR_FOTOS_DIR` | `data/fotos` | Onde o painel grava foto de imóvel; a API serve essa pasta em `/fotos/...`. |
+| `SDR_FOTOS_ACERVO_DIR` | `data/fotos-acervo` | Fotos do acervo de demonstração, servidas em `/acervo/...`. Prefixo separado de propósito: `/fotos/%` é o que marca foto do painel na precedência do upsert (ADR-0015). |
 | `SDR_ANTHROPIC_WORKSPACE_ID` | *(vazio)* | Obrigatório quando a chave é de organização e não de workspace. |
 | `SDR_OPENROUTER_API_KEY` | *(vazio)* | **Só para a bancada de avaliação** comparar modelos (ADR-0009). Não usar em produção: põe um terceiro no meio de conversas com dado de cliente. |
 | `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local. |

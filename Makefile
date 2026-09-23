@@ -4,7 +4,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 # rodaria `crm-reset` antes de `crm-migrate` e a falha não apontaria para a causa.
 .NOTPARALLEL:
 
-.PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed docs-kb docs-secos migrate \
+.PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed corretores fotos-acervo docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
         cobertura diagramas eval eval-fake eval-rag eval-embeddings whisper-aquecer test-docker openapi docs
 
@@ -22,6 +22,7 @@ ajuda:
 	@echo "     cd local && docker compose up -d crm-mcp agent      (releem o .env)"
 	@echo "  6. make ollama-pull                   baixa o bge-m3 (demora, uma vez só)"
 	@echo "  7. make seed && make docs-kb          indexa acervo e documentos institucionais"
+	@echo "  8. make corretores                    cria a equipe de 20 corretores (opcional)"
 	@echo
 	@echo "Verificar:  make lint · make test · make eval-fake"
 	@echo "Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
@@ -68,9 +69,25 @@ local-ollama: check-env
 	cd local && docker compose --profile ollama up --build
 
 seed:
-	cd local && docker compose exec agent python /app/scripts/gerar_imoveis.py 200
+	cd local && docker compose exec agent python /app/scripts/gerar_imoveis.py 250 150
 	cd local && docker compose exec -w /app/services/ingestion agent python -m sdr_ingestion.ingest_imoveis /app/data/imoveis/imoveis.json
 	@echo "✓ acervo indexado. Com CRM configurado ele veio de lá; sem CRM, do arquivo."
+
+# Equipe de demonstração: cria os corretores de data/equipe/corretores.json na Mora e casa cada um
+# com o `users` do CRM pelo e-mail — é `crm_user_id` que faz o encaminhamento subir com destinatário.
+# Roda DENTRO do container, como `make seed`: no host os padrões de conexão apontam para 5432
+# enquanto o compose publica em 5433, e o pior desfecho seria semear no banco errado em silêncio.
+corretores:
+	cd local && docker compose exec -e CRM_DATABASE_DSN=postgresql://sdr:sdr@db:5432/crm agent python /app/scripts/semear_corretores.py --vincular-crm
+	@echo "✓ equipe semeada. Sem CRM no ar eles ficam sem crm_user_id — a ponte fica desligada, e o CRM atribui a quem aceitar."
+
+# Fotos do acervo de demonstração: normaliza o que estiver em data/fotos-acervo/<categoria>/ e
+# redistribui 2–3 fotos por imóvel, coerentes com o tipo. Roda no HOST, e não no container: é
+# preparação de massa e precisa do Pillow, que de propósito não é dependência de execução.
+fotos-acervo:
+	python3 scripts/indexar_fotos.py
+	python3 scripts/gerar_imoveis.py
+	@echo "✓ fotos indexadas — rode 'make seed' para reindexar o acervo."
 
 # Documentos institucionais (FAQ, política de visita, taxas) → base de conhecimento que a Mora
 # consulta: fatia, gera embeddings e grava na tabela `documentos` do pgvector. Exige `make migrate`

@@ -4,6 +4,7 @@ Estes testes rodam o harness em modo falso (sem chamar API) só para garantir qu
 produz números coerentes. Não afirmam nada sobre a qualidade do modelo: isso é o `make eval`.
 """
 import json
+import pathlib
 
 import pytest
 
@@ -79,3 +80,37 @@ def test_relatorio_salva_json_legivel(tmp_path, monkeypatch):
     caminho = relatorio.salvar([resumo], {"chamadas": 0}, "teste")
     dados = json.loads(caminho.read_text(encoding="utf-8"))
     assert dados["modelo"] == "teste" and dados["suites"][0]["suite"] == "roteamento"
+
+def test_toda_fonte_do_rag_existe_como_secao_nos_documentos():
+    """O `fonte` do dataset é o TÍTULO da seção que responde, casado por texto.
+
+    Renomear um cabeçalho em `data/documentos/` — ou escrever um título com uma vírgula de
+    diferença — não quebra nada visível: quebra o eval de RAG, que passa a cobrar uma seção que não
+    existe e reporta recall baixo sem que nenhum recuperador tenha piorado. Este teste é barato e
+    pega isso na hora (`data/documentos/README.md` explica a regra).
+    """
+    import re
+    docs = pathlib.Path(__file__).resolve().parents[3] / "data" / "documentos"
+    titulos: set[str] = set()
+    for arq in docs.glob("*.md"):
+        if arq.name == "README.md":
+            continue
+        titulos |= set(re.findall(r"^#{2,4}\s+(.+?)\s*$", arq.read_text(encoding="utf-8"), re.M))
+    assert titulos, "nenhum documento institucional encontrado"
+    ausentes = [(c.id, c["fonte"]) for c in carregar("rag")
+                if c.dados.get("fonte") and c["fonte"] not in titulos]
+    assert not ausentes, f"fonte sem seção correspondente: {ausentes}"
+
+
+def test_dataset_de_rag_tem_positivos_negativos_e_literais():
+    """As três famílias existem para serem reportadas SEPARADAS (ver o cabeçalho do rag.jsonl).
+    Um dataset que perde as negativas mede recall e chama de qualidade."""
+    casos = carregar("rag")
+    assert len({c.id for c in casos}) == len(casos), "ids repetidos no dataset"
+    negativas = [c for c in casos if c.dados.get("responde") is False]
+    literais = [c for c in casos if c.dados.get("tipo") == "literal"]
+    sequencia = [c for c in casos if c.dados.get("historico")]
+    assert len(negativas) >= 5 and len(literais) >= 5 and len(sequencia) >= 5
+    for c in casos:
+        assert c.dados.get("fonte") or c.dados.get("responde") is False, (
+            f"{c.id}: caso sem `fonte` e sem `responde: false` não afirma nada")

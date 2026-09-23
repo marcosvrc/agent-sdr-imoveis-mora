@@ -46,9 +46,13 @@ volta ao formulário. A tela detecta isso e mostra `SESSAO_NAO_PERSISTIU` com a 
 
 Tela "CRM da imobiliária", campos **E-mail** e **Senha**, botão **Entrar** (`Entrar.tsx`).
 
-- **Usuários do seed**: Ana Ribeiro (`ana@example.com`, admin), Bruno Carvalho
-  (`bruno@example.com`, broker), Carla Mendes (`carla@example.com`, broker), Diego Alves
-  (`diego@example.com`, broker) (`services/crm/sdr_crm/seed/gerar.py`, `usuarios`).
+- **Usuários do seed**: os quatro originais — Ana Ribeiro (`ana@example.com`, admin), Bruno
+  Carvalho (`bruno@example.com`, broker), Carla Mendes (`carla@example.com`, broker), Diego Alves
+  (`diego@example.com`, broker) — mais os **20 corretores da equipe de demonstração**, lidos de
+  `data/equipe/corretores.json` com e-mail `nome.sobrenome@example.com` e papel `broker`
+  (`services/crm/sdr_crm/seed/gerar.py`, `usuarios` e `ler_equipe`). São 24 no total, e o mesmo
+  arquivo alimenta o cadastro de corretores da Mora — é o **e-mail** que liga as duas pontas
+  (`data/equipe/README.md`).
 - **Senhas**: não estão no repositório. `make crm-reset`/`crm-seed` gera uma senha aleatória para
   cada usuário que ainda não tem e imprime **uma única vez** no terminal, sob "Acesso ao painel
   (aparece só nesta execução)". Quem já tem senha não é tocado
@@ -331,7 +335,7 @@ Card **Identificação**:
 | Título | sim | texto 1–300 | |
 | Cidade | sim | texto 1–120 | padrão "São Paulo" |
 | Bairro | sim | texto 1–120 | dica: "A Mora deduz a região a partir daqui." |
-| Tipo | — | residenciais: apartamento, casa, studio, cobertura, sobrado, kitnet; comerciais: sala comercial, conjunto comercial, loja, galpão | padrão apartamento; um **tipo comercial esconde o campo Quartos** e grava `bedrooms = 0` — sala, loja e galpão não têm dormitório, e pedir um zero na tela pareceria dado preenchido |
+| Tipo | — | residenciais: apartamento, casa, studio, cobertura, sobrado, kitnet; comerciais: sala comercial, conjunto comercial, loja, galpão, laje corporativa | padrão apartamento; um **tipo comercial esconde o campo Quartos** e grava `bedrooms = 0` — sala, loja e galpão não têm dormitório, e pedir um zero na tela pareceria dado preenchido |
 | Finalidade | — | Aluguel / Compra | padrão Aluguel |
 | Descrição | não | texto até 4000 | dica: "O que a Mora vai ler para descrever o imóvel na conversa." |
 
@@ -529,7 +533,7 @@ encaminhamento, ler auditoria. Ela também não age quando o atendimento está `
 
 | Entidade | Agente (MCP) | Pessoa (tela do CRM) | Seed (`make crm-reset`) |
 |---|---|---|---|
-| Cliente | `criar_lead`, `atualizar_lead` (só bloquear contato) | liberar/bloquear contato, arquivar | 4 usuários + clientes `clienteNNNN@example.com` |
+| Cliente | `criar_lead`, `atualizar_lead` (só bloquear contato) | liberar/bloquear contato, arquivar | 24 usuários (4 originais + a equipe de `data/equipe/`) e 300 clientes `clienteNNNN@example.com` |
 | Oportunidade | `criar_oportunidade`, `atualizar_preferencias`, `mover_oportunidade` (dentro do permitido) | mover pelo funil (inclusive ganho/perdido/negociação) | distribuídas por estágio |
 | Interação | `registrar_interacao` | não (só leitura) | sim |
 | Interesse em imóvel | `registrar_interesse` | não | — |

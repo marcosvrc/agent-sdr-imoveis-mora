@@ -56,10 +56,13 @@ export type Segmento = "residencial" | "comercial";
  *  (`sdr_shared/models/lead.py::segmento_do_tipo`). Duas verdades sobre "isto é comercial?"
  *  divergiriam no primeiro cadastro fora do padrão. */
 export const TIPOS_POR_SEGMENTO: Record<Segmento, Record<string, string>> = {
-  residencial: { apartamento: "Apartamento", casa: "Casa", studio: "Studio" },
+  residencial: {
+    apartamento: "Apartamento", casa: "Casa", sobrado: "Sobrado", studio: "Studio",
+    kitnet: "Kitnet", cobertura: "Cobertura",
+  },
   comercial: {
     "sala comercial": "Sala comercial", "conjunto comercial": "Conjunto comercial",
-    loja: "Loja", "galpão": "Galpão",
+    loja: "Loja", "galpão": "Galpão", "laje corporativa": "Laje corporativa",
   },
 };
 export const TIPOS: Record<string, string> = { ...TIPOS_POR_SEGMENTO.residencial, ...TIPOS_POR_SEGMENTO.comercial };

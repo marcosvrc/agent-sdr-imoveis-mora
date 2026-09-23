@@ -21,8 +21,10 @@ agent-sdr-morai/
 ├── shared/           Pacote Python comum: modelos, contratos, DB, config, ports/adapters
 ├── local/            A entrega: docker compose (Postgres+pgvector, Redis, workers, apps, CRM)
 │                     e a única imagem Python, `Dockerfile.python`, usada por todos os serviços
-├── data/             Base simulada de imóveis e documentos institucionais
-├── scripts/          Utilitários de dev (`check_env.py`, `gerar_imoveis.py`, `gerar_openapi.py`)
+├── data/             Massa de demonstração: acervo (400 imóveis), equipe (20 corretores),
+│                  fotos do acervo e documentos institucionais do RAG
+├── scripts/          Utilitários de dev (`check_env.py`, `gerar_imoveis.py`,
+│                  `semear_corretores.py`, `indexar_fotos.py`, `gerar_openapi.py`)
 ├── tests/            Suíte da raiz (hoje, a do `check_env`)
 ├── docs/             Arquitetura, ADRs, observabilidade e este portal
 └── .github/          CI (GitHub Actions)

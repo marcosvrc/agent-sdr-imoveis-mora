@@ -110,6 +110,22 @@ def foto(imovel_id: str, nome: str):
     return FileResponse(arq, headers={"Cache-Control": "public, max-age=86400"})
 
 
+@app.get("/acervo/{categoria}/{nome}", tags=["público"], include_in_schema=False)
+def foto_do_acervo(categoria: str, nome: str):
+    """Fotos do acervo de demonstração (data/fotos-acervo), indexadas por scripts/indexar_fotos.py.
+
+    Rota separada de `/fotos/`: aquele prefixo identifica foto enviada pelo painel e por isso decide
+    precedência no upsert do acervo (ADR-0015). O nome é conferido contra o padrão que o indexador
+    gera — nada de caminho vindo de fora.
+    """
+    if not re.fullmatch(r"[a-z-]{3,24}", categoria) or not re.fullmatch(r"[a-z-]{3,24}-\d{2}\.jpg", nome):
+        raise HTTPException(404)
+    arq = Path(get_settings().fotos_acervo_dir) / categoria / nome
+    if not arq.is_file():
+        raise HTTPException(404)
+    return FileResponse(arq, headers={"Cache-Control": "public, max-age=604800"})
+
+
 @app.get("/health", tags=["infraestrutura"], summary="Saúde do sistema")
 def health(response: Response):
     """Saúde de verdade: banco alcançável e nenhum worker calado (ADR-0011).

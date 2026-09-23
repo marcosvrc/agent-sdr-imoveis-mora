@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     llm_timeout_s: float = 45.0             # acima disso o turno falha e o cliente recebe o fallback
     # Fotos enviadas pelo painel: gravadas em disco.
     fotos_dir: str = str(Path(__file__).resolve().parents[3] / "data" / "fotos")
+    # Fotos do acervo de demonstração, servidas em /acervo/ — prefixo separado de propósito, porque
+    # `/fotos/%` é o que marca "foto do painel" na precedência do upsert (ADR-0015).
+    fotos_acervo_dir: str = str(Path(__file__).resolve().parents[3] / "data" / "fotos-acervo")
     public_api_url: str = "http://localhost:8000"     # base para montar URLs absolutas de fotos fora da API (cards do agente)
     ollama_embedding_model: str = "bge-m3"
     redis_url: str = "redis://localhost:6379/0"

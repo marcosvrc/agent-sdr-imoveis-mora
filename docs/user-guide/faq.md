@@ -32,7 +32,7 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
     é encaminhado ao corretor.
 
 ??? question "O catálogo aparece vazio. E agora?"
-    Rode `make seed` para popular 240 imóveis e gerar os embeddings.
+    Rode `make seed` para popular 400 imóveis e gerar os embeddings.
 
 ??? question "O Mora está pronto para produção?"
     Não. É uma **POC**, que roda na máquina de quem avalia e não está implantada em lugar nenhum.

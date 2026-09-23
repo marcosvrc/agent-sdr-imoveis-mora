@@ -137,6 +137,7 @@ make preparar                            # bancos, schemas e massa, na ordem cer
 make crm-token                           # credencial da Mora no CRM — aparece UMA vez; cole em CRM_API_TOKEN
 cd local && docker compose up -d crm-mcp agent && cd ..
 make ollama-pull && make seed && make docs-kb   # embeddings, acervo e base institucional
+make corretores                          # equipe de 20 corretores, casada com o CRM pelo e-mail
 ```
 
 `make` sozinho imprime essa ordem — é o alvo padrão e a fonte que se mantém em dia com o
@@ -384,7 +385,8 @@ agent-sdr-imoveis-mora/
 │   └── ingestion/    Carga de imóveis e documentos + embeddings
 ├── shared/           Pacote Python comum: modelos, contratos, DB, config, ports/adapters, CRM, governança
 ├── local/            docker-compose.yml (Postgres+pgvector, Redis, Ollama, workers, canais, apps)
-├── data/             Base simulada de imóveis e documentos institucionais
+├── data/             Massa de demonstração: acervo (400 imóveis), equipe (20 corretores),
+│                  fotos do acervo e documentos institucionais do RAG
 ├── scripts/          check_env, gerar_imoveis, gerar_openapi
 ├── docs/             Portal MkDocs: arquitetura, ADRs, manuais, referência, qualidade
 ├── pyrightconfig.json · ruff.toml · Makefile · mkdocs.yml
