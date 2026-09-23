@@ -155,8 +155,13 @@ segue com `buscar_por_filtros` — mesmos filtros, ordem por preço crescente, s
 ### Agendamento de visita
 
 **O que faz.** Em dois turnos: oferece até oito horários como botões; ao clicar (ou escrever
-"terça às 14h"), reserva o horário, avisa que **o corretor confirma**, e pede telefone se ainda não
-tiver. Se o horário acabou de ser ocupado por outra pessoa, reoferece.
+"terça às 14h"), reserva o horário, avisa que **o corretor confirma**, manda o **mapa da região** do
+imóvel e pede telefone se ainda não tiver. Se o horário acabou de ser ocupado por outra pessoa,
+reoferece.
+
+O mapa é do **bairro**, com o texto dizendo isso — o cadastro não tem logradouro (nem na Mora, nem no
+CRM), e endereço inventado é a última coisa que se manda para quem vai sair de casa. No chat do site
+vira o botão "Ver a região no mapa"; no Telegram, uma linha com o link.
 
 **Como funciona.** Nó `agendador` (`nodes/agendador.py`).
 

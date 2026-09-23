@@ -467,3 +467,36 @@ def test_aviso_nao_atropela_o_corretor_que_ja_respondeu(infra):
     processar(msg("l_corretor", "oi Camila", canal=Canal.WEB))
     depois = len([b for t, b, _ in broker.msgs if t == "outbound-web"])
     assert depois == antes, "quem está atendendo é a pessoa; a Mora fica quieta"
+
+
+# --------------------------------------------------------- localização da visita
+
+def test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco(infra):
+    """Quem vai visitar precisa saber para onde ir — e o cadastro não tem logradouro.
+
+    Nem o acervo da Mora nem o CRM guardam endereço (o seed do CRM escreve "endereço fictício" no
+    próprio título). O link é do BAIRRO, e o texto diz isso: região agora, endereço exato com o
+    corretor na confirmação. Um link de rua e número seria endereço inventado chegando ao cliente
+    com cara de confirmado — e ele iria até lá.
+    """
+    broker, _ = infra
+    processar(msg("l_mapa", "Estou procurando apartamento na zona sul", meta={"nome": "Marcos"},
+                  canal=Canal.WEB))
+    processar(msg("l_mapa", "até 800 mil, 2 quartos, é urgente", canal=Canal.WEB))
+    processar(msg("l_mapa", "me mostra as opções", canal=Canal.WEB))
+    r = ultima(broker, "outbound-web")
+    assert r["imoveis"], "sem card não há imóvel para visitar"
+
+    processar(msg("l_mapa", "Agendar visita", tipo=TipoMensagem.BOTAO, canal=Canal.WEB))
+    slot = ultima(broker, "outbound-web")["opcoes"][0].split("|")[0]
+    processar(msg("l_mapa", slot, tipo=TipoMensagem.BOTAO, canal=Canal.WEB))
+
+    r = ultima(broker, "outbound-web")
+    visita = r["dados"]["visita"]
+    assert visita["mapa"], "o card da visita precisa do link para o botão do mapa"
+    assert "google.com/maps" in visita["mapa"] and "Brooklin" in visita["mapa"].replace("%2C", ",")
+    assert visita["local"].startswith("Brooklin"), "o local vem do cadastro, não do título do card"
+    assert visita["mapa"] in r["texto"], "no Telegram só há texto: o link precisa estar nele"
+    assert "endereço exato o corretor manda" in r["texto"]
+    # o link é do bairro: nada de rua, número ou CEP — que o sistema não tem
+    assert not any(t in visita["mapa"].lower() for t in ("rua+", "avenida+", "cep", "n%C2%BA"))

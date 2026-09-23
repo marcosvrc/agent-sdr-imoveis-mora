@@ -168,3 +168,21 @@ def descrever(local: Local) -> str:
     if local.tipo == "cidade":
         return local.cidade or CIDADE_PADRAO
     return local.termo
+
+
+def link_do_mapa(bairro: str | None, cidade: str | None = None) -> str | None:
+    """Mapa do BAIRRO, nunca do endereço — porque endereço não existe neste sistema.
+
+    Nem o acervo da Mora nem `properties` no CRM guardam logradouro: o cadastro tem cidade, região e
+    bairro, e o próprio seed do CRM escreve "(endereço fictício)" no título. Um link apontando para
+    uma rua e um número seria endereço inventado chegando ao cliente com cara de confirmado — e ele
+    iria até lá. O que sabemos é o bairro; é o que o link mostra, e quem manda o endereço exato é o
+    corretor, na confirmação da visita.
+
+    Formato oficial de busca do Google Maps (funciona em navegador e nos apps).
+    """
+    if not (bairro or "").strip():
+        return None
+    from urllib.parse import quote_plus
+    return ("https://www.google.com/maps/search/?api=1&query="
+            + quote_plus(f"{bairro.strip()}, {(cidade or CIDADE_PADRAO).strip()}"))

@@ -1,6 +1,6 @@
 import { googleCalendarUrl, icsDataUrl, fmtDataHora, type EventoAgenda } from "../lib/calendario";
 
-export type Visita = EventoAgenda & { imovel_id?: string; rotulo?: string };
+export type Visita = EventoAgenda & { imovel_id?: string; rotulo?: string; mapa?: string | null };
 
 // Reserva de visita: o agente devolve `dados.visita`; aqui vira um card com "adicionar à agenda".
 //
@@ -17,6 +17,13 @@ export function CardVisita({ visita }: { visita: Visita }) {
       <div className="mt-2 flex flex-wrap gap-2">
         <a href={googleCalendarUrl(visita)} target="_blank" rel="noreferrer" className="rounded-full bg-brand px-3 py-1 text-xs font-medium text-white">Adicionar ao Google Agenda</a>
         <a href={icsDataUrl(visita)} download="visita-vertice.ics" className="rounded-full border px-3 py-1 text-xs font-medium text-slate-600">Apple / Outlook (.ics)</a>
+        {/* Mapa do BAIRRO — o cadastro não tem logradouro, e o rótulo diz isso: "região". Um botão
+            escrito "ver endereço" prometeria uma precisão que o dado não tem, e quem confere é
+            alguém indo até lá. */}
+        {visita.mapa && (
+          <a href={visita.mapa} target="_blank" rel="noreferrer"
+             className="rounded-full border px-3 py-1 text-xs font-medium text-slate-600">Ver a região no mapa</a>
+        )}
       </div>
     </div>
   );

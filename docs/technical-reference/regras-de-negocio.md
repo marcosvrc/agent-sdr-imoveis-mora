@@ -394,7 +394,28 @@ frase e reoferece. O identificador do botão nunca entra cru no histórico — v
 A confirmação ao cliente fala do imóvel pela **descrição**, nunca pelo código
 (`test_agendador_crm.py::test_reserva_fala_do_imovel_pela_descricao_e_nao_pelo_codigo`).
 
-### 7.4 Escolha do corretor
+### 7.4 Onde fica o imóvel: mapa do bairro, nunca endereço
+
+A reserva leva um link do Google Maps para **bairro + cidade**
+(`sdr_shared/geo.py::link_do_mapa`), com o texto dizendo o que ele é: a região agora, o endereço
+exato com o corretor na confirmação.
+
+**Endereço não existe neste sistema.** Nem o acervo da Mora nem `properties` no CRM guardam
+logradouro — o seed do CRM chega a escrever "(endereço fictício)" no título. Um link de rua e número
+seria endereço inventado chegando ao cliente com cara de confirmado, e ele iria até lá. Por isso o
+rótulo no chat é "Ver a região no mapa", e não "ver endereço": o botão promete a precisão que o dado
+tem.
+
+| Detalhe | Regra |
+| --- | --- |
+| Bairro e cidade saem do **cadastro** (`ImovelRepository.get`), não do título do card — que mudou de formato quando o comercial entrou | `nodes/agendador.py::_onde_fica` |
+| O link é **acrescentado ao texto depois do saneamento**, nunca pedido ao modelo: URL escrita por modelo é URL que ele pode inventar, e esta leva alguém a um lugar físico | `nodes/agendador.py` |
+| Vai também em `dados.visita.mapa` (botão no chat do site) e em `local`, que o evento de calendário usa | `apps/web/src/chat/CardVisita.tsx` |
+| Sem bairro conhecido, não há link — e a mensagem segue sem ele | `link_do_mapa` devolve `None` |
+
+Teste: `test_cenarios.py::test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco`.
+
+### 7.5 Escolha do corretor
 
 Quem atende é escolhido por **região e carga** (`shared/sdr_shared/db/painel.py::CorretorRepository.escolher`):
 (1) corretores **ativos** que atendem a região — **quem não tem região declarada atende todas**;

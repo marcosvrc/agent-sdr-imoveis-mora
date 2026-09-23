@@ -10,6 +10,7 @@ from ..prompts import carregar
 from ..state import AgentState
 from ..guardrails.saida import sanear
 from sdr_shared.crm import horarios_do_imovel, pedir_visita
+from sdr_shared.geo import link_do_mapa
 
 from ..tools.agenda import HorarioOcupado, listar_horarios, agendar, formatar
 
@@ -17,6 +18,27 @@ DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 _SEMANA = {"segunda": 0, "seg": 0, "terca": 1, "ter": 1, "quarta": 2, "qua": 2, "quinta": 3, "qui": 3, "sexta": 4, "sex": 4,
            "sabado": 5, "sab": 5, "domingo": 6, "dom": 6}
 _BR = timezone(timedelta(hours=-3))
+
+
+def _onde_fica(imovel_id: str | None, card) -> tuple[str | None, str]:
+    """Bairro e cidade do imóvel — do CADASTRO, não do título do card.
+
+    O `local` da visita saía de `card.titulo.split("·")[-1]`, que é o bairro só enquanto o título
+    tiver exatamente esse formato: "Sala comercial 45 m² · Pinheiros". Mudou o título — e ele mudou
+    quando o comercial entrou, com a medida em metros — e o "bairro" vira outra coisa, que ia parar
+    no evento de calendário do cliente. O cadastro tem os dois campos; é de lá que eles saem.
+    """
+    from sdr_shared.geo import CIDADE_PADRAO
+    if imovel_id:
+        try:
+            from sdr_shared.db import ImovelRepository
+            if im := ImovelRepository().get(imovel_id):
+                return im.bairro, im.cidade or CIDADE_PADRAO
+        except Exception:
+            pass
+    if card and "·" in card.titulo:                    # reserva sem o imóvel no banco: melhor que nada
+        return card.titulo.split("·")[-1].strip(), CIDADE_PADRAO
+    return None, CIDADE_PADRAO
 
 
 def descrever_imovel(imovel_id: str | None, sugeridos: list) -> str:
@@ -116,7 +138,9 @@ def run(state: AgentState) -> dict:
             if co := CorretorRepository().escolher(lead.cartao.regiao):
                 lead.corretor_id = co.id
         card = next((c for c in sugeridos if c.id == imovel_id), None)
-        local = (card.titulo.split("·")[-1].strip() + ", São Paulo") if card else "São Paulo"
+        bairro, cidade = _onde_fica(imovel_id, card)
+        local = f"{bairro}, {cidade}" if bairro else cidade
+        mapa = link_do_mapa(bairro, cidade)
         try:
             agendar(lead.id, imovel_id, inicio, corretor_id=lead.corretor_id,
                     titulo=f"Visita: {card.titulo}" if card else "Visita ao imóvel — Vértice Imóveis",
@@ -140,9 +164,16 @@ def run(state: AgentState) -> dict:
                                               contexto_contato=pedir), *state["messages"]])
         visita = {"inicio": inicio.isoformat(), "duracao_min": 60, "imovel_id": imovel_id,
                   "titulo": f"Visita: {card.titulo}" if card else "Visita ao imóvel — Vértice Imóveis",
-                  "local": local, "rotulo": formatar(inicio)}
+                  "local": local, "rotulo": formatar(inicio), "mapa": mapa}
+        # O link é ACRESCENTADO ao texto, depois do saneamento, em vez de pedido ao modelo. URL que
+        # o modelo escreve é URL que ele pode inventar — e esta leva alguém a um endereço físico.
+        # No chat do site o card mostra o botão; no Telegram, que só tem texto, é esta linha.
+        texto = sanear(msg.content, lead.id)
+        if mapa:
+            texto += (f"\n\nA região do imóvel no mapa: {mapa}\n"
+                      "O endereço exato o corretor manda junto com a confirmação.")
         return {"lead": lead, "messages": [msg], "horarios_oferecidos": [], "slots_crm": {},
-                "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id), acao=Acao.AGENDAR,
+                "resposta": RespostaAgente(lead_id=lead.id, texto=texto, acao=Acao.AGENDAR,
                                            dados={"visita": visita})}
 
     return _oferecer(state, lead, imovel_id, txt)
