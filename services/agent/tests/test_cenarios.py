@@ -261,7 +261,7 @@ def test_cliente_qualificado_pode_trocar_de_bairro(infra, monkeypatch):
 
     # A extração é substituída: o que está sob prova aqui é o consultor ABSORVER o cartão novo no
     # lead, não a qualidade do extrator (que tem suíte própria e, no dublê, nem olha bairro).
-    def extrair_falso(cartao, mensagem):
+    def extrair_falso(cartao, mensagem, pergunta=""):
         return cartao.model_copy(update={"bairros": ["Vila Mariana", "Vila Madalena"]})
 
     monkeypatch.setattr("agent.nodes.qualificador._extrair", extrair_falso)
@@ -280,7 +280,7 @@ def test_mudanca_nao_derruba_o_turno(infra, monkeypatch):
     from sdr_shared.models import Estagio, Intencao, Lead
 
     monkeypatch.setattr("agent.nodes.qualificador._extrair",
-                        lambda c, m: (_ for _ in ()).throw(RuntimeError("modelo fora do ar")))
+                        lambda c, m, p="": (_ for _ in ()).throw(RuntimeError("modelo fora do ar")))
     lead = Lead(id="lead-falha", estagio=Estagio.QUALIFICADO)
     lead.cartao.intencao = Intencao.ALUGUEL
     lead.cartao.bairros = ["Pinheiros"]
@@ -295,7 +295,8 @@ def test_cartao_completo_nao_extrai_a_mesma_frase_duas_vezes(infra, monkeypatch)
     import agent.nodes.qualificador as q
     extracoes = []
     original = q._extrair
-    monkeypatch.setattr(q, "_extrair", lambda cartao, mensagem: extracoes.append(mensagem) or original(cartao, mensagem))
+    monkeypatch.setattr(q, "_extrair", lambda cartao, mensagem, pergunta="":
+                        extracoes.append(mensagem) or original(cartao, mensagem, pergunta))
     processar(msg("l9", "Estou procurando apartamento na zona sul", meta={"nome": "Marcos"}))
     extracoes.clear()
     processar(msg("l9", "até 800 mil, 2 quartos, é urgente"))                 # completa o cartão → consultor

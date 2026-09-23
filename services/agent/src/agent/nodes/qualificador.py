@@ -11,10 +11,30 @@ from ..guardrails.saida import sanear
 from sdr_shared.geo import resolver, resolver_varios
 
 
-def _extrair(cartao: CartaoQualificacao, mensagem: str) -> CartaoQualificacao:
+def ultima_pergunta(messages) -> str:
+    """A última fala da Mora — o que dá sentido a uma resposta curta.
+
+    Sem ela, "1" logo depois de "quantos quartos?" não informa nada explicitamente, e a extração
+    (que é conservadora de propósito: não inferir é o que a impede de alucinar orçamento) devolve
+    nulo com toda a razão. O cartão nunca fecha, o consultor nunca roda, e o cliente fica olhando
+    para uma promessa de busca que não vem. Foi exatamente o que aconteceu no primeiro teste com
+    gente de verdade digitando.
+    """
+    for m in reversed(list(messages or [])):
+        papel = getattr(m, "type", None) or (m[0] if isinstance(m, (tuple, list)) and m else None)
+        if papel in ("ai", "assistant"):
+            conteudo = getattr(m, "content", None)
+            if conteudo is None and isinstance(m, (tuple, list)) and len(m) > 1:
+                conteudo = m[1]
+            return str(conteudo or "")[-300:]
+    return ""
+
+
+def _extrair(cartao: CartaoQualificacao, mensagem: str, pergunta: str = "") -> CartaoQualificacao:
     try:
         novo = llm_roteamento().with_structured_output(CartaoQualificacao).invoke(
-            texto("extracao", cartao=cartao.model_dump(exclude_defaults=True), mensagem=mensagem))
+            texto("extracao", cartao=cartao.model_dump(exclude_defaults=True), mensagem=mensagem,
+                  pergunta=pergunta.strip() or "(nenhuma — é a primeira mensagem da conversa)"))
     except Exception:
         return cartao
     if not isinstance(novo, CartaoQualificacao):        # saída estruturada pode vir como dict cru
@@ -89,7 +109,8 @@ def run(state: AgentState) -> dict:
     lead, entrada = state["lead"], state["entrada"]
     fora_de_cobertura = None
     if entrada.conteudo:
-        novo_cartao = _extrair(lead.cartao, entrada.conteudo)
+        pergunta = ultima_pergunta(state.get("messages"))
+        novo_cartao = _extrair(lead.cartao, entrada.conteudo, pergunta)
         # quem já fechou um ciclo e volta com outra intenção começa uma oportunidade nova, não sobrescreve a antiga
         if (sucessora := nova_oportunidade_se_mudou_intencao(lead, novo_cartao.intencao)):
             auditar(acao="oportunidade.aberta", entidade="lead", entidade_id=sucessora.id, ator_tipo="agente",
@@ -98,7 +119,7 @@ def run(state: AgentState) -> dict:
             # o cartão da nova oportunidade sai SÓ desta mensagem: o que ela procura agora é outra coisa,
             # mas o contato e o nome seguem sendo da mesma pessoa
             contato = {c: getattr(lead.cartao, c) for c in ("nome_informado", "telefone_informado", "email_informado")}
-            sucessora.cartao = _extrair(CartaoQualificacao(), entrada.conteudo).model_copy(
+            sucessora.cartao = _extrair(CartaoQualificacao(), entrada.conteudo, pergunta).model_copy(
                 update={**contato, "intencao": novo_cartao.intencao})
             lead = sucessora
         else:

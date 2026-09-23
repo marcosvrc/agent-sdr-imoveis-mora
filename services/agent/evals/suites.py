@@ -19,7 +19,7 @@ def extracao(caso: Caso) -> Resultado:
     from agent.nodes import qualificador
 
     cartao = CartaoQualificacao(**caso.get("cartao_inicial", {}))
-    obtido = qualificador._extrair(cartao, caso["mensagem"])
+    obtido = qualificador._extrair(cartao, caso["mensagem"], caso.get("pergunta_anterior", ""))
     obtido, _ = qualificador._normalizar_local(obtido, caso["mensagem"])
 
     acertos, erros = [], []

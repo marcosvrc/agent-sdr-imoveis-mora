@@ -84,3 +84,41 @@ def test_especialista_que_nao_responde_nem_reencaminha_roda_uma_vez_so(infra, mo
     processar(MensagemNormalizada(lead_id="l-rep", canal=Canal.TELEGRAM, identificador_canal="5511999990000",
                                   tipo=TipoMensagem.REATIVACAO, conteudo="reativar"))
     assert len(execucoes) == 1, execucoes
+
+
+def test_extracao_recebe_a_ultima_pergunta_da_mora(monkeypatch):
+    """Resposta curta só tem sentido junto da pergunta: a extração precisa recebê-la.
+
+    "1" depois de "quantos quartos?" é o caso que deixou um lead pendurado — o cartão não fechava,
+    o consultor não rodava, e a Mora tinha acabado de prometer que ia buscar.
+    """
+    from agent.nodes import qualificador
+
+    visto = {}
+
+    class ModeloFalso:
+        def with_structured_output(self, _schema):
+            return self
+        def invoke(self, prompt):
+            visto["prompt"] = str(prompt)
+            return CartaoQualificacao(quartos=1)
+
+    monkeypatch.setattr(qualificador, "llm_roteamento", lambda: ModeloFalso())
+    cartao = qualificador._extrair(CartaoQualificacao(), "1", "Quantos quartos você precisa?")
+    assert cartao.quartos == 1
+    assert "Quantos quartos você precisa?" in visto["prompt"], "a pergunta tem de ir no prompt"
+    assert "CONTEXTO, não é dado do cliente" in visto["prompt"], (
+        "sem essa marcação o modelo extrai os bairros que a própria Mora citou como exemplo")
+
+
+def test_ultima_pergunta_ignora_o_que_o_cliente_disse():
+    """A última fala da MORA, não a última mensagem. O histórico chega com a do cliente no fim."""
+    from agent.nodes.qualificador import ultima_pergunta
+    from langchain_core.messages import AIMessage, HumanMessage
+
+    assert ultima_pergunta([]) == ""
+    assert ultima_pergunta([HumanMessage(content="oi")]) == ""
+    historico = [HumanMessage(content="quero alugar"), AIMessage(content="Em qual região?"),
+                 HumanMessage(content="Tucuruvi")]
+    assert ultima_pergunta(historico) == "Em qual região?"
+    assert ultima_pergunta([("ai", "Quantos quartos?"), ("user", "1")]) == "Quantos quartos?"

@@ -17,3 +17,16 @@
 {"id": "ext-13-sem-pressa", "mensagem": "to so pesquisando, sem pressa nenhuma, talvez ano que vem", "esperado": {"urgencia": {"qualquer": ["sem prazo", "sem pressa", "longo prazo", "ano que vem", "baixa"]}}, "nao_esperado": ["preco_max", "quartos"]}
 {"id": "ext-14-fora-de-cobertura", "mensagem": "queria uma casa em campinas ate 500 mil", "esperado": {"intencao": "compra", "preco_max": 500000}, "nao_esperado": ["regiao"]}
 {"id": "ext-15-negacao", "mensagem": "nao quero apartamento, nem em zona norte", "esperado": {}, "nao_esperado": ["regiao", "preco_max", "quartos"]}
+
+// Respostas CURTAS, que só significam algo junto da pergunta que a Mora acabou de fazer. Sem o
+// contexto, a extração devolve nulo — com toda a razão, porque "1" não informa nada explicitamente
+// — o cartão nunca fecha e o cliente fica esperando uma busca que não vem. Aconteceu em produção
+// no primeiro teste com alguém digitando de verdade.
+{"id": "ext-curta-quartos", "pergunta_anterior": "Quantos quartos você precisa no apartamento?", "mensagem": "1", "esperado": {"quartos": 1}, "nao_esperado": ["preco_max", "regiao", "intencao"]}
+{"id": "ext-curta-preco", "pergunta_anterior": "Qual o valor máximo de aluguel que você pode pagar por mês?", "mensagem": "até 1000 reais", "esperado": {"preco_max": 1000}, "nao_esperado": ["quartos", "ticket"]}
+{"id": "ext-curta-urgencia", "pergunta_anterior": "Essa mudança é para quando?", "mensagem": "urgente", "esperado": {"urgencia": {"qualquer": ["imediata", "imediato", "urgente"]}}, "nao_esperado": ["preco_max", "quartos"]}
+{"id": "ext-curta-area", "pergunta_anterior": "De quantos metros quadrados você precisa na sala?", "mensagem": "uns 60", "esperado": {"area_min": 60}, "nao_esperado": ["quartos", "preco_max"]}
+// A pergunta é CONTEXTO, não dado: os bairros que a Mora cita como exemplo não podem virar
+// preferência de quem não escolheu nenhum.
+{"id": "ext-curta-nao-copia-a-pergunta", "pergunta_anterior": "Em qual região de São Paulo você prefere? Por exemplo: Pinheiros, Moema ou Tatuapé.", "mensagem": "ainda não sei", "esperado": {}, "nao_esperado": ["bairros", "regiao"]}
+
