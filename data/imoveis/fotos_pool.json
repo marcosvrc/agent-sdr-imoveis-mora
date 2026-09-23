@@ -1,8 +1,21 @@
 {
   "_sobre": "Gerado por scripts/indexar_fotos.py a partir de data/fotos-acervo/. Consumido por scripts/gerar_imoveis.py. Não editar à mão.",
   "_servido_por": "GET /acervo/{categoria}/{arquivo} (services/api), de SDR_FOTOS_ACERVO_DIR",
-  "residencial": [],
-  "sala-comercial": [],
-  "loja": [],
-  "galpao": []
+  "residencial": [
+    "/acervo/residencial/residencial-01.jpg",
+    "/acervo/residencial/residencial-02.jpg",
+    "/acervo/residencial/residencial-03.jpg",
+    "/acervo/residencial/residencial-04.jpg",
+    "/acervo/residencial/residencial-casa-01.jpg",
+    "/acervo/residencial/residencial-casa-02.jpg"
+  ],
+  "sala-comercial": [
+    "/acervo/sala-comercial/sala-comercial-01.jpg"
+  ],
+  "loja": [
+    "/acervo/loja/loja-01.jpg"
+  ],
+  "galpao": [
+    "/acervo/galpao/galpao-01.jpg"
+  ]
 }

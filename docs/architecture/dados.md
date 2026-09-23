@@ -97,5 +97,12 @@ CRM não encontraria o outro lado — foi exatamente o defeito que o acervo úni
 As fotos ficam em `data/fotos-acervo/<categoria>/` e são servidas por `GET /acervo/{categoria}/{arquivo}`
 (`SDR_FOTOS_ACERVO_DIR`). O prefixo `/acervo/` é separado de `/fotos/` de propósito: `/fotos/%` é o
 que marca "foto enviada pelo painel" na precedência painel > CRM > arquivo do `upsert` (ADR-0015).
-Com a pasta vazia, o gerador usa URLs de um serviço de imagens de exemplo — a galeria funciona, mas
-as fotos não têm relação com imóvel; `data/fotos-acervo/README.md` explica como trocar.
+Hoje são **nove fotos**: seis residenciais (quatro de ambiente interno e duas de fachada de casa) e
+uma de cada categoria comercial. A capa é sempre da categoria do imóvel — galpão abre com galpão,
+casa abre com fachada de casa, e apartamento nunca recebe fachada de casa nem como segunda foto. Com
+a pasta vazia o gerador cai em URLs de um serviço de exemplo; `data/fotos-acervo/README.md` explica
+como trocar as fotos, e `PROCEDENCIA.md`, ao lado, registra a origem de cada arquivo.
+
+No CRM as mesmas fotos entram como **URL absoluta** (`CRM_FOTOS_BASE_URL`): lá a coluna exige
+`^https?://`, porque o CRM guarda referência e nunca o binário — quem serve o arquivo é a API da
+Mora.

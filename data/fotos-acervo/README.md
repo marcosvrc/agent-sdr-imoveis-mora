@@ -14,8 +14,14 @@ normaliza e publica a lista em `data/imoveis/fotos_pool.json`, e `scripts/gerar_
 | `galpao/` | galpão | ~5 | galpão vazio, doca, pé-direito alto, pátio de manobra |
 
 JPG, PNG, WebP ou HEIC; de preferência horizontal e com 1200 px de largura ou mais. O script
-redimensiona, converte para JPEG progressivo e renomeia para `<categoria>-NN.jpg`, então o nome do
-arquivo original não importa.
+redimensiona, converte para JPEG progressivo e renomeia para `<categoria>-NN.jpg`; o original vai
+para `<categoria>/originais/`, que fica fora do git — assim rodar o script duas vezes não converte
+o mesmo arquivo de novo.
+
+**Uma convenção no nome do original importa:** se ele contiver `casa` ou `sobrado`, a foto vira
+`residencial-casa-NN.jpg` e passa a ser usada **só** em casa e sobrado, sempre como capa. As demais
+fotos residenciais nunca aparecem num anúncio de casa como capa, e a fachada de casa nunca aparece
+num anúncio de apartamento — nem como segunda foto.
 
 ## Licença e procedência
 
@@ -38,6 +44,10 @@ make seed                            # reindexa (os embeddings não dependem das
 
 Pasta vazia não quebra nada: o gerador cai em URLs de um serviço de imagens de exemplo, que servem
 para testar galeria e layout e não têm relação com imóvel.
+
+Nas categorias comerciais há uma foto de cada hoje. A capa é sempre do tipo certo (galpão abre com
+galpão), e a segunda foto vem de outra categoria comercial — melhor que uma galeria de uma foto só.
+Acrescentar mais fotos em `sala-comercial/`, `loja/` e `galpao/` faz esse empréstimo parar sozinho.
 
 ## Onde as fotos são servidas
 

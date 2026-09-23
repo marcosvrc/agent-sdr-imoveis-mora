@@ -120,16 +120,55 @@ CATEGORIA_DA_FOTO = {
 }
 
 
-def _fotos(tipo: str, chave: str, rnd: random.Random) -> list[str]:
-    """Duas ou três fotos por imóvel, coerentes com o tipo (galpão não recebe foto de sala de estar).
+CATEGORIAS_COMERCIAIS = ("sala-comercial", "loja", "galpao")
+# Marca posta pelo indexador (ver scripts/indexar_fotos.py): foto de imóvel de rua.
+CASA = "-casa-"
+TIPOS_DE_RUA = {"casa", "sobrado"}
 
-    A capa é `fotos[0]` em toda a vitrine, então a ordem é escolhida aqui, e não no front.
+
+def _residenciais(tipo: str, rnd: random.Random) -> list[str]:
+    """Fotos residenciais na ordem certa PARA ESTE TIPO.
+
+    Casa e sobrado abrem com fachada de casa e seguem com ambientes internos. Apartamento, studio,
+    kitnet e cobertura nunca recebem a fachada de casa — nem como segunda foto: o cliente lê a
+    galeria inteira antes de decidir se pede visita, e uma casa no meio do anúncio de um
+    apartamento é o tipo de incoerência que destrói a confiança no resto do anúncio.
+    """
+    todas = list(POOL.get("residencial") or [])
+    de_rua = [f for f in todas if CASA in f]
+    de_predio = [f for f in todas if CASA not in f]
+    rnd.shuffle(de_rua)
+    rnd.shuffle(de_predio)
+    if tipo in TIPOS_DE_RUA:
+        return de_rua[:1] + de_predio        # uma fachada só: duas casas diferentes no mesmo
+    return de_predio                          # anúncio seria pior que nenhuma segunda foto
+
+
+def _fotos(tipo: str, chave: str, rnd: random.Random) -> list[str]:
+    """Duas ou três fotos por imóvel, começando pela categoria do tipo.
+
+    A **capa** é `fotos[0]` em toda a vitrine — é ela que aparece no card, na busca e no cartão que
+    a Mora manda pelo Telegram. Por isso a ordem é decidida aqui, e não no front: a primeira foto é
+    sempre da categoria do imóvel, e galpão nunca abre com foto de sala de estar.
+
+    Quando a categoria tem menos fotos que o necessário, o complemento vem das OUTRAS categorias
+    comerciais — um imóvel comercial mostrando outro ambiente comercial na segunda foto é menos
+    estranho do que uma galeria de uma foto só. O residencial nunca empresta nem toma emprestado:
+    são seis fotos ali, e misturar escritório num anúncio de apartamento seria mentira visual.
     """
     categoria = CATEGORIA_DA_FOTO.get(tipo, "residencial")
     quantas = rnd.randint(2, 3)
-    disponiveis = POOL.get(categoria) or []
-    if len(disponiveis) >= 2:
-        return rnd.sample(disponiveis, min(quantas, len(disponiveis)))
+    if categoria == "residencial":
+        escolhidas = _residenciais(tipo, rnd)
+    else:
+        escolhidas = list(POOL.get(categoria) or [])
+        rnd.shuffle(escolhidas)
+    if len(escolhidas) < quantas and categoria in CATEGORIAS_COMERCIAIS:
+        vizinhas = [f for c in CATEGORIAS_COMERCIAIS if c != categoria for f in (POOL.get(c) or [])]
+        rnd.shuffle(vizinhas)
+        escolhidas += vizinhas
+    if len(escolhidas) >= 2:
+        return escolhidas[:quantas]
     return [f"https://picsum.photos/seed/{chave}-{n}/1200/800" for n in range(1, quantas + 1)]
 
 

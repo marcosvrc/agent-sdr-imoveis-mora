@@ -175,6 +175,25 @@ def test_fotos_imovel(tmp_path, monkeypatch):
     assert c.delete(f"/imoveis/SP-0001/fotos/{nome}", headers=H).status_code == 404
 
 
+def test_fotos_do_acervo_sao_servidas_e_o_caminho_e_conferido(tmp_path, monkeypatch):
+    """As fotos do acervo têm rota própria, `/acervo/`, separada de `/fotos/`.
+
+    A separação não é organização: `/fotos/%` é o que marca "foto enviada pelo painel" na
+    precedência do upsert (ADR-0015). Se as do acervo entrassem por ali, passariam a se defender da
+    reindexação como se um humano as tivesse enviado — e ninguém descobriria até a foto do painel
+    sumir sem explicação.
+    """
+    from sdr_shared.config import get_settings
+    monkeypatch.setattr(get_settings(), "fotos_acervo_dir", str(tmp_path))
+    (tmp_path / "residencial").mkdir()
+    (tmp_path / "residencial" / "residencial-01.jpg").write_bytes(b"\xff\xd8\xff\xdb ficticio")
+    c = TestClient(app)
+    assert c.get("/acervo/residencial/residencial-01.jpg").status_code == 200        # pública, sem token
+    assert c.get("/acervo/residencial/residencial-99.jpg").status_code == 404        # não existe
+    assert c.get("/acervo/residencial/qualquer.jpg").status_code == 404              # fora do padrão
+    assert c.get("/acervo/residencial/..%2f..%2fetc%2fpasswd").status_code == 404    # travessia
+
+
 def test_lead_corretor():
     c = TestClient(app)
     # PUT em vez de confiar no POST: o cadastro pode ter sobrado inativo de outro teste, e desde que

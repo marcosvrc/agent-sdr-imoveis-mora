@@ -134,6 +134,20 @@ def ler_acervo(caminho: pathlib.Path | None = None) -> list[dict]:
     return dados if isinstance(dados, list) else dados.get("imoveis", dados)
 
 
+# O CRM guarda REFERÊNCIA de foto, nunca o binário, e a coluna exige URL absoluta
+# (`CHECK (url ~ '^https?://')`). O acervo traz as fotos como caminho relativo servido pela API da
+# Mora (`/acervo/...`), então aqui elas viram absolutas — o CRM não tem como servir um caminho que
+# não é dele, e gravar relativo derrubaria o seed no CHECK, que foi exatamente o que aconteceu
+# quando as fotos de exemplo entraram.
+BASE_FOTOS = os.environ.get("CRM_FOTOS_BASE_URL") or os.environ.get(
+    "SDR_PUBLIC_API_URL") or "http://localhost:8000"
+
+
+def _url_de_foto(caminho: str) -> str:
+    return caminho if caminho.startswith(("http://", "https://")) else (
+        BASE_FOTOS.rstrip("/") + caminho if caminho.startswith("/") else caminho)
+
+
 def _reais_para_centavos(valor) -> int | None:
     return None if valor is None else round(float(valor) * 100)
 
@@ -181,7 +195,7 @@ def imoveis(p: Plano) -> list[dict]:
             # As fotos passam a ser registro do CRM, e não só do arquivo. Sem isso, imóvel
             # cadastrado pela tela nasceria mudo na vitrine enquanto os do seed apareceriam —
             # duas regras diferentes para a mesma coisa, decididas por quem criou o registro.
-            "photos": list(x.get("fotos") or []),
+            "photos": [_url_de_foto(f) for f in (x.get("fotos") or [])],
         })
     _conferir_fixtures(saida)
     return saida

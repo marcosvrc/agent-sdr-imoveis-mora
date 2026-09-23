@@ -16,6 +16,10 @@ Duas decisões que valem explicação:
 * **Renomeia em sequência determinística.** O nome que vem do banco de imagens carrega id do
   fotógrafo e do serviço; o acervo referencia `residencial-03.jpg`. A origem fica registrada em
   `data/fotos-acervo/PROCEDENCIA.md`, que este script cria vazio e não sobrescreve.
+* **O original vai para `<categoria>/originais/` depois de convertido.** Sem isso, rodar o script
+  duas vezes converteria o mesmo arquivo de novo e o acervo ganharia fotos duplicadas com nomes
+  diferentes. A pasta `originais/` fica fora do git (ver .gitignore): é o arquivo pesado que já
+  existe convertido ao lado.
 """
 import argparse
 import json
@@ -65,16 +69,22 @@ def main(largura: int = 1200, qualidade: int = 78) -> None:
         pasta.mkdir(parents=True, exist_ok=True)
         # Ordem alfabética do nome original: o resultado tem de ser o mesmo em qualquer máquina.
         entradas = sorted((p for p in pasta.iterdir()
-                           if p.is_file() and p.suffix.lower() in ENTRADAS and not p.name.startswith(categoria)),
+                           if p.is_file() and p.suffix.lower() in ENTRADAS
+                           and not p.name.startswith(categoria)),
                           key=lambda p: p.name.lower())
-        ja_normalizadas = sorted(p for p in pasta.glob(f"{categoria}-*.jpg"))
-        proximo = len(ja_normalizadas) + 1
+        guardados = pasta / "originais"
         for p in entradas:
-            saida = pasta / f"{categoria}-{proximo:02d}.jpg"
+            # `casa` ou `sobrado` no nome do ORIGINAL marca a foto como de imóvel de rua, e o
+            # gerador só a usa como capa de casa e sobrado. Sem isso, um anúncio de apartamento
+            # abriria com a fachada de uma casa — incoerência que o cliente vê antes do título.
+            marca = "-casa" if any(k in p.stem.lower() for k in ("casa", "sobrado")) else ""
+            proximo = len(sorted(pasta.glob(f"{categoria}{marca}-[0-9][0-9].jpg"))) + 1
+            saida = pasta / f"{categoria}{marca}-{proximo:02d}.jpg"
             normalizar(p, saida, largura, qualidade)
+            guardados.mkdir(exist_ok=True)
+            p.rename(guardados / p.name)      # convertido é convertido: não se converte de novo
             print(f"  {p.name} → {saida.name}")
-            proximo += 1
-        arquivos = sorted(p.name for p in pasta.glob(f"{categoria}-*.jpg"))
+        arquivos = sorted(p.name for p in pasta.glob(f"{categoria}*-[0-9][0-9].jpg"))
         pool[categoria] = [f"/acervo/{categoria}/{n}" for n in arquivos]
         total += len(arquivos)
         print(f"{categoria}: {len(arquivos)} foto(s)")

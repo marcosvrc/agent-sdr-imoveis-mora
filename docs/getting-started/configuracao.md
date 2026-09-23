@@ -75,6 +75,7 @@ diferentes, e trocá-los um pelo outro dá 401 sem explicação.
 | `SDR_CRM_TOKEN` | agente | Credencial do agente no servidor MCP. No compose, recebe o valor de `CRM_MCP_TOKEN`. |
 | `CRM_MCP_TOKEN` | servidor MCP | O segredo que ele **exige** de quem se conecta. Sem ele, o servidor recusa subir. Gere com `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`. |
 | `CRM_API_TOKEN` | servidor MCP | Credencial dele na API REST do CRM. Emita com `make crm-token` — aparece uma vez só. |
+| `CRM_FOTOS_BASE_URL` | seed do CRM | Base para transformar a foto relativa do acervo (`/acervo/...`) em URL absoluta, que é o que a coluna `property_photos.url` aceita. Padrão: `SDR_PUBLIC_API_URL` ou `http://localhost:8000`. |
 
 ## Variáveis dos front-ends (`VITE_*`)
 

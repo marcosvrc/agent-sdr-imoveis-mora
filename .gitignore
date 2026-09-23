@@ -7,6 +7,8 @@ cdk.out/
 *.egg-info/
 _to_delete/
 data/fotos/
+# Originais das fotos do acervo: pesados e já convertidos ao lado, por scripts/indexar_fotos.py.
+data/fotos-acervo/*/originais/
 # MkDocs — saída de build do portal de documentação
 site/
 

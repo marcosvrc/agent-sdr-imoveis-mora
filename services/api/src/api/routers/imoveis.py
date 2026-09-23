@@ -154,7 +154,12 @@ def reordenar_fotos(imovel_id: str, body: OrdemIn, request: Request):
     if not im:
         raise HTTPException(404, "imóvel não encontrado")
     base = str(request.base_url).rstrip("/")
-    novas = [f[len(base):] if f.startswith(base + "/fotos/") else f for f in body.fotos]
+    # A tela devolve as fotos como a leitura pública as entregou: absolutas. Aqui elas voltam a ser
+    # relativas — nos DOIS prefixos que a API serve. Só `/fotos/` era tratado, e as do acervo
+    # (`/acervo/`) chegavam absolutas, não batiam com o que está gravado e a reordenação respondia
+    # 422 em todo imóvel que tivesse foto do acervo, que é a maioria deles.
+    novas = [f[len(base):] if any(f.startswith(base + p) for p in ("/fotos/", "/acervo/")) else f
+             for f in body.fotos]
     if sorted(novas) != sorted(im.fotos):
         raise HTTPException(422, "a lista deve conter exatamente as fotos atuais")
     ImovelRepository().atualizar_fotos(imovel_id, novas)
