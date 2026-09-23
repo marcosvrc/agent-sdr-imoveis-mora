@@ -95,3 +95,50 @@ def test_sem_barramento_o_turno_falha_antes_de_comecar(infra, monkeypatch):
         processar(MensagemNormalizada(lead_id="l-sem-redis", canal=Canal.WEB, identificador_canal="s",
                                       conteudo="oi"))
     assert LeadRepository().get("l-sem-redis") is None, "nada foi gravado para um turno que não aconteceu"
+
+
+def test_resumidor_sem_historico_nao_chama_o_modelo(monkeypatch):
+    """Briefing de conversa vazia não existe — e pedi-lo ao modelo é pior que não pedir.
+
+    A Anthropic recusa (400: só sobra o system), o provedor reserva aceita e devolve um resumo
+    inventado, que chega à tela do corretor indistinguível de um briefing real. O caso não é
+    hipotético: quando o turno falha, o estágio muda, o evento de briefing sai e o checkpoint está
+    vazio.
+    """
+    from agent.nodes import resumidor
+    from sdr_shared.models import Lead
+
+    chamou = []
+    monkeypatch.setattr(resumidor, "llm_analise", lambda: chamou.append(1))
+    lead = Lead(id="l_vazio", nome="Sem Conversa")
+    saida = resumidor.run({"lead": lead, "messages": []})
+    assert chamou == [], "modelo não pode ser chamado sem nada para resumir"
+    assert saida["lead"].resumo is None and saida["lead"].analisado_em is None
+
+
+def test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco(monkeypatch):
+    """O banco reiniciando debaixo do worker (`AdminShutdown`) encerrava o processo em silêncio, e
+    o follow-up parava até alguém reparar no batimento parado."""
+    from sdr_scheduler import local_worker
+
+    class SchQuebrado:
+        def vencidos(self): raise RuntimeError("terminating connection due to administrator command")
+
+    class BrokerFake:
+        def publish(self, *_a, **_kw): pass
+
+    voltas = []
+    monkeypatch.setattr(local_worker, "get_scheduler", lambda: SchQuebrado())
+    monkeypatch.setattr(local_worker, "get_broker", lambda: BrokerFake())
+    monkeypatch.setattr(local_worker, "iniciar_batimento", lambda *_a, **_kw: None)
+    monkeypatch.setattr(local_worker, "configurar_log", lambda *_a, **_kw: None)
+
+    def dormir(_s):
+        voltas.append(1)
+        if len(voltas) >= 3:
+            raise KeyboardInterrupt                      # só para encerrar o teste
+    monkeypatch.setattr(local_worker.time, "sleep", dormir)
+
+    with pytest.raises(KeyboardInterrupt):
+        local_worker.main()
+    assert len(voltas) == 3, "o laço tem de continuar depois do ciclo que falhou"

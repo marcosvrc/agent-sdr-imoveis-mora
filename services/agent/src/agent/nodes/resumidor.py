@@ -18,6 +18,15 @@ log = logging.getLogger(__name__)
 def run(state: AgentState) -> dict:
     lead = state["lead"]
     historico = state["messages"]
+    if not historico:
+        # Sem conversa não há o que resumir, e chamar o modelo assim mesmo é pior que não chamar:
+        # a Anthropic recusa a requisição (400 "messages: at least one message is required", porque
+        # sobra só o system) e o provedor reserva ACEITA — devolvendo um briefing inventado a partir
+        # de nada, que vai para a tela do corretor com a mesma cara de um briefing de verdade.
+        # Acontece quando o turno que criaria o histórico falhou: o estágio muda, o evento de
+        # briefing sai, e o checkpoint está vazio.
+        log.info("lead %s sem histórico no checkpoint: nada a resumir", lead.id)
+        return {"lead": lead}
     resumo = llm_analise().invoke([carregar("resumidor", cartao=lead.cartao.model_dump(exclude_defaults=True)), *historico])
     # o briefing vai para a tela do corretor: passa pelo mesmo filtro da fala com o cliente
     lead.resumo = sanear(resumo.content, lead.id)

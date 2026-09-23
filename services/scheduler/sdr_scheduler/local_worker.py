@@ -64,21 +64,35 @@ def _drenar_pendencias_do_crm() -> None:
         log.warning("drenagem das pendências do CRM falhou; tento de novo no próximo ciclo", exc_info=True)
 
 
+def ciclo(sch, broker, proxima_sincronia: float) -> float:
+    """Uma passada do laço. Separada de `main` para ser testável e para ter um lugar só onde o
+    erro é contido — ver o `except` em `main`."""
+    for lead_id, payload in sch.vencidos():
+        broker.publish("inbound", payload, key=lead_id)
+    filas = broker.profundidade(list(TOPICOS)) if hasattr(broker, "profundidade") else {}
+    amostrar(filas)
+    _drenar_pendencias_do_crm()
+    intervalo = _intervalo_acervo()
+    if intervalo and time.monotonic() >= proxima_sincronia:
+        _sincronizar_acervo()
+        return time.monotonic() + intervalo
+    return proxima_sincronia
+
+
 def main():
     configurar_log("scheduler")
     sch, broker = get_scheduler(), get_broker()
     iniciar_batimento("scheduler")
     proxima_sincronia = 0.0
     while True:
-        for lead_id, payload in sch.vencidos():
-            broker.publish("inbound", payload, key=lead_id)
-        filas = broker.profundidade(list(TOPICOS)) if hasattr(broker, "profundidade") else {}
-        amostrar(filas)
-        _drenar_pendencias_do_crm()
-        intervalo = _intervalo_acervo()
-        if intervalo and time.monotonic() >= proxima_sincronia:
-            _sincronizar_acervo()
-            proxima_sincronia = time.monotonic() + intervalo
+        # O laço sobrevive ao ciclo que falha. Sem isto, uma exceção em `sch.vencidos()` — o banco
+        # reiniciando debaixo do worker é suficiente: `AdminShutdown` — encerrava o processo em
+        # silêncio, e o follow-up parava até alguém reparar. Foi assim que este worker sumiu por
+        # 14 minutos, e quem contou foi o batimento na aba Saúde, não um alarme.
+        try:
+            proxima_sincronia = ciclo(sch, broker, proxima_sincronia)
+        except Exception:
+            log.warning("ciclo do scheduler falhou; sigo no próximo", exc_info=True)
         time.sleep(30)
 
 

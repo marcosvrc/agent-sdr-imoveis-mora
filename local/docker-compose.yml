@@ -4,27 +4,36 @@
 # Uso: cd local && cp -n .env.example .env && docker compose --profile ollama up --build
 name: sdr-local
 
+# O ambiente dos serviços Python da Mora fica num anchor PRÓPRIO, separado do `x-py`, e a razão é
+# concreta: `environment:` declarado dentro de um serviço SUBSTITUI o mapa herdado por `<<: *py` —
+# não mescla. Quando a `api` ganhou o seu `SDR_DB_POOL_MAX`, ela perdeu junto o DSN e passou a
+# procurar o banco em `localhost:5432` dentro do próprio container. O defeito ficou latente porque
+# `restart` preserva o ambiente de quem já estava de pé; só apareceu na primeira recriação, como
+# `PoolTimeout` no /health e um catálogo vazio no site. Quem precisa acrescentar uma variável
+# mescla ESTE anchor explicitamente (veja a `api`), e aí o YAML resolve de verdade.
+x-pyenv: &pyenv
+  SDR_PROFILE: local
+  SDR_DATABASE_DSN: postgresql://sdr:sdr@db:5432/sdr
+  SDR_REDIS_URL: redis://redis:6379/0
+  SDR_OLLAMA_URL: http://ollama:11434
+  # Ponte com o CRM (D-01). Vazia = desligada: sem token emitido, a Mora roda exatamente como
+  # antes e não tenta publicar nada. Emitir com `make crm-token`.
+  # A Mora fala com o CRM por MCP, não pela REST: esta URL é o endpoint do servidor MCP.
+  # Os dois segredos são diferentes e não devem ser confundidos — CRM_MCP_TOKEN autentica o
+  # AGENTE no servidor MCP; CRM_API_TOKEN autentica o SERVIDOR MCP na REST do CRM.
+  SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
+  SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
+  # O `--reload` do uvicorn usa inotify, e evento de inotify NÃO atravessa bind mount de forma
+  # confiável no Docker Desktop do macOS: o arquivo muda no host, o container continua com o
+  # código antigo em memória e nada avisa. Custou uma sessão inteira de "rodei tudo e não
+  # refletiu" — a rota nova respondia 404 porque o processo era o de antes. Polling resolve, e o
+  # custo é varrer alguns diretórios Python a cada meio segundo.
+  WATCHFILES_FORCE_POLLING: "true"
+
 x-py: &py
   build: { context: .., dockerfile: local/Dockerfile.python }
   env_file: .env
-  environment:
-    SDR_PROFILE: local
-    SDR_DATABASE_DSN: postgresql://sdr:sdr@db:5432/sdr
-    SDR_REDIS_URL: redis://redis:6379/0
-    SDR_OLLAMA_URL: http://ollama:11434
-    # Ponte com o CRM (D-01). Vazia = desligada: sem token emitido, a Mora roda exatamente como
-    # antes e não tenta publicar nada. Emitir com `make crm-token`.
-    # A Mora fala com o CRM por MCP, não pela REST: esta URL é o endpoint do servidor MCP.
-    # Os dois segredos são diferentes e não devem ser confundidos — CRM_MCP_TOKEN autentica o
-    # AGENTE no servidor MCP; CRM_API_TOKEN autentica o SERVIDOR MCP na REST do CRM.
-    SDR_CRM_URL: "${SDR_CRM_URL-http://crm-mcp:8200/mcp}"
-    SDR_CRM_TOKEN: "${CRM_MCP_TOKEN-}"
-    # O `--reload` do uvicorn usa inotify, e evento de inotify NÃO atravessa bind mount de forma
-    # confiável no Docker Desktop do macOS: o arquivo muda no host, o container continua com o
-    # código antigo em memória e nada avisa. Custou uma sessão inteira de "rodei tudo e não
-    # refletiu" — a rota nova respondia 404 porque o processo era o de antes. Polling resolve, e o
-    # custo é varrer alguns diretórios Python a cada meio segundo.
-    WATCHFILES_FORCE_POLLING: "true"
+  environment: *pyenv
   # `whisper` é o cache do modelo de transcrição. Volume nomeado porque o download passa de meio
   # giga e sem ele CADA `--force-recreate` baixa tudo de novo — inclusive na véspera de uma
   # demonstração, com o cliente esperando a resposta do primeiro áudio.
@@ -147,7 +156,11 @@ services:
              --reload-dir /app/services/api/src --reload-dir /app/shared
     working_dir: /app/services/api/src
     # A API atende painel, site e canal ao mesmo tempo; o pool padrão (4) é o do worker.
-    environment: { SDR_DB_POOL_MAX: "12", WATCHFILES_FORCE_POLLING: "true" }
+    # `<<: *pyenv` explícito: sem ele este bloco substituiria o ambiente inteiro e a API ficaria
+    # sem DSN, procurando o Postgres em localhost dentro do container.
+    environment:
+      <<: *pyenv
+      SDR_DB_POOL_MAX: "12"
     ports: ["8000:8000"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)\""]
