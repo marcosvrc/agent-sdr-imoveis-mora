@@ -103,7 +103,11 @@ def custo_da_execucao(desde: datetime) -> dict:
     try:
         from sdr_shared.db import get_pool
         with get_pool().connection() as c:
-            r = c.execute("""SELECT count(*) n, coalesce(sum(custo), 0) custo,
+            # `custo_usd` é o nome da coluna em `uso_llm` (schema.sql). Enquanto aqui dizia
+            # `custo`, toda execução gravava `{"erro": "column \"custo\" does not exist"}` no
+            # lugar do custo — e como a governança é bônus e o except engole, nenhum eval jamais
+            # reportou quanto custou.
+            r = c.execute("""SELECT count(*) n, coalesce(sum(custo_usd), 0) custo,
                                     coalesce(avg(latencia_ms), 0) lat
                              FROM uso_llm WHERE em >= %s""", (desde,)).fetchone()
         return {"chamadas": int(r["n"]), "custo_usd": round(float(r["custo"]), 4),
