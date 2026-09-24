@@ -262,9 +262,10 @@ Página completa: **[Modelos de linguagem](docs/architecture/modelos.md)**.
   pior caso do turno derivado disso e usado como validade do lock por lead.
 - **Embeddings** `bge-m3` (Ollama) ou `text-embedding-3-small` a 1024 dimensões — a dimensão é
   fixa no schema. **Transcrição** faster-whisper `small`, CPU, `int8`, português.
-- **Qualidade**: o harness de avaliação (`make eval`, `make eval-rag`) existe e é testado no CI com
-  dublês; **não há resultado com modelo real versionado** — a página diz isso em vez de inventar
-  benchmark.
+- **Qualidade**: o harness de avaliação (`make eval`, `make eval-rag`, `make eval-recomendacao`)
+  existe e é testado no CI com dublês. São **seis** suítes: `extracao`, `coerencia`, `roteamento`,
+  `adversarial`, `rag` e `recomendacao`, nenhuma com juiz-LLM. **Não há resultado com modelo real
+  versionado** — a página diz isso em vez de inventar benchmark.
 
 ## 8. Detalhes do agente e subagentes
 

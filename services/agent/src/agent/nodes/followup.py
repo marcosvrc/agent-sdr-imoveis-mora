@@ -13,7 +13,7 @@ def run(state: AgentState) -> dict:
     lead = state["lead"]
     tentativa = lead.followups_enviados + 1
     total = len(politica_followup.politica_cacheada()["tempos_min"])
-    msg = llm_conversa().invoke([carregar("followup", nome=lead.nome or "cliente", tentativa=tentativa,
+    msg = llm_conversa().invoke([carregar("followup", memoria=lead.resumo, nome=lead.nome or "cliente", tentativa=tentativa,
                                           total=total, ultima="sim" if tentativa >= total else "não",
                                           cartao=lead.cartao.model_dump(exclude_defaults=True)), *state["messages"]])
     lead.followups_enviados = tentativa

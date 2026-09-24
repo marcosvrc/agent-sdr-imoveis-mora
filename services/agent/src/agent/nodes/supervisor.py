@@ -29,8 +29,53 @@ INSTITUCIONAL_FRACO = re.compile(
     rf"{PERGUNTA}[^?]{{0,60}}\b(taxa|prazo|entrada|contrato|comiss[ãa]o|garantia|multa|repasse)\b", re.I)
 
 
+# Pergunta que pede JUÍZO ou dado de mercado: "esse bairro é bom para família?", "quanto costuma
+# ser o condomínio por aqui?", "vale a pena comprar agora?".
+#
+# Elas não casavam com nada e caíam no qualificador ou no consultor — que não têm fonte para isso e
+# respondem com a média do mercado: plausível, específica e frequentemente falsa. É o problema que
+# o nó `informacoes` foi escrito para resolver, e ele estava do lado errado da porta. Mandadas para
+# lá, não encontram trecho acima do piso e viram "vou confirmar com o corretor", que é a resposta
+# certa: a Vértice não publica perfil de bairro nem índice de mercado, e inventar um é pior que
+# dizer que não sabe.
+CONSULTIVA = re.compile(
+    r"\b(vale a pena|compensa|voc[eê] (acha|recomenda|indica|aconselha)|o que voc[eê] acha|"
+    r"melhor bairro|melhor regi[ãa]o|vai valorizar|valoriza[çc][ãa]o|mercado imobili[áa]rio|"
+    r"pre[çc]o m[ée]dio|m[ée]dia de (pre[çc]o|condom[íi]nio)|quanto costuma|costuma ser quanto|"
+    r"[ée] (um )?bom (investimento|neg[óo]cio|momento))\b", re.I)
+# "esse bairro é bom?", "a região é tranquila?", "é bom para família?" — qualidade de lugar, que é
+# opinião com cara de fato.
+LUGAR_QUALIDADE = re.compile(
+    r"\b(bairro|regi[ãa]o|vizinhan[çc]a|lugar|local)\b[^?]{0,40}\b(bom|boa|melhor|segur[oa]|"
+    r"tranquil[oa]|perigos[oa]|violent[oa]|fam[íi]lia|fam[íi]lias)\b", re.I)
+
+
+# "o Brooklin é seguro?" não diz a palavra bairro — diz o nome de um. Quem sabe quais nomes são
+# lugares é o catálogo `geo`, o mesmo que já resolve apelido e erro de digitação na busca.
+# A cópula é o que separa a pergunta sobre o LUGAR da busca por imóvel: "o Brooklin é bom?" é
+# juízo sobre a região; "tem apartamento bom no Brooklin?" é o catálogo, e o adjetivo é do imóvel.
+COPULA_QUALIDADE = re.compile(
+    r"\b([ée]|eh)\s+(muito\s+|bem\s+|meio\s+)?(bom|boa|segur[oa]|tranquil[oa]|perigos[oa]|"
+    r"violent[oa]|calm[oa]|barulhent[oa]|caro|cara|barat[oa])\b", re.I)
+
+
+def pergunta_consultiva(txt: str) -> bool:
+    """Juízo ou dado de mercado — e, no caso de qualidade de lugar, só quando é pergunta mesmo."""
+    if CONSULTIVA.search(txt):
+        return True
+    if not ("?" in txt or re.search(PERGUNTA, txt, re.I)):
+        return False
+    if LUGAR_QUALIDADE.search(txt):
+        return True
+    if COPULA_QUALIDADE.search(txt):
+        from sdr_shared.geo import resolver
+        return resolver(txt).tipo in ("bairro", "regiao", "cidade", "fora")
+    return False
+
+
 def pergunta_institucional(txt: str) -> bool:
-    return bool(INSTITUCIONAL_FORTE.search(txt) or INSTITUCIONAL_FRACO.search(txt))
+    return bool(INSTITUCIONAL_FORTE.search(txt) or INSTITUCIONAL_FRACO.search(txt)
+                or pergunta_consultiva(txt))
 
 
 def run(state: AgentState) -> dict:

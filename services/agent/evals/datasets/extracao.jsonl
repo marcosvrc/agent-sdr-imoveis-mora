@@ -16,7 +16,19 @@
 {"id": "ext-12-visita", "mensagem": "gostei do 3o, da pra visitar sabado?", "esperado": {"pediu_visita": true}, "nao_esperado": ["preco_max", "intencao"]}
 {"id": "ext-13-sem-pressa", "mensagem": "to so pesquisando, sem pressa nenhuma, talvez ano que vem", "esperado": {"urgencia": {"qualquer": ["sem prazo", "sem pressa", "longo prazo", "ano que vem", "baixa"]}}, "nao_esperado": ["preco_max", "quartos"]}
 {"id": "ext-14-fora-de-cobertura", "mensagem": "queria uma casa em campinas ate 500 mil", "esperado": {"intencao": "compra", "preco_max": 500000}, "nao_esperado": ["regiao"]}
-{"id": "ext-15-negacao", "mensagem": "nao quero apartamento, nem em zona norte", "esperado": {}, "nao_esperado": ["regiao", "preco_max", "quartos"]}
+{"id": "ext-15-negacao-vira-requisito", "mensagem": "nao quero apartamento, nem em zona norte", "esperado": {"requisitos": ["apartamento"]}, "nao_esperado": ["regiao", "preco_max", "quartos", "tipo_imovel"]}
+
+// O que o cliente exige e não cabe em campo. Antes disto a restrição vivia só no histórico, e a
+// poda de 40 para 24 mensagens a apagava: o cliente contava do cachorro e ninguém mais sabia.
+{"id": "ext-16-requisito-pet", "mensagem": "quero alugar no brooklin, mas so serve se aceitar cachorro", "esperado": {"intencao": "aluguel", "requisitos": ["cachorro"]}, "nao_esperado": ["preco_max", "quartos"]}
+{"id": "ext-17-requisito-e-campo-separados", "mensagem": "ate 600 mil, 2 quartos, de preferencia andar alto e perto do metro", "esperado": {"preco_max": 600000, "quartos": 2, "requisitos": ["andar alto", "metro"]}, "nao_esperado": ["regiao"]}
+// Zero é uma resposta. O filtro antigo descartava `quartos: 0` e a Mora voltava a perguntar quantos
+// quartos quer quem pediu um studio.
+{"id": "ext-18-studio-zero-quartos", "pergunta_anterior": "Quantos quartos você precisa?", "mensagem": "e studio mesmo, sem quarto separado", "esperado": {"quartos": 0}, "nao_esperado": ["preco_max", "regiao"]}
+// Retirada explícita: o cliente desfaz um critério. Sem isto o valor antigo guiava toda busca
+// seguinte, e `pediu_visita` nunca voltava a ser falso.
+{"id": "ext-19-limpa-bairro", "cartao_inicial": {"bairros": ["Moema"], "preco_max": 800000, "intencao": "compra"}, "mensagem": "na verdade tanto faz o bairro agora, pode ser qualquer um", "esperado": {"preco_max": 800000}, "nao_esperado": ["bairros"]}
+{"id": "ext-20-acumula-bairro", "cartao_inicial": {"bairros": ["Moema"], "intencao": "compra"}, "mensagem": "tambem queria ver em pinheiros", "esperado": {"bairros": ["moema", "pinheiros"]}, "nao_esperado": ["preco_max"]}
 
 // Respostas CURTAS, que só significam algo junto da pergunta que a Mora acabou de fazer. Sem o
 // contexto, a extração devolve nulo — com toda a razão, porque "1" não informa nada explicitamente

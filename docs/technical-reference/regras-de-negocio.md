@@ -102,6 +102,26 @@ obrigatório por intenção:**
 
 A intenção é conferida primeiro: investimento tem a sua lista qualquer que seja o segmento.
 
+**`requisitos` — o que o cliente pede e não cabe em campo.** Lista livre, nas palavras dele
+("aceita pet", "não quero térreo", "perto do metrô", "mudar antes do Natal"), nunca obrigatória e
+nunca inferida: o prompt de extração manda copiar, não interpretar, e recusa vira requisito em vez
+de ser descartada. Ela entra no texto do embedding da busca (`tools/buscar_imoveis.py::_consulta`),
+no prompt do consultor pelo cartão, e nas `requirements` da preferência publicada no CRM — é o que
+o corretor lê antes de ligar. Sem esse campo a exigência vivia só no histórico, e a poda de 40 para
+24 mensagens a apagava; o prompt do consultor proíbe **afirmar** que um imóvel atende a um requisito
+que não esteja na ficha dele.
+
+**Retirada de critério (`limpar`).** A extração devolve, além do cartão, uma lista de campos que o
+cliente desfez explicitamente ("tanto faz o bairro agora", "não tenho mais teto", "deixa a visita
+pra depois"). O merge zera esses campos e só esses; `intencao`, `segmento` e os dados de contato não
+são limpáveis — sem intenção não há rota, e telefone não se retira por engano de extração. Ausência
+continua significando "não falou disso", que é o caso comum e não pode apagar nada
+(`nodes/qualificador.py`, `_LIMPAVEIS`; testes em `test_graph_routing.py`).
+
+**Zero é resposta.** O merge descartava qualquer valor falso, e com ele `quartos = 0` — studio e
+kitnet voltavam para a fila de perguntas. Hoje o zero só é descartado onde não significa nada:
+preço, ticket e área (`_ZERO_NAO_VALE`).
+
 **O segmento** (`Segmento`: `indefinido`, `residencial`, `comercial`) não é perguntado — é
 **derivado** por `segmento_efetivo()`: vale o que o cliente afirmou e, na falta disso, o que o
 `tipo_imovel` diz (`segmento_do_tipo()`, por lista de tipos comerciais: sala e conjunto comercial,
@@ -178,7 +198,7 @@ O supervisor decide por regra determinística; o modelo só entra no último cas
 | 4 | `PEDE_SAIR` (não quero mais avisos…) | reativador (**antes do porteiro de escopo**) |
 | 5 | fora de escopo **e** não pede humano | recusa |
 | 6 | pede humano (`PEDE_HUMANO`, botão "Falar com corretor") ou já está em `handoff` | handoff |
-| 7 | pergunta institucional (`INSTITUCIONAL_FORTE` ou `INSTITUCIONAL_FRACO` + marca de pergunta), **sem** `slot:` e **sem** horários oferecidos | informações (RAG institucional) |
+| 7 | pergunta institucional (`INSTITUCIONAL_FORTE`, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e **sem** horários oferecidos | informações (RAG institucional) |
 | 8 | escolheu horário (botão `slot:` ou texto após oferta) | agendador |
 | 9 | pede visita, ou `pediu_visita` no cartão **e estágio ≠ `agendado`** | agendador |
 | 10 | pede outras opções | consultor |
@@ -216,6 +236,20 @@ Precedências que são decisão de negócio, com o teste que as prende:
 `informacoes_sem_base` ("vou confirmar") e oferece "Falar com corretor"; falha na busca **não vira
 invenção**. Testes: `test_informacoes.py::test_com_fonte_o_trecho_entra_no_prompt_e_a_fonte_e_citavel`,
 `::test_sem_fonte_usa_o_prompt_que_nao_deixa_inventar`, `::test_falha_da_busca_nao_vira_invencao`.
+
+**A pergunta consultiva também entra aqui** (`pergunta_consultiva`): "esse bairro é bom para
+família?", "quanto costuma ser o condomínio nessa região?", "vale a pena comprar agora?", "o
+Brooklin é seguro?". Ela não casava com nada e caía no qualificador ou no consultor — que não têm
+fonte para isso e respondem com a média do mercado: plausível, específica e frequentemente falsa. É
+o problema que este nó existe para resolver, e ele estava do lado errado da porta. Mandada para cá,
+não encontra trecho acima do piso e vira "vou confirmar com o corretor", que é a resposta honesta: a
+Vértice não publica perfil de bairro nem índice de mercado.
+
+A separação entre juízo e busca é a cópula: "o Brooklin é bom?" qualifica o lugar (quem sabe que
+Brooklin é um lugar é o catálogo `geo`, o mesmo que resolve apelido e erro de digitação); "tem
+apartamento bom no Brooklin?" qualifica o imóvel, e continua sendo catálogo. Testes:
+`test_graph_routing.py::test_pergunta_de_juizo_vai_para_o_no_institucional` e
+`::test_adjetivo_do_imovel_continua_sendo_busca`; casos `rot-18` a `rot-22` na suíte de roteamento.
 
 ---
 

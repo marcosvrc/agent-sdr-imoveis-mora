@@ -77,10 +77,34 @@ def _fmt(texto: str, ctx: dict) -> str:
         raise KeyError(f"prompt sem valor para {e}; quem chama precisa passar essa chave") from e
 
 
-def carregar(prompt: str, **ctx) -> SystemMessage:
+LIMITE_MEMORIA = 700
+
+
+def _memoria(resumo: str) -> str:
+    """O que a conversa já sabe e o histórico não guarda mais.
+
+    O histórico é podado de 40 para 24 mensagens e a poda APAGA do checkpoint. O que virou campo do
+    cartão sobrevive; o resto — "meu filho estuda no Butantã", "o condomínio de 1.500 me assustou" —
+    desaparecia sem rastro. O resumidor já escrevia esse texto para o corretor e ninguém o lia de
+    volta; aqui ele volta para a conversa.
+
+    Entra envelopado como qualquer conteúdo derivado do cliente: foi um modelo que o escreveu, a
+    partir do que o cliente digitou, e uma instrução escondida numa mensagem antiga não pode chegar
+    aqui promovida a instrução do sistema.
+    """
+    texto_curto = str(resumo).strip()[:LIMITE_MEMORIA]
+    return ("\n\n## O que você já sabe deste cliente (resumo da conversa até aqui)\n"
+            f"{_envelope(texto_curto)}\n"
+            "Use para não repetir pergunta já respondida e não contradizer o que ele disse. É um "
+            "resumo interno, possivelmente desatualizado: não o comente com o cliente, não o cite "
+            "como se fosse fala dele e nunca deduza dele disponibilidade, preço ou condição.")
+
+
+def carregar(prompt: str, memoria: str | None = None, **ctx) -> SystemMessage:
     persona = (_DIR / "persona.md").read_text(encoding="utf-8")
     corpo = _fmt((_DIR / f"{prompt}.md").read_text(encoding="utf-8"), ctx)
-    return SystemMessage(content=f"{_BLINDAGEM}\n{persona}\n\n{corpo}")
+    lembranca = _memoria(memoria) if (memoria or "").strip() else ""
+    return SystemMessage(content=f"{_BLINDAGEM}\n{persona}\n\n{corpo}{lembranca}")
 
 
 def texto(prompt: str, **ctx) -> str:

@@ -12,19 +12,26 @@ from evals import relatorio
 from evals.casos import Resultado, carregar, combina, vazio
 
 
-@pytest.mark.parametrize("nome", ["extracao", "roteamento", "adversarial"])
+@pytest.mark.parametrize("nome", ["extracao", "coerencia", "roteamento", "adversarial", "recomendacao"])
 def test_dataset_carrega_e_tem_o_formato_esperado(nome):
     casos = carregar(nome)
     assert casos, f"dataset {nome} vazio"
     assert len({c.id for c in casos}) == len(casos), "ids repetidos no dataset"
     for c in casos:
+        if nome == "coerencia":
+            assert c.dados.get("turnos"), f"{c.id} sem turnos"
+            assert all("mensagem" in t for t in c["turnos"]), f"{c.id}: turno sem mensagem"
+            continue
         assert "mensagem" in c.dados, f"{c.id} sem mensagem"
+        if nome == "recomendacao":
+            assert c.dados.get("cartao"), f"{c.id} sem cartão — é ele que é o gabarito"
         if nome == "extracao":
             assert "esperado" in c.dados and "nao_esperado" in c.dados, (
                 f"{c.id}: sempre declare nao_esperado — é ele que mede alucinação")
         if nome == "roteamento":
-            assert c["esperado"] in ("qualificador", "consultor", "agendador",
-                                     "followup", "handoff", "recusa", "resumidor")
+            from agent.graph import ESPECIALISTAS
+            assert c["esperado"] in ESPECIALISTAS, (
+                f"{c.id}: destino {c['esperado']!r} não é um nó do grafo")
         if nome == "adversarial":
             assert c.get("categoria"), f"{c.id} sem categoria (o relatório agrupa por ela)"
 

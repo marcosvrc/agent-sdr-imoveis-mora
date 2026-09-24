@@ -16,3 +16,16 @@
 {"id": "rot-13-ambiguo-livre-apos-sugestao", "mensagem": "hmm, achei meio caro pra localizacao", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "consultor"}
 {"id": "rot-14-botao-agendar", "mensagem": "Agendar visita", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "agendador"}
 {"id": "rot-15-botao-ver-outros", "mensagem": "Ver outros", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "consultor"}
+
+// Pergunta sobre a POLÍTICA da imobiliária: tem documento para responder, e vem antes do agendador
+// de propósito — "taxa de visita" contém a palavra visita e cairia na agenda.
+{"id": "rot-16-institucional-taxa-de-visita", "mensagem": "voces cobram alguma taxa pra visitar?", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "informacoes"}
+{"id": "rot-17-institucional-fiador", "mensagem": "precisa de fiador?", "estagio": "qualificando", "cartao": {"intencao": "aluguel"}, "esperado": "informacoes"}
+// Pergunta que pede JUÍZO. Não há documento que responda, e é isso mesmo: no nó institucional ela
+// vira "vou confirmar com o corretor". Nos outros nós virava a média do mercado, dita com convicção.
+{"id": "rot-18-consultiva-bairro-bom", "mensagem": "esse bairro e bom pra familia?", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "informacoes"}
+{"id": "rot-19-consultiva-condominio-medio", "mensagem": "quanto costuma ser o condominio nessa regiao?", "estagio": "qualificado", "cartao": {"intencao": "aluguel", "regiao": "zona_sul", "preco_max": 4000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "informacoes"}
+{"id": "rot-20-consultiva-vale-a-pena", "mensagem": "vale a pena comprar agora ou e melhor esperar?", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "informacoes"}
+{"id": "rot-21-consultiva-nome-do-bairro", "mensagem": "o brooklin e seguro?", "estagio": "qualificando", "cartao": {"intencao": "compra", "regiao": "zona_sul"}, "esperado": "informacoes"}
+// O adjetivo aqui é do IMÓVEL, não do lugar: isto é busca, e tem de continuar sendo.
+{"id": "rot-22-adjetivo-do-imovel-nao-e-consulta", "mensagem": "tem apartamento bom no brooklin ate 800 mil?", "estagio": "qualificado", "cartao": {"intencao": "compra", "regiao": "zona_sul", "preco_max": 800000, "quartos": 2, "urgencia": "imediata"}, "imoveis_sugeridos": true, "esperado": "consultor"}

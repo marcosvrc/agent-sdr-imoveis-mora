@@ -1,6 +1,8 @@
 """Conversa humanizada que preenche o CartaoQualificacao. Extração estruturada (Haiku) + resposta (Sonnet)."""
 import re
 
+from pydantic import Field
+
 from sdr_shared.db import ClienteRepository, auditar, nova_oportunidade_se_mudou_intencao
 from sdr_shared.messaging import RespostaAgente
 from sdr_shared.models import CartaoQualificacao, Estagio, Intencao, Segmento
@@ -30,18 +32,56 @@ def ultima_pergunta(messages) -> str:
     return ""
 
 
+class Extracao(CartaoQualificacao):
+    """O que a extração devolve: o cartão, mais o canal de RETIRADA.
+
+    Sem `limpar` o merge só sabe escrever valor sobre valor, e um critério que o cliente desfaz
+    ("tanto faz o bairro agora", "não tenho mais teto") fica no cartão para sempre, guiando toda
+    busca seguinte. Retirar é um ato explícito do cliente e por isso é um campo, não a ausência de
+    um: ausência continua significando "não falou disso", que é o caso comum e não pode apagar nada.
+    """
+    limpar: list[str] = Field(default_factory=list)
+
+
+# "Não preencheu". Zero e False ficam de fora desta lista de propósito: `quartos = 0` é studio ou
+# kitnet, e descartá-lo fazia a Mora perguntar de novo quantos quartos alguém quer num quarto só.
+_NAO_INFORMADO = (None, [], Intencao.INDEFINIDA, Segmento.INDEFINIDO)
+# Onde zero não é resposta: preço zero, área zero e ticket zero são erro de extração, não pedido.
+_ZERO_NAO_VALE = frozenset({"preco_min", "preco_max", "ticket", "area_min"})
+# O que o cliente pode desfazer. `intencao` e `segmento` não entram: sem intenção não há rota, e
+# zerá-las no meio da conversa devolveria o lead ao começo. Contato também não — quem deu o
+# telefone não o retira por engano de extração; isso é assunto de privacidade, não de busca.
+_LIMPAVEIS = frozenset({"regiao", "bairros", "preco_min", "preco_max", "quartos", "area_min",
+                        "tipo_imovel", "urgencia", "requisitos", "pediu_visita",
+                        "perfil_investidor", "ticket", "retorno_esperado"})
+
+
+def _vale(campo: str, valor) -> bool:
+    """O modelo disse alguma coisa sobre este campo?"""
+    if isinstance(valor, str) and not valor.strip():
+        return False
+    if valor is False:                                  # "não pediu visita" é o default, não um fato
+        return False
+    if valor in _NAO_INFORMADO:
+        return False
+    return not (valor == 0 and campo in _ZERO_NAO_VALE)
+
+
 def _extrair(cartao: CartaoQualificacao, mensagem: str, pergunta: str = "") -> CartaoQualificacao:
     try:
-        novo = llm_roteamento().with_structured_output(CartaoQualificacao).invoke(
+        novo = llm_roteamento().with_structured_output(Extracao).invoke(
             texto("extracao", cartao=cartao.model_dump(exclude_defaults=True), mensagem=mensagem,
                   pergunta=pergunta.strip() or "(nenhuma — é a primeira mensagem da conversa)"))
     except Exception:
         return cartao
     if not isinstance(novo, CartaoQualificacao):        # saída estruturada pode vir como dict cru
         return cartao
-    dados = {k: v for k, v in novo.model_dump().items()
-             if v not in (None, [], False, Intencao.INDEFINIDA, Segmento.INDEFINIDO, 0)}
+    dados = {k: v for k, v in novo.model_dump(exclude={"limpar"}).items() if _vale(k, v)}
     dados["imoveis_visualizados"] = list(dict.fromkeys(cartao.imoveis_visualizados + novo.imoveis_visualizados))
+    for campo in (getattr(novo, "limpar", None) or []):
+        campo = str(campo).strip().lower()
+        if campo in _LIMPAVEIS:                         # o que veio fora da lista é ignorado em silêncio
+            dados[campo] = CartaoQualificacao.model_fields[campo].get_default(call_default_factory=True)
     return cartao.model_copy(update=dados)
 
 
@@ -150,7 +190,7 @@ def run(state: AgentState) -> dict:
                 "Vértice Imóveis) antes de perguntar."
                 if state.get("primeira_interacao") else
                 "A conversa já está em andamento: não se apresente de novo nem repita boas-vindas.")
-    prompt = carregar("qualificador", nome=lead.nome or "cliente", intencao=lead.cartao.intencao,
+    prompt = carregar("qualificador", memoria=lead.resumo, nome=lead.nome or "cliente", intencao=lead.cartao.intencao,
                       faltantes=lead.cartao.campos_faltantes() or ["nenhum"], contexto_origem=origem,
                       contexto_cobertura=cobertura, contexto_abertura=abertura,
                       contexto_contato=_contexto_contato(lead, state))

@@ -103,7 +103,10 @@ def preferencias(lead: Lead) -> dict:
         # "3 mil com tudo", não no valor do aluguel isolado.
         "budget_basis": "monthly_total" if aluguel else "base_price",
         "bedrooms_min": c.quartos,
-        "requirements": [x for x in [c.urgencia and f"urgência: {c.urgencia}",
+        # Os requisitos entram como o cliente os disse, à frente do resto: é o que o corretor lê
+        # antes de ligar e o que ele não descobriria pelo funil ("aceita pet", "nada de térreo").
+        "requirements": [x for x in [*(c.requisitos or []),
+                                     c.urgencia and f"urgência: {c.urgencia}",
                                      c.perfil_investidor and f"perfil: {c.perfil_investidor}",
                                      c.retorno_esperado and f"retorno esperado: {c.retorno_esperado}"]
                          if x],

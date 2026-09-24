@@ -113,6 +113,10 @@ def main() -> int:
             from .suites import indexar_corpus
             print("  indexando o corpus institucional com o embedder em uso…", flush=True)
             print(f"  {indexar_corpus()} trechos indexados", flush=True)
+        if nome == "recomendacao":
+            from .suites import indexar_acervo
+            print("  indexando o acervo de imóveis com o embedder em uso…", flush=True)
+            print(f"  {indexar_acervo()} imóveis indexados", flush=True)
         print(f"rodando {nome}: {len(casos)} casos × {args.repeticoes}…", flush=True)
         execucoes = []
         for _ in range(args.repeticoes):

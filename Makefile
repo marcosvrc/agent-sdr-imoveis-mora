@@ -6,7 +6,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 
 .PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed corretores fotos-acervo docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura diagramas eval eval-fake eval-rag eval-embeddings whisper-aquecer test-docker openapi docs
+        cobertura diagramas eval eval-fake eval-rag eval-recomendacao eval-embeddings whisper-aquecer test-docker openapi docs
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -235,6 +235,11 @@ eval-fake:     # valida o HARNESS sem gastar token nem precisar do Ollama. Os n�
 eval-rag:      # avaliação do RAG institucional com o embedder DE VERDADE (o do seu local/.env).
                # É o único jeito de saber se a busca institucional responde bem, e não só se responde.
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
+
+eval-recomendacao:  # a busca de IMÓVEIS com o embedder de verdade. Reindexa data/imoveis/imoveis.json
+                    # antes de rodar: o índice é parte do que está sendo medido, e o arquivo é
+                    # determinístico (semente 42) enquanto o CRM de cada máquina não é.
+	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite recomendacao $(ARGS)
 
 # Compara os DOIS provedores de embeddings no mesmo dataset, um depois do outro. Existe porque a
 # pergunta "qual recupera melhor em português" não se responde por catálogo: o `bge-m3` é

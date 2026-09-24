@@ -226,4 +226,126 @@ def rag(caso: Caso) -> Resultado:
                      extras=extras)
 
 
-SUITES = {"extracao": extracao, "roteamento": roteamento, "adversarial": adversarial, "rag": rag}
+
+
+
+# --------------------------------------------------------------- recomendação de imóveis
+
+ACERVO = __import__("pathlib").Path(__file__).resolve().parents[3] / "data" / "imoveis" / "imoveis.json"
+
+
+def indexar_acervo(limite: int | None = None) -> int:
+    """Indexa `data/imoveis/imoveis.json` com o embedder EM USO e devolve quantos entraram.
+
+    Mesma razão da indexação do corpus institucional: o índice é parte do que está sendo medido.
+    Direto do arquivo, sem CRM, porque o arquivo é determinístico (semente 42) e o CRM de uma
+    máquina qualquer não é — um recall que muda conforme quem rodou o seed não mede nada.
+    """
+    import json
+
+    from sdr_shared.db import ImovelRepository
+    from sdr_shared.models import Imovel
+    from sdr_shared.ports import get_embedder
+
+    repo, embedder, total = ImovelRepository(), get_embedder(), 0
+    registros = json.loads(ACERVO.read_text(encoding="utf-8"))
+    for registro in registros[:limite]:
+        im = Imovel(**registro)
+        repo.upsert(im, embedder.embed(im.texto_canonico()))
+        total += 1
+    return total
+
+
+def _bairro_do_card(card) -> str:
+    return card.titulo.split("·")[-1].strip()
+
+
+def recomendacao(caso: Caso) -> Resultado:
+    """O que a busca devolve para um cartão — e se o que ela devolve respeita o que o cliente pediu.
+
+    A suíte que faltava: `extracao` mede o que o agente entende, `roteamento` para onde ele manda,
+    e nenhuma media o que ele RECOMENDA. Aqui não há juiz-LLM nem gabarito de ids (que engessaria o
+    acervo); o gabarito é o próprio pedido do cliente, e a pergunta é se cada card o respeita:
+
+    * `nivel` — onde a cascata parou. É o que autoriza a Mora a falar de disponibilidade, então
+      errar o nível é errar a frase, mesmo com bons imóveis na lista.
+    * teto de preço, com a folga de 15 % que a busca aplica de propósito.
+    * quartos (ou área, no comercial) e operação — errar isso é oferecer o que não serve.
+    * `no_bairro` — no nível "bairro", todo card tem de estar num dos bairros pedidos.
+    """
+    from agent.tools.buscar_imoveis import buscar_com_contexto
+
+    cartao = CartaoQualificacao(**caso.get("cartao", {}))
+    busca = buscar_com_contexto(cartao, preferencia=caso.get("mensagem", ""), limite=6)
+    cards = busca["cards"]
+    erros = []
+
+    if (esperado := caso.get("nivel")) and busca["nivel"] != esperado:
+        erros.append(f"nível: esperado {esperado!r}, veio {busca['nivel']!r}")
+    if len(cards) < caso.get("minimo", 1):
+        erros.append(f"veio {len(cards)} imóvel(is), esperava ao menos {caso.get('minimo', 1)}")
+
+    teto = cartao.preco_max or cartao.ticket
+    if teto:
+        for c in cards:
+            if c.preco > teto * 1.15:
+                erros.append(f"{c.id} custa R$ {c.preco:,.0f}, acima do teto com folga")
+    if caso.get("no_bairro") and cartao.bairros:
+        pedidos = {b.lower() for b in cartao.bairros}
+        for c in cards:
+            if _bairro_do_card(c).lower() not in pedidos:
+                erros.append(f"{c.id} está em {_bairro_do_card(c)}, fora do bairro pedido")
+    for proibido in caso.get("tipos_proibidos", []):
+        for c in cards:
+            # Só o TIPO, que é o começo do título. O bairro vem depois do "·" e "Casa Verde" contém
+            # "casa" — a primeira versão desta checagem reprovou um galpão por causa do bairro dele.
+            if proibido.lower() in c.titulo.split("·")[0].lower():
+                erros.append(f"{c.id} é {proibido} — o cliente procura outro segmento")
+
+    return Resultado(
+        caso=caso.id,
+        passou=not erros,
+        detalhe="; ".join(erros[:4]),
+        extras={"nivel": busca["nivel"], "quantidade": len(cards),
+                "bairros": busca["bairros_encontrados"][:3],
+                "com_ficha": sum(1 for c in cards if (busca.get("fichas") or {}).get(c.id))},
+    )
+
+
+# ------------------------------------------------------------------ coerência multi-turno
+
+
+def coerencia(caso: Caso) -> Resultado:
+    """O cartão depois de uma conversa inteira, não de uma frase.
+
+    `extracao` mede um turno isolado. O que quebrava na conversa era o acúmulo: o cliente corrigia
+    o bairro e o antigo continuava lá, retirava o teto e o teto ficava, pedia studio e o zero
+    quartos era descartado pelo merge. Nada disso aparece medindo mensagem por mensagem.
+
+    Roda os turnos na ordem, pelo caminho de produção (`_extrair` + `_normalizar_local`), e confere
+    o estado FINAL do cartão.
+    """
+    from agent.nodes import qualificador
+
+    cartao = CartaoQualificacao(**caso.get("cartao_inicial", {}))
+    for turno in caso["turnos"]:
+        cartao = qualificador._extrair(cartao, turno["mensagem"], turno.get("pergunta_anterior", ""))
+        cartao, _ = qualificador._normalizar_local(cartao, turno["mensagem"])
+
+    erros = []
+    for campo, esperado in caso.get("esperado", {}).items():
+        valor = getattr(cartao, campo, None)
+        if not combina(esperado, valor):
+            erros.append(f"{campo}: esperado {esperado!r}, veio {valor!r}")
+    for campo in caso.get("nao_esperado", []):
+        if not vazio(getattr(cartao, campo, None)):
+            erros.append(f"{campo} devia estar vazio, veio {getattr(cartao, campo)!r}")
+
+    return Resultado(caso=caso.id, passou=not erros, detalhe="; ".join(erros),
+                     extras={"turnos": len(caso["turnos"]),
+                             "campos_total": len(caso.get("esperado", {})),
+                             "campos_ok": len(caso.get("esperado", {})) - len([e for e in erros if ":" in e])})
+
+
+SUITES = {"extracao": extracao, "coerencia": coerencia, "roteamento": roteamento,
+          "adversarial": adversarial, "rag": rag, "recomendacao": recomendacao}

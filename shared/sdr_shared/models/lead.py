@@ -89,6 +89,12 @@ class CartaoQualificacao(BaseModel):
     # tipo pedido — ver `segmento_efetivo()`, que é por onde todo mundo deve perguntar.
     segmento: Segmento = Segmento.INDEFINIDO
     urgencia: str | None = None             # imediata, 3 meses, 6 meses, sem prazo
+    # O que o cliente pede e não cabe em campo: "aceita pet", "não quero térreo", "perto do metrô",
+    # "mudar antes do Natal". Guardado NAS PALAVRAS DELE, sem interpretar — quem interpreta é o
+    # modelo na hora de escrever, com a ordem de nunca afirmar que um imóvel atende ao que a ficha
+    # dele não diz. Sem este campo a restrição vivia só no histórico, e a poda a apagava em 40
+    # mensagens: o cliente contava do cachorro no começo da conversa e ninguém mais sabia.
+    requisitos: list[str] = Field(default_factory=list)
     # Investidor
     perfil_investidor: str | None = None    # conservador, moderado, arrojado
     ticket: float | None = None
@@ -123,6 +129,16 @@ class CartaoQualificacao(BaseModel):
         if not isinstance(v, list):
             return v
         return [b for b in (_limpar_identidade(x, 80) for x in v) if b][:20]
+
+    # Texto do cliente que vai inteiro para o prompt do consultor e para a consulta da busca. Mesmo
+    # tratamento dos bairros, com teto menor: uma lista longa de requisitos dilui o vetor da busca
+    # e vira parede de texto no prompt.
+    @field_validator("requisitos", mode="before")
+    @classmethod
+    def _requisitos_sem_veneno(cls, v):
+        if not isinstance(v, list):
+            return v
+        return [r for r in (_limpar_identidade(x, 120) for x in v) if r][:10]
 
     def segmento_efetivo(self) -> Segmento:
         """O segmento que vale agora: o afirmado pelo cliente ou, na falta dele, o que o tipo diz.

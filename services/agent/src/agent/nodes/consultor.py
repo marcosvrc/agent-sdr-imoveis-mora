@@ -13,6 +13,24 @@ from ..guardrails.saida import sanear
 log = logging.getLogger("agent.consultor")
 
 
+def _linha(c, fichas: dict) -> str:
+    """Uma linha de imóvel para o prompt: identidade, preço, FATOS e por que casa com o cartão.
+
+    Antes ia só `id · título · preço · descrição do anúncio truncada`, e o prompt pedia "um
+    diferencial de cada" — o modelo tinha de inventar o diferencial ou repetir o anunciante. Os
+    fatos vêm do banco e os motivos do mesmo cálculo determinístico da reativação (ADR-0013).
+    """
+    f = fichas.get(c.id) or {}
+    partes = [f"- {c.id}: {c.titulo} — R$ {c.preco:,.0f}"]
+    if f.get("ficha"):
+        partes.append(f["ficha"])
+    if f.get("motivos"):
+        partes.append("casa porque: " + "; ".join(f["motivos"]))
+    elif c.motivo:
+        partes.append(c.motivo)
+    return " — ".join(partes)
+
+
 def _contexto_da_busca(busca: dict, cards: list) -> str:
     """Traduz o nível da cascata em instrução explícita — a fonte da verdade sobre o que foi encontrado."""
     pedidos = ", ".join(busca["bairros_pedidos"]) or "a região pedida"
@@ -94,10 +112,10 @@ def run(state: AgentState) -> dict:
     busca = buscar_com_contexto(lead.cartao, preferencia=state["entrada"].conteudo, limite=6)
     todos = [c for c in busca["cards"] if c.id not in descartados]
     cards = [c for c in todos if c.id not in ja_vistos][:3] or todos[:3]     # esgotou novidades → repete as melhores
-    resumo = "\n".join(f"- {c.id}: {c.titulo} — R$ {c.preco:,.0f} — {c.motivo}" for c in cards) or "(nenhum)"
+    resumo = "\n".join(_linha(c, busca.get("fichas") or {}) for c in cards) or "(nenhum)"
     # O agente só pode falar de disponibilidade com base nisto — nunca deduzir do que não veio na lista.
     contexto = _contexto_da_busca(busca, cards)
-    msg = llm_conversa().invoke([carregar("consultor", nome=lead.nome or "cliente",
+    msg = llm_conversa().invoke([carregar("consultor", memoria=lead.resumo, nome=lead.nome or "cliente",
                                           cartao=lead.cartao.model_dump(exclude_defaults=True), imoveis=resumo,
                                           contexto_busca=contexto), *state["messages"]])
     if lead.estagio in (Estagio.NOVO, Estagio.QUALIFICANDO) and lead.cartao.completo():

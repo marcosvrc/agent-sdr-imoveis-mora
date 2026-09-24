@@ -123,6 +123,15 @@ Poda em bloco (40 → 24) para não reescrever o checkpoint a cada mensagem. O q
 contato, cartão, imóveis vistos) vive no `Lead`, não no histórico — é o que
 `test_historico_longo_e_podado_e_o_cartao_sobrevive` (`test_cenarios.py`) verifica.
 
+**O que a poda apagava.** A premissa acima vale para o que vira campo; o resto — "meu filho estuda
+no Butantã", "o condomínio de 1.500 me assustou" — sumia sem rastro em 40 mensagens. Duas coisas
+fecham esse buraco: o campo `requisitos` do cartão, que guarda a exigência nas palavras do cliente,
+e o `lead.resumo`, que o resumidor já escrevia para o corretor e **ninguém lia de volta**. Hoje ele
+volta ao prompt de conversa (`prompts/__init__.py::carregar(memoria=...)`), envelopado como
+qualquer texto derivado do cliente, limitado a `LIMITE_MEMORIA = 700` caracteres e rotulado como
+resumo interno possivelmente desatualizado — o modelo não deve comentá-lo com o cliente nem deduzir
+dele disponibilidade. Usam: qualificador, consultor e follow-up.
+
 Tipos registrados no serializador (`allowed_msgpack_modules`): `Lead`, `Estagio`, `Intencao`,
 `Temperatura`, `CartaoQualificacao`, `ImovelCard`, `MensagemNormalizada`, `RespostaAgente`, `Canal`,
 `TipoMensagem`, `Acao`.
@@ -294,8 +303,13 @@ Todos recebem o `AgentState` e devolvem um delta. `_cronometrado` loga a duraç�
   4. `_contexto_da_busca(busca, cards)` traduz o `nivel` em instrução explícita sobre o que a Mora
      pode afirmar (`bairro`, `vizinhos`, `regiao`, `cidade`, `fora_de_cobertura`, vazio), com as
      alternativas fora do perfil no bairro pedido (`alternativa_no_bairro[:2]`).
-- **LLM:** `carregar("consultor", nome, cartao=model_dump(exclude_defaults=True), imoveis=resumo,
-  contexto_busca)` + histórico.
+- **LLM:** `carregar("consultor", memoria=lead.resumo, nome, cartao=model_dump(exclude_defaults=True),
+  imoveis=resumo, contexto_busca)` + histórico. Cada linha de `imoveis` leva agora a **ficha** do
+  imóvel (metragem, quartos e suítes, vagas, condomínio — com "não informado" distinto de "sem
+  condomínio") e, depois de `casa porque`, os motivos calculados por `reativacao.pontuar_cartao`,
+  o mesmo gerador de motivo verificável da ADR-0013. Antes ia só título, preço e a descrição do
+  anunciante truncada, e o prompt pedia "um diferencial de cada": o modelo tinha de inventar o
+  diferencial ou repetir o vendedor.
 - **Grava:** `NOVO`/`QUALIFICANDO` + cartão completo → `QUALIFICADO`;
   `InteresseRepository().registrar_varios(lead.id, [(id, motivo)])` (best-effort).
 - **Saída:** `imoveis_sugeridos` acumulado, `RespostaAgente(imoveis=cards, opcoes=["Agendar visita",

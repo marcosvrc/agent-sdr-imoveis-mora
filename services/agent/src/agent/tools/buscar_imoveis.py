@@ -55,7 +55,10 @@ def montar_card(i: Imovel, motivo: str | None = None) -> ImovelCard:
 
 
 def _consulta(cartao: CartaoQualificacao, preferencia: str, local: Local | None) -> str:
-    partes = [preferencia, cartao.tipo_imovel, *(local.bairros if local else cartao.bairros)]
+    """O texto que vira vetor. `preferencia` é a fala deste turno; os requisitos são o que o cliente
+    pediu em QUALQUER turno — sem eles, "aceita pet" influenciava o ranking uma vez e nunca mais."""
+    partes = [preferencia, cartao.tipo_imovel, *(local.bairros if local else cartao.bairros),
+              *cartao.requisitos]
     if cartao.intencao == Intencao.INVESTIMENTO:
         partes.append("para renda de aluguel")
     return " ".join(filter(None, partes)).strip() or "imóvel"
@@ -77,11 +80,42 @@ def _vetor(consulta: str) -> list[float] | None:
         return None
 
 
-def _executar(vetor: list[float] | None, filtros: dict, limite: int) -> list[ImovelCard]:
+def ficha(i: Imovel) -> str:
+    """Os fatos do imóvel, para o modelo ter o que dizer sem inventar.
+
+    O prompt do consultor recebia título, preço e um pedaço do anúncio — e a ordem de citar "um
+    diferencial de cada". Metragem, suítes, vagas e condomínio existem no banco desde sempre e não
+    chegavam nele; o modelo então argumentava com o que dava, que é a definição do problema.
+
+    Condomínio em branco é DESCONHECIDO, nunca zero: zero significa que o imóvel não tem condomínio,
+    e a diferença entre as duas coisas é dinheiro no bolso de quem aluga.
+    """
+    partes = [f"{i.area_m2:.0f} m²" if i.area_m2 else None]
+    if i.quartos:
+        partes.append(f"{i.quartos} quarto(s)" + (f", {i.suites} suíte(s)" if i.suites else ""))
+    if i.vagas:
+        partes.append(f"{i.vagas} vaga(s)")
+    if i.condominio is None:
+        partes.append("condomínio não informado")
+    elif i.condominio:
+        partes.append(f"condomínio R$ {i.condominio:,.0f}".replace(",", "."))
+    else:
+        partes.append("sem condomínio")
+    return " · ".join(p for p in partes if p)
+
+
+def _executar(vetor: list[float] | None, filtros: dict, limite: int,
+              cartao: CartaoQualificacao | None = None, fichas: dict | None = None) -> list[ImovelCard]:
     repo = ImovelRepository()
-    if vetor is None:
-        return [montar_card(i) for i in repo.buscar_por_filtros(filtros, limite)]
-    return [montar_card(i) for i in repo.buscar_hibrido(vetor, filtros, limite)]
+    imoveis = (repo.buscar_por_filtros(filtros, limite) if vetor is None
+               else repo.buscar_hibrido(vetor, filtros, limite))
+    if fichas is not None and cartao is not None:
+        from sdr_shared.reativacao import pontuar_cartao
+        for i in imoveis:
+            # O mesmo gerador de motivo verificável da reativação (ADR-0013), aqui para o consultor
+            # ter POR QUE este imóvel, e não o texto do anunciante.
+            fichas[i.id] = {"ficha": ficha(i), "motivos": pontuar_cartao(cartao, i)[1]}
+    return [montar_card(i) for i in imoveis]
 
 
 def local_do_cartao(cartao: CartaoQualificacao) -> Local | None:
@@ -113,46 +147,48 @@ def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limit
     `nivel` diz onde a busca parou — é o que autoriza (ou não) o agente a falar de indisponibilidade.
     """
     local = local_do_cartao(cartao)
+    fichas: dict[str, dict] = {}
     vetor = _vetor(_consulta(cartao, preferencia, local))
     pedidos = local.bairros if local and local.tipo == "bairro" else []
     # Cidade fora de cobertura: em vez de varrer a capital inteira, oferece a região mais próxima dela.
     if local and local.tipo == "fora":
         proxima = local.sugestao_regiao
-        cards = _executar(vetor, _filtros(cartao, None, proxima), limite) if proxima else []
+        cards = _executar(vetor, _filtros(cartao, None, proxima), limite, cartao, fichas) if proxima else []
         if not cards:
-            cards = _executar(vetor, _filtros(cartao, None, None), limite)
-        return {"cards": cards, "nivel": "fora_de_cobertura", "local": local, "bairros_pedidos": [],
+            cards = _executar(vetor, _filtros(cartao, None, None), limite, cartao, fichas)
+        return {"cards": cards, "nivel": "fora_de_cobertura", "local": local, "bairros_pedidos": [], "fichas": fichas,
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
                 "ampliou": True, "alternativa_no_bairro": []}
 
     def resposta(cards: list[ImovelCard], nivel: str, alternativa: list[ImovelCard] | None = None) -> dict:
-        return {"cards": cards, "nivel": nivel, "local": local, "bairros_pedidos": pedidos, "sem_embedding": vetor is None,
+        return {"cards": cards, "nivel": nivel, "local": local, "bairros_pedidos": pedidos, "sem_embedding": vetor is None, "fichas": fichas,
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
                 "ampliou": bool(pedidos) and nivel not in ("bairro", "vazio"),
                 "alternativa_no_bairro": alternativa or []}
 
     # 1. o bairro que o cliente pediu
     if pedidos:
-        if cards := _executar(vetor, _filtros(cartao, pedidos), limite):
+        if cards := _executar(vetor, _filtros(cartao, pedidos), limite, cartao, fichas):
             return resposta(cards, "bairro")
         # 2. vizinhos do bairro (mesma região, os mais próximos primeiro)
         proximos = [v for b in pedidos for v in vizinhos(b)]
-        if proximos and (cards := _executar(vetor, _filtros(cartao, list(dict.fromkeys(proximos))), limite)):
-            return resposta(cards, "vizinhos", _alternativa(cartao, pedidos, vetor))
+        if proximos and (cards := _executar(vetor, _filtros(cartao, list(dict.fromkeys(proximos))), limite, cartao, fichas)):
+            return resposta(cards, "vizinhos", _alternativa(cartao, pedidos, vetor, fichas))
 
     # 3. a região (a do local resolvido vence a do cartão, que o LLM pode ter errado)
     regiao = (local.regiao if local else None) or cartao.regiao
-    if regiao and (cards := _executar(vetor, _filtros(cartao, None, regiao), limite)):
-        return resposta(cards, "regiao", _alternativa(cartao, pedidos, vetor))
+    if regiao and (cards := _executar(vetor, _filtros(cartao, None, regiao), limite, cartao, fichas)):
+        return resposta(cards, "regiao", _alternativa(cartao, pedidos, vetor, fichas))
 
     # 4. a cidade inteira — melhor mostrar algo bom fora da área pedida do que dizer "não temos nada"
-    if cards := _executar(vetor, _filtros(cartao, None, None), limite):
-        return resposta(cards, "cidade", _alternativa(cartao, pedidos, vetor))
+    if cards := _executar(vetor, _filtros(cartao, None, None), limite, cartao, fichas):
+        return resposta(cards, "cidade", _alternativa(cartao, pedidos, vetor, fichas))
 
-    return resposta([], "vazio", _alternativa(cartao, pedidos, vetor))
+    return resposta([], "vazio", _alternativa(cartao, pedidos, vetor, fichas))
 
 
-def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], vetor: list[float]) -> list[ImovelCard]:
+def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], vetor: list[float],
+                 fichas: dict | None = None) -> list[ImovelCard]:
     """O que EXISTE no bairro pedido fora do perfil exato (relaxa quartos e, depois, preço).
     É o que um bom corretor diz: 'de 2 quartos não tenho aí, mas tenho este de 1'."""
     if not pedidos:
@@ -160,9 +196,9 @@ def _alternativa(cartao: CartaoQualificacao, pedidos: list[str], vetor: list[flo
     comercial = cartao.segmento_efetivo() == Segmento.COMERCIAL
     afrouxar = {"area_min": None} if comercial else {"quartos": None}
     if (cartao.area_min if comercial else cartao.quartos) and \
-            (r := _executar(vetor, _filtros(cartao.model_copy(update=afrouxar), pedidos), 3)):
+            (r := _executar(vetor, _filtros(cartao.model_copy(update=afrouxar), pedidos), 3, cartao, fichas)):
         return r
-    if cartao.preco_max and (r := _executar(vetor, _filtros(cartao.model_copy(update={"preco_max": None, "ticket": None}), pedidos), 3)):
+    if cartao.preco_max and (r := _executar(vetor, _filtros(cartao.model_copy(update={"preco_max": None, "ticket": None}), pedidos), 3, cartao, fichas)):
         return r
     return []
 

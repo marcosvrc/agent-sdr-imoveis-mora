@@ -58,9 +58,16 @@ Mede o **modelo** (chama a API de verdade), enquanto `make test` mede o encaname
 Fica fora do CI de propósito — custa dinheiro e varia entre execuções.
 
 ```bash
-make eval            # avaliação real (gasta token)
-make eval-fake       # valida o harness sem gastar token
+make eval                # avaliação real (gasta token)
+make eval-fake           # valida o harness sem gastar token
+make eval-rag            # só o RAG institucional, com o embedder real
+make eval-recomendacao   # só a recomendação de imóveis, com o embedder real
 ```
+
+Seis suítes, nenhuma com juiz-LLM: `extracao` (um turno), `coerencia` (o cartão depois de uma
+conversa inteira), `roteamento`, `adversarial`, `rag` e `recomendacao` (o que a busca devolve
+respeita o que o cliente pediu). Detalhe de cada uma em
+[`services/agent/evals/README.md`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/services/agent/evals/README.md).
 
 ## Integração contínua
 

@@ -16,7 +16,7 @@ fora, por que ficou. Enviar é decisão de outra camada, com cadência e orçame
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
-from .models import Imovel, Intencao, Lead
+from .models import CartaoQualificacao, Imovel, Intencao, Lead
 
 # Quanto tempo sem conversar para o lead ser "antigo" a ponto de a notícia ter valor. Abaixo disso,
 # ele está em atendimento e a Mora fala com ele na conversa mesmo.
@@ -54,12 +54,22 @@ def _operacao_desejada(intencao: Intencao) -> str | None:
 
 
 def pontuar(lead: Lead, im: Imovel) -> tuple[int, list[str]]:
-    """Quanto este imóvel casa com o que o lead pediu, e em português por quê.
+    """Quanto este imóvel casa com o que o lead pediu, e em português por quê."""
+    return pontuar_cartao(lead.cartao, im)
+
+
+def pontuar_cartao(c: CartaoQualificacao, im: Imovel) -> tuple[int, list[str]]:
+    """O mesmo cálculo a partir do cartão, sem exigir um Lead inteiro.
+
+    Existe separado porque o consultor precisa do MOTIVO — a frase em português que diz por que
+    este imóvel e não outro — e ele tem o cartão em mãos, não um lead carregado. O motivo do card
+    era, até aqui, a descrição do anúncio truncada: texto do vendedor no lugar de uma razão.
 
     Devolve (0, [...]) quando algo essencial não bate — operação, teto de preço ou quartos são
-    eliminatórios, porque errá-los transforma a notícia em incômodo.
+    eliminatórios na reativação, porque errá-los transforma a notícia em incômodo. No consultor o
+    zero é esperado e útil: é o que acontece com as opções fora do perfil que a cascata oferece de
+    propósito, e a lista traz exatamente a divergência ("R$ 40.000 acima do teto").
     """
-    c = lead.cartao
     motivos: list[str] = []
 
     desejada = _operacao_desejada(c.intencao)

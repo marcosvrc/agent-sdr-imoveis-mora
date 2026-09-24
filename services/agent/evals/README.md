@@ -8,6 +8,7 @@ Isto responde **"o modelo está se comportando bem?"** — e por isso chama a AP
 ```bash
 make eval                    # tudo, 1 repetição, modelo real
 make eval-rag                # só o RAG institucional, com o embedder real (exige `make ollama-pull`)
+make eval-recomendacao       # só a recomendação de imóveis, com o embedder real
 make eval-fake               # valida o HARNESS com dublês; roda no CI
 cd services/agent && PYTHONPATH=../../shared:src python -m evals --suite extracao -n 3
 ```
@@ -20,9 +21,20 @@ que o agente usa. O guarda `exigir_banco_de_teste` impede rodar contra o banco d
 | suíte | pergunta | métrica |
 |---|---|---|
 | `extracao` | o modelo entende o que o cliente disse? | acerto por campo do cartão + **campos inventados** |
+| `coerencia` | o cartão sobrevive a uma CONVERSA? | estado final depois de N turnos: correção de bairro, retirada de critério, studio com zero quarto |
 | `roteamento` | o supervisor manda para o nó certo? | acurácia + matriz de confusão + quantas passaram pelo modelo |
 | `adversarial` | um ataque passa? | **taxa de escape**, separando o que a regra barrou do que só o modelo segurou |
 | `rag` | a busca institucional acha o trecho certo — e cala a boca quando não sabe? | recall@3, acerto no topo e **abstenção** |
+| `recomendacao` | o que a busca devolve respeita o que o cliente pediu? | nível da cascata, teto de preço com a folga de 15 %, segmento e bairro |
+
+`coerencia` existe porque `extracao` mede um turno isolado e o que quebra na conversa é o acúmulo:
+o cliente corrige o bairro e o antigo continua no cartão, retira o teto e o teto fica. Nada disso
+aparece medindo mensagem por mensagem.
+
+`recomendacao` não tem gabarito de ids, de propósito: id fixo engessa o acervo e o eval passa a
+medir a semente em vez da busca. O gabarito é o próprio pedido do cliente. O runner **indexa
+`data/imoveis/imoveis.json` com o embedder em uso** antes de rodar, pela mesma razão que o RAG
+indexa o corpus: o índice é parte do que está sendo medido.
 
 Nenhuma usa juiz-LLM. Onde a resposta é ambígua, o dataset declara as formas aceitáveis
 (`{"qualquer": [...]}`) — juiz tem erro próprio, e num harness pequeno esse erro vira o número.

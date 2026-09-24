@@ -59,7 +59,9 @@ def combina(esperado, obtido) -> bool:
     """Um campo extraído bate com o gabarito?
 
     - número: tolerância pequena (o modelo devolve 800000.0 onde o gabarito diz 800000)
-    - lista: o gabarito precisa estar CONTIDO no obtido (o modelo pode achar bairros a mais)
+    - lista: cada item do gabarito precisa aparecer em ALGUM item do obtido (o modelo pode achar
+      bairros a mais, e requisito copiado das palavras do cliente varia na borda — "aceita cachorro"
+      e "só serve se aceitar cachorro" são a mesma resposta, então o gabarito pede o miolo)
     - texto: igual ou contido, normalizado — 'imediata' aceita 'urgência imediata'
     - {"qualquer": [...]}: qualquer uma das formas serve
     """
@@ -73,7 +75,8 @@ def combina(esperado, obtido) -> bool:
         except (TypeError, ValueError):
             return False
     if isinstance(esperado, list):
-        return {normalizar(x) for x in esperado} <= {normalizar(x) for x in (obtido or [])}
+        obtidos = [normalizar(x) for x in (obtido or [])]
+        return all(any(normalizar(e) in o for o in obtidos) for e in esperado) if esperado else not obtidos
     e, o = normalizar(esperado), normalizar(obtido)
     return bool(o) and (e == o or e in o)
 
