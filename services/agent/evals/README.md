@@ -16,6 +16,21 @@ cd services/agent && PYTHONPATH=../../shared:src python -m evals --suite extraca
 Precisa do Postgres de teste no ar (`make test-db`) e das credenciais de LLM no `.env` — as mesmas
 que o agente usa. O guarda `exigir_banco_de_teste` impede rodar contra o banco de desenvolvimento.
 
+`ModuleNotFoundError: No module named 'psycopg'` significa que o python da máquina não tem as
+dependências. Ou rode `make setup`, ou rode o harness dentro do container do agente, que já as tem:
+
+```bash
+make eval-recomendacao EVAL_EM=docker
+```
+
+`EVAL_EM=docker` vale para `eval`, `eval-fake`, `eval-rag` e `eval-recomendacao`. O `eval-embeddings`
+continua só no host: ele troca o provedor de embeddings por variável de ambiente entre as passadas.
+
+A suíte `recomendacao` **reprova quando não há embedder no ar**. Sem ele a busca cai nos filtros SQL
+ordenados por preço e continua respondendo — plausivelmente, e é por isso que precisa reprovar: um
+recall medido sobre ordenação por preço não mede recuperação nenhuma. Com Ollama, exige
+`make ollama-pull` antes.
+
 ## As suítes
 
 | suíte | pergunta | métrica |

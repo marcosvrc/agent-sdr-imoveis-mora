@@ -225,21 +225,34 @@ cobertura: test-db
 
 # Harness de avaliação: mede o MODELO (chama a API de verdade), enquanto `test` mede o encanamento
 # com LLM falso. Fora do CI de propósito — custa dinheiro e varia entre execuções. Ver services/agent/evals/README.md
+#
+# Onde o harness roda: `host` (padrão) usa o python da máquina e exige as dependências instaladas
+# (`make setup`) — é o caminho da CI. `docker` usa o container `agent`, que já as tem: é o caminho
+# de quem só subiu o compose e recebeu `ModuleNotFoundError: No module named 'psycopg'`.
+#   make eval-recomendacao EVAL_EM=docker
+EVAL_EM ?= host
+ifeq ($(EVAL_EM),docker)
+EVAL = cd local && docker compose exec -T -w /app/services/agent \
+         -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test \
+         -e PYTHONPATH=/app/shared:/app/services/agent/src:. agent python -m evals
+else
+EVAL = export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals
+endif
 eval: test-db
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals $(ARGS)
+	$(EVAL) $(ARGS)
 
 eval-fake:     # valida o HARNESS sem gastar token nem precisar do Ollama. Os números não dizem nada
                # sobre qualidade: o LLM é falso e o embedder é de trigramas. É o que roda no CI.
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --fake --limite-abstencao 80 $(ARGS)
+	$(EVAL) --fake --limite-abstencao 80 $(ARGS)
 
 eval-rag:      # avaliação do RAG institucional com o embedder DE VERDADE (o do seu local/.env).
                # É o único jeito de saber se a busca institucional responde bem, e não só se responde.
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
+	$(EVAL) --suite rag $(ARGS)
 
 eval-recomendacao:  # a busca de IMÓVEIS com o embedder de verdade. Reindexa data/imoveis/imoveis.json
                     # antes de rodar: o índice é parte do que está sendo medido, e o arquivo é
                     # determinístico (semente 42) enquanto o CRM de cada máquina não é.
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite recomendacao $(ARGS)
+	$(EVAL) --suite recomendacao $(ARGS)
 
 # Compara os DOIS provedores de embeddings no mesmo dataset, um depois do outro. Existe porque a
 # pergunta "qual recupera melhor em português" não se responde por catálogo: o `bge-m3` é
