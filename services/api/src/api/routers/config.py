@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sdr_shared import followup as politica_followup
 from sdr_shared.config import get_settings
 from sdr_shared.db import ConfigRepository
+from sdr_shared.papeis import DESCRICAO, HERDA, PAPEIS
 from ..auth import corretor_atual
 
 log = logging.getLogger(__name__)
@@ -23,36 +24,27 @@ DEFAULTS: dict[str, dict] = {
     "agenda": {"slots": [10, 14, 16], "duracao_min": 60, "dias_uteis": True, "antecedencia_dias": 5},
     "cobertura": {"regioes": ["zona_sul", "zona_oeste", "zona_norte", "zona_leste", "centro"], "cidade": "São Paulo"},
     "handoff": {"palavras_gatilho": ["corretor", "atendente", "humano", "pessoa de verdade"], "auto_quando_quente": False},
-    # Modelo por nível (ADR-0010). Vazio = usa o do .env, então dá para mexer em um nível só e
-    # desfazer tudo com DELETE /config/modelos, sem precisar do banco.
+    # Modelo por papel (ADR-0010, ADR-0016). Vazio = herda do papel pai ou usa o do .env, então dá
+    # para mexer em um papel só e desfazer tudo com DELETE /config/modelos, sem precisar do banco.
     # `fallback_provider` vazio = usa o SDR_LLM_PROVIDER_FALLBACK do ambiente; a string "nenhum"
     # é o jeito de DESLIGAR o reserva pela tela sem mexer no .env. Sem ela, apagar o campo no
     # painel não conseguiria desfazer um fallback herdado do ambiente.
-    "modelos": {"conversa": "", "conversa_provider": "", "roteamento": "", "roteamento_provider": "",
-                "analise": "", "analise_provider": "", "fallback_provider": ""},
+    "modelos": {**{campo: "" for p in PAPEIS for campo in (p, f"{p}_provider")}, "fallback_provider": ""},
     # Ajustes de operação. Vazio = usa o do ambiente; um valor explícito (inclusive `0` e `off`)
     # é decisão de quem está olhando o sistema no ar. A distinção entre "vazio" e "desligado" é o
     # que permite a tela desfazer algo herdado do `.env` — ver db/operacao.py.
     "operacao": {"llm_timeout_s": "", "transcricao": "", "acervo_refresh_s": ""},
 }
 
-PROVIDERS = ("", "anthropic", "openai", "ollama")
+PROVIDERS = ("", "anthropic", "openai", "ollama", "openrouter")
 
 
 def _modelos_efetivos() -> dict:
-    """O que o agente realmente vai usar no próximo turno — a tela mostra isto, não a intenção."""
-    from sdr_shared.db import escolha_de_modelo
-    s = get_settings()
-    saida = {}
-    for nivel in ("conversa", "roteamento", "analise"):
-        try:
-            modelo, provider = escolha_de_modelo(nivel)
-        except Exception:
-            modelo, provider = None, None
-        padrao = s.model_roteamento if nivel == "roteamento" else s.model_conversa
-        saida[nivel] = {"modelo": modelo or padrao, "provider": provider or s.llm_provider,
-                        "origem": "painel" if modelo else "ambiente"}
-    return saida
+    """O que o agente realmente vai usar no próximo turno — a tela mostra isto, não a intenção.
+    A resolução é a do próprio agente (`modelo_efetivo`): se a tela resolvesse por conta própria,
+    bastaria uma regra de herança diferente para ela mostrar um modelo e o agente usar outro."""
+    from sdr_shared.ports.factory import modelo_efetivo
+    return {p: modelo_efetivo(p) for p in PAPEIS}
 
 
 def _catalogo() -> dict:
@@ -82,7 +74,11 @@ def _status_canais() -> dict:
                     # o que está valendo de fato: painel quando preenchido, .env quando não
                     "efetivo": _modelos_efetivos(),
                     # o que a tela pode oferecer sem que o PUT recuse depois
-                    "catalogo": _catalogo()},
+                    "catalogo": _catalogo(),
+                    # papéis na ordem da tela, com a descrição e de quem cada um herda quando vazio
+                    "papeis": [{"papel": p, "descricao": DESCRICAO[p], "herda": HERDA.get(p)} for p in PAPEIS],
+                    "openrouter": {"configurado": bool(get_settings().openrouter_api_key),
+                                   "zdr": get_settings().openrouter_zdr}},
             "embeddings": {"provider": getattr(s, "embeddings_provider", "ollama"),
                            "modelo": (getattr(s, "embeddings_model", "") if getattr(s, "embeddings_provider", "") == "openai"
                                       else getattr(s, "ollama_embedding_model", "")),
@@ -144,7 +140,7 @@ def comparacao_de_modelos(dias: int = Query(30, ge=1, le=365)):
     papeis = {p: comparar(catalogo=catalogo, mix=mixes.get(p, {}),
                           latencias=latencias.get(p, latencias.get("_geral", {})),
                           recomendado=recomendado, tabela=tabela, dias=dias)
-              for p in ("conversa", "roteamento", "analise")}
+              for p in PAPEIS}
     return {"dias": dias, "papeis": papeis}
 
 
@@ -164,7 +160,7 @@ def _validar_modelos(body: dict) -> None:
             raise HTTPException(422, "fallback_provider: o reserva não pode ser o mesmo provedor da "
                                      "conversa — seriam duas tentativas no provedor que caiu.")
 
-    for nivel in ("conversa", "roteamento", "analise"):
+    for nivel in PAPEIS:
         if (prov := body.get(f"{nivel}_provider")) and prov not in PROVIDERS:
             raise HTTPException(422, f"{nivel}_provider: provedor desconhecido '{prov}'")
         modelo = (body.get(nivel) or "").strip()
@@ -172,13 +168,59 @@ def _validar_modelos(body: dict) -> None:
             continue
         if len(modelo) > 120 or any(c.isspace() for c in modelo):
             raise HTTPException(422, f"{nivel}: '{modelo}' não parece um identificador de modelo")
+        provedor = (body.get(f"{nivel}_provider") or "").strip() or get_settings().llm_provider
         # Ollama roda local e não tem custo; os demais precisam de preço para a governança funcionar
-        if (body.get(f"{nivel}_provider") or "") == "ollama":
+        if provedor == "ollama":
             continue
-        if not preco_do_modelo(modelo, UsoRepository().precos()):
-            raise HTTPException(422, f"{nivel}: sem preço cadastrado para '{modelo}'. Cadastre em "
-                                     f"Configurações → preços antes de usá-lo, senão o custo é "
-                                     f"contabilizado como zero e o teto de orçamento para de valer.")
+        if preco_do_modelo(modelo, UsoRepository().precos()):
+            continue
+        # Pelo OpenRouter o preço existe publicado: buscar é melhor que mandar alguém digitar à mão.
+        if provedor == "openrouter" and _sincronizar_precos([modelo])[0]:
+            continue
+        raise HTTPException(422, f"{nivel}: sem preço cadastrado para '{modelo}'. Cadastre em "
+                                 f"Configurações → preços antes de usá-lo, senão o custo é "
+                                 f"contabilizado como zero e o teto de orçamento para de valer.")
+
+
+def _sincronizar_precos(modelos: list[str]) -> tuple[dict, list[str]]:
+    """Grava na configuração `precos` o preço que o OpenRouter publica para cada modelo pedido.
+
+    Só os pedidos, nunca o catálogo inteiro: são centenas de modelos, e cada preço cadastrado vira
+    uma opção no combo da tela. Devolve (gravados, não encontrados). Falha de rede não grava nada.
+    """
+    from sdr_shared.adapters.hospedados.openrouter import precos_de
+    from sdr_shared.db import UsoRepository
+
+    try:
+        achados, faltando = precos_de(modelos)
+    except Exception as e:
+        log.warning("não consegui sincronizar preços do OpenRouter: %s", e)
+        return {}, list(modelos)
+    if achados:
+        repo = UsoRepository()
+        repo.salvar_precos({**repo.precos(), **achados})
+    return achados, faltando
+
+
+@router.post("/modelos/openrouter/sincronizar")
+def sincronizar_precos_openrouter(body: dict):
+    """Traz do catálogo do OpenRouter o preço dos modelos informados (`{"modelos": ["google/…"]}`).
+
+    É o que faz um modelo do OpenRouter aparecer no combo da tela e passar na trava de preço — sem
+    alguém copiar quatro números de uma página para um formulário, que é onde preço errado nasce.
+    """
+    modelos = [str(m).strip() for m in (body.get("modelos") or []) if str(m).strip()]
+    if not modelos:
+        raise HTTPException(422, "informe `modelos`: a lista de IDs do OpenRouter (fornecedor/modelo)")
+    if len(modelos) > 50:
+        raise HTTPException(422, "no máximo 50 modelos por vez")
+    if any("/" not in m for m in modelos):
+        raise HTTPException(422, "IDs do OpenRouter têm o formato fornecedor/modelo, "
+                                 "ex.: google/gemini-3.5-flash-lite")
+    achados, faltando = _sincronizar_precos(modelos)
+    if not achados and faltando:
+        raise HTTPException(502, f"o OpenRouter não devolveu preço para: {', '.join(faltando)}")
+    return {"gravados": achados, "nao_encontrados": faltando}
 
 
 def _validar_operacao(body: dict) -> None:

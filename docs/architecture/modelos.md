@@ -14,30 +14,52 @@ o repositório não versiona resultado de avaliação com modelo real (ver
 
 ## Papéis de modelo
 
-O agente não escolhe "um modelo": escolhe **três papéis**, cada um com modelo e provedor
-próprios (ADR-0010). A resolução é feita em `shared/sdr_shared/ports/factory.py::get_chat_model`,
-e o agente a consome pelos três acessores de `services/agent/src/agent/llm.py`.
+O agente não escolhe "um modelo": escolhe **cinco papéis**, um por função, cada um com modelo e
+provedor próprios (ADR-0010, ADR-0016). Os papéis, a herança, a temperatura, o teto de saída, o
+esforço de raciocínio e a ordenação no OpenRouter estão num módulo só:
+`shared/sdr_shared/papeis.py`. A resolução é feita em
+`shared/sdr_shared/ports/factory.py::get_chat_model`, e o agente a consome pelos acessores de
+`services/agent/src/agent/llm.py` (lista em `llm.ACESSORES`).
 
-| Papel | Acessor | Onde é usado | Temperatura | Padrão no `.env` |
-|---|---|---|---|---|
-| `conversa` | `llm_conversa()` | Nós que escrevem para o cliente: `qualificador`, `consultor`, `informacoes`, `agendador`, `followup`, `reativador` | `0.6` | `SDR_MODEL_CONVERSA=claude-sonnet-4-5` |
-| `roteamento` | `llm_roteamento()` | `supervisor` (decide o nó) e a extração do cartão em `qualificador._extrair` (`with_structured_output`) | `0.0` | `SDR_MODEL_ROTEAMENTO=claude-haiku-4-5` |
-| `analise` | `llm_analise()` | `resumidor` (briefing e análise do lead, fora do turno) | `0.6` | herda `conversa` |
+| Papel | Acessor | Onde é usado | Temperatura | Teto | Esforço | Vazio herda de |
+|---|---|---|---|---|---|---|
+| `conversa` | `llm_conversa()` | `qualificador` (resposta), `consultor`, `agendador`, `followup`, `reativador` | `0.6` | 600 | `low` | `SDR_MODEL_CONVERSA` |
+| `roteamento` | `llm_roteamento()` | `supervisor`, só quando as regras não decidem | `0.0` | 600 | `none` | `SDR_MODEL_ROTEAMENTO` |
+| `extracao` | `llm_extracao()` | `qualificador._extrair` (`with_structured_output`), reusada pelo `consultor` | `0.0` | 600 | `none` | `roteamento` |
+| `informacoes` | `llm_informacoes()` | nó `informacoes` (RAG institucional) | `0.6` | 600 | `low` | `conversa` |
+| `analise` | `llm_analise()` | `resumidor` (briefing e análise do lead, fora do turno) | `0.6` | 1500 | `medium` | `conversa` |
 
-Detalhes verificados em `factory.py` e `llm.py`:
+Detalhes verificados em `factory.py`, `papeis.py` e `llm.py`:
 
-- `get_chat_model(papel)` lê primeiro a escolha do painel (`_escolha_do_painel`, que consulta a
-  chave `modelos` de `configuracoes` via `shared/sdr_shared/db/modelos.py`) e cai no `.env` quando
-  o campo está vazio. Para `analise` sem valor no painel, `escolha()` devolve o que estiver em
-  `conversa`.
-- A temperatura é `0.0` para `roteamento` e `0.6` para os demais; `max_tokens=600` para Anthropic,
-  OpenAI e OpenRouter (o `ChatOllama` não recebe esse parâmetro).
-- Em modo **degradado** de orçamento, `conversa` e `analise` são atendidos como `roteamento` —
-  ou seja, pelo modelo barato — até o orçamento virar o mês.
-- `llm.py` cacheia a instância com `lru_cache(maxsize=32)`, e a **escolha do painel entra na chave
-  do cache**: sem isso um worker de vida longa continuaria com o modelo antigo depois de uma troca.
+- `modelo_efetivo(papel)` sobe a cadeia de herança consultando, em cada nível, o painel
+  (`escolha_de_modelo(nivel, herdar=False)`, chave `modelos` de `configuracoes`) e depois o
+  ambiente (`SDR_MODEL_<PAPEL>`). A mesma função serve o agente, `GET /config` e o relatório de
+  avaliação — a tela não tem regra de herança própria. A resposta inclui `de`, o papel de onde o
+  modelo veio.
+- O teto (`max_tokens`) vale para Anthropic, OpenAI e OpenRouter (o `ChatOllama` não recebe esse
+  parâmetro). Em modelo que **raciocina por padrão** ele é multiplicado por `FOLGA_RACIOCINIO = 4`,
+  porque o raciocínio conta dentro do teto.
+- Em modo **degradado** de orçamento, todo papel diferente de `roteamento` — inclusive `extracao` —
+  é atendido pelo modelo de `roteamento` até o orçamento virar o mês. Temperatura, teto e esforço
+  continuam os do papel pedido, e a governança grava o papel pedido.
+- `llm.py` cacheia a instância com `lru_cache(maxsize=32)`; a **escolha do painel e o reserva do
+  painel entram na chave do cache**: sem isso um worker de vida longa continuaria com o modelo (ou o
+  reserva) antigo depois de uma troca.
 - Cada instância recebe um `RegistradorUso(papel, provider)` como callback; o papel efetivo gravado
   pode ser sobrescrito pela contextvar `ctx_papel` de `shared/sdr_shared/governanca/uso.py`.
+- Até 2026-09-28 a extração era gravada em `uso_llm` como `roteamento`; a comparação do papel
+  `extracao` começa sem uso e mostra o mix de referência até acumular chamadas.
+
+### Parâmetros por família de modelo
+
+- `recusa_temperatura(model)`: Claude Sonnet 5+, Opus 4.7+, Fable e Mythos devolvem 400 para
+  `temperature` fora do padrão em toda chamada; GPT-5 (fora `-chat`) e GPT-6 também não aceitam.
+  Para esses, a temperatura não é enviada.
+- `raciocina_por_padrao(model)`: Claude Sonnet/Opus 5+, Fable, Mythos, GPT-5/6, série o, Gemini 3.x.
+  Recebem a folga no teto e o esforço do papel (Anthropic: mínimo `low`; OpenAI direta: `low`).
+- Claude que raciocina é embrulhado em `SaidaEstruturadaNativa`: a extração usa
+  `method="json_schema"`, porque com raciocínio ligado a Anthropic não força ferramenta e o Sonnet 5.5
+  não permite desligar o raciocínio.
 
 **Por que modelo por nível.** O ADR-0010 registra dois motivos: tarefas com exigências opostas
 (roteamento roda em toda mensagem e pesa no preço; conversa é o que o cliente lê; análise roda
@@ -54,7 +76,7 @@ trocar para um modelo fora da tabela desligava silenciosamente o teto mensal em 
 | `anthropic` | `ChatAnthropic` | Primário padrão (`SDR_LLM_PROVIDER=anthropic`) | `ANTHROPIC_API_KEY` (sem prefixo `SDR_`); `SDR_ANTHROPIC_WORKSPACE_ID` quando a chave é de organização |
 | `openai` | `ChatOpenAI` | Reserva de produção (ADR-0009, atualização 2026-09); pode ser primário | `OPENAI_API_KEY` (sem prefixo `SDR_`) |
 | `ollama` | `ChatOllama` | Local, custo zero; `local/.env.example` o descreve como opção de desenvolvimento | nenhuma; `SDR_OLLAMA_URL` |
-| `openrouter` | `ChatOpenAI` com `base_url=https://openrouter.ai/api/v1` | **Bancada** apenas (ADR-0009): não é oferecido no painel (`PROVIDERS` em `services/api/src/api/routers/config.py` lista só `anthropic`, `openai`, `ollama`) | `SDR_OPENROUTER_API_KEY` |
+| `openrouter` | `ModeloOpenRouter`: dois `ChatOpenAI` com `base_url=SDR_OPENROUTER_URL` | Qualquer papel, pelo painel ou `.env` (ADR-0016), com retenção zero obrigatória; ver [OpenRouter](#openrouter) | `SDR_OPENROUTER_API_KEY` |
 
 Variáveis relevantes, com os padrões de `shared/sdr_shared/config/settings.py` (a tabela completa
 está em [Configuração](../getting-started/configuracao.md)):
@@ -67,12 +89,17 @@ está em [Configuração](../getting-started/configuracao.md)):
 | `SDR_MODEL_ROTEAMENTO` | `claude-haiku-4-5` | Modelo de `roteamento` |
 | `SDR_LLM_TIMEOUT_S` | `45.0` | Timeout por chamada |
 | `SDR_OLLAMA_URL` | `http://localhost:11434` | Endereço do Ollama |
-| `SDR_OPENROUTER_API_KEY` | vazio | Só para a bancada |
+| `SDR_MODEL_EXTRACAO` / `SDR_MODEL_INFORMACOES` / `SDR_MODEL_ANALISE` | vazio | Modelo do papel; vazio herda do pai |
+| `SDR_OPENROUTER_API_KEY` | vazio | Chave do OpenRouter |
+| `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição; desligar só na bancada |
+| `SDR_OPENROUTER_URL` | `https://openrouter.ai/api/v1` | Base da API (os testes apontam para um servidor falso) |
 
 Divergência a registrar: o ADR-0010 recomenda **Sonnet 5** (`claude-sonnet-5`, US$ 2/10) para
 `conversa` e `analise`, mas o padrão do código, o `.env.example` e a tabela `_EQUIVALENTE`
-continuam em `claude-sonnet-4-5` (US$ 3/15). A troca, quando feita, é pelo painel — não há
-redeploy envolvido.
+continuam em `claude-sonnet-4-5` (US$ 3/15). Até o ADR-0016 a troca nem funcionava: o Sonnet 5
+recusa `temperature`, que o factory mandava sempre. Agora funciona, e a troca é pelo painel — sem
+redeploy. A documentação da Anthropic dá a aposentadoria do Sonnet 4.5 como "não antes de
+2026-09-29" e a do Haiku 4.5 como "não antes de 2026-10-15".
 
 ### Tradução de ID entre famílias
 
@@ -103,6 +130,36 @@ nunca oferece modelo sem preço. Ollama fica de fora de propósito (o que existe
 a máquina baixou), e a tela cai no campo livre. `bge-m3` e `llama3.1:8b` têm preço zero na
 tabela mas não entram no catálogo porque não casam com nenhum prefixo de família.
 
+## OpenRouter
+
+Detalhe de implementação do [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md), em
+`factory.py::_construir_openrouter` e `adapters/hospedados/openrouter.py`:
+
+- **IDs** no formato `fornecedor/modelo`. `para_openrouter` e `de_openrouter` traduzem Anthropic e
+  OpenAI nos dois sentidos (`claude-haiku-4-5` ↔ `anthropic/claude-haiku-4.5`); outro fornecedor
+  indo para um reserva direto usa o equivalente do papel.
+- **Preferências em toda requisição** (`preferencias_openrouter`): `data_collection: "deny"`,
+  `zdr: true` (salvo `SDR_OPENROUTER_ZDR=false`) e `sort` por papel — `latency` em roteamento e
+  extração, `throughput` em conversa e informações, `price` na análise.
+- **Dois clientes.** `ModeloOpenRouter.invoke` usa o livre; `with_structured_output` usa o estrito,
+  que liga `require_parameters` para cair só em endpoint que respeita o schema.
+- **Catálogo** (`GET /models`, público, cache de 6 h por processo): decide se `temperature` e
+  `reasoning` vão na requisição. Sem catálogo, decide pelo nome do modelo.
+- **Custo:** `usage.cost` da resposta vai direto para `uso_llm` (`custo_informado` em `uso.py`), em
+  vez da tabela.
+- **Preço para a trava:** `POST /config/modelos/openrouter/sincronizar` grava o preço publicado de
+  uma lista de modelos; o `PUT /config/modelos` com provedor `openrouter` busca sozinho antes de
+  recusar. Modelos `anthropic/…` e `openai/…` usam a linha da tabela do fornecedor.
+- O catálogo do painel só ganha o grupo `openrouter` quando há algum preço `fornecedor/modelo`
+  cadastrado — os centenas de modelos do OpenRouter no combo não ajudariam ninguém.
+
+- **Cache de prompt:** modelos `anthropic/…` e `qwen/…` recebem a mesma marcação `cache_control` da
+  Anthropic direta (`MARCA_CACHE_OPENROUTER`); os demais fornecedores fazem cache sozinhos. Leitura e
+  escrita de cache chegam a `uso_llm` (`cached_tokens` e `cache_write_tokens` da resposta).
+
+Não implementado: identificar qual provedor atendeu por trás do OpenRouter (a resposta documentada não
+traz o campo).
+
 ## Preços, registro de uso e orçamento
 
 ### Tabela de preços
@@ -114,6 +171,8 @@ e pode ser sobrescrita pelo painel (configuração `precos`).
 
 | Modelo | Entrada | Saída | Cache escrita | Cache leitura |
 |---|---|---|---|---|
+| `claude-opus-5-5` | 4.0 | 20.0 | 5.0 | 0.40 |
+| `claude-sonnet-5-5` | 2.0 | 10.0 | 2.50 | 0.20 |
 | `claude-opus-5` | 5.0 | 25.0 | 6.25 | 0.50 |
 | `claude-opus-4-1` | 15.0 | 75.0 | 18.75 | 1.50 |
 | `claude-opus-4` | 15.0 | 75.0 | 18.75 | 1.50 |
@@ -124,7 +183,7 @@ e pode ser sobrescrita pelo painel (configuração `precos`).
 | `claude-haiku-4-5` | 1.0 | 5.0 | 1.25 | 0.10 |
 | `claude-haiku-3-5` | 0.80 | 4.0 | 1.0 | 0.08 |
 | `gpt-6-astra` | 10.0 | 50.0 | 0.0 | 1.00 |
-| `gpt-5.6-sol` | 4.0 | 20.0 | 0.0 | 0.40 |
+| `gpt-5.6-sol` | 5.0 | 30.0 | 0.0 | 0.50 |
 | `gpt-5.6-terra` | 2.0 | 12.0 | 0.0 | 0.20 |
 | `gpt-5.6-luna` | 0.20 | 1.20 | 0.0 | 0.02 |
 | `gpt-5-mini` | 0.25 | 2.0 | 0.0 | 0.025 |
@@ -230,21 +289,23 @@ desfeitos pelo nome do modelo, como no código (`key=(custo, modelo)`).
 
 | # | Modelo | Provedor | US$/1M entrada | US$/1M saída | Custo no mix de referência (US$) | Recomendado para |
 |---|---|---|---|---|---|---|
-| 1 | `gpt-5-nano` | openai | 0.05 | 0.40 | 0.00055 | — |
-| 2 | `gpt-5.6-luna` | openai | 0.20 | 1.20 | 0.0018 | roteamento |
-| 3 | `gpt-5-mini` | openai | 0.25 | 2.0 | 0.00275 | — |
-| 4 | `claude-haiku-3-5` | anthropic | 0.80 | 4.0 | 0.0064 | — |
-| 5 | `claude-haiku-4-5` | anthropic | 1.0 | 5.0 | 0.008 | roteamento |
-| 6 | `claude-sonnet-5` | anthropic | 2.0 | 10.0 | 0.016 | — |
-| 7 | `gpt-5.6-terra` | openai | 2.0 | 12.0 | 0.018 | conversa |
-| 8 | `claude-sonnet-4` | anthropic | 3.0 | 15.0 | 0.024 | — |
-| 9 | `claude-sonnet-4-5` | anthropic | 3.0 | 15.0 | 0.024 | conversa |
-| 10 | `claude-sonnet-4-6` | anthropic | 3.0 | 15.0 | 0.024 | — |
-| 11 | `gpt-5.6-sol` | openai | 4.0 | 20.0 | 0.032 | — |
-| 12 | `claude-opus-5` | anthropic | 5.0 | 25.0 | 0.04 | — |
-| 13 | `gpt-6-astra` | openai | 10.0 | 50.0 | 0.08 | — |
-| 14 | `claude-opus-4` | anthropic | 15.0 | 75.0 | 0.12 | — |
-| 15 | `claude-opus-4-1` | anthropic | 15.0 | 75.0 | 0.12 | — |
+| 1 | `gpt-5-nano` | openai | 0.05 | 0.4 | 0.00055 | — |
+| 2 | `gpt-5.6-luna` | openai | 0.2 | 1.2 | 0.0018 | roteamento |
+| 3 | `gpt-5-mini` | openai | 0.25 | 2 | 0.00275 | — |
+| 4 | `claude-haiku-3-5` | anthropic | 0.8 | 4 | 0.0064 | — |
+| 5 | `claude-haiku-4-5` | anthropic | 1 | 5 | 0.008 | roteamento |
+| 6 | `claude-sonnet-5` | anthropic | 2 | 10 | 0.016 | — |
+| 7 | `claude-sonnet-5-5` | anthropic | 2 | 10 | 0.016 | — |
+| 8 | `gpt-5.6-terra` | openai | 2 | 12 | 0.018 | conversa |
+| 9 | `claude-sonnet-4` | anthropic | 3 | 15 | 0.024 | — |
+| 10 | `claude-sonnet-4-5` | anthropic | 3 | 15 | 0.024 | conversa |
+| 11 | `claude-sonnet-4-6` | anthropic | 3 | 15 | 0.024 | — |
+| 12 | `claude-opus-5-5` | anthropic | 4 | 20 | 0.032 | — |
+| 13 | `claude-opus-5` | anthropic | 5 | 25 | 0.04 | — |
+| 14 | `gpt-5.6-sol` | openai | 5 | 30 | 0.045 | — |
+| 15 | `gpt-6-astra` | openai | 10 | 50 | 0.08 | — |
+| 16 | `claude-opus-4` | anthropic | 15 | 75 | 0.12 | — |
+| 17 | `claude-opus-4-1` | anthropic | 15 | 75 | 0.12 | — |
 
 **A ordem é a mesma em todos os papéis com a tabela atual.**
 `shared/tests/test_comparacao_modelos.py::test_ordem_da_tabela_atual_e_a_mesma_em_todos_os_papeis`
@@ -294,7 +355,7 @@ envia `_responder_falha` — o cliente recebe uma mensagem de desculpa em vez de
 
 ## Embeddings e transcrição
 
-**Embeddings** (`get_embedder` em `factory.py`). Dois provedores, ambos em **1024 dimensões**,
+**Embeddings** (`get_embedder` em `factory.py`). Três provedores, todos em **1024 dimensões**,
 porque o schema declara `vector(1024)` em `imoveis.embedding` e `documentos.embedding`
 (`shared/sdr_shared/db/schema.sql`):
 
@@ -302,9 +363,13 @@ porque o schema declara `vector(1024)` em `imoveis.embedding` e `documentos.embe
 |---|---|---|---|
 | `ollama` (padrão do código) | `shared/sdr_shared/adapters/local/embeddings.py::OllamaEmbedder` | `SDR_OLLAMA_EMBEDDING_MODEL=bge-m3` | `dimensoes = 1024 if "bge-m3" in model else 768`; custo zero; exige o container do Ollama e `make ollama-pull` |
 | `openai` (sugerido em `local/.env.example`) | `shared/sdr_shared/adapters/hospedados/embeddings.py::OpenAIEmbedder` | `SDR_EMBEDDINGS_MODEL=text-embedding-3-small` | Envia `dimensions=SDR_EMBEDDINGS_DIMENSOES` (`1024`) e valida o tamanho do vetor devolvido; dispensa o container; usa a mesma `OPENAI_API_KEY` |
+| `openrouter` | `…/hospedados/embeddings.py::OpenRouterEmbedder` | `SDR_EMBEDDINGS_MODEL` (sem fornecedor vira `openai/text-embedding-3-small`) | Mesmo modelo, mesmos vetores do `openai`: trocar de um para o outro **não** exige reindexar. Usa `SDR_OPENROUTER_API_KEY`; manda `provider.data_collection: deny`, mas **não** `zdr` — nenhum modelo de embedding estava na lista de endpoints ZDR (2026-09-28), e exigi-lo derrubaria a busca. `baai/bge-m3` também serve (outro modelo: reindexar) |
+
+O piso de similaridade do RAG (`conhecimento.PISO_POR_EMBEDDER`) é por **modelo**, não por provedor:
+`text-embedding-3-small` → 0,48 por qualquer caminho; `bge-m3` → 0,35 pelo Ollama ou pelo OpenRouter.
 
 Provedor desconhecido levanta `RuntimeError` em vez de cair no padrão: gravar vetor de outro
-modelo no mesmo índice não dá erro na hora, dá busca errada depois. Trocar de provedor exige
+modelo no mesmo índice não dá erro na hora, dá busca errada depois. Trocar de modelo exige
 reindexar (`make seed` e `make docs-kb`). A Anthropic não oferece API de embeddings, por isso a
 escolha é independente do provedor de LLM. Há um preço `bge-m3: 0.0` na tabela; `text-embedding-3-small`
 não tem linha, então seu custo (se registrado) sairia como zero — os embeddings não passam pelo
@@ -357,20 +422,26 @@ Resumo do que os ADRs registram (texto completo em
 
 `services/agent/evals/` (README em `services/agent/evals/README.md`) mede o **modelo**, enquanto
 `tests/` mede o encanamento com LLM falso. Suítes: `extracao` (acerto por campo + campos
-inventados), `roteamento` (acurácia + matriz de confusão), `adversarial` (taxa de escape) e `rag`
-(recall@3, acerto no topo, abstenção). Nenhuma usa juiz-LLM. Alvos do `Makefile`:
+inventados), `coerencia`, `roteamento` (acurácia + matriz de confusão), `adversarial` (taxa de
+escape), `rag` (recall@3, acerto no topo, abstenção), `recomendacao`, `informacoes` (cita a fonte,
+número fora do trecho, abstenção sem base) e `analise` (análise estruturada válida). Nenhuma usa
+juiz-LLM. Cada suíte que mede um modelo pertence a um papel (`suites.PAPEL_DA_SUITE`), e
+`make eval-matriz` compara os candidatos de `evals/matriz.json` papel a papel. Alvos do `Makefile`:
 
 | Alvo | O que faz |
 |---|---|
 | `make eval` | Todas as suítes, modelo real (chama a API; fora do CI de propósito) |
 | `make eval-fake` | Valida o harness com LLM falso e embedder de trigramas; roda no CI; os números não dizem nada sobre qualidade |
 | `make eval-rag` | Só o RAG institucional, com o embedder real do `.env` |
+| `make eval-matriz` | Candidatos por papel, lado a lado (`evals/matriz.json`), cada um num processo com o modelo do papel trocado e sem reserva; `ARGS="--plano"` estima as chamadas antes |
 | `make eval-embeddings` | Roda a suíte `rag` duas vezes, reindexando com `ollama` (bge-m3) e depois `openai` (text-embedding-3-small), para comparar recall@3 e abstenção lado a lado |
 
-**Resultados versionados.** `services/agent/evals/resultados/` contém 19 arquivos JSON de
-2026-09-19, e **todos** têm `"modelo": "falso"` e `"custo": {}` — são execuções do modo `--fake`.
-Não há no repositório resultado de avaliação com modelo real, nem comparativo de qualidade entre
-Anthropic, OpenAI ou Ollama, nem entre `bge-m3` e `text-embedding-3-small`. A única medição de
+**Resultados.** Há uma execução com modelo real, de 2026-09-24 (`resultados/20260924-235359.json`,
+uma repetição por caso, US$ 0,20 em 55 chamadas): extração 88% de aprovação (95,2% de acerto por
+campo, 1 campo inventado), roteamento 100%, adversarial 0% de escape, RAG com recall@3 de 87,9% e
+abstenção de 16,7% nas perguntas fora do corpus. O arquivo grava `"modelo": "padrão"` porque o
+relatório de então lia só `SDR_MODEL_CONVERSA`; desde 2026-09-28 ele grava o modelo efetivo de cada
+papel e o que de fato atendeu (lido de `uso_llm`). Não há comparativo de qualidade entre modelos. A única medição de
 qualidade citada nos ADRs é a do RRF léxico (recall 31,9% → 29,8%, em `decisoes.md`), que é sobre
 o RAG, não sobre modelo de linguagem. Qualquer afirmação de "modelo X responde melhor" precisa
 sair de `make eval` rodado na sua máquina, com `-n 3` ou mais, como o README recomenda.
@@ -402,8 +473,10 @@ resultado, não um defeito**, e diz que o prefixo não passou do mínimo ou que 
 
 **Cuidados no código.**
 
-- **Só Anthropic.** `cache_control` é campo da API dela; mandá-lo para a OpenAI é erro de
-  requisição — e a OpenAI já faz cache de prefixo sozinha, sem marcação. Ollama não tem o conceito.
+- **Anthropic, direta ou pelo OpenRouter** (e Qwen pelo OpenRouter). `cache_control` é campo da API
+  da Anthropic; mandá-lo para a OpenAI direta é erro de requisição — e a OpenAI já faz cache de
+  prefixo sozinha, sem marcação. Pelo OpenRouter, o cache em memória não conta como retenção (vale
+  com ZDR) e chamadas seguidas do mesmo modelo vão ao mesmo provedor. Ollama não tem o conceito.
 - **A marcação copia a mensagem.** O histórico vive no checkpoint do grafo; marcar o original
   gravaria metadado de transporte dentro do estado da conversa. Há teste para isso.
 - **Entrada que não é lista passa intacta.** O caminho `texto()` (supervisor e extração do cartão)

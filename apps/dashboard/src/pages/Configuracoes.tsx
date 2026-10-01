@@ -14,7 +14,7 @@ const SECOES: { k: Secao; r: string; d: string }[] = [
   { k: "agenda", r: "Agenda de visitas", d: "Slots oferecidos e duração" },
   { k: "cobertura", r: "Área de cobertura", d: "Regiões que a Mora oferece" },
   { k: "handoff", r: "Handoff para corretor", d: "Quando passar a conversa" },
-  { k: "modelos", r: "Modelos de IA", d: "Qual modelo cada nível usa (ADR-0010)" },
+  { k: "modelos", r: "Modelos de IA", d: "Qual modelo cada função do agente usa (ADR-0010, ADR-0016)" },
   { k: "operacao", r: "Operação", d: "Timeout, transcrição e refresh do acervo" },
   { k: "canais", r: "Canais e modelos", d: "Status da integração (somente leitura)" },
 ];
@@ -58,7 +58,8 @@ export function Configuracoes() {
                 <Field label="Cidade"><Input value={String(form.cidade ?? "")} onChange={(e) => set("cidade", e.target.value)} /></Field>
                 <Field label="Regiões atendidas" dica="Fora dessas regiões a Mora avisa o cliente e sugere a mais próxima"><div className="flex flex-wrap gap-1.5">{REGIOES.map((r) => { const rs = (form.regioes as string[]) ?? []; const on = rs.includes(r); return <button type="button" key={r} onClick={() => set("regioes", on ? rs.filter((x) => x !== r) : [...rs, r])} className={cx("rounded-full border px-3 py-1 text-xs font-medium", on ? "border-brand bg-brand text-brand-ink" : "border-line text-ink-muted hover:bg-surface-2")}>{REGIAO[r]}</button>; })}</div></Field>
               </>}
-              {secao === "modelos" && <ModelosForm form={form} set={set} efetivo={data.canais.llm.efetivo} catalogo={data.canais.llm.catalogo} />}
+              {secao === "modelos" && <ModelosForm form={form} set={set} efetivo={data.canais.llm.efetivo} catalogo={data.canais.llm.catalogo}
+                                                   papeis={data.canais.llm.papeis} openrouter={data.canais.llm.openrouter} />}
               {secao === "operacao" && <>
                 <p className="rounded-lg bg-info-soft px-3 py-2 text-xs text-ink-muted">
                   Campo vazio usa o valor do <code>.env</code>. Um valor explícito — inclusive

@@ -27,12 +27,16 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_ENV` | Não | `dev` | Ambiente lógico. Padrão `dev`. |
 | `SDR_PROFILE` | Não | `local` | `local` (padrão) ou `producao`. Não escolhe adaptador — decide **uma** coisa, e é de segurança: se o `dev-token` do painel vale. |
 | `SDR_DATABASE_DSN` | **Sim** | `postgresql://sdr:sdr@localhost:5432/sdr` | DSN do Postgres (o mesmo banco do painel e do pgvector). |
-| `SDR_LLM_PROVIDER` | Não | `anthropic` | `anthropic` (padrão), `openai` ou `ollama`. |
+| `SDR_LLM_PROVIDER` | Não | `anthropic` | `anthropic` (padrão), `openai`, `ollama` ou `openrouter` (ADR-0016). |
 | `SDR_LLM_PROVIDER_FALLBACK` | Recomendada | `openai` | Provedor de reserva quando o primário falha. Vazio = sem fallback: cada turno vira mensagem de desculpa. Se for de outra família, o modelo é trocado pelo equivalente do papel (ADR-0009). |
 | `ANTHROPIC_API_KEY` | Se usar `anthropic` | `sk-ant-…` | Chave da Anthropic. **Sem o prefixo `SDR_`** — é o nome que a biblioteca procura no ambiente. |
 | `SDR_MODEL_CONVERSA` | Não | `claude-sonnet-4-5` | Modelo da conversa. |
-| `SDR_MODEL_ROTEAMENTO` | Não | `claude-haiku-4-5` | Modelo de roteamento / extração. |
-| `SDR_EMBEDDINGS_PROVIDER` | Não | `ollama` | Provedor único: `ollama`. O schema espera 1024 dimensões, que é o que o `bge-m3` dá. |
+| `SDR_MODEL_ROTEAMENTO` | Não | `claude-haiku-4-5` | Modelo do supervisor (e da extração, se ela não tiver o seu). |
+| `SDR_MODEL_EXTRACAO` | Não | *(vazio → roteamento)* | Modelo da extração do cartão (ADR-0016). |
+| `SDR_MODEL_INFORMACOES` | Não | *(vazio → conversa)* | Modelo do RAG institucional. |
+| `SDR_MODEL_ANALISE` | Não | *(vazio → conversa)* | Modelo do briefing e da análise. |
+| `SDR_EMBEDDINGS_PROVIDER` | Não | `ollama` | `ollama` (bge-m3), `openai` ou `openrouter` (text-embedding-3-small reduzido a 1024). O schema espera 1024 dimensões. Trocar de modelo exige reindexar; trocar só o caminho do mesmo modelo (OpenAI ↔ OpenRouter), não. |
+| `SDR_EMBEDDINGS_MODEL` | Não | `text-embedding-3-small` | Modelo de embedding para `openai` e `openrouter`. Pelo OpenRouter, sem fornecedor no ID vira `openai/…`. |
 | `OPENAI_API_KEY` | Se usar `openai` | `sk-…` | Chave da OpenAI. **Sem o prefixo `SDR_`** — é o nome que a biblioteca procura no ambiente, igual à `ANTHROPIC_API_KEY`. Instale o extra: `pip install -e "shared[openai]"`. |
 | `SDR_TRANSCRICAO_PROVIDER` | Não | `auto` | Motor de transcrição de áudio: `auto`, `whisper_local` ou `off`. |
 | `SDR_WHISPER_MODEL` | Não | `small` | Tamanho do faster-whisper (`tiny`…`large-v3`). |
@@ -42,6 +46,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_REDIS_URL` | Não | `redis://localhost:6379/0` | Fila entre a API, os canais e os workers. |
 | `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot, emitido pelo @BotFather. É o único canal externo. |
 | `SDR_TELEGRAM_BOT_USERNAME` | Não | `mora_vertice_bot` | Usuário do bot, para montar o link `t.me/<usuario>`. |
+| `SDR_CHAT_NOVA_CONVERSA` | Não | `false` | Modo de teste do chat do site: `true` faz cada carregamento da página começar um atendimento novo e mostra o botão "Nova conversa". Aplicar com `docker compose up -d web`. |
 | `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site e deriva a chave que cifra o refresh token do calendário no banco. Sem valor, as sessões caem a cada reinício e a credencial fica em claro (com aviso). **Trocar o valor invalida as credenciais de calendário já guardadas.** |
 | `SDR_PAINEL_TOKEN` | Sim (fora do perfil local) | `exemplo-token-painel` | Credencial única do painel: header `Authorization` da API e WebSocket `papel=dashboard`. No perfil local, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. |
 | `SDR_CORS_ORIGINS` | Recomendada | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
@@ -60,7 +65,8 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_FOTOS_DIR` | `data/fotos` | Onde o painel grava foto de imóvel; a API serve essa pasta em `/fotos/...`. |
 | `SDR_FOTOS_ACERVO_DIR` | `data/fotos-acervo` | Fotos do acervo de demonstração, servidas em `/acervo/...`. Prefixo separado de propósito: `/fotos/%` é o que marca foto do painel na precedência do upsert (ADR-0015). |
 | `SDR_ANTHROPIC_WORKSPACE_ID` | *(vazio)* | Obrigatório quando a chave é de organização e não de workspace. |
-| `SDR_OPENROUTER_API_KEY` | *(vazio)* | **Só para a bancada de avaliação** comparar modelos (ADR-0009). Não usar em produção: põe um terceiro no meio de conversas com dado de cliente. |
+| `SDR_OPENROUTER_API_KEY` | *(vazio)* | Chave do OpenRouter, quando ele atende algum papel (ADR-0016). |
+| `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição ao OpenRouter. Desligar só na bancada, com dataset sintético: sem ela, o texto do cliente pode ir para endpoints que o guardam. |
 | `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local. |
 | `SDR_TEST_ALLOW_WIPE` | *(vazio)* | Ignora a trava que impede as suítes de apagar um banco sem "test" no nome. Último recurso. |
 
@@ -100,8 +106,10 @@ reconstruir (`npm run build`); num `.env` lido pelos serviços Python elas não 
 
 - Sem `SDR_GOOGLE_*`, a Mora usa a grade interna de horários e as visitas continuam sendo marcadas.
 - Sem `SDR_TELEGRAM_BOT_TOKEN`, a Mora continua atendendo pelo chat do site e pela CLI (`make cli`).
-- Embeddings **não** acompanham o provedor de conversa: os da OpenAI têm 1536 dimensões e o schema
-  espera 1024 (bge-m3). Mesmo com `SDR_LLM_PROVIDER=openai`, mantenha `SDR_EMBEDDINGS_PROVIDER=ollama`.
+- Embeddings **não** acompanham o provedor de conversa: são escolhidos em `SDR_EMBEDDINGS_PROVIDER`.
+  O `text-embedding-3-small` nasce com 1536 dimensões e o adaptador pede 1024 (`dimensions`); vetor
+  de outro tamanho é recusado antes de gravar. Para usar só o OpenRouter, `SDR_EMBEDDINGS_PROVIDER=openrouter`
+  dispensa a `OPENAI_API_KEY` sem reindexar.
 - No perfil local, `SDR_PAINEL_TOKEN` vazio vira `dev-token`.
 - `SDR_CORS_ORIGINS` vazio equivale a `*` — aceitável apenas em desenvolvimento.
 

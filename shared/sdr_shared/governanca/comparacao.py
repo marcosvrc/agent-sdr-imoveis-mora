@@ -11,6 +11,7 @@ fora porque não existem em lugar nenhum do repositório. Preencher esses campos
 a tela mais bonita e faria alguém escolher um modelo por um número inventado — numa tela cuja
 função é justamente decidir qual modelo atende o cliente.
 """
+from ..papeis import PAPEIS
 from .precos import custo_usd, preco_do_modelo
 
 # Quando ainda não há uso gravado, é preciso ALGUM mix para ordenar do mais barato ao mais caro:
@@ -29,7 +30,7 @@ def recomendacoes(equivalente: dict[str, dict[str, str]]) -> dict[str, str]:
     que explica a escolha (qualidade para o que o cliente lê)."""
     saida: dict[str, str] = {}
     for papeis in equivalente.values():
-        for papel in ("conversa", "roteamento", "analise"):
+        for papel in PAPEIS:
             if (m := papeis.get(papel)) and m not in saida:
                 saida[m] = papel
     return saida

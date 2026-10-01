@@ -125,8 +125,12 @@ export type Carteira = { leads: number; visitas: number };
 
 export type Config = { config: Record<string, Record<string, unknown>>; defaults: Record<string, Record<string, unknown>>;
   canais: { telegram: { configurado: boolean; usuario?: string | null }; web: { configurado: boolean }; llm: { provider: string; modelo_conversa: string; modelo_roteamento: string; fallback?: string | null;
-    efetivo: Record<string, { modelo: string; provider: string; origem: "painel" | "ambiente" }>;
-    catalogo: Record<string, string[]> }; embeddings: { provider: string } } };
+    /** `de` é o papel de onde o modelo veio: diferente do próprio quando o campo está vazio e herda. */
+    efetivo: Record<string, { modelo: string; provider: string; origem: "painel" | "ambiente"; de?: string }>;
+    catalogo: Record<string, string[]>;
+    /** Papéis na ordem da tela (ADR-0016). Ausente numa API anterior a eles — a tela cai na lista local. */
+    papeis?: { papel: string; descricao: string; herda: string | null }[];
+    openrouter?: { configurado: boolean; zdr: boolean } }; embeddings: { provider: string } } };
 
 /** Uma linha por modelo, da mais barata para a mais cara. `custo.base` diz se o número saiu do uso
  *  gravado ("uso") ou de um mix de referência ("referencia") — a tela precisa dizer qual dos dois. */
@@ -211,6 +215,8 @@ export const api = {
   testarModelo: (modelo: string, provider?: string) => req<{ ok: boolean; latencia_ms: number; resposta?: string; erro?: string; tem_preco: boolean }>(
     "/config/modelos/testar", { method: "POST", body: JSON.stringify({ modelo, provider }) }),
   compararModelos: (dias = 30) => req<Comparacao>(`/config/modelos/comparacao${qs({ dias })}`),
+  sincronizarOpenRouter: (modelos: string[]) => req<{ gravados: Record<string, number[]>; nao_encontrados: string[] }>(
+    "/config/modelos/openrouter/sincronizar", { method: "POST", body: JSON.stringify({ modelos }) }),
 };
 
 export { brl } from "./format";

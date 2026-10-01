@@ -6,7 +6,8 @@ import { Badge, Modal, cx } from "./ui";
 export const usd = (v: number) =>
   "US$ " + v.toLocaleString("pt-BR", { minimumFractionDigits: v < 1 ? 4 : 2, maximumFractionDigits: v < 1 ? 4 : 2 });
 
-const PAPEL = { conversa: "conversa", roteamento: "roteamento", analise: "análise" } as const;
+const PAPEL = { conversa: "conversa", roteamento: "roteamento", extracao: "extração", informacoes: "informações",
+                analise: "análise" } as const;
 
 /** Comparação entre os modelos disponíveis para um papel.
  *

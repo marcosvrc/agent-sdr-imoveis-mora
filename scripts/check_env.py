@@ -9,12 +9,13 @@ from pathlib import Path
 
 RAIZ = Path(__file__).resolve().parents[1]
 # Marcadores que costumam ser colados por engano no lugar do valor real
-# Provedores de LLM aceitos. `openrouter` fica de fora de propósito: é bancada de avaliação, não
-# caminho de produção (ADR-0009).
-PROVEDORES = {"anthropic", "openai", "ollama"}
-# Provedores de embeddings. Os dois entregam as 1024 dimensões do schema; trocar entre eles obriga
-# a reindexar, porque vetor de modelo diferente não se compara com o que já está gravado.
-EMBEDDINGS = {"ollama", "openai"}
+# Provedores de LLM aceitos. `openrouter` entrou com o ADR-0016 — com retenção zero obrigatória e
+# exigindo um reserva DIRETO, porque o OpenRouter fora do ar derruba tudo que passa por ele.
+PROVEDORES = {"anthropic", "openai", "ollama", "openrouter"}
+# Provedores de embeddings. Todos entregam as 1024 dimensões do schema. Trocar de MODELO obriga a
+# reindexar, porque vetor de modelo diferente não se compara com o que já está gravado; trocar só o
+# CAMINHO (text-embedding-3-small pela OpenAI ou pelo OpenRouter) não obriga.
+EMBEDDINGS = {"ollama", "openai", "openrouter"}
 PLACEHOLDERS = re.compile(r"(COLE_|SEU_ID|SEU_|CHANGE_?ME|<.*>|xxx+|placeholder|preencher)", re.I)
 
 
@@ -58,6 +59,8 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
         erros.append(f"SDR_LLM_PROVIDER='{llm}' é inválido — use {', '.join(sorted(PROVEDORES))}.")
     if emb not in EMBEDDINGS:
         erros.append(f"SDR_EMBEDDINGS_PROVIDER='{emb}' é inválido — use {', '.join(sorted(EMBEDDINGS))}.")
+    if emb == "openrouter" and not env.get("SDR_OPENROUTER_API_KEY"):
+        erros.append("SDR_EMBEDDINGS_PROVIDER=openrouter exige SDR_OPENROUTER_API_KEY.")
     if emb == "openai" and not env.get("OPENAI_API_KEY"):
         erros.append("SDR_EMBEDDINGS_PROVIDER=openai exige OPENAI_API_KEY (sem o prefixo SDR_ — é o "
                      "nome que a biblioteca procura no ambiente).")
@@ -89,6 +92,16 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
     if not reserva:
         avisos.append("Sem SDR_LLM_PROVIDER_FALLBACK: se o provedor cair, cada turno vira mensagem de "
                       "desculpa e encaminhamento ao corretor.")
+
+    if "openrouter" in {llm, reserva}:
+        if not env.get("SDR_OPENROUTER_API_KEY"):
+            erros.append("Provedor openrouter exige SDR_OPENROUTER_API_KEY.")
+        if env.get("SDR_OPENROUTER_ZDR", "true").strip().lower() in ("false", "0", "nao", "não", "no"):
+            avisos.append("SDR_OPENROUTER_ZDR desligado: o OpenRouter pode rotear para endpoints que "
+                          "guardam o texto do cliente. Só para bancada com dataset sintético (ADR-0016).")
+    if llm == "openrouter" and reserva in ("", "openrouter"):
+        avisos.append("OpenRouter como primário sem um reserva DIRETO (anthropic ou openai): se o "
+                      "OpenRouter cair, todo modelo cai junto — o fallback interno dele não cobre isso.")
 
     if "openai" in {llm, reserva}:
         chave = env.get("OPENAI_API_KEY", "")

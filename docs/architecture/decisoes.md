@@ -44,9 +44,12 @@ arquitetural) em `docs/adr`. Os ADRs completos estão disponíveis neste portal,
   escrevê-los de novo.
 - [ADR-0007](../adr/0007-telegram-em-vez-de-whatsapp.md)
 
-### Modelo por nível, editável no painel
-- **Decisão.** Sonnet na conversa, Haiku em roteamento/extração; ajustável sem redeploy.
-- [ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md)
+### Modelo por função, editável no painel
+- **Decisão.** Cinco papéis — conversa, roteamento, extração, informações e análise —, cada um com
+  modelo e provedor próprios, trocáveis sem redeploy; papel vazio herda do pai.
+- **OpenRouter** entra como provedor, com retenção zero obrigatória em toda requisição e reserva direto.
+- [ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md) ·
+  [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md)
 
 ### Observabilidade leve no Postgres
 - **Decisão.** Três tabelas no Postgres, `/health` real e logs JSON — que **revogaram** a stack
@@ -69,6 +72,7 @@ arquitetural) em `docs/adr`. Os ADRs completos estão disponíveis neste portal,
 | [0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md) | Modelo por nível e troca pelo painel |
 | [0011](../adr/0011-observabilidade-leve-no-postgres.md) | Observabilidade leve no Postgres |
 | [0012](../adr/0012-vitrine-encontravel-e-acessivel.md) | Vitrine encontrável e acessível |
+| [0016](../adr/0016-openrouter-e-modelo-por-funcao.md) | OpenRouter como provedor e um modelo por função |
 
 !!! tip "Novos ADRs"
     Ao registrar uma nova decisão, adicione um arquivo em `docs/adr/` seguindo a numeração e o formato

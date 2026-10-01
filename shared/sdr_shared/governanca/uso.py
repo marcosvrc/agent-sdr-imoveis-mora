@@ -42,6 +42,27 @@ def _tokens(resposta: Any) -> dict:
     return saida
 
 
+def custo_informado(resposta: Any) -> float | None:
+    """O custo que o PRÓPRIO provedor informa na resposta — hoje só o OpenRouter (`usage.cost`).
+
+    Quando existe, vale mais que a tabela: é o que foi cobrado de fato, inclusive de modelos que a
+    tabela não conhece e de preços que mudaram depois da última sincronização. Os outros provedores
+    não informam, e aí a tabela continua sendo a fonte.
+    """
+    fontes = [((getattr(resposta, "llm_output", None) or {}).get("token_usage") or {})]
+    gen = (resposta.generations or [[]])[0] if getattr(resposta, "generations", None) else []
+    msg = getattr(gen[0], "message", None) if gen else None
+    meta = getattr(msg, "response_metadata", None) or {}
+    fontes.append(meta.get("token_usage") or {})
+    for u in fontes:
+        if isinstance(u, dict) and u.get("cost") is not None:
+            try:
+                return round(float(u["cost"]), 6)
+            except (TypeError, ValueError):
+                continue
+    return None
+
+
 def _modelo(serialized: dict, kwargs: dict, resposta: Any = None) -> str:
     for fonte in ((getattr(resposta, "llm_output", None) or {}), kwargs, (serialized or {}).get("kwargs", {})):
         for chave in ("model_name", "model", "model_id"):
@@ -59,9 +80,16 @@ class RegistradorUso(BaseCallbackHandler):
         # registraria a chamada no nome do primário e o painel mostraria um número mentiroso.
         self.provider = provider
         self._inicio: dict[Any, float] = {}
+        # O modelo PEDIDO, lido no início da chamada. Numa chamada que falha não há resposta de onde
+        # tirar o nome, e antes caía no modelo do .env — um 401 de `openai/gpt-6-luna` ia para
+        # `uso_llm` como `claude-haiku-4-5`, e o painel culpava o modelo errado pelo erro.
+        self._pedido: dict[Any, str] = {}
 
     def on_llm_start(self, serialized, prompts, *, run_id=None, **kwargs):
         self._inicio[run_id] = time.perf_counter()
+        pedido = _modelo(serialized or {}, kwargs.get("invocation_params") or {})
+        if pedido != "desconhecido":
+            self._pedido[run_id] = pedido
 
     on_chat_model_start = on_llm_start
 
@@ -76,15 +104,16 @@ class RegistradorUso(BaseCallbackHandler):
             ms = int((time.perf_counter() - self._inicio.pop(run_id, time.perf_counter())) * 1000)
             s = get_settings()
             t = _tokens(resposta) if resposta is not None else {"entrada": 0, "saida": 0, "cache_escrita": 0, "cache_leitura": 0}
-            modelo = _modelo(kwargs.get("serialized", {}), kwargs.get("invocation_params", {}) or {}, resposta) \
-                or (s.model_conversa if self.papel == "conversa" else s.model_roteamento)
+            pedido = self._pedido.pop(run_id, None)
+            modelo = _modelo(kwargs.get("serialized", {}), kwargs.get("invocation_params", {}) or {}, resposta)
             if modelo == "desconhecido":
-                modelo = s.model_conversa if self.papel == "conversa" else s.model_roteamento
+                modelo = pedido or (s.model_conversa if self.papel == "conversa" else s.model_roteamento)
             from ..db.governanca import UsoRepository
             UsoRepository().registrar(
                 lead_id=ctx_lead.get(), no=ctx_no.get(), papel=ctx_papel.get() or self.papel,
                 provider=self.provider or s.llm_provider, modelo=modelo, latencia_ms=ms, erro=erro,
-                custo=custo_usd(modelo, t["entrada"], t["saida"], t["cache_escrita"], t["cache_leitura"], UsoRepository().precos()),
+                custo=informado if (informado := custo_informado(resposta)) is not None else
+                custo_usd(modelo, t["entrada"], t["saida"], t["cache_escrita"], t["cache_leitura"], UsoRepository().precos()),
                 **t)
         except Exception:                       # observabilidade nunca pode derrubar o atendimento
             log.debug("falha ao registrar uso de LLM", exc_info=True)

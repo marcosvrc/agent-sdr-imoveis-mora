@@ -308,9 +308,13 @@ def test_modelos_aceita_modelo_com_preco_e_muda_o_efetivo():
     r = c.put("/config/modelos", headers=H, json={"conversa": "claude-sonnet-5"})
     assert r.status_code == 200
     efetivo = c.get("/config", headers=H).json()["canais"]["llm"]["efetivo"]
-    assert efetivo["conversa"] == {"modelo": "claude-sonnet-5", "provider": "anthropic", "origem": "painel"}
-    # `analise` não configurado herda a conversa — não obriga preencher três níveis para mudar um
-    assert efetivo["analise"]["modelo"] == "claude-sonnet-5"
+    assert efetivo["conversa"] == {"modelo": "claude-sonnet-5", "provider": "anthropic", "origem": "painel",
+                                   "de": "conversa"}
+    # `analise` e `informacoes` não configurados herdam a conversa — não obriga preencher cinco
+    # papéis para mudar um. O `de` diz de onde o modelo veio, que é o que a tela mostra.
+    assert efetivo["analise"]["modelo"] == "claude-sonnet-5" and efetivo["analise"]["de"] == "conversa"
+    assert efetivo["informacoes"]["modelo"] == "claude-sonnet-5"
+    assert efetivo["extracao"]["de"] == "roteamento", "extração herda do roteamento, não da conversa"
     assert efetivo["roteamento"]["origem"] == "ambiente", "mexer num nível não mexe nos outros"
     assert c.delete("/config/modelos", headers=H).status_code == 204
     assert c.get("/config", headers=H).json()["canais"]["llm"]["efetivo"]["conversa"]["origem"] == "ambiente"
@@ -364,10 +368,11 @@ def test_comparacao_de_modelos_usa_o_consumo_real_e_a_latencia_medida():
 
 def test_modelos_recusa_provedor_e_id_invalidos():
     c = TestClient(app)
-    # `openai` era recusado aqui até virar reserva de produção (ADR-0009). O caso continua valendo
-    # com um provedor que de fato não existe — e `openrouter` é o exemplo certo: existe no código,
-    # mas só como bancada de avaliação, e não pode ser escolhido pelo painel.
-    assert c.put("/config/modelos", headers=H, json={"conversa_provider": "openrouter"}).status_code == 422
+    # `openai` era recusado aqui até virar reserva de produção (ADR-0009), e `openrouter` até o
+    # ADR-0016 o levar ao painel com retenção zero obrigatória. O caso continua valendo com um
+    # provedor que de fato não existe no factory.
+    assert c.put("/config/modelos", headers=H, json={"conversa_provider": "bedrock"}).status_code == 422
+    assert c.put("/config/modelos", headers=H, json={"extracao_provider": "bedrock"}).status_code == 422
     assert c.put("/config/modelos", headers=H, json={"conversa_provider": "gpt"}).status_code == 422
     assert c.put("/config/modelos", headers=H, json={"conversa": "claude sonnet 5"}).status_code == 422
     assert c.put("/config/modelos", headers=H, json={"inventado": "x"}).status_code == 422
@@ -820,3 +825,61 @@ def test_foto_acima_do_teto_e_recusada_pelo_tamanho_do_base64(tmp_path, monkeypa
     texto = base64.b64encode(b"\x89PNG" + b"\0" * 1_600_000).decode()
     r = c.post("/imoveis/SP-0001/fotos", headers=H, json={"imagem": f"data:image/png;base64,{texto}"})
     assert r.status_code == 413 and not decodificacoes
+
+
+# ------------------------------------------------------------------ OpenRouter e papéis (ADR-0016)
+
+def test_papeis_novos_sao_configuraveis_e_aparecem_na_tela():
+    c = TestClient(app)
+    llm = c.get("/config", headers=H).json()["canais"]["llm"]
+    assert [p["papel"] for p in llm["papeis"]] == ["conversa", "roteamento", "extracao", "informacoes", "analise"]
+    assert {p["papel"]: p["herda"] for p in llm["papeis"]}["extracao"] == "roteamento"
+    assert llm["openrouter"]["zdr"] is True, "retenção zero é o padrão"
+    r = c.put("/config/modelos", headers=H, json={"extracao": "claude-sonnet-4-5"})
+    assert r.status_code == 200, r.text
+    efetivo = c.get("/config", headers=H).json()["canais"]["llm"]["efetivo"]
+    assert efetivo["extracao"]["modelo"] == "claude-sonnet-4-5" and efetivo["extracao"]["origem"] == "painel"
+    assert efetivo["roteamento"]["origem"] == "ambiente", "a extração não arrasta o roteamento"
+    assert c.delete("/config/modelos", headers=H).status_code == 204
+
+
+def test_modelo_do_openrouter_busca_o_preco_em_vez_de_recusar(monkeypatch):
+    """Sem preço, 422 — mas pelo OpenRouter o preço é público, então a trava busca antes de recusar."""
+    import sdr_shared.adapters.hospedados.openrouter as orq
+    monkeypatch.setattr(orq, "precos_de", lambda ms: ({m: [0.3, 2.5, 0.0, 0.03] for m in ms if m.startswith("google/")},
+                                                       [m for m in ms if not m.startswith("google/")]))
+    c = TestClient(app)
+    r = c.put("/config/modelos", headers=H, json={"extracao": "google/gemini-3.5-flash-lite",
+                                                  "extracao_provider": "openrouter"})
+    assert r.status_code == 200, r.text
+    assert "google/gemini-3.5-flash-lite" in c.get("/config", headers=H).json()["canais"]["llm"]["catalogo"]["openrouter"]
+    r = c.put("/config/modelos", headers=H, json={"conversa": "inventado/modelo", "conversa_provider": "openrouter"})
+    assert r.status_code == 422, "o que o OpenRouter não conhece continua recusado"
+    assert c.delete("/config/modelos", headers=H).status_code == 204
+    from sdr_shared.db import UsoRepository
+    repo = UsoRepository()
+    repo.salvar_precos({k: v for k, v in repo.precos().items() if "/" not in k})
+
+
+def test_sincronizar_precos_do_openrouter(monkeypatch):
+    import sdr_shared.adapters.hospedados.openrouter as orq
+    monkeypatch.setattr(orq, "precos_de", lambda ms: ({"mistralai/ministral-8b": [0.1, 0.1, 0.0, 0.0]},
+                                                       ["nao/existe"]))
+    c = TestClient(app)
+    assert c.post("/config/modelos/openrouter/sincronizar", headers=H, json={}).status_code == 422
+    assert c.post("/config/modelos/openrouter/sincronizar", headers=H,
+                  json={"modelos": ["sem-barra"]}).status_code == 422
+    r = c.post("/config/modelos/openrouter/sincronizar", headers=H,
+               json={"modelos": ["mistralai/ministral-8b", "nao/existe"]})
+    assert r.status_code == 200
+    assert r.json() == {"gravados": {"mistralai/ministral-8b": [0.1, 0.1, 0.0, 0.0]}, "nao_encontrados": ["nao/existe"]}
+    from sdr_shared.db import UsoRepository
+    repo = UsoRepository()
+    assert repo.precos()["mistralai/ministral-8b"] == [0.1, 0.1, 0.0, 0.0]
+    repo.salvar_precos({k: v for k, v in repo.precos().items() if "/" not in k})
+
+
+def test_comparacao_tem_uma_lista_por_papel():
+    c = TestClient(app)
+    papeis = c.get("/config/modelos/comparacao", headers=H).json()["papeis"]
+    assert set(papeis) == {"conversa", "roteamento", "extracao", "informacoes", "analise"}

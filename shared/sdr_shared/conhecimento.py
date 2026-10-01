@@ -29,6 +29,35 @@ MIN_CHARS = 40            # abaixo disso não é trecho, é sobra de formataçã
 # lado custa uma informação falsa sobre a empresa.
 PISO_SIMILARIDADE = 0.35
 
+# O cosseno não é comparável entre embedders: o mesmo par de textos pontua diferente no bge-m3 e no
+# text-embedding-3-small. O 0,35 acima foi calibrado antes da troca para a OpenAI e, com ela, deixou
+# passar quase tudo — no eval real de 2026-09-24 (text-embedding-3-small, 1024 dim) as perguntas que
+# o corpus NÃO cobre pontuaram entre 0,40 e 0,50, e só 1 de 7 virou "não sei". Com 0,48, 5 de 7
+# viram "não sei" e 8 de 102 acertos passam a "vou confirmar com o corretor" — a troca que a regra
+# acima manda fazer. Acima de 0,48 a perda de acertos acelera (0,50 → 13, 0,55 → 32).
+# Embedder novo entra aqui com o próprio número, medido com `make eval-rag`, nunca herdado de outro.
+#
+# A chave é o MODELO, não o provedor: o `text-embedding-3-small` dá os mesmos vetores pela OpenAI e
+# pelo OpenRouter, e o `bge-m3` os mesmos pelo Ollama e pelo OpenRouter. O piso segue o vetor.
+PISO_POR_EMBEDDER = {"bge-m3": PISO_SIMILARIDADE, "text-embedding-3-small": 0.48}
+
+
+def modelo_de_embedding() -> str | None:
+    """O modelo que gera os vetores agora, sem o fornecedor do ID (`openai/…`, `baai/…`)."""
+    try:
+        from .config import get_settings
+        s = get_settings()
+    except Exception:
+        return None
+    provedor = (s.embeddings_provider or "ollama").strip().lower()
+    modelo = s.ollama_embedding_model if provedor == "ollama" else s.embeddings_model
+    return (modelo or "").strip().lower().split("/")[-1].split(":")[0] or None
+
+
+def piso_similaridade() -> float:
+    """O piso do modelo de embedding em uso. Modelo sem piso medido, o calibrado original."""
+    return PISO_POR_EMBEDDER.get(modelo_de_embedding() or "", PISO_SIMILARIDADE)
+
 # NÃO existe piso léxico, e a ausência é uma decisão medida.
 #
 # A primeira versão deixava um trecho passar por casamento léxico forte mesmo com cosseno baixo — a
@@ -175,11 +204,12 @@ def reescrever_pergunta(pergunta: str, anteriores: list[str] | None = None) -> s
     return f"{atual} {ancora}".strip() if ancora else atual
 
 
-def acima_do_piso(trechos: list[Trecho], piso: float = PISO_SIMILARIDADE) -> list[Trecho]:
+def acima_do_piso(trechos: list[Trecho], piso: float | None = None) -> list[Trecho]:
     """Filtra pelo piso e devolve na ordem de relevância. Lista vazia é resposta legítima — e o nó
     que consome precisa tratá-la como 'não sei', nunca como 'responda assim mesmo'.
 
     Decide pelo cosseno, e só por ele — veja a nota em PISO_LEXICO para o porquê de o sinal léxico
     não valer como salvo-conduto.
     """
+    piso = piso_similaridade() if piso is None else piso
     return [t for t in trechos if t.score >= piso]

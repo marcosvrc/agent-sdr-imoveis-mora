@@ -78,7 +78,7 @@ def test_sem_fallback_configurado_devolve_o_modelo_puro(monkeypatch):
     import sdr_shared.ports.factory as f
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
-    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel, **kw: f"modelo:{provider}")
     monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "")
     get_settings.cache_clear()
@@ -89,7 +89,7 @@ def test_fallback_configurado_envolve_os_dois_provedores(monkeypatch):
     import sdr_shared.ports.factory as f
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
-    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel, **kw: f"modelo:{provider}")
     monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
     get_settings.cache_clear()
@@ -104,7 +104,7 @@ def test_reserva_igual_ao_primario_e_ignorada(monkeypatch):
     import sdr_shared.ports.factory as f
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
-    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel, **kw: f"modelo:{provider}")
     monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "anthropic")
     get_settings.cache_clear()
@@ -125,7 +125,7 @@ def test_painel_vence_o_ambiente_na_escolha_do_reserva(monkeypatch):
     import sdr_shared.ports.factory as f
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
-    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel, **kw: f"modelo:{provider}")
     monkeypatch.setattr(f, "_reserva_do_painel", lambda: "ollama")
     monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
@@ -141,10 +141,57 @@ def test_painel_pode_DESLIGAR_um_reserva_herdado_do_ambiente(monkeypatch):
     import sdr_shared.ports.factory as f
 
     monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
-    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel: f"modelo:{provider}")
+    monkeypatch.setattr(f, "_construir", lambda provider, model, temp, papel, **kw: f"modelo:{provider}")
     monkeypatch.setattr(f, "_reserva_do_painel", lambda: "nenhum")
     monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
     monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
     get_settings.cache_clear()
     assert f.get_chat_model("conversa") == "modelo:anthropic", "sem envelope de fallback"
+    get_settings.cache_clear()
+
+
+def _registrando(chamadas: list):
+    def construir(provider, model, temp, papel, max_tokens=600, **kw):
+        chamadas.append({"provider": provider, "model": model, "temp": temp, "papel": papel,
+                         "max_tokens": max_tokens})
+        return f"modelo:{provider}"
+    return construir
+
+
+@pytest.mark.parametrize("papel, temp, teto", [("conversa", 0.6, 600), ("analise", 0.6, 1500)])
+def test_degradado_troca_o_modelo_mas_nao_o_comportamento_do_papel(monkeypatch, papel, temp, teto):
+    """Orçamento estourado põe a conversa no modelo barato — e só isso. Antes ela era montada como
+    roteamento inteira: temperatura 0.0 (a Mora ficava robótica) e o teto de 600 na análise."""
+    import sdr_shared.ports.factory as f
+
+    chamadas: list = []
+    monkeypatch.setattr(f, "modo_do_agente", lambda: "degradado")
+    monkeypatch.setattr(f, "_reserva_do_painel", lambda: "nenhum")
+    monkeypatch.setattr(f, "_construir", _registrando(chamadas))
+    monkeypatch.setenv("SDR_MODEL_CONVERSA", "claude-sonnet-4-5")
+    monkeypatch.setenv("SDR_MODEL_ROTEAMENTO", "claude-haiku-4-5")
+    get_settings.cache_clear()
+    f.get_chat_model(papel)
+    assert chamadas[-1]["model"] == "claude-haiku-4-5", "degradar continua trocando para o barato"
+    assert chamadas[-1]["temp"] == temp
+    assert chamadas[-1]["max_tokens"] == teto
+    get_settings.cache_clear()
+
+
+def test_analise_tem_teto_proprio_tambem_no_reserva(monkeypatch):
+    """`AnaliseLead` sai por tool-calling com onze campos: truncada em 600, não valida e some do
+    painel sem aviso. O reserva precisa do mesmo teto, ou a falha volta justo no fallback."""
+    import sdr_shared.ports.factory as f
+
+    chamadas: list = []
+    monkeypatch.setattr(f, "modo_do_agente", lambda: "normal")
+    monkeypatch.setattr(f, "_reserva_do_painel", lambda: None)
+    monkeypatch.setattr(f, "_construir", _registrando(chamadas))
+    monkeypatch.setenv("SDR_LLM_PROVIDER", "anthropic")
+    monkeypatch.setenv("SDR_LLM_PROVIDER_FALLBACK", "openai")
+    get_settings.cache_clear()
+    f.get_chat_model("analise")
+    assert [c["max_tokens"] for c in chamadas] == [1500, 1500]
+    f.get_chat_model("roteamento")
+    assert chamadas[-1]["max_tokens"] == 600 and chamadas[-1]["temp"] == 0.0
     get_settings.cache_clear()

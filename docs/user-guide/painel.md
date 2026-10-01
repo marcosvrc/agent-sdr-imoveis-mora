@@ -385,19 +385,29 @@ configuração **salva** — *"Salve para atualizar."*
 **Palavras que acionam o handoff** (separadas por vírgula; padrão `corretor, atendente, humano, pessoa de verdade`)
 e **Encaminhar automaticamente leads quentes ao corretor**.
 
-### Modelos de IA ([ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md))
+### Modelos de IA ([ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md), [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md))
 
-Três níveis, cada um com **Provedor**, **Modelo** e **Testar**:
+Cinco papéis — um por função do agente —, cada um com **Provedor**, **Modelo** e **Testar**:
 
-| Nível | Uso |
-| --- | --- |
-| **Conversa** | O que o cliente lê: qualificador, consultor e agendador. |
-| **Roteamento e extração** | Supervisor e leitura do cartão. Roda em toda mensagem. |
-| **Briefing e análise** | Resumo para o corretor. *Vazio = usa o de conversa.* |
+| Papel | Uso | Vazio usa o de |
+| --- | --- | --- |
+| **Conversa** | O que o cliente lê: qualificador, consultor, agendador, follow-up, reativação. | ambiente |
+| **Roteamento** | Supervisor, quando as regras não decidem. Uma palavra. | ambiente |
+| **Extração do cartão** | Preenche o cartão do lead em JSON, em todo turno de qualificação. | Roteamento |
+| **Informações (documentos)** | Responde política da imobiliária a partir dos documentos, citando a fonte. | Conversa |
+| **Briefing e análise** | Resumo para o corretor, fora da conversa. | Conversa |
+
+O selo ao lado do título diz de onde vem o modelo em uso: **painel**, **ambiente** ou **herda de …**.
+
+**OpenRouter.** Com o provedor `openrouter`, o modelo é um ID `fornecedor/modelo`
+(`google/gemini-3.5-flash-lite`). Ao salvar, o preço é buscado no catálogo do OpenRouter; a caixa
+**Modelos do OpenRouter** sincroniza o preço de uma lista de IDs para eles entrarem no combo. Toda
+requisição vai com retenção zero; a tela avisa em vermelho se faltar `SDR_OPENROUTER_API_KEY` e em
+amarelo se o ZDR estiver desligado. Com o OpenRouter como primário, prefira um reserva direto.
 
 Regras da tela e da API:
 
-- **Provedor antes do modelo**: o provedor (`usa o do ambiente`, `anthropic`, `openai`, `ollama`) decide
+- **Provedor antes do modelo**: o provedor (`usa o do ambiente`, `anthropic`, `openai`, `ollama`, `openrouter`) decide
   quais modelos existem. Trocar o provedor limpa um modelo que não exista na lista nova.
 - A lista de modelos vem do catálogo do servidor **por provedor**, ordenada do mais barato para o
   mais caro, com o custo estimado ao lado (*"— US$ 0,0123"*, com *est.* quando ainda não há uso

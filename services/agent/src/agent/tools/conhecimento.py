@@ -9,8 +9,7 @@ cobre produz uma afirmação **falsa sobre a política da empresa**, dita com a 
 um documento. Por isso a busca institucional tem piso de similaridade e devolve lista vazia sem
 constrangimento — "não sei, o corretor confirma" é uma resposta correta; inventar a taxa não é.
 """
-from sdr_shared.conhecimento import (PISO_SIMILARIDADE, Trecho, acima_do_piso,
-                                     reescrever_pergunta)
+from sdr_shared.conhecimento import Trecho, acima_do_piso, reescrever_pergunta
 from sdr_shared.db import DocumentoRepository
 
 LIMITE = 3          # três trechos cabem no prompt e cobrem a pergunta composta ("taxa e prazo?")
@@ -35,7 +34,7 @@ def _com_lexico() -> bool:
             or POR_PADRAO_COM_LEXICO)
 
 
-def consultar(pergunta: str, limite: int = LIMITE, piso: float = PISO_SIMILARIDADE,
+def consultar(pergunta: str, limite: int = LIMITE, piso: float | None = None,
               anteriores: list[str] | None = None) -> list[Trecho]:
     """Trechos institucionais relevantes para a pergunta, ou lista vazia.
 

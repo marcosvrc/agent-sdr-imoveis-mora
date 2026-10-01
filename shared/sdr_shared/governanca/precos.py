@@ -8,6 +8,10 @@ import re
 # modelo -> (entrada, saída, escrita de cache 5min, leitura de cache) em USD por 1M tokens
 # Escrita de cache = 1,25x a entrada; leitura de cache = 0,1x a entrada (multiplicadores da Anthropic).
 PRECOS_PADRAO: dict[str, tuple[float, float, float, float]] = {
+    # Geração atual (models overview, consultado em 2026-09-28). Os 5.x raciocinam por padrão e
+    # recusam `temperature` — o factory trata isso (ver `recusa_temperatura`).
+    "claude-opus-5-5":   (4.0, 20.0, 5.0, 0.40),
+    "claude-sonnet-5-5": (2.0, 10.0, 2.50, 0.20),
     "claude-opus-5":     (5.0, 25.0, 6.25, 0.50),
     "claude-opus-4-1":   (15.0, 75.0, 18.75, 1.50),
     "claude-opus-4":     (15.0, 75.0, 18.75, 1.50),
@@ -22,7 +26,9 @@ PRECOS_PADRAO: dict[str, tuple[float, float, float, float]] = {
     # Fonte: developers.openai.com/api/docs/pricing (consultado em 2026-09). Confira antes de confiar
     # no número do painel — preço de modelo muda mais rápido que código.
     "gpt-6-astra":   (10.0, 50.0, 0.0, 1.00),
-    "gpt-5.6-sol":   (4.0, 20.0, 0.0, 0.40),
+    # Sol estava 4/20 aqui; o anúncio oficial do GPT-5.6 dá 5/30, e o corte de preço de agosto não o
+    # alcançou (só Terra e Luna). Corrigido em 2026-09-28.
+    "gpt-5.6-sol":   (5.0, 30.0, 0.0, 0.50),
     "gpt-5.6-terra": (2.0, 12.0, 0.0, 0.20),
     "gpt-5.6-luna":  (0.20, 1.20, 0.0, 0.02),
     "gpt-5-mini":    (0.25, 2.0, 0.0, 0.025),
@@ -34,11 +40,27 @@ PRECOS_PADRAO: dict[str, tuple[float, float, float, float]] = {
 
 _PREFIXOS = ("us.", "eu.", "apac.", "anthropic.")
 _SUFIXO_DATA = re.compile(r"-\d{8}$|-v\d+:\d+$")
+_VERSAO_PONTO = re.compile(r"-(\d+)\.(\d+)$")
+
+
+def _sem_roteador(m: str) -> str:
+    """`anthropic/claude-haiku-4.5` e `openai/gpt-5.6-luna` são os MESMOS modelos da tabela, pedidos
+    pelo OpenRouter — que repassa o preço do fornecedor sem acréscimo por token. Os demais
+    fornecedores (`google/…`, `mistralai/…`) não têm linha aqui e ficam com o ID inteiro: o preço
+    deles vem da sincronização com o catálogo do OpenRouter."""
+    fornecedor, barra, nome = m.partition("/")
+    if not barra:
+        return m
+    if fornecedor == "anthropic":
+        return _VERSAO_PONTO.sub(r"-\1-\2", nome)
+    if fornecedor == "openai":
+        return nome
+    return m
 
 
 def normalizar(modelo: str) -> str:
     """`us.anthropic.claude-sonnet-4-5-20250929-v1:0` e `claude-sonnet-4-5` viram a mesma chave."""
-    m = (modelo or "").strip()
+    m = _sem_roteador((modelo or "").strip())
     if m.startswith("amazon.") or (":" in m and m.startswith("bge")):
         return m
     mudou = True
@@ -54,9 +76,13 @@ def normalizar(modelo: str) -> str:
 def preco_do_modelo(modelo: str, tabela: dict | None = None) -> tuple[float, float, float, float] | None:
     t = {**PRECOS_PADRAO, **(tabela or {})}
     chave = normalizar(modelo)
-    if chave in t:
-        v = t[chave]
-        return tuple(v) if isinstance(v, (list, tuple)) else v          # JSON do painel vira lista
+    # O ID exato primeiro: `openai/gpt-6-luna` sincronizado do OpenRouter fica gravado assim, e só
+    # a forma normalizada (`gpt-6-luna`) não o encontraria — o painel recusaria salvar um modelo cujo
+    # preço acabou de ser cadastrado.
+    for k in dict.fromkeys(((modelo or "").strip(), chave)):
+        if k in t:
+            v = t[k]
+            return tuple(v) if isinstance(v, (list, tuple)) else v      # JSON do painel vira lista
     return next((tuple(v) for k, v in t.items() if chave.startswith(k)), None)
 
 

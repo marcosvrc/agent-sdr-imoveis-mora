@@ -11,19 +11,26 @@ class Settings(BaseSettings):
     profile: str = "local"
 
     # Provedores de LLM
-    llm_provider: str = "anthropic"         # anthropic | openai | ollama
+    llm_provider: str = "anthropic"         # anthropic | openai | ollama | openrouter
     # Provedor de reserva: assumido quando o primário falha (indisponibilidade, timeout, cota).
     # Vazio = sem fallback. O ID do modelo é traduzido sozinho entre provedores (normalizar_modelo).
     llm_provider_fallback: str | None = None
-    # Só para a bancada do harness comparar modelos (ADR-0009). NÃO usar no caminho de produção:
-    # põe um terceiro no meio das conversas com PII de cliente. Exige `pip install langchain-openai`.
+    # OpenRouter (ADR-0016): um intermediário que dá acesso a centenas de modelos com uma chave só.
+    # É um operador a mais no caminho do texto do cliente, e por isso a retenção zero é LIGADA por
+    # padrão: com ela o OpenRouter só roteia para endpoints que não guardam o dado. Desligar é para
+    # a bancada de avaliação, com dataset sintético — nunca com conversa de cliente de verdade.
+    # Exige `langchain-openai` (o extra `openai` do sdr-shared).
     openrouter_api_key: str | None = None
-    # ollama | openai. O padrão fica no ollama porque é o único que roda sem chave nenhuma —
+    openrouter_zdr: bool = True
+    openrouter_url: str = "https://openrouter.ai/api/v1"
+    # ollama | openai | openrouter. O padrão fica no ollama porque é o único que roda sem chave nenhuma —
     # importa para os testes e para quem clona o projeto sem conta em lugar algum. O `.env.example`
     # sugere `openai`, que é mais leve (tira um container do compose). Os dois entregam as 1024
     # dimensões que o schema exige; trocar exige reindexar tudo (ver adapters/hospedados).
     embeddings_provider: str = "ollama"
-    embeddings_model: str = "text-embedding-3-small"   # usado quando o provedor é `openai`
+    # Usado quando o provedor é `openai` ou `openrouter`. Pelo OpenRouter, sem fornecedor no ID vira
+    # `openai/<modelo>` — o MESMO modelo, então os vetores já indexados continuam valendo.
+    embeddings_model: str = "text-embedding-3-small"
     embeddings_dimensoes: int = 1024                   # tem de casar com o vector(N) do schema.sql
     # Chave de organização (não escopada a um workspace) exige este header em toda requisição.
     anthropic_workspace_id: str | None = None
@@ -56,6 +63,11 @@ class Settings(BaseSettings):
     # provedores hospedados que possam vir de um .env antigo.
     model_conversa: str = "claude-sonnet-4-5"
     model_roteamento: str = "claude-haiku-4-5"
+    # Papéis que herdam (ver sdr_shared.papeis): vazio = usa o do papel pai. Existem no ambiente
+    # para a bancada poder fixar um modelo por papel sem banco; em operação, o painel é o caminho.
+    model_extracao: str | None = None       # vazio → model_roteamento
+    model_informacoes: str | None = None    # vazio → model_conversa
+    model_analise: str | None = None        # vazio → model_conversa
 
     # Telegram — o canal externo ativo.
     # Token vem do @BotFather; não precisa de app review nem verificação de negócio.

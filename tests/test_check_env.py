@@ -47,10 +47,23 @@ def test_embeddings_fora_do_ollama_e_recusado():
 
 
 def test_provedor_inexistente():
-    # `openrouter` existe e funciona — mas é bancada de avaliação, não caminho de produção
-    # (ADR-0009). O check_env recusa de propósito, e é justamente isso que este teste protege:
-    # um provedor plausível é bem mais fácil de aparecer num .env do que um nome inventado.
-    assert any("inválido" in x for x in erros(SDR_LLM_PROVIDER="openrouter"))
+    # Um provedor plausível é bem mais fácil de aparecer num .env do que um nome inventado.
+    # `openrouter` era o exemplo daqui até o ADR-0016 o aceitar; `bedrock` existiu no projeto e saiu.
+    assert any("inválido" in x for x in erros(SDR_LLM_PROVIDER="bedrock"))
+
+
+def test_openrouter_exige_chave_e_pede_reserva_direto():
+    e = erros(SDR_LLM_PROVIDER="openrouter")
+    assert not any("inválido" in x for x in e)
+    assert any("SDR_OPENROUTER_API_KEY" in x for x in e)
+    _, avisos = checar({"SDR_LLM_PROVIDER": "openrouter", "SDR_OPENROUTER_API_KEY": "sk-or-v1-abc",
+                        "SDR_EMBEDDINGS_PROVIDER": "ollama"})
+    assert any("reserva DIRETO" in a for a in avisos)
+    _, avisos = checar({"SDR_LLM_PROVIDER": "openrouter", "SDR_OPENROUTER_API_KEY": "sk-or-v1-abc",
+                        "SDR_OPENROUTER_ZDR": "false", "SDR_LLM_PROVIDER_FALLBACK": "anthropic",
+                        "ANTHROPIC_API_KEY": "sk-ant-api03-" + "a" * 80, "SDR_EMBEDDINGS_PROVIDER": "ollama"})
+    assert any("SDR_OPENROUTER_ZDR" in a for a in avisos)
+    assert not any("reserva DIRETO" in a for a in avisos)
 
 
 def test_openai_e_provedor_valido_mas_exige_a_chave():
@@ -99,3 +112,13 @@ def test_sem_repeticao_nao_inventa_erro(tmp_path):
     env, repetidas = carregar(arq)
     assert repetidas == []
     assert checar(env, repetidas)[0] == []
+
+
+def test_embeddings_pelo_openrouter_dispensam_a_chave_da_openai():
+    e = erros(SDR_EMBEDDINGS_PROVIDER="openrouter")
+    assert not any("inválido" in x for x in e)
+    assert any("SDR_OPENROUTER_API_KEY" in x for x in e)
+    e, _ = checar({"SDR_LLM_PROVIDER": "openrouter", "SDR_OPENROUTER_API_KEY": "sk-or-v1-abc",
+                   "SDR_EMBEDDINGS_PROVIDER": "openrouter"})
+    assert not any("OPENAI_API_KEY" in x for x in e), "só OpenRouter: nenhuma outra chave exigida"
+    assert e == []

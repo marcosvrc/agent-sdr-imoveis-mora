@@ -191,6 +191,64 @@ def test_piso_e_generoso_de_proposito():
     assert 0.2 <= PISO_SIMILARIDADE <= 0.5
 
 
+def _embedder(monkeypatch, provedor, modelo=None):
+    from sdr_shared.config import get_settings
+    monkeypatch.setenv("SDR_EMBEDDINGS_PROVIDER", provedor)
+    if modelo:
+        monkeypatch.setenv("SDR_EMBEDDINGS_MODEL", modelo)
+    monkeypatch.delenv("SDR_OLLAMA_EMBEDDING_MODEL", raising=False)
+    get_settings.cache_clear()
+
+
+def test_cada_modelo_de_embedding_tem_o_proprio_piso(monkeypatch):
+    """Cosseno do bge-m3 e do text-embedding-3-small não são a mesma régua: herdar o piso de um
+    embedder no outro foi o que deixou o RAG responder quase tudo depois da troca para a OpenAI."""
+    from sdr_shared.config import get_settings
+    from sdr_shared.conhecimento import PISO_POR_EMBEDDER, piso_similaridade
+
+    assert all(0.2 <= p <= 0.5 for p in PISO_POR_EMBEDDER.values()), "piso fora da faixa generosa"
+    try:
+        _embedder(monkeypatch, "ollama")
+        assert piso_similaridade() == PISO_POR_EMBEDDER["bge-m3"]
+        _embedder(monkeypatch, "openai", "text-embedding-3-small")
+        assert piso_similaridade() == 0.48
+        # 0,45 fica entre os dois pisos: passa no bge-m3, vira "não sei" no da OpenAI
+        meio = Trecho("m", "f.md", "geral", "T", "texto", 0, score=0.45)
+        assert acima_do_piso([meio]) == []
+        assert acima_do_piso([meio], piso=0.40) == [meio], "piso explícito continua mandando"
+        _embedder(monkeypatch, "ollama")
+        assert acima_do_piso([meio]) == [meio]
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.parametrize("provedor,modelo,piso", [
+    # O piso segue o VETOR: mesmo modelo por outro caminho, mesmo piso — sem recalibrar.
+    ("openrouter", "text-embedding-3-small", 0.48),
+    ("openrouter", "openai/text-embedding-3-small", 0.48),
+    ("openrouter", "baai/bge-m3", PISO_SIMILARIDADE),
+    ("openai", "text-embedding-3-small", 0.48),
+])
+def test_piso_e_do_modelo_e_nao_do_caminho(monkeypatch, provedor, modelo, piso):
+    from sdr_shared.config import get_settings
+    from sdr_shared.conhecimento import piso_similaridade
+    try:
+        _embedder(monkeypatch, provedor, modelo)
+        assert piso_similaridade() == piso
+    finally:
+        get_settings.cache_clear()
+
+
+def test_embedder_sem_piso_calibrado_usa_o_original(monkeypatch):
+    from sdr_shared.config import get_settings
+    from sdr_shared.conhecimento import piso_similaridade
+    try:
+        _embedder(monkeypatch, "openai", "text-embedding-3-large")
+        assert piso_similaridade() == PISO_SIMILARIDADE
+    finally:
+        get_settings.cache_clear()
+
+
 # --------------------------------------------------------------------------- recuperação real
 
 @pytest.fixture

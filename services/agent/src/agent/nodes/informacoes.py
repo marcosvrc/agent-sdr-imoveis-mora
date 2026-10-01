@@ -20,7 +20,7 @@ from sdr_shared.db import auditar
 from sdr_shared.messaging import RespostaAgente
 
 from ..guardrails.saida import sanear
-from ..llm import llm_conversa
+from ..llm import llm_informacoes
 from ..prompts import carregar
 from ..state import AgentState
 from ..tools.conhecimento import consultar
@@ -58,7 +58,7 @@ def run(state: AgentState) -> dict:
     else:
         prompt = carregar("informacoes_sem_base", mensagem=pergunta)
 
-    msg = llm_conversa().invoke([prompt, *state["messages"]])
+    msg = llm_informacoes().invoke([prompt, *state["messages"]])
 
     auditar(acao="agente.consulta_institucional", entidade="lead", entidade_id=lead.id,
             ator_tipo="agente", ator_nome="Mora", origem=str(entrada.canal.value),

@@ -9,7 +9,9 @@ SELECT por turno. `invalidar_cache_modelos()` é chamado ao salvar, para a troca
 """
 import time
 
-NIVEIS = ("conversa", "roteamento", "analise")
+from ..papeis import HERDA, PAPEIS
+
+NIVEIS = PAPEIS                             # a lista mora em sdr_shared.papeis; aqui só o nome antigo
 
 _cache: dict = {"em": 0.0, "valor": None}
 
@@ -22,19 +24,22 @@ def _do_banco() -> dict:
         return {}
 
 
-def escolha(nivel: str, cache_segundos: float = 30) -> tuple[str | None, str | None]:
+def escolha(nivel: str, cache_segundos: float = 30, herdar: bool = True) -> tuple[str | None, str | None]:
     """Devolve (modelo, provider) do painel para este nível — None onde o painel não opinou.
 
-    `analise` cai em `conversa` quando não configurado: é o comportamento de hoje (o resumidor usa
-    o modelo de conversa) e evita obrigar a preencher três níveis para mudar um.
+    Papel vazio herda do pai (`sdr_shared.papeis.HERDA`): `analise` e `informacoes` caem em
+    `conversa`, `extracao` cai em `roteamento`. Evita obrigar a preencher cinco campos para mudar um,
+    e é o que mantém o comportamento de antes da divisão enquanto ninguém mexer nos papéis novos.
+    `herdar=False` devolve só o que o painel diz para ESTE papel — é o que o factory usa para
+    intercalar painel e ambiente nível a nível (ver `ports.factory.modelo_efetivo`).
     """
     if _cache["valor"] is None or time.time() - _cache["em"] > cache_segundos:
         _cache.update(em=time.time(), valor=_do_banco())
     cfg = _cache["valor"] or {}
     modelo = (cfg.get(nivel) or "").strip() or None
     provider = (cfg.get(f"{nivel}_provider") or "").strip() or None
-    if nivel == "analise" and not modelo:
-        return escolha("conversa", cache_segundos)
+    if herdar and not modelo and nivel in HERDA:
+        return escolha(HERDA[nivel], cache_segundos)
     return modelo, provider
 
 

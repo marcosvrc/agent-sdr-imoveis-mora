@@ -1,6 +1,7 @@
 # ADR-0009 — Gateway de LLM: LiteLLM, OpenRouter ou a camada própria
 
-**Status:** aceito · **Data:** 2026-09-12
+**Status:** aceito · **Data:** 2026-09-12 · a parte do OpenRouter foi revista pelo
+[ADR-0016](0016-openrouter-e-modelo-por-funcao.md), que o aceita em produção com retenção zero obrigatória
 
 ## Contexto
 A pergunta era se vale adotar um gateway de LLM — LiteLLM ou OpenRouter — para ter "uma camada
