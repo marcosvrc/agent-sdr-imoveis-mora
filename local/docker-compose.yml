@@ -237,7 +237,7 @@ services:
     image: node:20-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --host"
-    environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, VITE_CANAL_URL: http://localhost:8001, VITE_TELEGRAM_BOT_USERNAME: "${SDR_TELEGRAM_BOT_USERNAME}", CHOKIDAR_USEPOLLING: "true" }
+    environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, VITE_CANAL_URL: http://localhost:8001, VITE_TELEGRAM_BOT_USERNAME: "${SDR_TELEGRAM_BOT_USERNAME}", VITE_CHAT_NOVA_CONVERSA: "${SDR_CHAT_NOVA_CONVERSA:-false}", CHOKIDAR_USEPOLLING: "true" }
     volumes: [ "../apps/web:/app", "/app/node_modules" ]
     ports: ["5173:5173"]
 

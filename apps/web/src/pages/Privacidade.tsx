@@ -34,7 +34,7 @@ export function Privacidade() {
           <Lista itens={[
             ["Enquanto você navega", "um identificador de sessão assinado pelo nosso servidor, e quais imóveis você abriu ou filtrou. Serve para que a Mora já saiba do que você estava olhando quando você abrir a conversa."],
             ["Quando você favorita um imóvel", "a lista fica no seu próprio navegador. Não sobe para nossos servidores e some se você limpar os dados do site."],
-            ["Quando você conversa com a Mora", "o conteúdo das mensagens e, se você quiser agendar uma visita, seu nome, telefone e e-mail."],
+            ["Quando você conversa com a Mora", "o conteúdo das mensagens, o nome que você quiser informar e, para agendar uma visita, seu telefone ou e-mail."],
           ]} />
           <p className="mt-3">
             Não usamos cookies de publicidade, não há rastreador de terceiros e não vendemos nem

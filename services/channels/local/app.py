@@ -13,6 +13,7 @@ from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from sdr_shared.config import get_settings                # noqa: E402
 from sdr_shared.log import configurar as configurar_log  # noqa: E402
@@ -80,6 +81,36 @@ def abrir_sessao():
     """O widget pede a sessão aqui. O id é emitido pelo servidor e vem assinado — assim ninguém
     entra na conversa de outro visitante só por saber (ou chutar) o id dele."""
     return emitir()
+
+
+class PedidoHistorico(BaseModel):
+    session_id: str
+    token: str
+
+
+HISTORICO_MAX = 60
+
+
+@app.post("/historico")
+def historico(pedido: PedidoHistorico, response: Response):
+    """A conversa desta sessão, para o widget redesenhar depois de recarregar a página.
+
+    A sessão sobrevive ao recarregar (fica na aba), mas as bolhas não: o cliente via só a saudação
+    e a Mora continuava de onde parou — falando de imóveis e horários que tinham sumido da tela.
+    POST com o token no corpo, e não na URL, pelo mesmo motivo do WebSocket: URL vai para log e
+    histórico do navegador. Sessão inválida não lê nada.
+    """
+    if not validar(pedido.session_id, pedido.token):
+        response.status_code = 401
+        return {"mensagens": []}
+    from sdr_shared.db import MensagemRepository
+    linhas = MensagemRepository().historico(f"web_{pedido.session_id}", limite=HISTORICO_MAX)
+    quem = {"in": "lead", "out": "Mora", "corretor": "corretor"}
+    return {"mensagens": [
+        {"de": quem[m["direcao"]], "texto": m["conteudo"], "em": m["em"].isoformat(),
+         "opcoes": (m.get("meta") or {}).get("opcoes") or [] if m["direcao"] == "out" else [],
+         "imoveis": (m.get("meta") or {}).get("imoveis") or [] if m["direcao"] == "out" else []}
+        for m in linhas if m["direcao"] in quem and m["canal"] == "web"]}
 
 
 # `papel` é uma lista fechada: qualquer outro valor cai fora em vez de escorregar para o ramo

@@ -5,11 +5,17 @@ const CANAL = import.meta.env.VITE_CANAL_URL ?? "http://localhost:8001";
 
 export type Sessao = { session_id: string; token: string; expira_em: number };
 
+/** Modo de teste (SDR_CHAT_NOVA_CONVERSA no local/.env): a sessão vive só em memória, então cada
+ *  carregamento da página é uma conversa nova, e o chat ganha o botão "Nova conversa". Desligado,
+ *  vale a regra de produção: uma sessão por aba, que sobrevive ao recarregar. */
+export const NOVA_CONVERSA_A_CADA_VISITA = import.meta.env.VITE_CHAT_NOVA_CONVERSA === "true";
+
 let memoria: Sessao | null = null;
 let pedido: Promise<Sessao> | null = null;
 
 function ler(): Sessao | null {
   if (memoria) return memoria;
+  if (NOVA_CONVERSA_A_CADA_VISITA) return null;
   try {
     const cru = sessionStorage.getItem(CHAVE);
     if (!cru) return null;
@@ -26,11 +32,20 @@ export async function getSessao(): Promise<Sessao> {
     .then((r) => { if (!r.ok) throw new Error(`sessão ${r.status}`); return r.json() as Promise<Sessao>; })
     .then((s) => {
       memoria = s;
-      try { sessionStorage.setItem(CHAVE, JSON.stringify(s)); } catch { /* aba anônima: fica em memória */ }
+      if (!NOVA_CONVERSA_A_CADA_VISITA) {
+        try { sessionStorage.setItem(CHAVE, JSON.stringify(s)); } catch { /* aba anônima: fica em memória */ }
+      }
       return s;
     })
     .finally(() => { pedido = null; });
   return pedido;
+}
+
+/** Esquece a sessão atual: a próxima conexão pede outra ao servidor, e o agente vê um lead novo. */
+export function descartarSessao() {
+  memoria = null;
+  pedido = null;
+  try { sessionStorage.removeItem(CHAVE); } catch { /* sem armazenamento: nada a apagar */ }
 }
 
 /** Só para quem já tem a sessão em mãos (evita await em caminho síncrono). */

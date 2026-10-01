@@ -41,8 +41,9 @@ export function AvisoPrivacidade() {
           <p className="font-semibold text-ink">Como usamos seus dados</p>
           <p className="mt-1 text-ink-muted">
             Guardamos no seu navegador os imóveis que você favorita e uma sessão para ligar sua navegação
-            à conversa com a Mora. Nome, telefone e e-mail só são pedidos quando você quer agendar uma
-            visita — e ficam com a imobiliária, sem venda a terceiros.
+            à conversa com a Mora. Ela pergunta como pode te chamar (responder é opcional); telefone ou
+            e-mail só são pedidos quando você quer agendar uma visita — e ficam com a imobiliária, sem
+            venda a terceiros.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Botao tamanho="sm" onClick={fechar}>Entendi</Botao>

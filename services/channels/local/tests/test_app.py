@@ -156,3 +156,24 @@ def test_quadro_invalido_derruba_so_a_conexao_e_a_tira_do_registro():
             ws.send_text("{isto não é json")
             ws.receive_text()
     assert not local_app.conexoes.get(sid), "socket morto não pode ficar registrado"
+
+
+def test_historico_devolve_a_conversa_da_propria_sessao():
+    """Recarregar a página apagava as bolhas, mas a Mora seguia a conversa de onde parou."""
+    from sdr_shared.db import LeadRepository, MensagemRepository
+    from sdr_shared.models import Lead
+    c = TestClient(local_app.app)
+    s = c.post("/sessao").json()
+    lead = f"web_{s['session_id']}"
+    LeadRepository().upsert(Lead(id=lead))
+    MensagemRepository().registrar(lead, "web", "in", "quero alugar em Moema")
+    MensagemRepository().registrar(lead, "web", "out", "Até quanto?", {"opcoes": ["A|B"], "imoveis": ["SP-1"]})
+    r = c.post("/historico", json={"session_id": s["session_id"], "token": s["token"]}).json()["mensagens"]
+    assert [(m["de"], m["texto"]) for m in r] == [("lead", "quero alugar em Moema"), ("Mora", "Até quanto?")]
+    assert r[1]["opcoes"] == ["A|B"] and r[1]["imoveis"] == ["SP-1"]
+
+
+def test_historico_de_sessao_inventada_nao_le_nada():
+    c = TestClient(local_app.app)
+    r = c.post("/historico", json={"session_id": "sess-de-outra-pessoa", "token": "inventado"})
+    assert r.status_code == 401 and r.json()["mensagens"] == []
