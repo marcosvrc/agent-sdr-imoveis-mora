@@ -116,6 +116,40 @@ def test_resumidor_sem_historico_nao_chama_o_modelo(monkeypatch):
     assert saida["lead"].resumo is None and saida["lead"].analisado_em is None
 
 
+def test_resumidor_manda_a_conversa_como_transcricao_terminando_no_usuario(monkeypatch):
+    """Um lead real: a conversa terminava na fala da Mora, a Anthropic a tratou como o início da
+    resposta, o modelo emendou três tokens e o briefing do corretor saiu como o texto de reserva
+    do filtro ("Deixa eu te ajudar direito…")."""
+    from langchain_core.messages import AIMessage, HumanMessage
+    from agent.nodes import resumidor
+    from sdr_shared.models import Lead
+
+    pedidos = []
+
+    class _Falso:
+        def invoke(self, msgs):
+            pedidos.append(msgs)
+            return AIMessage(content="- Busca aluguel em Pinheiros até R$ 5 mil.")
+
+        def with_structured_output(self, _):
+            return self
+
+    monkeypatch.setattr(resumidor, "llm_analise", lambda: _Falso())
+    monkeypatch.setattr(resumidor, "notificar", lambda **k: None)
+    historico = [HumanMessage(content="quero alugar em Pinheiros"),
+                 AIMessage(content="Qual o valor máximo?"),
+                 HumanMessage(content="até 5 mil"),
+                 AIMessage(content="Encontrei duas opções para você.")]
+    saida = resumidor.run({"lead": Lead(id="l_transcricao"), "messages": historico})
+
+    for msgs in pedidos:                            # o briefing e a análise
+        assert len(msgs) == 2 and isinstance(msgs[-1], HumanMessage), "tem de terminar no usuário"
+        texto = msgs[-1].content
+        assert "Cliente: quero alugar em Pinheiros" in texto and "Mora: Encontrei duas opções" in texto
+    assert len(pedidos) == 2
+    assert saida["lead"].resumo.startswith("- Busca aluguel")
+
+
 def test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco(monkeypatch):
     """O banco reiniciando debaixo do worker (`AdminShutdown`) encerrava o processo em silêncio, e
     o follow-up parava até alguém reparar no batimento parado."""

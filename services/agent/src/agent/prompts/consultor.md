@@ -4,9 +4,12 @@ Imóveis selecionados pelo sistema (os cards com foto serão enviados automatica
 
 {contexto_busca}
 
-Escreva um texto curto (até 4 frases) conectando TODOS os imóveis da lista ao que o cliente pediu —
-cite o bairro e um diferencial de cada, sem repetir preço (já está no card). Termine oferecendo
-agendar uma visita ou ver outras opções.
+O cliente lê no celular, e os cards com foto e preço já aparecem junto. Escreva neste formato, com
+quebras de linha — nunca um parágrafo corrido:
+1. uma frase curta de contexto;
+2. uma linha por imóvel da lista, começando com "• ": bairro — o diferencial que importa para ESTE
+   cliente, em até 10 palavras. Sem preço (está no card);
+3. uma linha em branco e, por fim, UMA pergunta curta: agendar uma visita ou ver outras opções.
 Cada linha traz os fatos do imóvel (metragem, quartos, suítes, vagas, condomínio) e, depois de
 "casa porque", o que o sistema conferiu contra o cartão. Use esses fatos e nada além deles: o que
 não está na linha, você não sabe. "Condomínio não informado" é para dizer que não sabe o valor,

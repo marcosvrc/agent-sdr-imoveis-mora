@@ -1,12 +1,58 @@
 """Roteador. Regras determinísticas primeiro (baratas, previsíveis); LLM (Haiku) só na ambiguidade."""
+import logging
 import re
+import unicodedata
+
 from sdr_shared.messaging import TipoMensagem, Canal
-from sdr_shared.models import Estagio
+from sdr_shared.models import Estagio, Intencao
 from ..guardrails import escopo
 from ..llm import llm_roteamento
 from ..prompts import texto
 from ..state import AgentState
 from . import reativador
+from .agendador import ESCOLHA
+from .qualificador import so_contato
+
+log = logging.getLogger(__name__)
+
+DECISOES = ("qualificador", "consultor", "agendador", "informacoes", "handoff")
+_DECISAO = re.compile(r"\b(" + "|".join(DECISOES) + r")\b")
+
+
+def _conteudo(bruto) -> str:
+    """`content` vem como texto ou, em alguns modelos que raciocinam, como lista de blocos."""
+    if isinstance(bruto, str):
+        return bruto
+    if isinstance(bruto, list):
+        return " ".join(b if isinstance(b, str) else str(b.get("text") or "")
+                        for b in bruto if isinstance(b, (str, dict)))
+    return str(bruto or "")
+
+
+def interpretar_decisao(bruto) -> str | None:
+    """A primeira decisão válida que aparece na resposta, ou None.
+
+    Pegava-se a primeira palavra e exigia-se o rótulo exato. "Consultor.", "**consultor**",
+    "informações" (com acento) ou blocos de conteúdo viravam, em silêncio, `qualificador` — e a
+    matriz mediu um modelo que roteou TUDO para o qualificador com 59% de "acerto" (os casos cuja
+    resposta certa era justamente o valor padrão).
+    """
+    t = unicodedata.normalize("NFKD", _conteudo(bruto)).encode("ascii", "ignore").decode().lower()
+    achado = _DECISAO.search(t)
+    return achado.group(1) if achado else None
+
+
+_FALA_ALUGUEL = re.compile(r"\balug(ar|uel|ueis|o)\b|\bloca[cç][aã]o\b", re.I)
+_FALA_COMPRA = re.compile(r"\bcompr(ar|a|o)\b|\badquirir\b", re.I)
+
+
+def intencao_citada(txt: str) -> Intencao | None:
+    """Compra ou aluguel dito com todas as letras. "comprar para alugar" cita os dois: não decide."""
+    aluguel, compra = bool(_FALA_ALUGUEL.search(txt)), bool(_FALA_COMPRA.search(txt))
+    if aluguel == compra:
+        return None
+    return Intencao.ALUGUEL if aluguel else Intencao.COMPRA
+
 
 PEDE_HUMANO = re.compile(r"\b(corretor|atendente|humano|pessoa de verdade|falar com alguém)\b", re.I)
 PEDE_VISITA = re.compile(r"\b(visitar|visita|agendar|marcar|conhecer o im[oó]vel|hor[aá]rio)\b", re.I)
@@ -109,8 +155,22 @@ def run(state: AgentState) -> dict:
     # Antes do agendador de propósito: "vocês cobram taxa de visita?" contém "visita" e cairia lá,
     # oferecendo horário para quem pediu uma informação. A escolha de horário (slot:/data) tem
     # precedência sobre isto, porque aí o cliente já está no meio do agendamento.
+    if txt.startswith(ESCOLHA):                       # botão "visitar este imóvel": só o agendador sabe o que fazer
+        return {"proximo": "agendador", "saltos": saltos}
+    if txt.startswith("ajuste:"):                     # como ampliar a busca sem imóvel exato: o consultor busca de novo
+        return {"proximo": "consultor", "saltos": saltos}
+    # Horário escolhido esperando o contato: o nome e o telefone que chegam agora fecham a reserva.
+    if state.get("horario_pendente") and (so_contato(txt) or txt.startswith("slot:") or len(txt.split()) <= 4):
+        return {"proximo": "agendador", "saltos": saltos}
     if not txt.startswith("slot:") and not state.get("horarios_oferecidos") and pergunta_institucional(txt):
         return {"proximo": "informacoes", "saltos": saltos}
+    # Troca de compra para aluguel (ou o contrário) depois de qualificado. Quem trata é o
+    # qualificador: ele abre a oportunidade nova e refaz o cartão. O consultor mantém a intenção de
+    # propósito — e recebia a conversa pelo modelo de rota, buscava "compra em Moema até R$ 5 mil"
+    # para quem tinha acabado de pedir aluguel, e a resposta saía contraditória.
+    if (lead.cartao.intencao not in (Intencao.INDEFINIDA, Intencao.INVESTIMENTO)
+            and (citada := intencao_citada(txt)) and citada != lead.cartao.intencao):
+        return {"proximo": "qualificador", "saltos": saltos}
     if txt.startswith("slot:") or (state.get("horarios_oferecidos") and ESCOLHE_HORARIO.search(txt)):
         return {"proximo": "agendador", "saltos": saltos}       # escolha de horário (botão ou texto)
     # `pediu_visita` fica ligado para sempre depois do primeiro pedido — é assim que o agendador
@@ -121,6 +181,14 @@ def run(state: AgentState) -> dict:
     if txt == "Agendar visita" or PEDE_VISITA.search(txt) or (
             lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO):
         return {"proximo": "agendador", "saltos": saltos}
+    # Resposta ao pedido de contato. A Mora pede o telefone ao reservar a visita (ou ao mostrar as
+    # opções); o número chegava ao modelo de rota, que via cartão completo e mandava para o
+    # consultor — e o cliente que só passou o telefone recebia mais imóveis. Quem recebe contato é
+    # o qualificador: ele grava o número e agradece.
+    if lead.cartao.completo() and so_contato(txt):
+        return {"proximo": "qualificador", "saltos": saltos}
+    if state.get("ajuste_pendente") and lead.cartao.completo():      # resposta escrita à pergunta "como prefere?"
+        return {"proximo": "consultor", "saltos": saltos}
     if txt == "Ver outros" or PEDE_OPCOES.search(txt):
         return {"proximo": "consultor", "saltos": saltos}
     if lead.cartao.completo() and not state.get("imoveis_sugeridos"):
@@ -130,10 +198,14 @@ def run(state: AgentState) -> dict:
 
     # Ambíguo: cartão completo, imóveis já sugeridos, mensagem livre → Haiku decide
     bruto = llm_roteamento().invoke(texto("supervisor", estagio=lead.estagio, intencao=lead.cartao.intencao,
-                                          completo=lead.cartao.completo(), faltantes=[], mensagem=txt)).content
-    decisao = bruto if isinstance(bruto, str) else str(bruto)      # `content` pode vir em blocos
-    decisao = decisao.strip().lower().split()[0] if decisao.strip() else "qualificador"
-    if decisao not in ("qualificador", "consultor", "agendador", "handoff", "informacoes"):
+                                          completo=lead.cartao.completo(), faltantes=[],
+                                          sugeridos="sim" if state.get("imoveis_sugeridos") else "não",
+                                          mensagem=txt)).content
+    decisao = interpretar_decisao(bruto)
+    if decisao is None:
+        # Não loga a mensagem do cliente, só o que o modelo devolveu — e cortado.
+        log.warning("roteador devolveu resposta ilegível (%r): seguindo para o qualificador",
+                    _conteudo(bruto)[:80])
         decisao = "qualificador"
     # As regras determinísticas acima já decidiram que esta mensagem NÃO pede visita (nem botão de
     # horário, nem palavra de agendamento) e que a visita deste lead já está reservada. O modelo não

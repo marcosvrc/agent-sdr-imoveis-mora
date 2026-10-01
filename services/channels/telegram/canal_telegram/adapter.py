@@ -97,8 +97,13 @@ def render(chat_id: str, r: RespostaAgente) -> list[dict]:
             msgs.append({"_method": "sendMessage", "chat_id": chat_id, "text": legenda})
 
     corpo = {"_method": "sendMessage", "chat_id": chat_id, "text": r.texto}
-    opcoes = [_opcao(o) for o in r.opcoes]
-    if opcoes:
-        corpo["reply_markup"] = {"inline_keyboard": [[{"text": t[:64], "callback_data": i[:CALLBACK_MAX]}] for i, t in opcoes]}
+    linhas = [[{"text": t[:64], "callback_data": i[:CALLBACK_MAX]}] for i, t in (_opcao(o) for o in r.opcoes)]
+    # Mapa da visita reservada: botão de LINK, como o do card no site. "Região", e não "endereço":
+    # o cadastro só tem o bairro, e quem manda o endereço exato é o corretor.
+    mapa = ((r.dados or {}).get("visita") or {}).get("mapa")
+    if mapa and str(mapa).startswith("https://"):
+        linhas.append([{"text": "📍 Ver a região no mapa", "url": mapa}])
+    if linhas:
+        corpo["reply_markup"] = {"inline_keyboard": linhas}
     msgs.append(corpo)
     return msgs

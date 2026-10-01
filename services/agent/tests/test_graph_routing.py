@@ -1,3 +1,5 @@
+import pytest
+
 from sdr_shared.models import CartaoQualificacao, Intencao
 
 
@@ -103,7 +105,7 @@ def test_extracao_recebe_a_ultima_pergunta_da_mora(monkeypatch):
             visto["prompt"] = str(prompt)
             return CartaoQualificacao(quartos=1)
 
-    monkeypatch.setattr(qualificador, "llm_roteamento", lambda: ModeloFalso())
+    monkeypatch.setattr(qualificador, "llm_extracao", lambda: ModeloFalso())
     cartao = qualificador._extrair(CartaoQualificacao(), "1", "Quantos quartos você precisa?")
     assert cartao.quartos == 1
     assert "Quantos quartos você precisa?" in visto["prompt"], "a pergunta tem de ir no prompt"
@@ -177,7 +179,7 @@ def _extracao_devolvendo(monkeypatch, saida):
         def invoke(self, _prompt):
             return saida
 
-    monkeypatch.setattr(qualificador, "llm_roteamento", lambda: ModeloFalso())
+    monkeypatch.setattr(qualificador, "llm_extracao", lambda: ModeloFalso())
     return qualificador
 
 
@@ -352,3 +354,209 @@ def test_sem_resumo_o_prompt_nao_ganha_secao_vazia():
         corpo = carregar("consultor", memoria=vazio, nome="Ana", cartao={}, imoveis="(nenhum)",
                          contexto_busca="").content
         assert "resumo da conversa" not in corpo
+
+
+@pytest.mark.parametrize("bruto, esperado", [
+    ("consultor", "consultor"),
+    ("Consultor.", "consultor"),
+    ("**informacoes**", "informacoes"),
+    ("informações", "informacoes"),
+    ("Decisão: agendador", "agendador"),
+    ([{"type": "text", "text": "handoff"}], "handoff"),
+    ("", None),
+    ("não sei", None),
+])
+def test_decisao_do_roteador_e_lida_mesmo_fora_do_formato(bruto, esperado):
+    """A matriz mediu um modelo que roteou tudo para o qualificador: pontuação, markdown ou acento
+    faziam a resposta cair no valor padrão, em silêncio."""
+    from agent.nodes.supervisor import interpretar_decisao
+    assert interpretar_decisao(bruto) == esperado
+
+
+def test_nao_se_apresenta_de_novo_quando_o_site_ja_deu_boas_vindas():
+    """O chat do site abre com "Olá! Eu sou a Mora…"; a resposta ao primeiro "oi" repetia a
+    apresentação. O widget avisa que já saudou, e a Mora vai direto ao ponto."""
+    from types import SimpleNamespace
+    from agent.nodes.qualificador import _abertura
+
+    site = SimpleNamespace(meta={"saudacao_exibida": True})
+    telegram = SimpleNamespace(meta={})
+    assert "NÃO se apresente" in _abertura({"primeira_interacao": True, "entrada": site})
+    assert "apresente-se" in _abertura({"primeira_interacao": True, "entrada": telegram})
+    assert "não se apresente de novo" in _abertura({"primeira_interacao": False, "entrada": telegram})
+
+
+@pytest.mark.parametrize("txt, esperado", [
+    ("11 98765-4321", True), ("(81) 99876-5442", True), ("meu whats é 11987654321", True),
+    ("pode mandar em marcos@exemplo.com.br", True),
+    ("tem outro de 2 quartos até 500 mil?", False), ("sábado às 10h", False), ("oi", False),
+])
+def test_reconhece_mensagem_que_e_so_contato(txt, esperado):
+    from agent.nodes.qualificador import so_contato
+    assert so_contato(txt) is esperado
+
+
+def test_telefone_depois_da_reserva_nao_traz_mais_imoveis():
+    """Um lead real: a Mora pediu o telefone ao reservar a visita, o cliente mandou, o modelo de
+    rota viu cartão completo e mandou para o consultor — que respondeu com mais dois imóveis."""
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    from sdr_shared.models import Estagio, ImovelCard, Intencao, Lead
+    from agent.nodes import supervisor
+
+    lead = Lead(id="l_tel", estagio=Estagio.AGENDADO)
+    c = lead.cartao
+    c.intencao, c.regiao, c.preco_max, c.quartos, c.urgencia = Intencao.COMPRA, "zona_leste", 500000, 1, "imediata"
+    c.pediu_visita = True
+    entrada = MensagemNormalizada(lead_id="l_tel", canal=Canal.WEB, tipo=TipoMensagem.TEXTO,
+                                  identificador_canal="s", conteudo="81 99876-5442")
+    card = ImovelCard(id="SP-1", titulo="Studio · Mooca", preco=1.0, foto=None, motivo="x")
+    out = supervisor.run({"lead": lead, "entrada": entrada, "imoveis_sugeridos": [card], "saltos": 0})
+    assert out["proximo"] == "qualificador"
+
+
+@pytest.mark.parametrize("msg, pergunta, esperado", [
+    ("estou com uma urgencia", "Tem alguma urgência nessa compra?", "imediata"),
+    ("o quanto antes", "Pra quando você precisa?", "imediata"),
+    ("sem pressa, só pesquisando", "Tem prazo?", "sem_prazo"),
+    ("não é urgente", "É urgente?", "sem_prazo"),
+    ("em uns 3 meses", "Pra quando pretende se mudar?", "3_meses"),
+    ("logo ali perto do metrô", "Qual região?", None),     # "logo" sem falar de prazo não é urgência
+])
+def test_urgencia_por_regra(msg, pergunta, esperado):
+    from agent.nodes.qualificador import urgencia_por_regra
+    assert urgencia_por_regra(msg, pergunta) == esperado
+
+
+def test_com_campo_faltando_nao_promete_imoveis_e_pergunta_o_que_falta():
+    """Um lead real ouviu "Vou te apresentar as opções que temos" com a urgência ainda em aberto,
+    e nada aconteceu: quem mostra imóvel é o consultor, e só com o cartão completo."""
+    from sdr_shared.models import Intencao, Lead
+    from agent.nodes.qualificador import _conferir
+
+    lead = Lead(id="l_prom")
+    c = lead.cartao
+    c.intencao, c.regiao, c.preco_max, c.quartos = Intencao.COMPRA, "zona_oeste", 600000, 2
+    assert _conferir("Combinado! Vou te apresentar as opções que temos por aqui.", lead) == \
+        "Anotado! E pra quando você precisa? É urgente ou dá pra ir com calma?"
+    assert _conferir("Perfeito, anotado.", lead).endswith("É urgente ou dá pra ir com calma?")
+    assert _conferir("E pra quando você pretende se mudar?", lead) == "E pra quando você pretende se mudar?"
+    c.urgencia = "imediata"                                  # completo: nada a corrigir
+    assert _conferir("Vou te apresentar as opções.", lead) == "Vou te apresentar as opções."
+
+
+# --------------------------------------------------------- sem imóvel exato: perguntar antes
+
+def _lead_moema():
+    from sdr_shared.models import Intencao, Lead
+    lead = Lead(id="l_moema", nome="Marcos")
+    c = lead.cartao
+    c.intencao, c.bairros, c.regiao, c.preco_max, c.quartos, c.urgencia = \
+        Intencao.ALUGUEL, ["Moema"], "zona_sul", 6000, 2, "sem_prazo"
+    return lead
+
+
+def _estado_consultor(lead, texto, **extra):
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    e = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, tipo=TipoMensagem.TEXTO,
+                            identificador_canal="s", conteudo=texto)
+    return {"lead": lead, "entrada": e, "messages": [], "cartao_extraido_de": texto, **extra}
+
+
+def _busca_falsa(monkeypatch, chamadas):
+    from sdr_shared.models import ImovelCard
+    from agent.nodes import consultor
+
+    def buscar(cartao, preferencia=None, limite=6):
+        chamadas.append(cartao)
+        card = ImovelCard(id="SP-9", titulo="Apartamento 3q · Moema", preco=9000.0, foto=None, motivo="x")
+        if cartao.preco_max is None:                         # sem teto, há em Moema
+            return {"cards": [card], "nivel": "bairro", "bairros_pedidos": ["Moema"],
+                    "bairros_encontrados": ["Moema"], "ampliou": False, "fichas": {}}
+        viz = ImovelCard(id="SP-8", titulo="Apartamento 2q · Butantã", preco=5500.0, foto=None, motivo="y")
+        return {"cards": [viz], "nivel": "cidade", "bairros_pedidos": ["Moema"],
+                "bairros_encontrados": ["Butantã"], "ampliou": True, "fichas": {}}
+    monkeypatch.setattr(consultor, "buscar_com_contexto", buscar)
+    monkeypatch.setattr(consultor, "InteresseRepository", lambda: type("R", (), {
+        "por_situacao": lambda self, _: {}, "registrar_varios": lambda self, *a: None})())
+
+
+def test_sem_imovel_no_bairro_pergunta_como_ampliar_antes_de_mostrar(monkeypatch):
+    """Um lead pediu 2 quartos em Moema até R$ 6 mil e recebeu, num parágrafo só, um studio que não
+    servia e imóveis na Mooca e no Butantã. Agora a Mora pergunta antes, com botões."""
+    from agent.nodes import consultor
+    _busca_falsa(monkeypatch, [])
+    monkeypatch.setattr(consultor, "llm_conversa", lambda: pytest.fail("a pergunta é fixa"))
+    out = consultor.run(_estado_consultor(_lead_moema(), "pode esperar"))
+    r = out["resposta"]
+    assert not r.imoveis, "nenhum imóvel antes de o cliente escolher"
+    assert r.texto.startswith("Marcos, em Moema não encontrei") and "R$ 6 mil/mês" in r.texto
+    assert [o.split("|")[0] for o in r.opcoes] == ["ajuste:preco", "ajuste:vizinhos", "ajuste:quartos"]
+    assert out["ajuste_pendente"]
+
+
+def test_escolher_acima_do_valor_busca_no_bairro_sem_teto(monkeypatch):
+    from langchain_core.messages import AIMessage
+    from agent.nodes import consultor
+    chamadas = []
+    _busca_falsa(monkeypatch, chamadas)
+
+    class _Llm:
+        def invoke(self, msgs):
+            return AIMessage(content="Em Moema:\n• Moema — 3 quartos\n\nQuer agendar?")
+    monkeypatch.setattr(consultor, "llm_conversa", lambda: _Llm())
+    lead = _lead_moema()
+    out = consultor.run(_estado_consultor(lead, "ajuste:preco"))
+    assert chamadas[-1].preco_max is None and chamadas[-1].bairros == ["Moema"]
+    assert [c.id for c in out["resposta"].imoveis] == ["SP-9"]
+    assert out["ajuste"]["tipo"] == "preco" and lead.cartao.preco_max == 6000, "o cartão não muda"
+
+
+@pytest.mark.parametrize("texto, tipo", [
+    ("pode ser em bairro vizinho", "vizinhos"), ("pode aumentar um pouco o valor", "preco"),
+    ("aceito com 1 quarto", "quartos"), ("hmm não sei", None),
+])
+def test_resposta_escrita_a_pergunta_de_ajuste(texto, tipo):
+    from agent.nodes import consultor
+    lead = _lead_moema()
+    criterio = consultor._criterio(lead.cartao)
+    assert consultor._ajuste_escolhido({"ajuste_pendente": criterio}, texto, criterio) == tipo
+
+
+def test_estado_salvo_aceita_todos_os_tipos_do_lead():
+    """`Segmento` e `AnaliseLead` entraram no Lead depois da lista fixa de tipos do checkpoint, e o
+    LangGraph passou a recusar desserializá-los. A lista agora sai dos módulos."""
+    from agent.graph import tipos_do_checkpoint
+    tipos = set(tipos_do_checkpoint())
+    for nome in ("Lead", "CartaoQualificacao", "Segmento", "AnaliseLead", "Intencao", "Estagio"):
+        assert ("sdr_shared.models.lead", nome) in tipos
+    assert ("sdr_shared.models.imovel", "ImovelCard") in tipos
+    assert ("sdr_shared.messaging.contracts", "RespostaAgente") in tipos
+
+
+@pytest.mark.parametrize("txt, esperado", [
+    ("bom dia. Gostaria de avaliar imóveis em Moema de até 5 mil de aluguel", "aluguel"),
+    ("na verdade quero comprar", "compra"),
+    ("quero comprar para alugar depois", None),
+    ("tem outro em Moema?", None),
+])
+def test_intencao_citada(txt, esperado):
+    from agent.nodes.supervisor import intencao_citada
+    r = intencao_citada(txt)
+    assert (r.value if r else None) == esperado
+
+
+def test_trocar_compra_por_aluguel_depois_de_qualificado_vai_ao_qualificador():
+    """Um teste real: compra em Perdizes já qualificada, e a mensagem pedindo ALUGUEL em Moema foi
+    para o consultor, que mantém a intenção — buscou compra até R$ 5 mil e a resposta saiu errada."""
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    from sdr_shared.models import Estagio, ImovelCard, Intencao, Lead
+    from agent.nodes import supervisor
+    lead = Lead(id="l_troca", estagio=Estagio.AGENDADO)
+    c = lead.cartao
+    c.intencao, c.bairros, c.regiao, c.preco_max, c.quartos, c.urgencia = \
+        Intencao.COMPRA, ["Perdizes"], "zona_oeste", 1_000_000, 1, "imediata"
+    e = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, tipo=TipoMensagem.TEXTO, identificador_canal="s",
+                            conteudo="bom dia. Gostaria de avaliar imóveis em Moema de até 5 mil de aluguel com urgência")
+    card = ImovelCard(id="SP-1", titulo="Studio · Perdizes", preco=1.0, foto=None, motivo="x")
+    out = supervisor.run({"lead": lead, "entrada": e, "imoveis_sugeridos": [card], "saltos": 0})
+    assert out["proximo"] == "qualificador"

@@ -42,11 +42,17 @@ def test_canal_externo_nunca_pede_contato():
     assert _contexto_contato(lead, _state(lead, Canal.TELEGRAM)) == ""
 
 
-def test_no_web_pede_o_nome_antes_de_qualquer_contato():
+def test_no_web_pede_o_nome_logo_depois_da_intencao_e_uma_vez_so():
+    """Antes era "numa das próximas mensagens", sem momento: o modelo nunca pedia, e um lead
+    reservou visita sem que a Mora soubesse como chamá-lo."""
+    from agent.nodes.qualificador import pede_nome_agora
     lead = _lead()
-    ctx = _contexto_contato(lead, _state(lead))
-    assert "nome" in ctx.lower()
-    assert "telefone" not in ctx.lower() and "e-mail" not in ctx.lower(), "nunca os três de uma vez"
+    assert not pede_nome_agora(lead, _state(lead)), "sem intenção ainda: primeiro o que ele quer"
+    lead.cartao.intencao = Intencao.COMPRA
+    assert pede_nome_agora(lead, _state(lead))
+    assert not pede_nome_agora(lead, {**_state(lead), "pediu_nome": True}), "pergunta uma vez só"
+    lead.nome = "Marcos"
+    assert not pede_nome_agora(lead, _state(lead))
 
 
 def test_pede_um_contato_so_quando_ha_compromisso():

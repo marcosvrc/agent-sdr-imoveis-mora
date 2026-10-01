@@ -19,7 +19,8 @@ def test_cenario_compra(infra):
     lead = LeadRepository().get("l1")
     assert lead.cartao.intencao == Intencao.COMPRA and lead.cartao.regiao == "zona_sul"
     assert lead.estagio == Estagio.QUALIFICANDO
-    assert ultima(broker)["texto"] == "[resposta da Mora]"
+    # a resposta falsa não pergunta nada: com campo faltando, a pergunta fixa do campo é acrescentada
+    assert ultima(broker)["texto"] == "[resposta da Mora]\n\nAté quanto você pretende pagar?"
     # lead ainda frio: 2h da cadência padrão × 2 do ritmo de lead frio (ver sdr_shared/followup.py)
     assert "l1" in sched.agendados and sched.agendados["l1"][0] == 240
 
@@ -117,6 +118,11 @@ def test_horario_digitado(infra):
     assert r["opcoes"] and r["opcoes"][0].startswith("slot:")                    # reofereceu
 
     processar(msg("l3", f"então fica {rotulo}", canal=Canal.WEB))               # texto casa com um slot oferecido
+    r = ultima(broker, "outbound-web")
+    # no site, sem contato: o horário fica segurado até chegar o telefone
+    assert LeadRepository().get("l3").estagio != Estagio.AGENDADO and "telefone" in r["texto"]
+
+    processar(msg("l3", "11 98765-4321", canal=Canal.WEB))
     r = ultima(broker, "outbound-web")
     assert LeadRepository().get("l3").estagio == Estagio.AGENDADO
     assert r["acao"] == "agendar" and r["dados"]["visita"]["inicio"]
@@ -490,13 +496,15 @@ def test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco(infra):
     processar(msg("l_mapa", "Agendar visita", tipo=TipoMensagem.BOTAO, canal=Canal.WEB))
     slot = ultima(broker, "outbound-web")["opcoes"][0].split("|")[0]
     processar(msg("l_mapa", slot, tipo=TipoMensagem.BOTAO, canal=Canal.WEB))
+    from agent.guardrails import vazao
+    vazao.resetar()                         # seis mensagens em sequência: o limitador não é o assunto aqui
+    processar(msg("l_mapa", "11 98765-4321", canal=Canal.WEB))                # o contato fecha a reserva
 
     r = ultima(broker, "outbound-web")
     visita = r["dados"]["visita"]
     assert visita["mapa"], "o card da visita precisa do link para o botão do mapa"
     assert "google.com/maps" in visita["mapa"] and "Brooklin" in visita["mapa"].replace("%2C", ",")
     assert visita["local"].startswith("Brooklin"), "o local vem do cadastro, não do título do card"
-    assert visita["mapa"] in r["texto"], "no Telegram só há texto: o link precisa estar nele"
-    assert "endereço exato o corretor manda" in r["texto"]
+    assert "google.com/maps" not in r["texto"], "o mapa é botão do canal; link cru no texto enterra a pergunta"
     # o link é do bairro: nada de rua, número ou CEP — que o sistema não tem
     assert not any(t in visita["mapa"].lower() for t in ("rua+", "avenida+", "cep", "n%C2%BA"))

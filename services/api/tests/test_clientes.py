@@ -24,9 +24,9 @@ def test_sem_contato_nao_inventamos_um_cliente():
 
 def test_mesmo_telefone_no_telegram_e_na_web_e_um_cliente_so():
     repo = ClienteRepository()
-    whats = _lead("wa_1", nome="Marcos", telefone="11988887777")
+    tele = _lead("tg_1", nome="Marcos", telefone="11988887777")
     web = _lead("web_2", telefone="(11) 98888-7777")          # o cliente digitou formatado
-    primeiro = repo.vincular(whats)
+    primeiro = repo.vincular(tele)
     segundo = repo.vincular(web)
     assert primeiro == segundo
     assert len(repo.oportunidades(primeiro)) == 2
@@ -43,7 +43,7 @@ def test_email_tambem_reconhece_e_o_cadastro_se_completa():
 
 
 def test_intencao_nova_depois_do_ciclo_abre_outra_oportunidade():
-    lead = _lead("wa_1", telefone="11988887777", estagio=Estagio.HANDOFF,
+    lead = _lead("tg_1", telefone="11988887777", estagio=Estagio.HANDOFF,
                  cartao=CartaoQualificacao(intencao=Intencao.COMPRA, regiao="zona_sul", quartos=3))
     ClienteRepository().vincular(lead)
     nova = nova_oportunidade_se_mudou_intencao(lead, Intencao.ALUGUEL)
@@ -63,13 +63,13 @@ def test_correcao_no_meio_da_qualificacao_nao_abre_oportunidade():
 
 
 def test_primeira_intencao_declarada_nao_abre_oportunidade():
-    lead = _lead("wa_1", estagio=Estagio.FRIO, cartao=CartaoQualificacao(intencao=Intencao.INDEFINIDA))
+    lead = _lead("tg_1", estagio=Estagio.FRIO, cartao=CartaoQualificacao(intencao=Intencao.INDEFINIDA))
     assert nova_oportunidade_se_mudou_intencao(lead, Intencao.COMPRA) is None
 
 
 def test_ficha_reune_o_historico_da_pessoa():
     repo = ClienteRepository()
-    a = _lead("wa_1", nome="Marcos", telefone="11988887777",
+    a = _lead("tg_1", nome="Marcos", telefone="11988887777",
               cartao=CartaoQualificacao(intencao=Intencao.COMPRA))
     cid = repo.vincular(a)
     b = _lead("web_2", telefone="11988887777", cliente_id=cid,

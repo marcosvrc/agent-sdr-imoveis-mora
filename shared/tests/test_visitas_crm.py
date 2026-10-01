@@ -208,3 +208,33 @@ def novo_lead_simples():
     from sdr_shared.db import LeadRepository
     lead = Lead(id=f"lead-sem-{uuid.uuid4().hex[:8]}", nome="Sem Vínculo", estagio=Estagio.NOVO)
     return LeadRepository().upsert(lead)
+
+
+def test_horario_vencido_nunca_e_oferecido(monkeypatch):
+    """Um lead real recebeu "Sexta 18/09 às 07h" no dia 29/09: a Mora pedia a agenda ao CRM sem data
+    inicial, e o seed do CRM está ancorado em 17/09. O adaptador passa a pedir a partir de agora, e
+    este filtro garante o mesmo venha a agenda de onde vier."""
+    from contextlib import contextmanager
+    import sdr_shared.crm.visitas as visitas
+
+    passado = datetime.now(UTC) - timedelta(days=11)
+    futuro = datetime.now(UTC) + timedelta(days=2)
+
+    class _Sessao:
+        def imovel_por_codigo(self, codigo):
+            return {"id": "p1"}
+
+        def horarios_livres(self, pid, limite=8):
+            return [{"id": "velho", "starts_at": passado.isoformat()},
+                    {"id": "novo", "starts_at": futuro.isoformat()}]
+
+    class _Crm:
+        def habilitado(self):
+            return True
+
+        @contextmanager
+        def sessao(self):
+            yield _Sessao()
+
+    monkeypatch.setattr(visitas, "get_crm", lambda: _Crm())
+    assert [h.slot_id for h in visitas.horarios_do_imovel("SP-1")] == ["novo"]

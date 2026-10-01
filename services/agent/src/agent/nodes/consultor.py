@@ -1,5 +1,8 @@
 """Busca imóveis (RAG híbrido) e explica por que combinam."""
 import logging
+import re
+
+from langchain_core.messages import AIMessage
 
 from sdr_shared.db import InteresseRepository
 from sdr_shared.messaging import RespostaAgente
@@ -70,6 +73,67 @@ def _contexto_da_busca(busca: dict, cards: list) -> str:
             "(preço, bairro ou quartos)." + sugestao_alt)
 
 
+AJUSTE = "ajuste:"
+# Como o cliente pode querer ampliar a busca, e o que isso vira no histórico da conversa.
+AJUSTES = {"preco": "Pode mostrar acima do valor que eu falei",
+           "vizinhos": "Pode mostrar em bairros vizinhos",
+           "quartos": "Pode mostrar com menos quartos"}
+_AJUSTE_POR_TEXTO = (("vizinhos", re.compile(r"vizinh|perto|pr[oó]xim|outros? bairros?|regi[aã]o", re.I)),
+                     ("quartos", re.compile(r"quarto|menor|studio|kitnet", re.I)),
+                     ("preco", re.compile(r"valor|pre[cç]o|aument|acima|mais caro|teto|or[cç]amento|pagar mais", re.I)))
+
+
+def _criterio(cartao) -> list:
+    """O que define a busca. Se mudar, a ampliação escolhida antes deixa de valer."""
+    return [cartao.intencao, sorted(cartao.bairros or []), cartao.regiao, cartao.preco_max, cartao.quartos,
+            cartao.area_min, cartao.tipo_imovel]
+
+
+def _valor(v: float | None) -> str:
+    if not v:
+        return ""
+    if v >= 1_000_000:
+        return f"R$ {v / 1_000_000:.1f} milhão".replace(".0 ", " ").replace(".", ",")
+    if v >= 1000:
+        return f"R$ {v / 1000:.0f} mil"
+    return f"R$ {v:.0f}"
+
+
+def _ajuste_escolhido(state: AgentState, mensagem: str, criterio: list) -> str | None:
+    if mensagem.startswith(AJUSTE):
+        tipo = mensagem[len(AJUSTE):].split("|")[0].strip()
+        return tipo if tipo in AJUSTES else None
+    if state.get("ajuste_pendente") == criterio:          # respondeu à pergunta por escrito
+        return next((tipo for tipo, regra in _AJUSTE_POR_TEXTO if regra.search(mensagem)), None)
+    return None
+
+
+def _perguntar_ajuste(state: AgentState, lead, busca: dict, criterio: list) -> dict:
+    """Sem imóvel no perfil exato, PERGUNTA como ampliar em vez de despejar alternativas.
+
+    Um lead pediu 2 quartos em Moema até R$ 6 mil e recebeu, num parágrafo só, um studio de Moema
+    que não servia e três imóveis na Mooca e no Butantã que ele não pediu. Ele queria Moema: tirar o
+    teto teria mostrado um de 3 quartos lá mesmo. Quem decide o que ceder é o cliente.
+    Texto fixo: é uma bifurcação, e as opções vão em botões.
+    """
+    c = lead.cartao
+    onde = ", ".join(busca["bairros_pedidos"])
+    aluguel = str(c.intencao) == "aluguel" or getattr(c.intencao, "value", "") == "aluguel"
+    teto = _valor(c.preco_max or c.ticket) + ("/mês" if aluguel and (c.preco_max or c.ticket) else "")
+    perfil = (c.tipo_imovel or "imóvel") + (f" de {c.quartos} quartos" if c.quartos and c.quartos > 1 else "")
+    nome = f"{lead.nome}, " if lead.nome else ""
+    texto = (f"{nome}em {onde} não encontrei {perfil}{' até ' + teto if teto else ''} agora.\n\n"
+             "Como prefere que eu continue?")
+    opcoes = []
+    if c.preco_max or c.ticket:
+        opcoes.append(f"{AJUSTE}preco|{onde} acima de {_valor(c.preco_max or c.ticket)}")
+    opcoes.append(f"{AJUSTE}vizinhos|Bairros vizinhos" + (f" até {_valor(c.preco_max or c.ticket)}" if teto else ""))
+    if c.quartos and c.quartos > 1:
+        opcoes.append(f"{AJUSTE}quartos|{onde} com menos quartos")
+    return {"lead": lead, "messages": [AIMessage(content=texto)], "ajuste_pendente": criterio,
+            "resposta": RespostaAgente(lead_id=lead.id, texto=texto, opcoes=opcoes)}
+
+
 def _absorver_mudanca(lead, mensagem: str) -> None:
     """Deixa o cliente MUDAR DE IDEIA depois de qualificado.
 
@@ -109,12 +173,35 @@ def run(state: AgentState) -> dict:
     descartados = conhecidos.get("descartado", set())
     ja_vistos = {c.id for c in state.get("imoveis_sugeridos") or []} | conhecidos.get("sugerido", set())
 
-    busca = buscar_com_contexto(lead.cartao, preferencia=state["entrada"].conteudo, limite=6)
+    criterio = _criterio(lead.cartao)
+    ajuste = state.get("ajuste") if (state.get("ajuste") or {}).get("criterio") == criterio else None
+    if (tipo := _ajuste_escolhido(state, mensagem, criterio)):
+        ajuste = {"tipo": tipo, "criterio": criterio}
+    cartao_busca = lead.cartao
+    if ajuste and ajuste["tipo"] == "preco":
+        cartao_busca = lead.cartao.model_copy(update={"preco_max": None, "ticket": None})
+    elif ajuste and ajuste["tipo"] == "quartos":
+        cartao_busca = lead.cartao.model_copy(update={"quartos": None})
+    preferencia = "" if mensagem.startswith(AJUSTE) else state["entrada"].conteudo
+    busca = buscar_com_contexto(cartao_busca, preferencia=preferencia, limite=6)
+    if (busca.get("ampliou") and busca["nivel"] in ("vizinhos", "regiao", "cidade")
+            and busca["bairros_pedidos"] and ajuste is None):
+        return _perguntar_ajuste(state, lead, busca, criterio)
     todos = [c for c in busca["cards"] if c.id not in descartados]
     cards = [c for c in todos if c.id not in ja_vistos][:3] or todos[:3]     # esgotou novidades → repete as melhores
     resumo = "\n".join(_linha(c, busca.get("fichas") or {}) for c in cards) or "(nenhum)"
     # O agente só pode falar de disponibilidade com base nisto — nunca deduzir do que não veio na lista.
     contexto = _contexto_da_busca(busca, cards)
+    if ajuste and ajuste["tipo"] == "preco":
+        contexto += ("\nO cliente aceitou ver opções ACIMA do valor que ele tinha dito. Deixe claro, em meia frase, "
+                     "que estas passam do teto dele.")
+    elif ajuste and ajuste["tipo"] == "quartos":
+        contexto += "\nO cliente aceitou ver opções com MENOS quartos do que pediu. Deixe isso claro em meia frase."
+    if cards and not (lead.telefone or lead.cartao.tem_contato()):
+        # A vitrine é o momento em que o contato vale alguma coisa para o cliente. Opcional aqui; a
+        # trava de verdade é na reserva da visita (ver agendador).
+        contexto += ("\nO cliente ainda não deixou contato. Depois da pergunta final, numa linha separada e curta, "
+                     "diga que o corretor manda mais fotos e detalhes se ele deixar um telefone — sem insistir.")
     msg = llm_conversa().invoke([carregar("consultor", memoria=lead.resumo, nome=lead.nome or "cliente",
                                           cartao=lead.cartao.model_dump(exclude_defaults=True), imoveis=resumo,
                                           contexto_busca=contexto), *state["messages"]])
@@ -128,5 +215,8 @@ def run(state: AgentState) -> dict:
     except Exception:
         log.warning("não consegui registrar os interesses do lead %s", lead.id, exc_info=True)
     return {"lead": lead, "imoveis_sugeridos": (state.get("imoveis_sugeridos") or []) + cards, "messages": [msg],
+            "ultimos_sugeridos": [c.id for c in cards] or (state.get("ultimos_sugeridos") or []),
+            "ajuste": ajuste, "ajuste_pendente": None,
+            "imovel_escolhido": None,                  # lote novo na tela: a escolha anterior não vale mais
             "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id), imoveis=cards,
                                        opcoes=["Agendar visita", "Ver outros", "Falar com corretor"] if cards else [])}

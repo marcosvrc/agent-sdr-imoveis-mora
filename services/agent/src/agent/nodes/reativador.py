@@ -80,6 +80,7 @@ def _avisar(state: AgentState) -> dict:
                                      "motivos": motivos, "dias_em_silencio": dias})
 
     return {"lead": lead, "messages": [msg], "imoveis_sugeridos": (state.get("imoveis_sugeridos") or []) + [card],
+            "ultimos_sugeridos": [card.id], "imovel_escolhido": None,
             "resposta": RespostaAgente(lead_id=lead.id, texto=texto, imoveis=[card], opcoes=OPCOES)}
 
 

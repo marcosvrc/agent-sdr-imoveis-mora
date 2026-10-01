@@ -1,7 +1,7 @@
 [project]
 name = "sdr-channels-local"
 version = "0.1.0"
-description = "Perfil local: webhook WhatsApp + WebSocket num único FastAPI (substitui API Gateway)"
+description = "Perfil local: WebSocket do chat do site num FastAPI (substitui API Gateway)"
 requires-python = ">=3.12"
 dependencies = ["sdr-shared[local]", "fastapi>=0.115", "uvicorn[standard]>=0.30", "websockets>=12"]
 [tool.uv.sources]

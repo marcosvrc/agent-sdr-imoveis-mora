@@ -17,7 +17,7 @@ escolhido ainda — ou sem CRM — vale a agenda do corretor, que é o que a Mor
 """
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ..models import Lead
 from ..ports import get_crm
@@ -56,14 +56,18 @@ def horarios_do_imovel(codigo_imovel: str | None, limite: int = 8) -> list[Horar
         log.warning("não consegui ler os horários de %s no CRM", codigo_imovel, exc_info=True)
         return []
 
-    saida = []
+    saida, agora = [], datetime.now(timezone.utc)
     for x in livres:
         quando = x.get("starts_at")
         if not quando:
             continue
         try:
-            saida.append(Horario(inicio=datetime.fromisoformat(str(quando)),
-                                 slot_id=str(x["id"])))
+            inicio = datetime.fromisoformat(str(quando))
+            if inicio.tzinfo is None:
+                inicio = inicio.replace(tzinfo=timezone.utc)
+            if inicio <= agora:                 # vencido: nunca se oferece, venha de onde vier
+                continue
+            saida.append(Horario(inicio=inicio, slot_id=str(x["id"])))
         except (ValueError, KeyError):
             continue
     return saida

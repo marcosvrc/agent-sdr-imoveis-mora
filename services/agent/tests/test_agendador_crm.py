@@ -30,8 +30,11 @@ def lead_no_banco():
     return LeadRepository().upsert(lead)
 
 
-def estado(texto: str, **extra) -> dict:
-    lead = Lead(id="lead-ag", nome="Cliente", estagio=Estagio.QUALIFICADO)
+def estado(texto: str, sem_contato: bool = False, **extra) -> dict:
+    # Com telefone: é o caminho normal da reserva no site (sem contato, a Mora segura o horário
+    # e pede o telefone antes — ver os testes da trava no fim do arquivo).
+    lead = Lead(id="lead-ag", nome="Cliente", estagio=Estagio.QUALIFICADO,
+                telefone=None if sem_contato else "11988887777")
     lead.cartao.intencao = Intencao.ALUGUEL
     card = ImovelCard(id="SP-0001", titulo="Apartamento 2q · Pinheiros", preco=3000.0,
                       foto=None, motivo="perto do metrô")
@@ -214,3 +217,106 @@ def test_descricao_cai_para_o_banco_e_depois_para_generico():
     """Sem card na mão — turnos depois, ou vindo do Telegram — ainda assim não se cita o código."""
     assert agendador.descrever_imovel(None, []) == "o imóvel"
     assert "SP-" not in agendador.descrever_imovel("SP-INEXISTENTE-9999", [])
+
+
+# --------------------------------------------------------------- qual imóvel visitar
+
+def _tres() -> list[ImovelCard]:
+    return [ImovelCard(id="SP-0213", titulo="Studio 29 m² · Mooca", preco=280000.0, foto=None, motivo="a"),
+            ImovelCard(id="SP-0211", titulo="Apartamento 33 m² 2 vagas · Mooca", preco=420000.0, foto=None, motivo="b"),
+            ImovelCard(id="SP-0204", titulo="Apartamento 40 m² · Mooca", preco=520000.0, foto=None, motivo="c")]
+
+
+def test_com_varios_imoveis_na_tela_pergunta_qual_antes_do_horario(infra, grade, monkeypatch):
+    """Um lead real: três imóveis na Mooca, "Agendar visita", botões de HORÁRIO sob a pergunta
+    "qual desses?", um clique no horário — e a visita reservada no primeiro, que ele não escolheu."""
+    monkeypatch.setattr(agendador, "llm_conversa", lambda: pytest.fail("a pergunta é fixa, sem modelo"))
+    cards = _tres()
+    out = agendador.run(estado("Agendar visita", imoveis_sugeridos=cards,
+                               ultimos_sugeridos=[c.id for c in cards]))
+    assert out["horarios_oferecidos"] == [], "horário só depois de saber qual imóvel"
+    assert [o.split("|")[0] for o in out["resposta"].opcoes] == [f"imovel:{c.id}" for c in cards]
+    assert out["lead"].cartao.pediu_visita, "a próxima resposta em texto livre volta para o agendador"
+
+
+def test_o_botao_do_imovel_leva_aos_horarios_dele(infra, grade):
+    cards = _tres()
+    out = agendador.run(estado("imovel:SP-0211", imoveis_sugeridos=cards,
+                               ultimos_sugeridos=[c.id for c in cards]))
+    assert out["imovel_escolhido"] == "SP-0211"
+    assert out["horarios_oferecidos"], "escolhido o imóvel, vêm os horários"
+
+
+def test_o_horario_e_reservado_no_imovel_escolhido(infra, grade, pedidos, lead_no_banco):
+    # o escolhido é o ÚLTIMO da tela (e o único que existe no banco de teste, que a visita exige)
+    cards = [*_tres()[:2], ImovelCard(id="SP-0001", titulo="Apartamento 2q · Pinheiros", preco=3000.0,
+                                      foto=None, motivo="c")]
+    escolhido = grade[0]
+    agendador.run(estado(f"slot:{escolhido.inicio.isoformat()}", imoveis_sugeridos=cards,
+                         ultimos_sugeridos=[c.id for c in cards], imovel_escolhido="SP-0001",
+                         horarios_oferecidos=[h.inicio.isoformat() for h in grade],
+                         slots_crm={h.inicio.isoformat(): h.slot_id for h in grade}))
+    assert pedidos == [("SP-0001", escolhido.slot_id)], "nunca o primeiro por omissão"
+
+
+@pytest.mark.parametrize("texto, esperado", [
+    ("o segundo", "SP-0211"),
+    ("quero ver o studio", "SP-0213"),
+    ("o com 2 vagas", "SP-0211"),
+    ("o de 40", "SP-0204"),
+    ("o último", "SP-0204"),
+    ("Agendar visita", None),
+    ("o da Mooca", None),                 # todos são da Mooca: não escolhe nada
+])
+def test_escolha_do_imovel_por_texto_so_quando_inequivoca(texto, esperado):
+    assert agendador._escolher_pelo_texto(texto, _tres()) == esperado
+
+
+# --------------------------------------------------------------- contato antes da reserva
+
+def test_no_site_sem_contato_o_horario_espera_o_telefone(infra, grade, pedidos, monkeypatch):
+    """Um lead real reservou visita sem nome e sem telefone. Agora o horário fica segurado e a
+    Mora pede o contato; nada é reservado nem pedido ao CRM até ele chegar."""
+    monkeypatch.setattr(agendador, "llm_conversa", lambda: pytest.fail("pedido de contato é texto fixo"))
+    escolhido = grade[0]
+    out = agendador.run(estado(f"slot:{escolhido.inicio.isoformat()}", sem_contato=True,
+                               horarios_oferecidos=[h.inicio.isoformat() for h in grade]))
+    assert out["horario_pendente"] == escolhido.inicio.isoformat()
+    assert "telefone" in out["resposta"].texto and "WhatsApp" not in out["resposta"].texto
+    assert pedidos == [] and out["lead"].estagio != Estagio.AGENDADO
+
+
+def test_o_contato_fecha_a_reserva_do_horario_segurado(infra, grade, pedidos, monkeypatch, lead_no_banco):
+    from agent.nodes import qualificador
+    escolhido = grade[1]
+
+    def extrair(cartao, msg, pergunta=""):
+        return cartao.model_copy(update={"telefone_informado": "11 98765-4321"})
+    monkeypatch.setattr(qualificador, "_extrair", extrair)
+    out = agendador.run(estado("11 98765-4321", sem_contato=True,
+                               horario_pendente=escolhido.inicio.isoformat(),
+                               horarios_oferecidos=[h.inicio.isoformat() for h in grade],
+                               slots_crm={h.inicio.isoformat(): h.slot_id for h in grade}))
+    assert out["lead"].estagio == Estagio.AGENDADO and out["lead"].telefone == "11987654321"
+    assert pedidos == [("SP-0001", escolhido.slot_id)]
+    assert out["horario_pendente"] is None
+
+
+def test_sem_contato_de_novo_insiste_e_oferece_o_corretor(infra, grade, pedidos, monkeypatch):
+    from agent.nodes import qualificador
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="": cartao)
+    out = agendador.run(estado("prefiro não passar", sem_contato=True,
+                               horario_pendente=grade[0].inicio.isoformat()))
+    assert pedidos == [] and out["resposta"].opcoes == ["Falar com corretor"]
+
+
+def test_no_telegram_a_reserva_nao_espera_telefone(infra, grade, pedidos, lead_no_banco):
+    """No Telegram o chat continua aberto e o corretor fala por ali: não há o que travar."""
+    from sdr_shared.messaging import Canal
+    escolhido = grade[0]
+    st = estado(f"slot:{escolhido.inicio.isoformat()}", sem_contato=True,
+                horarios_oferecidos=[h.inicio.isoformat() for h in grade],
+                slots_crm={h.inicio.isoformat(): h.slot_id for h in grade})
+    st["entrada"] = st["entrada"].model_copy(update={"canal": Canal.TELEGRAM})
+    out = agendador.run(st)
+    assert out["lead"].estagio == Estagio.AGENDADO

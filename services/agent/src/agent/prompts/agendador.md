@@ -1,7 +1,9 @@
 O cliente quer agendar. Cliente: {nome}.
-Imóvel de interesse: {imovel} — chame-o assim, por essa descrição. Não escreva código de cadastro.
+Imóvel escolhido pelo cliente: {imovel} — chame-o assim, por essa descrição. Não escreva código de cadastro.
+A escolha do imóvel já foi feita: não pergunte qual imóvel ele quer visitar.
 Horários disponíveis (serão enviados como lista de opções automaticamente): {horarios}
-Esses são os únicos horários disponíveis — não invente outros nem sugira "qualquer horário". Escreva uma frase curta convidando
+Esses são os únicos horários disponíveis — não invente outros nem sugira "qualquer horário". NÃO liste os horários no texto:
+eles já aparecem como botões logo abaixo da sua mensagem. Escreva uma frase curta convidando
 a escolher um deles — o cliente pode clicar na opção ou responder por escrito (ex.: "terça às 14h").
 {nota}
 {contexto_contato}

@@ -99,6 +99,32 @@ def build_graph(checkpointer=None):
     return g.compile(checkpointer=checkpointer)
 
 
+def tipos_do_checkpoint() -> list[tuple[str, str]]:
+    """Todos os modelos e enums nossos que podem ir parar no estado salvo da conversa.
+
+    A lista era escrita à mão e ficou para trás: `Segmento` e `AnaliseLead` entraram no `Lead`
+    depois, e o LangGraph passou a RECUSAR desserializá-los ("Blocked deserialization … not in
+    allowed_msgpack_modules") — o estado voltava do banco sem esses campos. Gerada dos módulos, a
+    lista acompanha qualquer tipo novo sem ninguém lembrar de registrá-lo aqui.
+    """
+    import enum
+    import inspect
+
+    from pydantic import BaseModel
+
+    import sdr_shared.messaging.contracts as contratos
+    import sdr_shared.models.agenda as agenda
+    import sdr_shared.models.imovel as imovel
+    import sdr_shared.models.lead as lead
+    tipos = []
+    for modulo in (lead, imovel, agenda, contratos):
+        for nome, obj in vars(modulo).items():
+            if (inspect.isclass(obj) and obj.__module__ == modulo.__name__
+                    and issubclass(obj, (BaseModel, enum.Enum))):
+                tipos.append((modulo.__name__, nome))
+    return sorted(tipos)
+
+
 def build_checkpointer():
     """Checkpointer Postgres (thread_id = lead_id)."""
     from psycopg import Connection
@@ -106,14 +132,8 @@ def build_checkpointer():
     from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
     from sdr_shared.config import get_settings
     conn = Connection.connect(get_settings().database_dsn, autocommit=True, prepare_threshold=0)
-    # Registra os tipos nossos que vão ao checkpoint (silencia "Deserializing unregistered type" e evita o bloqueio futuro)
     try:
-        serde = JsonPlusSerializer(allowed_msgpack_modules=[("sdr_shared.models.lead", "Lead"), ("sdr_shared.models.lead", "Estagio"),
-                                                            ("sdr_shared.models.lead", "Intencao"), ("sdr_shared.models.lead", "Temperatura"),
-                                                            ("sdr_shared.models.lead", "CartaoQualificacao"), ("sdr_shared.models.imovel", "ImovelCard"),
-                                                            ("sdr_shared.messaging.contracts", "MensagemNormalizada"), ("sdr_shared.messaging.contracts", "RespostaAgente"),
-                                                            ("sdr_shared.messaging.contracts", "Canal"), ("sdr_shared.messaging.contracts", "TipoMensagem"),
-                                                            ("sdr_shared.messaging.contracts", "Acao")])
+        serde = JsonPlusSerializer(allowed_msgpack_modules=tipos_do_checkpoint())
     except TypeError:                                   # versão antiga do langgraph sem o parâmetro
         serde = JsonPlusSerializer()
     saver = PostgresSaver(conn, serde=serde)

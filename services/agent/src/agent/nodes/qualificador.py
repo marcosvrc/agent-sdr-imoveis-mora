@@ -1,12 +1,14 @@
-"""Conversa humanizada que preenche o CartaoQualificacao. Extração estruturada (Haiku) + resposta (Sonnet)."""
+"""Conversa humanizada que preenche o CartaoQualificacao. Extração estruturada (papel `extracao`) +
+resposta (papel `conversa`)."""
 import re
 
+from langchain_core.messages import AIMessage
 from pydantic import Field
 
 from sdr_shared.db import ClienteRepository, auditar, nova_oportunidade_se_mudou_intencao
 from sdr_shared.messaging import RespostaAgente
 from sdr_shared.models import CartaoQualificacao, Estagio, Intencao, Segmento
-from ..llm import llm_conversa, llm_roteamento
+from ..llm import llm_conversa, llm_extracao
 from ..prompts import carregar, texto
 from ..state import AgentState
 from ..guardrails.saida import sanear
@@ -56,6 +58,63 @@ _LIMPAVEIS = frozenset({"regiao", "bairros", "preco_min", "preco_max", "quartos"
                         "perfil_investidor", "ticket", "retorno_esperado"})
 
 
+# Pergunta de cada campo: o que dizer ao modelo que falta, e o texto fixo quando ele se perde.
+PERGUNTA = {
+    "intencao": ("se ele quer comprar, alugar ou investir", "Você quer comprar, alugar ou investir?"),
+    "regiao": ("em que região ou bairro ele procura", "Em qual região ou bairro de São Paulo você procura?"),
+    "preco_max": ("até quanto ele pretende pagar", "Até quanto você pretende pagar?"),
+    "quartos": ("quantos quartos ele precisa", "Quantos quartos você precisa?"),
+    "urgencia": ("para quando ele precisa (é urgente ou dá para esperar?)",
+                 "E pra quando você precisa? É urgente ou dá pra ir com calma?"),
+    "area_min": ("quantos metros quadrados ele precisa", "Quantos metros quadrados você precisa, mais ou menos?"),
+    "perfil_investidor": ("o perfil dele como investidor (conservador, moderado ou arrojado)",
+                          "Como você se define como investidor: mais conservador, moderado ou arrojado?"),
+    "ticket": ("quanto ele pretende investir", "Quanto você pretende investir?"),
+    "retorno_esperado": ("que retorno ele espera", "Que retorno você espera, mais ou menos?"),
+}
+
+# Promessa de busca que o qualificador não pode cumprir: quem mostra imóvel é o consultor, e só
+# quando o cartão fecha. Um lead real ouviu "vou te apresentar as opções" com a urgência ainda em
+# aberto — e ficou esperando uma mensagem que nunca veio.
+PROMESSA = re.compile(r"\b(vou|vamos|deixa eu|deixe-me|já) (te |lhe )?(apresentar|mostrar|buscar|procurar|"
+                      r"verificar|separar|trazer|levantar)\b|\bum (momento|minutinho|instante)\b|\bjá te mostro\b",
+                      re.I)
+
+_URG_SEM_PRAZO = re.compile(r"sem pressa|com calma|sem prazo|n[aã]o tenho pressa|sem urg[eê]ncia|n[aã]o (é|e) urgente|"
+                            r"ano que vem|pr[oó]ximo ano|s[oó] pesquisando|s[oó] olhando", re.I)
+_URG_IMEDIATA = re.compile(r"urg[eê]n|urgente|o quanto antes|imediat|pra ontem|para ontem|esse m[eê]s|este m[eê]s|"
+                           r"\bj[aá]\b|r[aá]pido|logo", re.I)
+_URG_3 = re.compile(r"\b(1|2|3|um|dois|tr[eê]s) m[eê]s", re.I)
+_URG_6 = re.compile(r"\b(4|5|6|quatro|cinco|seis) meses|meio ano|semestre", re.I)
+_FALA_DE_PRAZO = re.compile(r"urg[eê]n|prazo|quando|mudar|pressa", re.I)
+
+
+_SEM_PREFERENCIA = re.compile(r"sem prefer|tanto faz|qualquer|n[aã]o importa|indiferente|sem restri", re.I)
+
+
+def quartos_sem_preferencia(mensagem: str, pergunta: str = "") -> bool:
+    """"sem preferência de quartos" é resposta, não silêncio. Sem isto o campo ficava vazio e a Mora
+    perguntava os quartos de novo logo depois de dizer "deixo em aberto". Zero é "no mínimo zero":
+    a busca não filtra por quartos."""
+    return bool(_SEM_PREFERENCIA.search(mensagem)) and bool(re.search(r"quarto", f"{pergunta} {mensagem}", re.I))
+
+
+def urgencia_por_regra(mensagem: str, pergunta: str = "") -> str | None:
+    """Rede de segurança para a urgência, que o extrator às vezes deixa passar.
+
+    "estou com uma urgencia", em resposta a "tem alguma urgência?", voltou sem urgência — e como ela
+    é campo obrigatório, o cartão nunca fechava e os imóveis nunca apareciam. Só vale quando a
+    mensagem ou a pergunta anterior falam de prazo: "logo" solto numa frase qualquer não é urgência.
+    """
+    if not (_FALA_DE_PRAZO.search(pergunta or "") or _FALA_DE_PRAZO.search(mensagem)):
+        return None
+    for regra, valor in ((_URG_SEM_PRAZO, "sem_prazo"), (_URG_6, "6_meses"), (_URG_3, "3_meses"),
+                         (_URG_IMEDIATA, "imediata")):
+        if regra.search(mensagem):
+            return valor
+    return None
+
+
 def _vale(campo: str, valor) -> bool:
     """O modelo disse alguma coisa sobre este campo?"""
     if isinstance(valor, str) and not valor.strip():
@@ -67,9 +126,27 @@ def _vale(campo: str, valor) -> bool:
     return not (valor == 0 and campo in _ZERO_NAO_VALE)
 
 
+def _abertura(state) -> str:
+    """Se a Mora se apresenta nesta resposta.
+
+    Só na primeira mensagem — e nem nela quando o canal já mostrou a apresentação. O chat do site
+    abre com uma bolha de boas-vindas da Mora antes de o cliente digitar; apresentar-se de novo
+    na resposta ao "oi" fazia o cliente ler "Eu sou a Mora…" duas vezes seguidas.
+    """
+    if not state.get("primeira_interacao"):
+        return "A conversa já está em andamento: não se apresente de novo nem repita boas-vindas."
+    entrada = state.get("entrada")
+    if entrada is not None and (entrada.meta or {}).get("saudacao_exibida"):
+        return ("O cliente já viu a apresentação da Mora (nome e empresa) numa mensagem de boas-vindas "
+                "do site, logo antes desta: NÃO se apresente de novo nem dê boas-vindas. Responda ao que "
+                "ele disse e siga com a pergunta.")
+    return ("Esta é a PRIMEIRA mensagem desta conversa: apresente-se em meia frase (Mora, da "
+            "Vértice Imóveis) antes de perguntar.")
+
+
 def _extrair(cartao: CartaoQualificacao, mensagem: str, pergunta: str = "") -> CartaoQualificacao:
     try:
-        novo = llm_roteamento().with_structured_output(Extracao).invoke(
+        novo = llm_extracao().with_structured_output(Extracao).invoke(
             texto("extracao", cartao=cartao.model_dump(exclude_defaults=True), mensagem=mensagem,
                   pergunta=pergunta.strip() or "(nenhuma — é a primeira mensagem da conversa)"))
     except Exception:
@@ -130,14 +207,90 @@ def _normalizar_local(cartao: CartaoQualificacao, mensagem: str) -> tuple[Cartao
     return cartao.model_copy(update={"bairros": bairros or cartao.bairros, "regiao": regiao}), None
 
 
+_TELEFONE = re.compile(r"(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?9?\s*\d{4}[\s.-]?\d{4}")
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+
+
+def so_contato(txt: str) -> bool:
+    """A mensagem é, essencialmente, um telefone ou um e-mail ("11 98765-4321", "meu zap é …")."""
+    achado = _TELEFONE.search(txt) or _EMAIL.search(txt)
+    if not achado:
+        return False
+    resto = (txt[:achado.start()] + txt[achado.end():]).strip()
+    return len(resto.split()) <= 6          # "é esse", "meu whatsapp é", "pode ligar nesse" — nada além
+
+
+def _contexto_contato_recebido(lead, state) -> str:
+    """O cliente acabou de mandar o contato que a Mora pediu: agradecer e fechar, não vender de novo."""
+    if not so_contato(state["entrada"].conteudo or ""):
+        return ""
+    if lead.estagio == Estagio.AGENDADO:
+        quando = ""
+        try:
+            from sdr_shared.db import VisitaRepository
+            if v := VisitaRepository().proxima_do_lead(lead.id):
+                from ..tools.agenda import formatar
+                quando = f" ({formatar(v)})"
+        except Exception:
+            pass
+        return (f"O cliente acabou de mandar o contato que você pediu, e a visita dele já está reservada{quando}. "
+                "Agradeça em meia frase, diga que o corretor vai falar com ele por esse contato para confirmar "
+                "a visita e pergunte se pode ajudar em mais alguma coisa. Não repita o número nem o e-mail, "
+                "e não ofereça imóveis nem horários.")
+    return ("O cliente acabou de mandar o contato que você pediu. Agradeça em meia frase, diga que o corretor "
+            "pode mandar fotos e detalhes por ali e pergunte se algum dos imóveis que você mostrou chamou a "
+            "atenção. Não repita o número nem o e-mail e não liste imóveis de novo.")
+
+
+def pede_nome_agora(lead, state) -> bool:
+    """O nome se pede UMA vez, logo depois que o cliente diz o que quer (comprar, alugar, investir).
+
+    Antes a instrução era "numa das próximas mensagens", sem momento definido — e o modelo nunca
+    pedia: um lead reservou visita sem que a Mora soubesse como chamá-lo. Só no site: no Telegram o
+    nome vem do perfil.
+    """
+    from sdr_shared.messaging import Canal
+    return (state["entrada"].canal == Canal.WEB and not lead.nome and not state.get("pediu_nome")
+            and lead.cartao.intencao != Intencao.INDEFINIDA)
+
+
+CONTEXTO_NOME = ("Nesta resposta NÃO pergunte o próximo campo: confirme em meia frase o que ele disse e pergunte "
+                 "só o primeiro nome, de forma leve ('E como posso te chamar?'). Se ele preferir não dizer, "
+                 "tudo bem — na próxima você segue a qualificação.")
+
+
+def _contexto_proxima(lead) -> str:
+    faltam = lead.cartao.campos_faltantes()
+    if not faltam or faltam[0] not in PERGUNTA:
+        return ""
+    return (f"A próxima informação que falta é {PERGUNTA[faltam[0]][0]}. Sua resposta termina com UMA pergunta "
+            "sobre isso. Não pergunte nada fora da lista de campos — reforma, garagem, andar, onde ele mora "
+            "hoje: isso o corretor vê depois.")
+
+
+def _conferir(texto: str, lead, pedindo_nome: bool = False) -> str:
+    """Com campo faltando, a resposta TEM de perguntar por ele, e não pode prometer imóveis.
+
+    O modelo às vezes ignora a instrução: inventa uma pergunta fora da lista ou anuncia que vai
+    mostrar as opções. As duas coisas deixam o cartão aberto para sempre. Aqui a correção é
+    determinística: a pergunta certa, com o texto fixo do campo.
+    """
+    faltam = lead.cartao.campos_faltantes()
+    if not faltam or faltam[0] not in PERGUNTA:
+        return texto
+    fixa = "E como posso te chamar?" if pedindo_nome else PERGUNTA[faltam[0]][1]
+    if PROMESSA.search(texto):
+        return f"Anotado! {fixa}"
+    if "?" not in texto:
+        return f"{texto.rstrip()}\n\n{fixa}"
+    return texto
+
+
 def _contexto_contato(lead, state) -> str:
     """Pedir contato cedo demais derruba a conversa; tarde demais perde o lead. A regra está aqui."""
     from sdr_shared.messaging import Canal
     if state["entrada"].canal != Canal.WEB:
         return ""                                   # no Telegram já temos identificador e nome do perfil
-    if not lead.nome:
-        return ("Se ainda não souber o nome do cliente, pergunte-o de forma leve numa das próximas mensagens "
-                "(ex.: 'como posso te chamar?') — apenas o primeiro nome, nunca junto com outros dados.")
     if not lead.cartao.tem_contato() and lead.cartao.completo():
         return ("O cliente já disse o que procura. Ao apresentar as opções ou marcar algo, peça UM contato "
                 "(telefone de preferência) explicando para quê: 'me passa seu telefone que te mando as fotos "
@@ -151,6 +304,10 @@ def run(state: AgentState) -> dict:
     if entrada.conteudo:
         pergunta = ultima_pergunta(state.get("messages"))
         novo_cartao = _extrair(lead.cartao, entrada.conteudo, pergunta)
+        if not novo_cartao.urgencia and (urg := urgencia_por_regra(entrada.conteudo, pergunta)):
+            novo_cartao = novo_cartao.model_copy(update={"urgencia": urg})
+        if novo_cartao.quartos is None and quartos_sem_preferencia(entrada.conteudo, pergunta):
+            novo_cartao = novo_cartao.model_copy(update={"quartos": 0})
         # quem já fechou um ciclo e volta com outra intenção começa uma oportunidade nova, não sobrescreve a antiga
         if (sucessora := nova_oportunidade_se_mudou_intencao(lead, novo_cartao.intencao)):
             auditar(acao="oportunidade.aberta", entidade="lead", entidade_id=sucessora.id, ator_tipo="agente",
@@ -186,16 +343,18 @@ def run(state: AgentState) -> dict:
                      "alguma serve. Não prometa buscar nesse lugar.")
     # Só a primeira mensagem da conversa se apresenta; da segunda em diante repetir o nome do
     # assistente é justamente o que faz um bot soar como bot.
-    abertura = ("Esta é a PRIMEIRA mensagem desta conversa: apresente-se em meia frase (Mora, da "
-                "Vértice Imóveis) antes de perguntar."
-                if state.get("primeira_interacao") else
-                "A conversa já está em andamento: não se apresente de novo nem repita boas-vindas.")
+    pedindo_nome = pede_nome_agora(lead, state)
+    abertura = _abertura(state)
     prompt = carregar("qualificador", memoria=lead.resumo, nome=lead.nome or "cliente", intencao=lead.cartao.intencao,
                       faltantes=lead.cartao.campos_faltantes() or ["nenhum"], contexto_origem=origem,
                       contexto_cobertura=cobertura, contexto_abertura=abertura,
-                      contexto_contato=_contexto_contato(lead, state))
+                      contexto_contato=_contexto_contato_recebido(lead, state) or _contexto_contato(lead, state),
+                      contexto_proxima=CONTEXTO_NOME if pedindo_nome else _contexto_proxima(lead))
     msg = llm_conversa().invoke([prompt, *state["messages"]])
+    texto_final = _conferir(sanear(msg.content, lead.id), lead, pedindo_nome)
+    if texto_final != sanear(msg.content, lead.id):
+        msg = AIMessage(content=texto_final)
 
     opcoes = ["Comprar", "Alugar", "Investir"] if lead.cartao.intencao == Intencao.INDEFINIDA else []
-    return {"lead": lead, "messages": [msg],
-            "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id), opcoes=opcoes)}
+    return {"lead": lead, "messages": [msg], **({"pediu_nome": True} if pedindo_nome else {}),
+            "resposta": RespostaAgente(lead_id=lead.id, texto=texto_final, opcoes=opcoes)}

@@ -55,6 +55,7 @@ class _Extractor:
         if "500 mil" in m: c.ticket = 500000
         if "0,6%" in m or "6%" in m: c.retorno_esperado = "0,6% a.m."
         if "visitar" in m: c.pediu_visita = True
+        if (tel := re.search(r"\(?\d{2}\)?\s*9?\d{4}[-\s]?\d{4}", m)): c.telefone_informado = tel.group(0)
         return c
 
 
@@ -92,9 +93,8 @@ def infra(monkeypatch):
     import agent.dispatch as d
     broker, sched = MemBroker(), MemScheduler()
     llm._modelo.cache_clear()
-    monkeypatch.setattr(llm, "llm_conversa", lambda: FakeLLM())
-    monkeypatch.setattr(llm, "llm_roteamento", lambda: FakeLLM())
-    monkeypatch.setattr(llm, "llm_analise", lambda: FakeLLM())
+    for fn in llm.ACESSORES:
+        monkeypatch.setattr(llm, fn, lambda: FakeLLM())
     # Derivada de ESPECIALISTAS, e não escrita à mão: com a lista fixa, um nó novo ficava de fora
     # do dublê e o teste batia no modelo de verdade — falhando com um "ModuleNotFoundError" do
     # pacote do provedor em vez de dizer o que faltava. Mesma armadilha que o `strict=True` do grafo
@@ -102,7 +102,7 @@ def infra(monkeypatch):
     from agent.graph import ESPECIALISTAS
     for mod in [f"agent.nodes.{n}" for n in (*ESPECIALISTAS, "supervisor")]:
         import importlib; m = importlib.import_module(mod)
-        for fn in ("llm_conversa", "llm_roteamento", "llm_analise"):
+        for fn in llm.ACESSORES:
             if hasattr(m, fn): monkeypatch.setattr(m, fn, lambda: FakeLLM())
     monkeypatch.setattr(d, "get_broker", lambda: broker); monkeypatch.setattr(d, "get_scheduler", lambda: sched)
     import sdr_shared.ports as ports

@@ -17,6 +17,12 @@ class AgentState(TypedDict, total=False):
     veredito: object                          # resultado do porteiro de escopo (guardrails.escopo)
     recusas: int                              # quantas vezes este lead já foi recusado (persiste no checkpoint)
     imoveis_sugeridos: list[ImovelCard]
+    ultimos_sugeridos: list[str]              # ids do ÚLTIMO lote mostrado — entre eles o cliente escolhe o que visitar
+    imovel_escolhido: str | None              # imóvel da visita em andamento; zera quando a visita é reservada
+    horario_pendente: str | None              # horário escolhido esperando o contato do cliente para virar reserva
+    ajuste_pendente: list | None              # critério sem imóvel exato: a Mora perguntou como ampliar e espera a resposta
+    ajuste: dict | None                       # ampliação escolhida ({tipo, criterio}); vale enquanto o critério não mudar
+    pediu_nome: bool                          # a Mora já perguntou o nome (pergunta uma vez só)
     horarios_oferecidos: list[str]            # ISO strings, para o turno de confirmação
     slots_crm: dict[str, str]                 # ISO → slot_id do CRM, quando a grade veio de lá
     resposta: RespostaAgente

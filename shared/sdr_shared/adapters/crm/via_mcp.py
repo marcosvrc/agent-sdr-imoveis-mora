@@ -14,6 +14,7 @@ tudo vira `None` e uma linha de log. A regra do pacote continua valendo — um C
 pode virar um atendimento indisponível.
 """
 import hashlib
+from datetime import datetime, timezone
 import logging
 import os
 from contextlib import ExitStack, contextmanager
@@ -195,8 +196,11 @@ class _Sessao:
         return (itens if isinstance(itens, list) else []), r.get("next_cursor")
 
     def horarios_livres(self, crm_property_id: str, *, limite: int = 20) -> list[dict]:
+        # Sem `from`, o CRM devolve a agenda desde o começo — horários vencidos inclusive, e a Mora
+        # ofereceu a um cliente uma visita para dez dias antes.
+        agora = datetime.now(timezone.utc).isoformat()
         r = self._ferramenta("consultar_horarios", {"property_id": crm_property_id,
-                                                    "limit": limite})
+                                                    "from": agora, "limit": limite})
         itens = (r or {}).get("items")
         return itens if isinstance(itens, list) else []
 

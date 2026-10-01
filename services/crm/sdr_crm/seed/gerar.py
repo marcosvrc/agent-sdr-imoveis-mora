@@ -303,6 +303,9 @@ def _preferencias(r: random.Random, estagio: str, compra: bool, *, sem_orcamento
     }
 
 
+_BRASILIA = 3          # horas a somar a um horário de Brasília para chegar a UTC (sem horário de verão)
+
+
 def slots(p: Plano, imoveis_: list[dict]) -> list[dict]:
     """Agenda dos corretores, sem sobreposição POR CONSTRUÇÃO.
 
@@ -329,7 +332,9 @@ def slots(p: Plano, imoveis_: list[dict]) -> list[dict]:
         passo = i // len(corretores)            # posição dentro da trilha daquele corretor
         # Hora fixa por pessoa, dentro do horário comercial, e um dia por passo: dois slots do mesmo
         # corretor nunca se sobrepõem, e nenhum cai às três da manhã numa tela de demonstração.
-        inicio = base + timedelta(days=1 + passo, hours=9 + (corretor % 9))
+        # `base` é meia-noite em UTC; o horário comercial é o de Brasília (UTC−3). Somar 9 a 17
+        # horas direto punha visitas entre 6h e 14h — a Mora ofereceu uma às 7h da manhã.
+        inicio = base + timedelta(days=1 + passo, hours=_BRASILIA + 9 + (corretor % 8))
         fila = por_proposito["rent" if i % 2 == 0 else "buy"]
         saida.append({
             "id": det(p.seed, "slot", i),

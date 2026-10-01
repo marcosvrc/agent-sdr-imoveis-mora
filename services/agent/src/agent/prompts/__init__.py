@@ -42,6 +42,9 @@ def _envelope(valor: object) -> str:
     return f"<<<CLIENTE_{sentinela}>>>\n{_neutralizar(valor)}\n<<<FIM_CLIENTE_{sentinela}>>>"
 
 
+envelope = _envelope      # para quem monta mensagem própria com conteúdo do cliente (o resumidor)
+
+
 def _envelope_em_linha(valor: object) -> str:
     """Mesma ideia, para valor curto no meio de uma frase."""
     sentinela = secrets.token_hex(8)

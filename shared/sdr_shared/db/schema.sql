@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS leads (
   ultima_mensagem_em TIMESTAMPTZ
 );
 
--- Um lead pode ter vários canais (web anônimo → WhatsApp) com um único histórico (ADR-0003)
+-- Um lead pode ter vários canais (web anônimo → Telegram) com um único histórico (ADR-0003)
 CREATE TABLE IF NOT EXISTS canais (
   lead_id       TEXT REFERENCES leads(id),
   canal         TEXT NOT NULL,
@@ -158,7 +158,7 @@ CREATE INDEX IF NOT EXISTS auditoria_em_idx ON auditoria (em DESC);
 CREATE INDEX IF NOT EXISTS auditoria_entidade_idx ON auditoria (entidade, entidade_id, em DESC);
 CREATE INDEX IF NOT EXISTS auditoria_acao_idx ON auditoria (acao, em DESC);
 
--- Cliente = a PESSOA (uma por telefone/e-mail, a mesma no WhatsApp e na web).
+-- Cliente = a PESSOA (uma por telefone/e-mail, a mesma no Telegram e na web).
 -- Lead = a OPORTUNIDADE daquela pessoa (uma intenção, um cartão, um ciclo).
 -- O mesmo cliente pode ter várias oportunidades ao longo do tempo: comprou em 2024, quer alugar em 2026.
 CREATE TABLE IF NOT EXISTS clientes (

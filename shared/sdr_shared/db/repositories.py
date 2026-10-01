@@ -415,6 +415,13 @@ class ImovelRepository:
 
 
 class VisitaRepository:
+    def proxima_do_lead(self, lead_id: str) -> datetime | None:
+        """Início da próxima visita reservada deste lead, se houver."""
+        with _conn() as c:
+            r = c.execute("""SELECT inicio FROM visitas WHERE lead_id = %s AND status = 'confirmada'
+                               AND inicio > now() ORDER BY inicio LIMIT 1""", (lead_id,)).fetchone()
+        return r["inicio"] if r else None
+
     def ocupacao_do_corretor(self, corretor_id: str | None, de: datetime, ate: datetime) -> list[tuple[datetime, datetime]]:
         """O que já está marcado com este corretor no nosso banco, no intervalo pedido."""
         if not corretor_id:

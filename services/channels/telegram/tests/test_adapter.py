@@ -93,3 +93,19 @@ def test_tipo_sem_tratamento_deixa_rastro(caplog):
         assert parse_inbound(_update(sticker={"file_id": "s"}), resolver_lead=_resolver) == []
     assert any("sticker" in r.getMessage() for r in caplog.records), \
         "o campo ignorado precisa aparecer no log"
+
+
+def test_visita_reservada_leva_o_mapa_como_botao_de_link():
+    """O link cru no fim do texto enterrava a pergunta do telefone. No Telegram ele vira botão."""
+    from sdr_shared.messaging import Acao
+    mapa = "https://www.google.com/maps/search/?api=1&query=Pinheiros%2C+S%C3%A3o+Paulo"
+    r = RespostaAgente(lead_id="l", texto="Reservado! Qual o seu telefone?", acao=Acao.AGENDAR,
+                       dados={"visita": {"mapa": mapa}})
+    corpo = render("555", r)[-1]
+    assert corpo["text"] == "Reservado! Qual o seu telefone?"
+    assert corpo["reply_markup"]["inline_keyboard"] == [[{"text": "📍 Ver a região no mapa", "url": mapa}]]
+
+
+def test_sem_visita_nao_ha_botao_de_mapa():
+    corpo = render("555", RespostaAgente(lead_id="l", texto="oi"))[-1]
+    assert "reply_markup" not in corpo
