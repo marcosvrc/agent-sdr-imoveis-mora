@@ -6,7 +6,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 
 .PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed corretores fotos-acervo docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura diagramas eval eval-fake eval-rag eval-recomendacao eval-embeddings whisper-aquecer test-docker openapi docs
+        cobertura diagramas eval eval-matriz eval-fake eval-rag eval-recomendacao eval-embeddings whisper-aquecer test-docker openapi docs
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -240,6 +240,10 @@ EVAL = export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../.
 endif
 eval: test-db
 	$(EVAL) $(ARGS)
+
+eval-matriz: test-db   # candidatos por papel, lado a lado (evals/matriz.json). Chama modelo de verdade.
+               # Veja o tamanho da conta antes: make eval-matriz ARGS="--plano"
+	$(EVAL).matriz $(ARGS)
 
 eval-fake:     # valida o HARNESS sem gastar token nem precisar do Ollama. Os números não dizem nada
                # sobre qualidade: o LLM é falso e o embedder é de trigramas. É o que roda no CI.

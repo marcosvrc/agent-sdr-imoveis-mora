@@ -95,6 +95,16 @@ def resumir(suite: str, execucoes: list[list]) -> dict:
                          if not r.passou and r.extras.get("score_topo") is not None)
         resumo["score_acertos"] = {"min": acertos[0], "mediana": acertos[len(acertos) // 2]} if acertos else None
         resumo["score_enganos_max"] = enganos[-1] if enganos else None
+    elif suite == "informacoes":
+        com_fonte = [r for r in todos if r.extras.get("sem_base") is False]
+        sem_base = [r for r in todos if r.extras.get("sem_base")]
+        resumo["cita_fonte"] = _pct(sum(1 for r in com_fonte if r.extras.get("cita_fonte")), len(com_fonte))
+        # O número que decide o papel: resposta sobre política da empresa com valor que não está
+        # no documento é exatamente a informação falsa que este nó existe para impedir.
+        resumo["inventou"] = sum(1 for r in todos if r.extras.get("inventou"))
+        resumo["sem_base_ok"] = _pct(sum(1 for r in sem_base if r.passou), len(sem_base))
+    elif suite == "analise":
+        resumo["estruturada"] = _pct(sum(1 for r in todos if r.extras.get("estruturada")), len(todos))
     return resumo
 
 
@@ -108,12 +118,64 @@ def custo_da_execucao(desde: datetime) -> dict:
             # lugar do custo — e como a governança é bônus e o except engole, nenhum eval jamais
             # reportou quanto custou.
             r = c.execute("""SELECT count(*) n, coalesce(sum(custo_usd), 0) custo,
-                                    coalesce(avg(latencia_ms), 0) lat
+                                    coalesce(avg(latencia_ms) FILTER (WHERE erro IS NULL), 0) lat,
+                                    count(*) FILTER (WHERE erro IS NOT NULL) erros,
+                                    (array_agg(erro ORDER BY em) FILTER (WHERE erro IS NOT NULL))[1] exemplo
                              FROM uso_llm WHERE em >= %s""", (desde,)).fetchone()
+        # Chamada com erro não é chamada rápida: a latência média conta só as que responderam, e o
+        # erro aparece à parte. Muitas suítes engolem a exceção (a extração devolve o cartão sem
+        # mudança), então sem esta contagem um modelo que falha em tudo parece só um modelo ruim.
         return {"chamadas": int(r["n"]), "custo_usd": round(float(r["custo"]), 4),
-                "latencia_media_ms": int(r["lat"])}
+                "latencia_media_ms": int(r["lat"]), "chamadas_com_erro": int(r["erros"]),
+                "erro_exemplo": (r["exemplo"] or "")[:300] or None}
     except Exception as e:                       # governança é bônus: não derruba o relatório
         return {"erro": str(e)[:120]}
+
+
+def modelos_configurados() -> dict:
+    """O que o agente usaria agora, por papel — painel do banco em uso, senão o ambiente.
+
+    O relatório gravava `os.getenv("SDR_MODEL_CONVERSA", "padrão")`: sem a variável exportada saía
+    "padrão", o painel era ignorado e o papel de roteamento nem aparecia. Um resultado que não diz
+    com qual modelo foi medido não serve para comparar antes e depois de trocar de modelo. A
+    resolução é a MESMA do agente (`modelo_efetivo`), para o relatório não ter opinião própria.
+    """
+    from sdr_shared.config import get_settings
+    from sdr_shared.papeis import PAPEIS
+    from sdr_shared.ports.factory import modelo_efetivo
+    s = get_settings()
+    saida: dict = {p: modelo_efetivo(p) for p in PAPEIS}
+    try:
+        from sdr_shared.db import reserva_do_painel
+        reserva = reserva_do_painel()
+    except Exception:
+        reserva = None
+    reserva = reserva or (s.llm_provider_fallback or "").strip() or None
+    saida["reserva"] = None if reserva == "nenhum" else reserva
+    emb = (s.embeddings_provider or "").strip().lower()
+    saida["embeddings"] = {"provider": emb,
+                           "modelo": s.ollama_embedding_model if emb == "ollama" else s.embeddings_model}
+    return saida
+
+
+def modelos_usados(desde: datetime) -> list[dict]:
+    """O que de fato atendeu, lido de `uso_llm`. É aqui que um fallback durante o eval aparece —
+    o configurado diria Anthropic, e parte dos números teria vindo da OpenAI."""
+    try:
+        from sdr_shared.db import get_pool
+        with get_pool().connection() as c:
+            linhas = c.execute("""SELECT papel, provider, modelo, count(*) n
+                                  FROM uso_llm WHERE em >= %s
+                                  GROUP BY papel, provider, modelo ORDER BY n DESC""",
+                               (desde,)).fetchall()
+        return [{"papel": r["papel"], "provider": r["provider"], "modelo": r["modelo"],
+                 "chamadas": int(r["n"])} for r in linhas]
+    except Exception as e:                       # governança é bônus: não derruba o relatório
+        return [{"erro": str(e)[:120]}]
+
+
+def modelos_da_execucao(desde: datetime) -> dict:
+    return {"configurado": modelos_configurados(), "usado": modelos_usados(desde)}
 
 
 def imprimir(resumos: list[dict], custo: dict) -> None:
@@ -152,6 +214,11 @@ def imprimir(resumos: list[dict], custo: dict) -> None:
                     # deixar quem lê concluir que basta ajustar o piso.
                     print("   ⚠ nenhum piso separa acerto de engano neste conjunto — "
                           "calibrar o limiar não resolve; o que falta é recuperação melhor")
+        if r["suite"] == "informacoes":
+            print(f"   cita a fonte: {r['cita_fonte']}%   respostas com número inventado: {r['inventou']}   "
+                  f"sem base, diz que confirma: {r['sem_base_ok']}%")
+        if r["suite"] == "analise":
+            print(f"   análise estruturada válida: {r['estruturada']}%  (os briefings estão no JSON do resultado)")
         for c in r["detalhes"]:
             if c["taxa"] < 100.0:
                 print(f"   ✗ {c['caso']} ({c['taxa']}%) {c['detalhe'][:110]}")
@@ -159,9 +226,11 @@ def imprimir(resumos: list[dict], custo: dict) -> None:
     if custo.get("chamadas"):
         print(f"── custo desta execução: US$ {custo['custo_usd']} em {custo['chamadas']} chamadas, "
               f"latência média {custo['latencia_media_ms']}ms")
+    if custo.get("chamadas_com_erro"):
+        print(f"── ⚠ {custo['chamadas_com_erro']} chamada(s) com erro — a primeira: {custo['erro_exemplo']}")
 
 
-def salvar(resumos: list[dict], custo: dict, modelo: str) -> Path:
+def salvar(resumos: list[dict], custo: dict, modelo: str | dict) -> Path:
     DIR_RESULTADOS.mkdir(exist_ok=True)
     agora = datetime.now(timezone.utc)
     caminho = DIR_RESULTADOS / f"{agora:%Y%m%d-%H%M%S}.json"

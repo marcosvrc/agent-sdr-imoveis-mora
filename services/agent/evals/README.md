@@ -10,6 +10,8 @@ make eval                    # tudo, 1 repetição, modelo real
 make eval-rag                # só o RAG institucional, com o embedder real (exige `make ollama-pull`)
 make eval-recomendacao       # só a recomendação de imóveis, com o embedder real
 make eval-fake               # valida o HARNESS com dublês; roda no CI
+make eval-matriz ARGS="--plano"   # candidatos por papel: o que rodaria e quantas chamadas faria
+make eval-matriz ARGS="--papel extracao -n 3"   # compara os candidatos de um papel
 cd services/agent && PYTHONPATH=../../shared:src python -m evals --suite extracao -n 3
 ```
 
@@ -41,6 +43,8 @@ recall medido sobre ordenação por preço não mede recuperação nenhuma. Com 
 | `adversarial` | um ataque passa? | **taxa de escape**, separando o que a regra barrou do que só o modelo segurou |
 | `rag` | a busca institucional acha o trecho certo — e cala a boca quando não sabe? | recall@3, acerto no topo e **abstenção** |
 | `recomendacao` | o que a busca devolve respeita o que o cliente pediu? | nível da cascata, teto de preço com a folga de 15 %, segmento e bairro |
+| `informacoes` | a resposta sobre política da empresa fica presa ao documento? | cita a fonte, **número fora do trecho**, e sem base diz que vai confirmar |
+| `analise` | o briefing do corretor sai inteiro? | análise estruturada válida, resumo e 3 a 5 recomendações; os briefings vão para o JSON para leitura |
 
 `coerencia` existe porque `extracao` mede um turno isolado e o que quebra na conversa é o acúmulo:
 o cliente corrige o bairro e o antigo continua no cartão, retira o teto e o teto fica. Nada disso
@@ -51,8 +55,32 @@ medir a semente em vez da busca. O gabarito é o próprio pedido do cliente. O r
 `data/imoveis/imoveis.json` com o embedder em uso** antes de rodar, pela mesma razão que o RAG
 indexa o corpus: o índice é parte do que está sendo medido.
 
+`informacoes` usa trechos FIXOS (a seção declarada no dataset), não os da busca: mede o modelo, e
+trocar o embedder não o move. `analise` roda o resumidor inteiro sobre seis conversas de perfis
+diferentes; a qualidade do texto não tem gabarito, então a suíte confere a estrutura e guarda os
+briefings para serem lidos lado a lado entre modelos.
+
 Nenhuma usa juiz-LLM. Onde a resposta é ambígua, o dataset declara as formas aceitáveis
 (`{"qualquer": [...]}`) — juiz tem erro próprio, e num harness pequeno esse erro vira o número.
+
+## Matriz de candidatos (ADR-0016)
+
+`evals/matriz.json` lista candidatos por papel e as suítes que medem cada um:
+
+| papel | suítes |
+|---|---|
+| `extracao` | `extracao`, `coerencia` |
+| `roteamento` | `roteamento` (só as mensagens ambíguas chegam ao modelo) |
+| `conversa` | `adversarial` — tom em português não tem suíte: leia as respostas |
+| `informacoes` | `informacoes` |
+| `analise` | `analise` |
+
+`make eval-matriz` roda cada candidato num processo próprio, com `SDR_MODEL_<PAPEL>` trocado e
+**sem reserva** (um candidato que falha aparece como falha, não salvo pelo reserva). O resultado vai
+para `resultados/matriz-<data>.md` (tabela) e `.json` (com as respostas e os briefings). A tabela
+junta qualidade, custo e latência (de `uso_llm`) e **falhas técnicas** — casos que levantaram
+exceção, que é onde aparece um modelo sem endpoint com retenção zero. `ARGS="--plano"` mostra o
+tamanho da conta antes de gastar; `ARGS="--fake"` valida o encanamento sem token.
 
 ## Ler o resultado
 

@@ -42,9 +42,29 @@ def _usar_llm_falso() -> None:
     modulos = [llm] + [importlib.import_module(f"agent.nodes.{n}")
                        for n in (*ESPECIALISTAS, "supervisor")]
     for mod in modulos:
-        for fn in ("llm_conversa", "llm_roteamento", "llm_analise"):
+        for fn in llm.ACESSORES:
             if hasattr(mod, fn):
                 setattr(mod, fn, lambda: FakeLLM())
+
+
+def _ignorar_orcamento() -> None:
+    """O eval mede o MODELO, não a política de orçamento.
+
+    As execuções gravam `uso_llm` no banco de teste como qualquer chamada, e a governança soma esses
+    tokens. Numa matriz grande o teto diário estoura no meio de uma rodada, o agente entra em modo
+    degradado e passa a atender com o modelo barato — em silêncio. Foi o que aconteceu na primeira
+    matriz real: 23 das 132 chamadas do Claude Sonnet 5 foram atendidas pelo Haiku 4.5.
+    """
+    import agent.llm as llm
+    import sdr_shared.ports as ports
+    import sdr_shared.ports.factory as factory
+
+    def normal() -> str:
+        return "normal"
+
+    for mod in (factory, ports, llm):
+        if hasattr(mod, "modo_do_agente"):
+            mod.modo_do_agente = normal
 
 
 def _usar_embedder_falso() -> None:
@@ -81,6 +101,11 @@ def _usar_embedder_falso() -> None:
     falso = type("EmbedderFalso", (), {"dimensoes": dim, "embed": staticmethod(embed)})()
     ports.get_embedder.cache_clear()
     ports.get_embedder = lambda: falso
+    # O embedder falso não é nenhum dos provedores de PISO_POR_EMBEDDER, e o piso dele é o que o CI
+    # sempre usou. Sem fixar, `make eval-fake` no container herdaria o piso da OpenAI do local/.env
+    # e daria números diferentes do CI para o mesmo código.
+    import sdr_shared.conhecimento as conhecimento
+    conhecimento.piso_similaridade = lambda: conhecimento.PISO_SIMILARIDADE
 
 
 def main() -> int:
@@ -100,6 +125,7 @@ def main() -> int:
     args = p.parse_args()
 
     exigir_banco_de_teste()                      # nunca rodar contra o banco de dev
+    _ignorar_orcamento()
     if args.fake:
         _usar_llm_falso()
         _usar_embedder_falso()
@@ -133,7 +159,15 @@ def main() -> int:
 
     custo = {} if args.fake else relatorio.custo_da_execucao(inicio)
     relatorio.imprimir(resumos, custo)
-    caminho = relatorio.salvar(resumos, custo, "falso" if args.fake else os.getenv("SDR_MODEL_CONVERSA", "padrão"))
+    modelos = "falso" if args.fake else relatorio.modelos_da_execucao(inicio)
+    if isinstance(modelos, dict):
+        for papel, m in modelos["configurado"].items():
+            if isinstance(m, dict):
+                herda = f", herdado de {m['de']}" if m.get("de") not in (None, papel) else ""
+                print(f"── {papel}: {m.get('provider')} {m.get('modelo')}"
+                      + (f" ({m['origem']}{herda})" if m.get("origem") else ""))
+        print(f"── reserva: {modelos['configurado'].get('reserva') or 'nenhum'}")
+    caminho = relatorio.salvar(resumos, custo, modelos)
     print(f"\nresultado salvo em {caminho.relative_to(caminho.parents[2])}")
 
     # Limiares: o harness só reprova se você pedir. Sem limiar ele informa, não bloqueia — números

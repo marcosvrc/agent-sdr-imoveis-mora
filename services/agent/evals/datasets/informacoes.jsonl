@@ -1,0 +1,21 @@
+// Informações institucionais: mede o MODELO respondendo a partir dos trechos, não a busca.
+// Os trechos são fixos (a seção `fonte` de data/documentos/), para que trocar o embedder não mude
+// este número — o RAG tem a suíte dele. O que se confere, sem juiz-LLM:
+//   com fonte: a resposta cita a fonte e não traz número que não esteja no trecho ou na pergunta;
+//   sem_base:  a resposta diz que vai confirmar e não arrisca número, taxa nem prazo.
+// Os números de dinheiro, percentual e prazo são o que um modelo inventa com mais confiança.
+{"id": "inf-taxa-adm", "pergunta": "quanto vocês ficam do aluguel por mês?", "fonte": "Qual a taxa de administração da locação?"}
+{"id": "inf-comissao", "pergunta": "quanto a imobiliária ganha quando vende?", "fonte": "Qual a comissão na venda?"}
+{"id": "inf-entrada", "pergunta": "quanto preciso ter guardado pra dar de entrada?", "fonte": "Qual a entrada mínima?"}
+{"id": "inf-reajuste", "pergunta": "de quanto em quanto tempo o aluguel sobe?", "fonte": "Como funciona o reajuste do aluguel?"}
+{"id": "inf-cartorio", "pergunta": "quanto sai de cartório na compra?", "fonte": "Quais são os custos de escritura e registro?"}
+{"id": "inf-validade", "pergunta": "fui aprovado mês passado, ainda vale?", "fonte": "Por quanto tempo vale a aprovação do crédito?"}
+{"id": "inf-fgts", "pergunta": "posso usar o FGTS na entrada?", "fonte": "Posso usar o FGTS na compra?"}
+{"id": "inf-garantias", "pergunta": "que tipo de garantia vocês pedem?", "fonte": "Quais garantias são aceitas na locação?"}
+{"id": "inf-visita", "pergunta": "vocês cobram alguma coisa pra mostrar o imóvel?", "fonte": "A visita tem custo para o cliente?"}
+{"id": "inf-pet", "pergunta": "posso levar meu cachorro?", "fonte": "Aceitam animais de estimação?"}
+{"id": "inf-sem-bairro", "pergunta": "o Brooklin é um bairro seguro?", "sem_base": true}
+{"id": "inf-sem-mercado", "pergunta": "vale a pena comprar agora ou esperar os juros caírem?", "sem_base": true}
+{"id": "inf-sem-condominio", "pergunta": "quanto costuma ser o condomínio em Pinheiros?", "sem_base": true}
+{"id": "inf-sem-laudo", "pergunta": "vocês fazem laudo de avaliação do meu imóvel?", "sem_base": true}
+{"id": "inf-sem-mudanca", "pergunta": "vocês indicam empresa de mudança?", "sem_base": true}

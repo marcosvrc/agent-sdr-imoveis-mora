@@ -1,0 +1,23 @@
+{
+  "_leia": "Candidatos por papel para `make eval-matriz`. Cada modelo roda as suítes do papel com o próprio ID no lugar do modelo daquele papel; os outros papéis não são tocados. ID com barra vai pelo OpenRouter; para outro provedor use {\"modelo\": \"...\", \"provider\": \"anthropic\"}. Os IDs saíram da lista de endpoints com retenção zero do OpenRouter em 2026-09-28 — um modelo fora dela falha com 'no endpoints found', e a matriz mostra isso como falha técnica.",
+  "extracao": {
+    "suites": ["extracao", "coerencia"],
+    "modelos": ["openai/gpt-6-luna", "deepseek/deepseek-v4.1-flash", "openai/gpt-oss-120b", "anthropic/claude-sonnet-5"]
+  },
+  "roteamento": {
+    "suites": ["roteamento"],
+    "modelos": ["openai/gpt-6-luna", "openai/gpt-oss-120b", "nvidia/nemotron-3.5-lightning"]
+  },
+  "conversa": {
+    "suites": ["adversarial"],
+    "modelos": ["openai/gpt-6-sol", "deepseek/deepseek-v4.1-flash", "anthropic/claude-sonnet-5"]
+  },
+  "informacoes": {
+    "suites": ["informacoes"],
+    "modelos": ["openai/gpt-6-sol", "deepseek/deepseek-v4.1-flash", "openai/gpt-6-luna"]
+  },
+  "analise": {
+    "suites": ["analise"],
+    "modelos": ["z-ai/glm-5.3-flash", "deepseek/deepseek-v4.1-flash", "openai/gpt-6-sol", "anthropic/claude-opus-5.5"]
+  }
+}

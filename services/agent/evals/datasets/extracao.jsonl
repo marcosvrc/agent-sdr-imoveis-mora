@@ -1,7 +1,7 @@
 // Extração: mensagem do cliente → campos do CartaoQualificacao.
 // `esperado` = precisa sair assim. `nao_esperado` = precisa continuar vazio (mede alucinação:
 // inventar um orçamento que o cliente não deu é pior que deixar em branco).
-// Português de WhatsApp de verdade: minúscula, abreviação, erro de digitação, áudio transcrito.
+// Português de mensageiro de verdade: minúscula, abreviação, erro de digitação, áudio transcrito.
 {"id": "ext-01-pedido-completo", "mensagem": "oi, to procurando um ap de 2 quartos na zona sul ate 800 mil, preciso pra esse mes", "esperado": {"intencao": "compra", "quartos": 2, "regiao": "zona_sul", "preco_max": 800000, "urgencia": {"qualquer": ["imediata", "imediato", "este mes", "esse mes", "urgente"]}}, "nao_esperado": ["ticket", "perfil_investidor", "preco_min"]}
 {"id": "ext-02-aluguel-simples", "mensagem": "quero alugar alguma coisa no brooklin", "esperado": {"intencao": "aluguel", "regiao": "zona_sul"}, "nao_esperado": ["preco_max", "quartos", "urgencia"]}
 {"id": "ext-03-investidor", "mensagem": "sou investidor, tenho 500 mil pra aplicar e busco uns 0,6% ao mes de retorno. perfil moderado", "esperado": {"intencao": "investimento", "ticket": 500000, "perfil_investidor": "moderado", "retorno_esperado": {"qualquer": ["0,6", "0.6", "0,6% a.m.", "0,6% ao mes"]}}, "nao_esperado": ["quartos"]}

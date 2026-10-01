@@ -44,3 +44,6 @@ credentials
 credentials.json
 .aws/
 secrets/
+
+# Saídas das execuções de avaliação (make eval / eval-matriz): dado de execução, não código
+services/agent/evals/resultados/
