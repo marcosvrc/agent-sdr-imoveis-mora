@@ -883,3 +883,13 @@ def test_comparacao_tem_uma_lista_por_papel():
     c = TestClient(app)
     papeis = c.get("/config/modelos/comparacao", headers=H).json()["papeis"]
     assert set(papeis) == {"conversa", "roteamento", "extracao", "informacoes", "analise"}
+
+
+@pytest.mark.parametrize("rota,auth", [("/imoveis?limite=-1", False), ("/imoveis?limite=0", False),
+                                       ("/auditoria?limite=-1", True), ("/clientes?limite=-1", True),
+                                       ("/notificacoes?limite=-1", True)])
+def test_limite_fora_da_faixa_e_422_e_nao_500(rota, auth):
+    """`Query(le=N)` sem `ge=1`: o Postgres recusa `LIMIT -1` e a rota respondia 500 — inclusive a
+    pública do catálogo."""
+    c = TestClient(app)
+    assert c.get(rota, headers=H if auth else {}).status_code == 422

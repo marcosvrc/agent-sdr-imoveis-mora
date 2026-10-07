@@ -176,3 +176,96 @@ def test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco(monkeypatch):
     with pytest.raises(KeyboardInterrupt):
         local_worker.main()
     assert len(voltas) == 3, "o laço tem de continuar depois do ciclo que falhou"
+
+
+def _ciclo_isolado(monkeypatch):
+    """O ciclo do scheduler sem as partes que não interessam aqui (amostra das filas, CRM, acervo)."""
+    from sdr_scheduler import local_worker
+    monkeypatch.setattr(local_worker, "amostrar", lambda *_a, **_kw: None)
+    monkeypatch.setattr(local_worker, "_drenar_pendencias_do_crm", lambda: None)
+    monkeypatch.setattr(local_worker, "_intervalo_acervo", lambda: 0)
+    return local_worker
+
+
+def test_followup_vencido_sai_do_banco_e_e_publicado(monkeypatch):
+    """`vencidos()` lia a linha por posição, mas o pool entrega dicionário: `KeyError` depois do
+    DELETE já gravado, e todo follow-up vencido era apagado sem nunca ser enviado."""
+    from sdr_shared.adapters.local.scheduler import PostgresScheduler
+    from sdr_shared.models import Lead
+    local_worker = _ciclo_isolado(monkeypatch)
+    lead_id = "l_followup_banco"
+    LeadRepository().upsert(Lead(id=lead_id))
+    sch = PostgresScheduler()
+    sch.cancel(lead_id)
+    sch.schedule(lead_id, -1, '{"tipo": "followup"}')
+
+    publicados = []
+
+    class Broker:
+        def publish(self, topic, body, key): publicados.append((topic, body, key))
+
+    local_worker.ciclo(sch, Broker(), 0.0)
+    assert ("inbound", '{"tipo": "followup"}', lead_id) in publicados
+    assert lead_id not in [lid for lid, _ in sch.vencidos()], "publicado, sai da tabela"
+
+
+def test_followup_volta_para_a_tabela_quando_o_barramento_falha(monkeypatch):
+    """Com o Redis fora, o follow-up que já saiu da tabela tem de voltar para ela."""
+    from sdr_shared.adapters.local.scheduler import PostgresScheduler
+    from sdr_shared.db.connection import get_pool
+    from sdr_shared.models import Lead
+    local_worker = _ciclo_isolado(monkeypatch)
+    lead_id = "l_followup_sem_redis"
+    LeadRepository().upsert(Lead(id=lead_id))
+    sch = PostgresScheduler()
+    sch.cancel(lead_id)
+    sch.schedule(lead_id, -1, '{"tipo": "followup"}')
+
+    class BrokerFora:
+        def publish(self, *_a, **_kw): raise ConnectionError("redis fora")
+
+    with pytest.raises(ConnectionError):
+        local_worker.ciclo(sch, BrokerFora(), 0.0)
+    with get_pool().connection() as c:
+        linha = c.execute("SELECT payload, disparar_em > now() AS futuro FROM followups_agendados "
+                          "WHERE lead_id = %s", (lead_id,)).fetchone()
+    assert linha is not None and linha["payload"] == '{"tipo": "followup"}' and linha["futuro"]
+    sch.cancel(lead_id)
+
+
+def test_assumir_durante_o_turno_nao_e_desfeito_pelo_fim_do_turno(infra, monkeypatch):
+    """O turno grava o lead lido no começo. Se o corretor clicou "Assumir" enquanto a Mora pensava,
+    o fim do turno regravava o estágio e o corretor antigos: a Mora voltava a responder e o lead
+    sumia da fila do corretor."""
+    from sdr_shared.db import CorretorRepository
+    from sdr_shared.db.connection import get_pool
+    from sdr_shared.models import Corretor
+    CorretorRepository().upsert(Corretor(id="cor_assume_meio", nome="Bia Assume"))
+    h.processar(msg("l_assumir_meio", "Estou procurando apartamento na zona sul"))
+    assert LeadRepository().get("l_assumir_meio").estagio != Estagio.HANDOFF
+
+    grafo = h.get_graph()
+
+    class GrafoComCorretorNoMeio:
+        def invoke(self, *a, **kw):
+            out = grafo.invoke(*a, **kw)
+            with get_pool().connection() as c:       # o painel, enquanto o turno rodava
+                c.execute("UPDATE leads SET estagio = 'handoff', corretor_id = 'cor_assume_meio' "
+                          "WHERE id = 'l_assumir_meio'")
+            return out
+
+    monkeypatch.setattr(h, "get_graph", lambda: GrafoComCorretorNoMeio())
+    h.processar(msg("l_assumir_meio", "até 800 mil, 2 quartos"))
+
+    lead = LeadRepository().get("l_assumir_meio")
+    assert lead.estagio == Estagio.HANDOFF and lead.corretor_id == "cor_assume_meio"
+
+
+def test_devolver_pelo_painel_continua_tirando_do_handoff():
+    """A proteção vale só para o turno: o painel, ao devolver a conversa, tem de conseguir sair."""
+    from sdr_shared.models import Lead
+    repo = LeadRepository()
+    repo.upsert(Lead(id="l_devolve", estagio=Estagio.HANDOFF))
+    lead = repo.get("l_devolve")
+    lead.estagio = Estagio.QUALIFICANDO
+    assert repo.upsert(lead).estagio == Estagio.QUALIFICANDO

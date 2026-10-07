@@ -12,7 +12,7 @@ Chamado ao fim de cada turno do agente. Três compromissos, e nenhum deles é ne
 """
 import hashlib
 import logging
-from datetime import UTC, datetime
+from datetime import UTC
 
 from ..messaging import MensagemNormalizada
 from ..models import Estagio, Lead
@@ -46,7 +46,7 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
     try:
         with crm.sessao() as s:
             completo = _publicar(s, lead, entrada, texto_saida, estagio_antes, id_entrada, id_saida)
-        erro = None if completo else "publicação incompleta (lead ou oportunidade não criados)"
+        erro = None if completo else "publicação incompleta (CRM não criou o lead/oportunidade ou não gravou a conversa)"
     except Exception as e:
         log.warning("falha ao publicar o lead %s no CRM — a conversa segue", lead.id, exc_info=True)
         erro = f"{type(e).__name__}: {e}"
@@ -70,15 +70,22 @@ def publicar_turno(lead: Lead, entrada: MensagemNormalizada, *, texto_saida: str
 def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | None,
               estagio_antes: Estagio | None, id_entrada: int | None = None,
               id_saida: int | None = None) -> bool:
-    """Devolve se o turno foi publicado por inteiro. `False` só quando o CRM não criou o lead ou a
-    oportunidade — o que vai para a fila. Intenção indefinida é `True`: não havia o que publicar."""
+    """Devolve se o turno foi publicado por inteiro. `False` quando o CRM não criou o lead ou a
+    oportunidade, ou quando a conversa do turno não entrou no histórico — e aí o turno vai para a
+    fila. Intenção indefinida é `True`: não havia o que publicar.
+
+    A conversa é o que decide, e não preferências ou estágio: o histórico é o que se perde de vez se
+    o turno não for republicado, enquanto preferência e estágio são o ESTADO ATUAL do lead, que o
+    próximo turno manda de novo. Republicar é seguro (`external_event_id`, `operation_id`). Antes,
+    com o lead já vinculado, o retorno era ignorado: com o CRM fora do ar o turno saía como
+    publicado, nada ia para a fila e a conversa daquele período sumia do CRM."""
     if traducao.proposito(lead) is None and vinculo.buscar(lead.id) is None:
         return True     # intenção ainda indefinida: não há oportunidade a abrir
     v = vinculo.buscar(lead.id) or _abrir(s, lead)
     if v is None:
         return False    # o CRM não criou lead/oportunidade: falha, não ausência de dado
 
-    _registrar_conversa(s, v, lead, entrada, texto_saida, id_entrada, id_saida)
+    conversa_ok = _registrar_conversa(s, v, lead, entrada, texto_saida, id_entrada, id_saida)
     versao = _atualizar_preferencias(s, v, lead)
     _mover(s, v, lead, versao, estagio_antes)
 
@@ -87,7 +94,7 @@ def _publicar(s, lead: Lead, entrada: MensagemNormalizada, texto_saida: str | No
     # resposta que o cliente está esperando.
     if lead.estagio == Estagio.HANDOFF and estagio_antes != Estagio.HANDOFF:
         _encaminhar(s, v, lead)
-    return True
+    return conversa_ok
 
 
 def _abrir(s, lead: Lead) -> vinculo.Vinculo | None:
@@ -126,22 +133,30 @@ def _evento(lead_id: str, direcao: str, id_mensagem: int | None, texto: str) -> 
 
 def _registrar_conversa(s, v: vinculo.Vinculo, lead: Lead,
                         entrada: MensagemNormalizada, texto_saida: str | None,
-                        id_entrada: int | None = None, id_saida: int | None = None) -> None:
-    """Uma interação para o que entrou e outra para o que saiu.
+                        id_entrada: int | None = None, id_saida: int | None = None) -> bool:
+    """Uma interação para o que entrou e outra para o que saiu. Devolve se as duas entraram.
 
     O `external_event_id` é o que impede duplicata quando o mesmo turno é republicado: o CRM
     devolve o registro original em vez de criar uma segunda linha no histórico do cliente.
+
+    `quando` é a hora em que a mensagem CHEGOU, não a da publicação: um turno republicado pela fila
+    uma hora depois entraria no histórico do CRM depois das mensagens mais novas.
     """
-    quando = datetime.now(UTC).isoformat()
+    recebida = entrada.recebida_em
+    if recebida.tzinfo is None:
+        recebida = recebida.replace(tzinfo=UTC)
+    quando = recebida.isoformat()
+    ok = True
 
     canal = str(entrada.canal.value)
     for direcao, rotulo, texto, id_msg in (("in", "inbound", entrada.conteudo, id_entrada),
                                            ("out", "outbound", texto_saida, id_saida)):
         if not texto:
             continue
-        s.registrar_interacao(v.crm_lead_id, crm_opportunity_id=v.crm_opportunity_id, canal=canal,
-                              direcao=rotulo, texto=texto, quando=quando,
-                              evento_externo=_evento(lead.id, direcao, id_msg, texto))
+        ok = s.registrar_interacao(v.crm_lead_id, crm_opportunity_id=v.crm_opportunity_id, canal=canal,
+                                   direcao=rotulo, texto=texto, quando=quando,
+                                   evento_externo=_evento(lead.id, direcao, id_msg, texto)) and ok
+    return ok
 
 
 def _atualizar_preferencias(s, v: vinculo.Vinculo, lead: Lead) -> int:

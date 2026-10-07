@@ -14,7 +14,7 @@ router = APIRouter(dependencies=[Depends(corretor_atual)])
 @router.get("")
 def listar(dias: int = Query(30, ge=1, le=365), ator: str | None = None, acao: str | None = None,
            entidade: str | None = None, entidade_id: str | None = None, busca: str | None = None,
-           so_sensiveis: bool = False, limite: int = Query(300, le=1000)):
+           so_sensiveis: bool = False, limite: int = Query(300, ge=1, le=1000)):
     repo = AuditoriaRepository()
     return {"registros": repo.listar(dias=dias, ator=ator, acao=acao, entidade=entidade,
                                      entidade_id=entidade_id, busca=busca, so_sensiveis=so_sensiveis, limite=limite),

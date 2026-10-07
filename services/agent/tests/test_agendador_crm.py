@@ -320,3 +320,37 @@ def test_no_telegram_a_reserva_nao_espera_telefone(infra, grade, pedidos, lead_n
     st["entrada"] = st["entrada"].model_copy(update={"canal": Canal.TELEGRAM})
     out = agendador.run(st)
     assert out["lead"].estagio == Estagio.AGENDADO
+
+
+# --------------------------------------------------------------------------- entrada que não é horário válido
+
+def test_data_que_nao_existe_reoferece_em_vez_de_derrubar_o_turno(infra, grade, lead_no_banco):
+    """"31/09" levantava ValueError no `date.replace`: o turno caía, o cliente recebia a mensagem
+    de problema técnico e ia parar no corretor por ter digitado uma data errada."""
+    oferta = agendador.run(estado("quero visitar"))
+    out = agendador.run(estado("pode ser 31/09 às 14h?",
+                               horarios_oferecidos=oferta["horarios_oferecidos"],
+                               slots_crm=oferta["slots_crm"]))
+    assert out["resposta"].opcoes and out["resposta"].opcoes[0].startswith("slot:"), "reoferece a grade"
+    assert out["lead"].estagio != Estagio.AGENDADO
+
+
+@pytest.mark.parametrize("texto", ["slot:abc", "slot:2026-01-01T03:00:00+00:00"])
+def test_slot_digitado_fora_da_oferta_nao_vira_visita(infra, grade, lead_no_banco, pedidos, texto):
+    """`slot:` chega como texto comum: aceitar qualquer data reservava visita no passado, de
+    madrugada ou fora da grade; e `slot:abc` derrubava o turno."""
+    oferta = agendador.run(estado("quero visitar"))
+    out = agendador.run(estado(texto, horarios_oferecidos=oferta["horarios_oferecidos"],
+                               slots_crm=oferta["slots_crm"]))
+    assert out["lead"].estagio != Estagio.AGENDADO and not pedidos
+    assert out["resposta"].opcoes[0].startswith("slot:"), "reoferece a grade"
+
+
+def test_horario_oferecido_que_ja_passou_nao_e_reservado(infra, lead_no_banco, pedidos, monkeypatch):
+    """Botão antigo (Telegram) clicado depois do horário: nada de visita no passado."""
+    ontem = (datetime.now(UTC) - timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
+    amanha = ontem + timedelta(days=2)
+    monkeypatch.setattr(agendador, "horarios_do_imovel",
+                        lambda *a, **k: [Horario(inicio=amanha, slot_id="s-amanha")])
+    out = agendador.run(estado(f"slot:{ontem.isoformat()}", horarios_oferecidos=[ontem.isoformat()]))
+    assert out["lead"].estagio != Estagio.AGENDADO and not pedidos

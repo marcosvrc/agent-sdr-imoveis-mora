@@ -29,7 +29,8 @@ def _indexados() -> dict[str, str]:
     from sdr_shared.db.connection import get_pool
     with get_pool().connection() as conn:
         linhas = conn.execute(
-            f"SELECT {ImovelRepository.COLS} FROM imoveis WHERE embedding IS NOT NULL").fetchall()
+            f"SELECT {ImovelRepository.COLS} FROM imoveis "
+            "WHERE embedding IS NOT NULL AND retirado_em IS NULL").fetchall()
     return {r["id"]: ImovelRepository._row(r).texto_canonico() for r in linhas}
 
 

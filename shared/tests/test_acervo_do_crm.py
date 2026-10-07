@@ -148,6 +148,46 @@ def test_purga_tira_do_indice_o_que_saiu_do_acervo():
     assert repo.get(fica) is not None
 
 
+def test_purga_com_imovel_visitado_tira_da_oferta_sem_apagar_a_visita():
+    """`visitas.imovel_id` segura o imóvel pela FK: o DELETE em massa falhava inteiro, nenhum
+    imóvel saía e a Mora continuava oferecendo o vendido. O visitado fica retirado; os demais saem."""
+    from datetime import UTC, datetime, timedelta
+
+    from sdr_shared.db import ImovelRepository, LeadRepository
+    from sdr_shared.db.connection import get_pool
+    from sdr_shared.models import Imovel, Lead
+    repo = ImovelRepository()
+
+    def novo(codigo):
+        return Imovel(id=codigo, tipo="apartamento", operacao="aluguel", cidade="São Paulo",
+                      regiao="zona_oeste", bairro="Pinheiros", quartos=2, area_m2=70.0,
+                      preco=3500.0, descricao="x")
+
+    visitado, outro = f"SP-V{uuid.uuid4().hex[:6]}", f"SP-V{uuid.uuid4().hex[:6]}"
+    repo.upsert(novo(visitado))
+    repo.upsert(novo(outro))
+    lead_id = f"l_purga_{uuid.uuid4().hex[:6]}"
+    LeadRepository().upsert(Lead(id=lead_id))
+    with get_pool().connection() as conn:
+        conn.execute("INSERT INTO visitas (id, lead_id, imovel_id, tipo, inicio) VALUES (%s, %s, %s, 'visita', %s)",
+                     (f"vis_{lead_id}", lead_id, visitado, datetime.now(UTC) + timedelta(days=1)))
+        existentes = [r["id"] for r in conn.execute("SELECT id FROM imoveis").fetchall()]
+
+    saidos = repo.apagar_fora_de([i for i in existentes if i not in (visitado, outro)])
+
+    assert saidos >= 2
+    assert repo.get(outro) is None, "sem visita, sai do índice"
+    assert repo.get(visitado) is not None, "com visita, continua para o histórico"
+    oferta = [i.id for i in repo.buscar_por_filtros({"bairros": ["Pinheiros"]}, limite=500)]
+    assert visitado not in oferta, "retirado não é oferecido"
+    with get_pool().connection() as conn:
+        assert conn.execute("SELECT 1 FROM visitas WHERE id = %s", (f"vis_{lead_id}",)).fetchone()
+
+    repo.upsert(novo(visitado))          # voltou ao acervo do CRM
+    oferta = [i.id for i in repo.buscar_por_filtros({"bairros": ["Pinheiros"]}, limite=500)]
+    assert visitado in oferta, "voltou ao acervo, volta à oferta"
+
+
 # --------------------------------------------------------- reindexação incremental (scheduler)
 
 @pytest.fixture

@@ -67,8 +67,17 @@ def _drenar_pendencias_do_crm() -> None:
 def ciclo(sch, broker, proxima_sincronia: float) -> float:
     """Uma passada do laço. Separada de `main` para ser testável e para ter um lugar só onde o
     erro é contido — ver o `except` em `main`."""
-    for lead_id, payload in sch.vencidos():
-        broker.publish("inbound", payload, key=lead_id)
+    vencidos = sch.vencidos()
+    for i, (lead_id, payload) in enumerate(vencidos):
+        try:
+            broker.publish("inbound", payload, key=lead_id)
+        except Exception:
+            # `vencidos()` já tirou da tabela: sem devolver, o follow-up deste e dos seguintes
+            # sumiria com o Redis fora. Volta para daqui a 1 minuto e o erro sobe para o log.
+            devolver = getattr(sch, "devolver", None)
+            for lid, pl in vencidos[i:]:
+                (devolver(lid, pl) if devolver else sch.schedule(lid, 1, pl))
+            raise
     filas = broker.profundidade(list(TOPICOS)) if hasattr(broker, "profundidade") else {}
     amostrar(filas)
     _drenar_pendencias_do_crm()

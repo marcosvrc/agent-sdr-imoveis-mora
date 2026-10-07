@@ -14,7 +14,7 @@ def _quem(ator: dict) -> str | None:
 
 
 @router.get("")
-def listar(apenas_nao_lidas: bool = False, limite: int = Query(50, le=200),
+def listar(apenas_nao_lidas: bool = False, limite: int = Query(50, ge=1, le=200),
            ator: dict = Depends(corretor_atual)):
     repo, quem = NotificacaoRepository(), _quem(ator)
     return {"notificacoes": repo.listar(quem, apenas_nao_lidas, limite), "nao_lidas": repo.nao_lidas(quem)}

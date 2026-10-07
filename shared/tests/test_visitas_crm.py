@@ -86,7 +86,11 @@ def test_horarios_vem_do_crm_quando_ha_imovel(ligado, imovel_com_horario):
     assert horarios, "o imóvel tem horário livre no CRM"
     achado = next((h for h in horarios if h.slot_id == slot_id), None)
     assert achado is not None
-    assert achado.inicio.replace(tzinfo=None) == inicio.replace(tzinfo=None)
+    # Compara o INSTANTE, com fuso. Tirar o fuso dos dois lados só funcionava com o Postgres do CRM
+    # em UTC: com o banco em America/Sao_Paulo (o padrão de uma máquina no Brasil) o CRM devolve
+    # o mesmo instante com -03:00 e a comparação sem fuso falhava.
+    assert achado.inicio.tzinfo is not None
+    assert achado.inicio == inicio
 
 
 def test_codigo_desconhecido_nao_inventa_indisponibilidade(ligado):

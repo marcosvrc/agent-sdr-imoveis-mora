@@ -392,6 +392,7 @@ A memória entre sessões é a tabela `interesses`; o estado do grafo só conhec
 | --- | --- | --- | --- | --- |
 | Com CRM configurado, o índice da Mora só recebe imóveis `available` — `GET /v1/properties` filtra por `available` por padrão e a ferramenta MCP não expõe outro status | agente | `services/ingestion/sdr_ingestion/acervo.py` | imóvel vendido seguiria sendo oferecido | `shared/tests/test_acervo_do_crm.py::test_vendido_fica_fora_do_indice` |
 | **Imóvel fora do catálogo deixa de ser oferecido**: a sincronização roda a cada **900 s** (`SDR_ACERVO_REFRESH_S`, ajustável no painel; mínimo 60 s, `0` desliga) e purga o que o CRM não lista mais | agente | `services/scheduler/sdr_scheduler/local_worker.py`, `sdr_ingestion/sincronia.py` | — | `test_acervo_do_crm.py::test_purga_tira_do_indice_o_que_saiu_do_acervo`, `::test_preco_mudado_no_crm_chega_ao_indice` |
+| **Imóvel com visita registrada não é apagado: fica retirado** (`retirado_em`), some de toda oferta (agente, site, contagens) e continua acessível por id para o histórico da visita; voltou ao acervo do CRM, volta à oferta. A retirada e a purga dos demais são uma transação | agente | `repositories.py::apagar_fora_de`, `schema.sql` (`imoveis.retirado_em`) | a FK de `visitas` fazia o DELETE em massa falhar inteiro e o imóvel vendido continuava sendo oferecido | `test_acervo_do_crm.py::test_purga_com_imovel_visitado_tira_da_oferta_sem_apagar_a_visita` |
 | **A purga recusa lista vazia** (`ValueError`) e só roda com fonte autoritativa (CRM listou o acervo inteiro); leitura parcial levanta antes | agente | `repositories.py::apagar_fora_de`, `acervo.py::_do_crm` | esvaziaria o catálogo por falha de leitura | `test_acervo_do_crm.py::test_purga_recusa_lista_vazia`, `::test_sem_crm_a_sincronia_nao_faz_nada` |
 | Só o que mudou gera embedding novo (texto canônico comparado) | agente | `sincronia.py` | custo de embedding a cada 15 min | `test_acervo_do_crm.py::test_segunda_passada_nao_gera_embedding_nenhum` |
 | Região do imóvel que só existe no CRM é deduzida do bairro (`geo`) | agente | `acervo.py::_regiao` | — | `test_acervo_do_crm.py::test_imovel_so_do_crm_deduz_a_regiao_do_bairro` |
@@ -451,6 +452,7 @@ exceção. O descarte anotado pelo corretor no painel também sobe (`routers/int
 | Lista vazia do CRM significa "não sei", nunca "não há": cai na agenda do corretor | — | `test_agendador_crm.py::test_sem_resposta_do_crm_cai_na_agenda_do_corretor`, `test_visitas_crm.py::test_codigo_desconhecido_nao_inventa_indisponibilidade` |
 | Sem imóvel escolhido, o CRM não é consultado | — | `test_visitas_crm.py::test_sem_imovel_nao_pergunta_ao_crm` |
 | **Horário vencido nunca é oferecido**, venha de onde vier (slot do CRM com início no passado é descartado) | — | `test_visitas_crm.py::test_horario_vencido_nunca_e_oferecido` |
+| **`slot:<iso>` só vale se a Mora ofereceu aquele horário (ou o está segurando) e ele ainda não passou.** O prefixo chega como texto: digitado à mão, de botão antigo ou malformado, a Mora reoferece a grade em vez de reservar ou derrubar o turno. Data que não existe ("31/09") não casa com nada e também reoferece | — | `test_agendador_crm.py::test_slot_digitado_fora_da_oferta_nao_vira_visita`, `::test_horario_oferecido_que_ja_passou_nao_e_reservado`, `::test_data_que_nao_existe_reoferece_em_vez_de_derrubar_o_turno` |
 | Agenda interna (reserva): **10h, 14h e 16h** (Brasília), 5 dias úteis à frente, começando **amanhã**, fins de semana pulados, até 15 slots gerados, **60 min**, horário confirmado sai da grade | `repositories.py::VisitaRepository.horarios_disponiveis` | `test_calendario.py::test_horario_ja_marcado_some_da_oferta`, `::test_sem_corretor_definido_usa_a_grade_da_equipe` |
 | Com corretor definido, a grade interna desconta a agenda Google dele; falha do Google **não esvazia** a oferta | `VisitaRepository._agenda_externa` | `test_calendario.py::test_compromisso_no_google_tira_o_horario_da_oferta`, `::test_google_fora_do_ar_nao_esvazia_a_agenda` |
 
@@ -648,6 +650,14 @@ cliente escreve estando em handoff. **Reagendado a cada turno bem-sucedido.** Le
 `::test_tentativas_esgotadas_limpam_o_agendamento`. No perfil local há **no máximo um follow-up
 pendente por lead** (`followups_agendados`, chave por lead).
 
+**Disparo** (`services/scheduler/sdr_scheduler/local_worker.py::ciclo`): a cada 30 s o scheduler tira
+da tabela o que venceu e publica em `inbound`. Se a publicação falhar (Redis fora), o follow-up
+volta para a tabela em 1 minuto (`PostgresScheduler.devolver`, sem sobrescrever um agendamento mais
+novo do mesmo lead). Até 07/10/2026 a leitura do que venceu quebrava depois de apagar — todo
+follow-up era removido sem nunca ser enviado
+(`test_resiliencia.py::test_followup_vencido_sai_do_banco_e_e_publicado`,
+`::test_followup_volta_para_a_tabela_quando_o_barramento_falha`).
+
 ---
 
 ## 11. Reativação proativa
@@ -784,6 +794,7 @@ adivinhável; descrição de imóvel e trecho de documento passam por `neutraliz
 | **Lock por lead derivado do orçamento do turno**: `orcamento_do_turno_s() = timeout × (1 + MAX_RETRIES) × 2 + 30`, com `MAX_RETRIES = 1` | — | `shared/sdr_shared/ports/factory.py`, `adapters/local/broker.py::_lock_s` | `shared/tests/test_broker_redis.py::test_lock_por_lead_dura_pelo_menos_um_turno_inteiro`, `::test_pendente_de_outro_consumidor_so_e_tomada_depois_de_um_turno_inteiro` |
 | Sem barramento, o turno falha **antes** de começar (`turnos.resultado = barramento`) | — | `handler.py::_barramento_responde` | `test_resiliencia.py::test_sem_barramento_o_turno_falha_antes_de_comecar` |
 | Falha no grafo: fallback honesto + handoff; o worker avisa mesmo se `processar` estourar | — | `handler.py::_responder_falha` | `test_resiliencia.py::test_falha_do_grafo_responde_e_encaminha`, `::test_worker_avisa_mesmo_se_processar_estourar` |
+| **O fim do turno não desfaz o "Assumir"**: o handler salva com `preservar_handoff=True`; lead que está em `handoff` no banco mantém estágio e corretor, mesmo que o turno tenha lido outro estado no começo. Devolver pelo painel continua tirando do handoff | — | `handler.py`, `repositories.py::LeadRepository.upsert` | `test_resiliencia.py::test_assumir_durante_o_turno_nao_e_desfeito_pelo_fim_do_turno`, `::test_devolver_pelo_painel_continua_tirando_do_handoff` |
 | Briefing do corretor: a conversa vai ao modelo como **uma transcrição** (Cliente/Mora, envelopada como dado), e não como a troca original — terminada na fala da Mora, a conversa fazia o modelo continuar a frase dela em vez de escrever para o corretor. **Sem nenhuma mensagem no checkpoint, nenhum modelo é chamado** (o reserva inventava um resumo a partir de nada) | — | `nodes/resumidor.py::transcricao` | `test_resiliencia.py::test_resumidor_manda_a_conversa_como_transcricao_terminando_no_usuario`, `::test_resumidor_sem_historico_nao_chama_o_modelo` |
 | Um ciclo do scheduler que falha (ex.: banco reiniciando) é registrado e o laço segue no próximo ciclo, como a drenagem do CRM e a reindexação do acervo | — | `services/scheduler/sdr_scheduler/local_worker.py` | `test_resiliencia.py::test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco` |
 | O estado salvo da conversa aceita **todos** os modelos e enums do projeto: a lista do serializador é gerada dos módulos (`tipos_do_checkpoint`), não escrita à mão | estado volta do banco sem os campos novos | `graph.py::tipos_do_checkpoint` | `test_graph_routing.py::test_estado_salvo_aceita_todos_os_tipos_do_lead` |
@@ -1079,6 +1090,7 @@ inventa**, **repetir é seguro**.
 | **`external_event_id`** = `mora-msg-<id da mensagem>`; sem id, hash que inclui o lead ([D-13](../decisions.md)) | `publicador.py::_evento` | duas pessoas dizendo "oi" colidiriam | `::test_republicar_o_mesmo_turno_nao_duplica_nada`, `::test_mesma_frase_de_dois_clientes_nao_colide_no_historico` |
 | 412 em preferências: relê e tenta **uma** vez | `publicador.py::_atualizar_preferencias` | — | sem teste |
 | **`crm_pendencias`**: turno não publicado fica na fila; o scheduler drena no laço de 30 s, lotes de 20, **backoff exponencial até 3600 s**, **`MAX_TENTATIVAS = 30`**; depois a linha fica com o erro para inspeção (nunca apagada em silêncio); lead apagado conclui a pendência | `crm/pendencias.py`, `sdr_scheduler/local_worker.py` | turno perdido enquanto o CRM esteve fora | `::test_turno_com_crm_fora_do_ar_fica_na_fila_e_e_publicado_quando_ele_volta` |
+| **Vale também para lead já vinculado**: o turno só conta como publicado se as interações (entrada e saída) entraram no histórico; preferência e estágio são estado atual e o próximo turno manda de novo. A interação leva `occurred_at` = hora em que a mensagem **chegou**, não a da republicação | `crm/publicador.py::_publicar`, `::_registrar_conversa` | conversa do período de queda some do CRM, ou entra fora de ordem | `::test_turno_de_lead_ja_vinculado_com_crm_fora_tambem_vai_para_a_fila` |
 | **Reconhecimento**: antes de perguntar, a Mora procura o cliente no CRM **por contato, nunca por nome**; mais de um resultado = não reconhece; só preenche campo **vazio** do cartão; procura uma vez por marca de contato; oportunidade fechada não é contexto; `buy` na volta vira `compra` sem rebaixar `investimento` | `crm/reconhecimento.py`, `traducao.py::INTENCAO_DO_CRM` | recomeçar do zero é o custo de falhar | `shared/tests/test_reconhecimento_crm.py` (7 testes), `test_porta_crm.py::test_dois_clientes_com_o_mesmo_contato_nao_reconhecem_ninguem`, `::test_sem_contato_nao_procura` |
 | Vínculo (`crm_vinculo`) mora no banco da **Mora**, com a versão da oportunidade (o `If-Match` da próxima escrita) | `crm/vinculo.py` | — | `test_interesses_crm.py::test_a_versao_guardada_acompanha` |
 | CRM sem URL ou sem token conta como **desligado**; CRM fora do ar entrega sessão inerte | `shared/sdr_shared/ports/crm.py`, `adapters/crm/via_mcp.py` | — | `test_porta_crm.py::test_url_sem_token_nao_habilita`, `::test_crm_fora_do_ar_entrega_sessao_inerte` |
@@ -1166,6 +1178,9 @@ Em relação à versão anterior deste documento. Nada foi apagado em silêncio.
 | Não havia pergunta de ampliação | **nova** | Seção 5.4: sem imóvel no bairro pedido, o cliente escolhe o que ceder. |
 | "Extração recebe só a mensagem" | **alterada** | Recebe também a última fala da Mora como contexto (3.2). |
 | Não havia horário vencido como regra | **nova** | Slot no passado nunca é oferecido (7.1). |
+| "Purga apaga o que saiu do CRM" | **alterada** | Imóvel com visita fica retirado em vez de apagado (5.6). |
+| "Turno de lead vinculado sempre conta como publicado" | **alterada** | Só conta se a conversa entrou no histórico do CRM (18). |
+| Não havia regra para `slot:` fora da oferta | **nova** | Só horário oferecido e futuro vira reserva (7.1). |
 | Divergências 11–16 | **novas** | Descobertas nesta revisão. |
 
 ---

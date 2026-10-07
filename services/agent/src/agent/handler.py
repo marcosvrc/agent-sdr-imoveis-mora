@@ -178,7 +178,9 @@ def processar(entrada: MensagemNormalizada) -> None:
 
     lead = out["lead"]
     lead.score, lead.temperatura = calcular(lead, respondeu_rapido=rapido)
-    lead = LeadRepository().upsert(lead)
+    # preservar_handoff: se o corretor clicou "Assumir" enquanto o turno rodava, o estágio e o
+    # corretor que ele gravou valem mais que os que este turno leu lá no começo.
+    lead = LeadRepository().upsert(lead, preservar_handoff=True)
 
     if lead.estagio != estagio_antes:
         auditar(acao="lead.estagio_alterado", entidade="lead", entidade_id=lead.id, ator_tipo="agente",

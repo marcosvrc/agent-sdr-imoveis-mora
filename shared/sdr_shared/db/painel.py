@@ -67,7 +67,7 @@ class MetricasRepository:
             por_intencao = c.execute("""SELECT coalesce(cartao->>'intencao', 'indefinida') AS intencao, count(*) AS n
                                         FROM leads GROUP BY 1 ORDER BY n DESC""").fetchall()
             temperaturas = c.execute("SELECT temperatura, count(*) AS n FROM leads GROUP BY temperatura").fetchall()
-            totais = c.execute("""SELECT count(*) AS leads, (SELECT count(*) FROM imoveis) AS imoveis,
+            totais = c.execute("""SELECT count(*) AS leads, (SELECT count(*) FROM imoveis WHERE retirado_em IS NULL) AS imoveis,
                                          (SELECT count(*) FROM visitas WHERE status='confirmada' AND inicio >= now()) AS visitas_futuras,
                                          (SELECT count(*) FROM corretores WHERE ativo) AS corretores FROM leads""").fetchone()
 

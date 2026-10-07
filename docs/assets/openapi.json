@@ -704,6 +704,7 @@
             "schema": {
               "default": 300,
               "maximum": 1000,
+              "minimum": 1,
               "title": "Limite",
               "type": "integer"
             }
@@ -1041,6 +1042,7 @@
             "schema": {
               "default": 200,
               "maximum": 500,
+              "minimum": 1,
               "title": "Limite",
               "type": "integer"
             }
@@ -2423,6 +2425,7 @@
             "schema": {
               "default": 60,
               "maximum": 400,
+              "minimum": 1,
               "title": "Limite",
               "type": "integer"
             }
@@ -3475,6 +3478,7 @@
             "schema": {
               "default": 50,
               "maximum": 200,
+              "minimum": 1,
               "title": "Limite",
               "type": "integer"
             }

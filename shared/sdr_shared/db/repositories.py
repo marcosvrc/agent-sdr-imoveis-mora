@@ -47,7 +47,15 @@ class LeadRepository:
                               WHERE ca.canal = %s AND ca.identificador = %s""", (canal, identificador)).fetchone()
         return self._row(r) if r else None
 
-    def upsert(self, lead: Lead) -> Lead:
+    def upsert(self, lead: Lead, *, preservar_handoff: bool = False) -> Lead:
+        """Grava o lead inteiro e devolve o que ficou no banco.
+
+        `preservar_handoff=True` é o salvamento do fim do turno do agente: o lead foi lido no começo
+        do turno, e o turno leva segundos. Se nesse meio-tempo o corretor clicou "Assumir", gravar o
+        estágio e o corretor lidos lá atrás desfazia o handoff — a Mora voltava a responder e o
+        lead sumia da fila do corretor. Com a flag, um lead que está em `handoff` no banco mantém
+        estágio e corretor. Quem tira o lead do handoff (o painel, ao devolver) não passa a flag.
+        """
         with _conn() as c:
             c.execute("""
                 INSERT INTO leads (id, cliente_id, nome, telefone, email, estagio, temperatura, score, cartao, corretor_id, resumo, analise, analisado_em, analise_solicitada_em, followups_enviados, ultima_mensagem_em, aceita_reativacao, reativado_em)
@@ -56,8 +64,12 @@ class LeadRepository:
                   cliente_id = COALESCE(EXCLUDED.cliente_id, leads.cliente_id),
                   nome = COALESCE(EXCLUDED.nome, leads.nome), telefone = COALESCE(EXCLUDED.telefone, leads.telefone),
                   email = COALESCE(EXCLUDED.email, leads.email),
-                  estagio = EXCLUDED.estagio, temperatura = EXCLUDED.temperatura, score = EXCLUDED.score,
-                  cartao = EXCLUDED.cartao, corretor_id = EXCLUDED.corretor_id, resumo = EXCLUDED.resumo,
+                  estagio = CASE WHEN %(preservar_handoff)s AND leads.estagio = 'handoff'
+                                 THEN leads.estagio ELSE EXCLUDED.estagio END,
+                  temperatura = EXCLUDED.temperatura, score = EXCLUDED.score, cartao = EXCLUDED.cartao,
+                  corretor_id = CASE WHEN %(preservar_handoff)s AND leads.estagio = 'handoff'
+                                     THEN leads.corretor_id ELSE EXCLUDED.corretor_id END,
+                  resumo = EXCLUDED.resumo,
                   analise = COALESCE(EXCLUDED.analise, leads.analise), analisado_em = COALESCE(EXCLUDED.analisado_em, leads.analisado_em),
                   analise_solicitada_em = COALESCE(EXCLUDED.analise_solicitada_em, leads.analise_solicitada_em),
                   followups_enviados = EXCLUDED.followups_enviados,
@@ -66,7 +78,7 @@ class LeadRepository:
                   -- COALESCE: o carimbo de reativação é escrito pelo worker, não pelo turno do
                   -- agente. Sem isso, salvar o lead numa conversa qualquer apagaria a cadência.
                   reativado_em = COALESCE(EXCLUDED.reativado_em, leads.reativado_em)
-            """, {**lead.model_dump(exclude={"cartao", "criado_em", "analise", "encerrado_em", "sucessora_id"}), "cartao": json.dumps(lead.cartao.model_dump(mode="json")),
+            """, {**lead.model_dump(exclude={"cartao", "criado_em", "analise", "encerrado_em", "sucessora_id"}), "preservar_handoff": preservar_handoff, "cartao": json.dumps(lead.cartao.model_dump(mode="json")),
                   "analise": json.dumps(lead.analise.model_dump(mode="json")) if lead.analise else None})
         return self.get(lead.id)
 
@@ -274,7 +286,8 @@ class ImovelRepository:
                   fotos = CASE WHEN EXISTS (SELECT 1 FROM jsonb_array_elements_text(imoveis.fotos) f WHERE f LIKE '/fotos/%%')
                                THEN imoveis.fotos ELSE EXCLUDED.fotos END,
                   destaque_investimento = EXCLUDED.destaque_investimento,
-                  embedding = COALESCE(EXCLUDED.embedding, imoveis.embedding)
+                  embedding = COALESCE(EXCLUDED.embedding, imoveis.embedding),
+                  retirado_em = NULL           -- voltou ao acervo: volta à oferta
                 RETURNING (xmax = 0) AS novo
             """, {**im.model_dump(exclude={"fotos"}), "fotos": json.dumps(im.fotos), "embedding": np.array(embedding, dtype=np.float32) if embedding is not None else None}).fetchone()
         return bool(r and r["novo"])
@@ -283,7 +296,8 @@ class ImovelRepository:
                        quartos: int | None = None, limite: int = 60) -> list[Imovel]:
         with _conn() as c:
             rows = c.execute(f"""SELECT {self.COLS} FROM imoveis
-                                 WHERE (%(op)s::text IS NULL OR operacao = %(op)s) AND (%(reg)s::text IS NULL OR regiao = %(reg)s)
+                                 WHERE retirado_em IS NULL
+                                   AND (%(op)s::text IS NULL OR operacao = %(op)s) AND (%(reg)s::text IS NULL OR regiao = %(reg)s)
                                    AND (%(pm)s::numeric IS NULL OR preco <= %(pm)s) AND (%(q)s::int IS NULL OR quartos >= %(q)s)
                                  ORDER BY destaque_investimento DESC, preco LIMIT %(lim)s""",
                              {"op": operacao, "reg": regiao, "pm": preco_max, "q": quartos, "lim": limite}).fetchall()
@@ -292,7 +306,8 @@ class ImovelRepository:
     # Filtros da busca pública do site. Todos opcionais e todos guardados por NULL, para caber numa
     # consulta só — a alternativa (montar SQL por concatenação) é como se escreve um SQL injection.
     _FILTROS_PUBLICOS = """
-          (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
+          retirado_em IS NULL
+      AND (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
       AND (%(regiao)s::text   IS NULL OR regiao = %(regiao)s)
       AND (%(bairro)s::text   IS NULL OR unaccent(lower(bairro)) = unaccent(lower(%(bairro)s)))
       AND (%(tipo)s::text     IS NULL OR tipo = %(tipo)s)
@@ -347,7 +362,7 @@ class ImovelRepository:
             register_vector(c)
             rows = c.execute(f"""
                 SELECT {self.COLS}, 1 - (embedding <=> %(emb)s) AS score FROM imoveis
-                WHERE embedding IS NOT NULL
+                WHERE embedding IS NOT NULL AND retirado_em IS NULL
                   AND (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
                   AND (%(regiao)s::text IS NULL OR regiao = %(regiao)s)
                   AND (%(bairros)s::text[] IS NULL OR bairro = ANY(%(bairros)s))
@@ -371,7 +386,8 @@ class ImovelRepository:
         with _conn() as c:
             rows = c.execute(f"""
                 SELECT {self.COLS} FROM imoveis
-                WHERE (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
+                WHERE retirado_em IS NULL
+                  AND (%(operacao)s::text IS NULL OR operacao = %(operacao)s)
                   AND (%(regiao)s::text IS NULL OR regiao = %(regiao)s)
                   AND (%(bairros)s::text[] IS NULL OR bairro = ANY(%(bairros)s))
                   AND (%(preco_max)s::numeric IS NULL OR preco <= %(preco_max)s * 1.15)
@@ -402,12 +418,25 @@ class ImovelRepository:
         """
         if not ids:
             raise ValueError("apagar_fora_de recusa lista vazia: seria esvaziar o catálogo")
-        with get_pool().connection() as conn:
-            return conn.execute("DELETE FROM imoveis WHERE id <> ALL(%s)", (list(ids),)).rowcount
+        # Imóvel com visita registrada não pode ser apagado: a FK de `visitas` recusa, e o DELETE
+        # em massa falhava inteiro — nenhum imóvel saía e a Mora seguia oferecendo o vendido. Esse
+        # fica marcado como retirado (some da oferta, o histórico da visita continua apontando
+        # para ele); os demais são apagados. As duas coisas numa transação só.
+        with get_pool().connection() as conn, conn.transaction():
+            retirados = conn.execute(
+                """UPDATE imoveis SET retirado_em = now()
+                    WHERE id <> ALL(%s) AND retirado_em IS NULL
+                      AND EXISTS (SELECT 1 FROM visitas v WHERE v.imovel_id = imoveis.id)""",
+                (list(ids),)).rowcount
+            apagados = conn.execute(
+                """DELETE FROM imoveis WHERE id <> ALL(%s)
+                    AND NOT EXISTS (SELECT 1 FROM visitas v WHERE v.imovel_id = imoveis.id)""",
+                (list(ids),)).rowcount
+        return retirados + apagados
 
     def contar(self) -> int:
         with _conn() as c:
-            return c.execute("SELECT count(*) AS n FROM imoveis").fetchone()["n"]
+            return c.execute("SELECT count(*) AS n FROM imoveis WHERE retirado_em IS NULL").fetchone()["n"]
 
     def contar_com_embedding(self) -> int:
         with _conn() as c:

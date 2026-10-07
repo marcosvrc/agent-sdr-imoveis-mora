@@ -61,7 +61,7 @@ Arquivo: `services/agent/src/agent/handler.py`. A ordem abaixo é a ordem do có
 | 12 | `entrada_grafo` | Ver abaixo. | — |
 | 13 | `get_graph().invoke(entrada_grafo, config={"configurable": {"thread_id": lead.id}})` | Checkpointer Postgres; o `thread_id` é o `lead.id`, logo o histórico é por oportunidade. | — |
 | 14 | `except Exception` | `log.exception`, auditoria `agente.turno_falhou` (com `traceback.format_exc(limit=3)[-900:]`), `_fim("erro")`, `_responder_falha` (seção 12). | `"erro"` |
-| 15 | Pós-turno | `lead = out["lead"]`; `lead.score, lead.temperatura = calcular(lead, respondeu_rapido=rapido)`; `upsert`. | — |
+| 15 | Pós-turno | `lead = out["lead"]`; `lead.score, lead.temperatura = calcular(lead, respondeu_rapido=rapido)`; `upsert(lead, preservar_handoff=True)` — se o corretor assumiu durante o turno, estágio e corretor do banco prevalecem. | — |
 | 16 | Auditoria de estágio | Se mudou: `lead.estagio_alterado` com `de`, `para`, `temperatura`, `score`. | — |
 | 17 | Registrar saída e despachar | Se `out["resposta"]`: `msgs.registrar(..., "out", resposta.texto, {"opcoes", "imoveis": [ids]})` e `despachar(canal, identificador, resposta)`. | — |
 | 18 | `publicar_eventos(lead, estagio_antes)` | Seção 9. | — |
@@ -403,7 +403,8 @@ direto.
 
 **Turno 2 — reserva.** `inicio` vem de `txt.startswith("slot:")` (botão web ou Telegram — o código
 não olha `TipoMensagem.BOTAO`; `test_cenario_compra` envia o slot com `tipo=BOTAO`, mas a decisão é
-pelo prefixo) ou de `_resolver_horario(txt, horarios_oferecidos)` para texto livre ("terça às 14h",
+pelo prefixo), validado por `_horario_do_botao`: só um dos `horarios_oferecidos` (ou o
+`horario_pendente`), com fuso e no futuro; fora disso vira `None` e a grade é reoferecida ou de `_resolver_horario(txt, horarios_oferecidos)` para texto livre ("terça às 14h",
 "o das 10", "amanhã 16h", "o primeiro"; só confirma com um único candidato e pelo menos dia ou hora).
 
 1. Sem `corretor_id` → `CorretorRepository().escolher(cartao.regiao)`.
@@ -757,7 +758,8 @@ min; depois `1440 × 2 = 2880`. `previa(temperatura)` encadeia as tentativas par
 `get_scheduler().schedule(lead.id, minutos, payload)` com `MensagemNormalizada(tipo=FOLLOWUP,
 conteudo="")`. O `PostgresScheduler` (`adapters/local/scheduler.py`) faz upsert em
 `followups_agendados` (um por lead); o worker `services/scheduler/sdr_scheduler/local_worker.py`
-publica os vencidos em `inbound` a cada 30 s (e no mesmo laço drena `crm_pendencias`). O turno de
+publica os vencidos em `inbound` a cada 30 s (e no mesmo laço drena `crm_pendencias`); o que não
+conseguiu publicar volta para a tabela em 1 minuto (`PostgresScheduler.devolver`). O turno de
 follow-up entra pelo handler como qualquer outro, cai em `INICIADAS_PELO_AGENTE` e é roteado ao nó
 `followup`, que ao final reagenda a próxima tentativa via o mesmo `reagendar_followup`.
 

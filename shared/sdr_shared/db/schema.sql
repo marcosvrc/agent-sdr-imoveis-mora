@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS imoveis (
 );
 CREATE INDEX IF NOT EXISTS imoveis_embedding_idx ON imoveis USING hnsw (embedding vector_cosine_ops);
 CREATE INDEX IF NOT EXISTS imoveis_filtro_idx ON imoveis (operacao, regiao, quartos, preco);
+-- Imóvel que saiu do CRM mas tem visita registrada não pode ser apagado (a FK de `visitas` o
+-- segura, e o histórico da visita depende dele): fica marcado como retirado e some da oferta.
+ALTER TABLE imoveis ADD COLUMN IF NOT EXISTS retirado_em TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS visitas (
   id          TEXT PRIMARY KEY,

@@ -415,3 +415,50 @@ def pendentes_do(lead_id: str) -> int:
     with get_pool().connection() as conn:
         return conn.execute("SELECT count(*) AS n FROM crm_pendencias WHERE lead_id = %s",
                             (lead_id,)).fetchone()["n"]
+
+
+def test_turno_de_lead_ja_vinculado_com_crm_fora_tambem_vai_para_a_fila(
+        lead, monkeypatch, porta_livre, ligado, crm_api, token_crm):
+    """Com o lead já vinculado, o retorno das chamadas era ignorado: com o CRM fora o turno saía
+    como publicado e a conversa daquele período sumia do histórico do corretor."""
+    from datetime import UTC, datetime, timedelta
+
+    from sdr_shared.crm import pendencias, publicar_turno, vinculo
+    from sdr_shared.db.connection import get_pool
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    from sdr_shared.ports import get_crm
+
+    def turno(texto, id_in, recebida=None):
+        e = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, tipo=TipoMensagem.TEXTO,
+                                identificador_canal="s", conteudo=texto)
+        if recebida:
+            e.recebida_em = recebida
+        publicar_turno(lead, e, texto_saida="ok", id_entrada=id_in, id_saida=id_in + 1)
+
+    with get_pool().connection() as conn:
+        conn.execute("DELETE FROM crm_pendencias WHERE lead_id = %s", (lead.id,))
+    base = int(uuid.uuid4().int % 10**9)
+
+    # 1. CRM no ar: cria o vínculo
+    turno("quero alugar no Brooklin", base)
+    v = vinculo.buscar(lead.id)
+    assert v is not None and pendentes_do(lead.id) == 0
+
+    # 2. CRM fora, lead já vinculado: o turno tem de ir para a fila
+    url_viva = ligado
+    monkeypatch.setenv("SDR_CRM_URL", f"http://127.0.0.1:{porta_livre()}/mcp")
+    get_crm.cache_clear()
+    chegada = datetime.now(UTC) - timedelta(hours=1)
+    turno("tem com varanda?", base + 10, recebida=chegada)
+    assert pendentes_do(lead.id) == 1, "turno com CRM fora não pode sair como publicado"
+
+    # 3. CRM volta: a fila publica, com a hora em que a mensagem chegou
+    monkeypatch.setenv("SDR_CRM_URL", url_viva)
+    get_crm.cache_clear()
+    with get_pool().connection() as conn:
+        conn.execute("UPDATE crm_pendencias SET proxima_em = now() WHERE lead_id = %s", (lead.id,))
+    assert pendencias.drenar()["publicadas"] >= 1 and pendentes_do(lead.id) == 0
+    interacoes = _consultar(crm_api, token_crm, f"/v1/leads/{v.crm_lead_id}/interactions")["items"]
+    da_fila = next(i for i in interacoes if i["external_event_id"] == f"mora-msg-{base + 10}")
+    gravada = datetime.fromisoformat(da_fila["occurred_at"].replace("Z", "+00:00"))
+    assert abs((gravada - chegada).total_seconds()) < 2, "occurred_at é a chegada, não a republicação"

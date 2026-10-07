@@ -7,7 +7,7 @@ router = APIRouter(dependencies=[Depends(corretor_atual)])
 
 
 @router.get("")
-def listar(busca: str | None = None, limite: int = Query(200, le=500)):
+def listar(busca: str | None = None, limite: int = Query(200, ge=1, le=500)):
     return ClienteRepository().listar(busca=busca, limite=limite)
 
 

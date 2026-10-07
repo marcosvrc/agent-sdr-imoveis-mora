@@ -33,7 +33,7 @@ def _publico(im: Imovel, request: Request) -> ImovelPublico:
 
 @router.get("", response_model=list[ImovelPublico])
 def listar(request: Request, operacao: str | None = None, regiao: str | None = None, preco_max: float | None = None,
-           quartos: int | None = None, limite: int = Query(60, le=400)):
+           quartos: int | None = None, limite: int = Query(60, ge=1, le=400)):
     return [_publico(i, request) for i in ImovelRepository().listar_publico(operacao=operacao, regiao=regiao, preco_max=preco_max, quartos=quartos, limite=limite)]
 
 

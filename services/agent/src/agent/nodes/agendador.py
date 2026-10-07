@@ -98,6 +98,33 @@ def _sem_acento(t: str) -> str:
     return unicodedata.normalize("NFKD", t).encode("ascii", "ignore").decode().lower()
 
 
+def _horario_do_botao(texto: str, state: AgentState) -> datetime | None:
+    """O horário de um `slot:<iso>` — só se for um dos que a Mora ofereceu (ou o que ela está
+    segurando) e ainda não tiver passado.
+
+    O prefixo chega como texto comum: o cliente pode digitá-lo, e um botão antigo do Telegram pode
+    ser clicado dias depois. Aceitar qualquer data reservava visita de madrugada, no passado ou
+    num horário que nunca esteve na grade; `slot:abc` derrubava o turno. Fora da oferta, devolve
+    None e o agendador oferece a grade de novo.
+    """
+    try:
+        inicio = datetime.fromisoformat(texto[5:].split("|")[0].strip())
+    except ValueError:
+        return None
+    if inicio.tzinfo is None:
+        return None
+    validos = list(state.get("horarios_oferecidos") or [])
+    if state.get("horario_pendente"):
+        validos.append(state["horario_pendente"])
+    try:
+        ofertados = {datetime.fromisoformat(h) for h in validos}
+    except ValueError:
+        ofertados = set()
+    if inicio not in ofertados or inicio <= datetime.now(timezone.utc):
+        return None
+    return inicio
+
+
 def _resolver_horario(texto: str, oferecidos: list[str]) -> datetime | None:
     """Casa texto livre ("terça às 14h", "o das 10", "amanhã 16h", "o primeiro") com um dos horários oferecidos."""
     if not oferecidos:
@@ -119,7 +146,12 @@ def _resolver_horario(texto: str, oferecidos: list[str]) -> datetime | None:
     data = re.search(r"\b(\d{1,2})/(\d{1,2})\b", t)
     alvo = None
     if data:
-        alvo = hoje.replace(month=int(data.group(2)), day=int(data.group(1)))
+        try:
+            alvo = hoje.replace(month=int(data.group(2)), day=int(data.group(1)))
+        except ValueError:
+            # "31/09", "50/50": data que não existe não casa com horário nenhum. Antes o
+            # `ValueError` derrubava o turno, e o cliente ia parar no corretor por ter digitado errado.
+            return None
     elif "amanha" in t:
         alvo = hoje + timedelta(days=1)
     candidatos = slots
@@ -243,7 +275,7 @@ def run(state: AgentState) -> dict:
 
     inicio = None
     if txt.startswith("slot:"):                                   # botão (web ou Telegram) — independe do tipo
-        inicio = datetime.fromisoformat(txt[5:])
+        inicio = _horario_do_botao(txt, state)
     elif state.get("horarios_oferecidos"):                        # texto livre depois de uma oferta
         inicio = _resolver_horario(txt, state["horarios_oferecidos"])
     pendente = state.get("horario_pendente")
