@@ -67,6 +67,10 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_ANTHROPIC_WORKSPACE_ID` | *(vazio)* | Obrigatório quando a chave é de organização e não de workspace. |
 | `SDR_OPENROUTER_API_KEY` | *(vazio)* | Chave do OpenRouter, quando ele atende algum papel (ADR-0016). |
 | `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição ao OpenRouter. Desligar só na bancada, com dataset sintético: sem ela, o texto do cliente pode ir para endpoints que o guardam. |
+| `SDR_OPENROUTER_URL` | `https://openrouter.ai/api/v1` | Base da API do OpenRouter (os testes apontam para um servidor falso). |
+| `SDR_EMBEDDINGS_DIMENSOES` | `1024` | Dimensão dos vetores; tem de casar com o `vector(N)` de `shared/sdr_shared/db/schema.sql`. |
+| `SDR_ACERVO_REFRESH_S` | `900` | De quanto em quanto tempo (segundos) o scheduler traz o acervo do CRM de volta ao índice; `0` desliga. O valor salvo no painel (Configurações → Operação) tem precedência. |
+| `DB_HOST_PORT` / `REDIS_HOST_PORT` / `OLLAMA_HOST_PORT` | `5433` / `6380` / `11435` | Portas publicadas **no host** pelo compose, para acesso de fora dele; os containers usam sempre as portas internas. |
 | `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local. |
 | `SDR_TEST_ALLOW_WIPE` | *(vazio)* | Ignora a trava que impede as suítes de apagar um banco sem "test" no nome. Último recurso. |
 

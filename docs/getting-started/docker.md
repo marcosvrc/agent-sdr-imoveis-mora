@@ -82,6 +82,13 @@ Mudança em variável de ambiente ou no próprio `docker-compose.yml` exige **re
 cd local && docker compose up -d
 ```
 
+!!! warning "Variável nova num serviço Python: mescle o `x-pyenv`"
+    O ambiente comum dos serviços Python fica no anchor `x-pyenv`, separado do `x-py`. Um
+    `environment:` declarado dentro de um serviço **substitui** o mapa herdado por `<<: *py` — não
+    mescla. Para acrescentar uma variável, mescle o anchor explicitamente, como faz a `api`
+    (`environment: { <<: *pyenv, SDR_DB_POOL_MAX: "12" }`). Sem isso o serviço perde o
+    `SDR_DATABASE_DSN` e só descobre na próxima recriação, com `PoolTimeout` no `/health`.
+
 Sinal de que o processo está velho: peça o `GET /openapi.json` e confira se uma mudança sua aparece
 lá. Rota nova que responde `{"detail":"Not Found"}` é rota que não existe no processo em memória.
 

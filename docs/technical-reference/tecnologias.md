@@ -47,8 +47,10 @@ O painel não tem SDK de autenticação: a credencial é um token estático envi
 | LLM/IA | LangGraph | >=0.2 | Orquestração do grafo multiagente |
 | LLM/IA | LangChain Core | >=0.3 | Abstrações de mensagens / modelos |
 | LLM/IA | Claude Sonnet (API da Anthropic) | `claude-sonnet-4-5` (padrão, ajustável) | Conversa com o cliente |
-| LLM/IA | Claude Haiku (API da Anthropic) | `claude-haiku-4-5` (padrão, ajustável) | Roteamento e extração |
-| LLM/IA | Provedores aceitos | — | `anthropic` (padrão), `openai` e `ollama`, via `SDR_LLM_PROVIDER` |
+| LLM/IA | Claude Haiku (API da Anthropic) | `claude-haiku-4-5` (padrão, ajustável) | Roteamento e, por herança, extração |
+| LLM/IA | Modelo por função | — | Cinco papéis (`conversa`, `roteamento`, `extracao`, `informacoes`, `analise`), cada um trocável pelo painel; vazio herda do pai (ADR-0016) |
+| LLM/IA | Provedores aceitos | — | `anthropic` (padrão), `openai`, `openrouter` e `ollama`, via `SDR_LLM_PROVIDER` |
+| LLM/IA | OpenRouter | API compatível com OpenAI | Qualquer papel e embeddings com uma chave só; retenção zero ligada por padrão |
 | LLM/IA | faster-whisper | >=1.0 | Transcrição de voz in-process (extra `local`) |
 
 ## RAG / Embeddings

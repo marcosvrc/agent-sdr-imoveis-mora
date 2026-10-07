@@ -145,8 +145,8 @@ Teste: `services/agent/tests/test_graph_routing.py::test_cartao_compra_faltantes
 
 ### 3.2 Extração — o que ela pode e não pode fazer
 
-A extração roda no modelo de roteamento (o barato) com saída estruturada, e é **conservadora por
-projeto** (`nodes/qualificador.py::_extrair`):
+A extração roda no papel `extracao` (vazio herda o modelo de roteamento, o barato) com saída
+estruturada, e é **conservadora por projeto** (`nodes/qualificador.py::_extrair`):
 
 | Regra | Se violada | Teste |
 | --- | --- | --- |
@@ -156,6 +156,8 @@ projeto** (`nodes/qualificador.py::_extrair`):
 | falha na extração devolve o cartão **inalterado** — o turno continua | — | `test_cenarios.py::test_mudanca_nao_derruba_o_turno` |
 | **uma extração por frase**: o consultor não reextrai a mensagem que o qualificador acabou de extrair (`cartao_extraido_de`) | uma chamada de modelo a mais por turno | `test_cenarios.py::test_cartao_completo_nao_extrai_a_mesma_frase_duas_vezes` |
 | cliente qualificado pode **trocar de bairro/critério** no consultor; a intenção fica intacta | busca com bairros antigos | `test_cenarios.py::test_cliente_qualificado_pode_trocar_de_bairro` |
+| a extração recebe a **última fala da Mora** (`ultima_pergunta`, até 300 caracteres) marcada como CONTEXTO, não como dado: serve só para saber a que campo uma resposta curta se refere ("1" depois de "quantos quartos?" é `quartos = 1`); os exemplos citados na pergunta nunca viram preferência | resposta curta vira nulo, o cartão não fecha e a Mora promete uma busca que não vem | `test_graph_routing.py::test_extracao_recebe_a_ultima_pergunta_da_mora`, `::test_ultima_pergunta_ignora_o_que_o_cliente_disse` |
+| **redes de segurança por regra** quando o extrator deixa passar: urgência dita com todas as letras ("urgente", "sem pressa", "uns 3 meses") só vale se a mensagem ou a pergunta anterior falam de prazo; "sem preferência"/"tanto faz" sobre quartos vira `quartos = 0` (a busca não filtra) | campo obrigatório nunca fecha | `test_graph_routing.py::test_urgencia_por_regra` |
 
 **Quem decide bairro e região é o catálogo `geo`, não o modelo** (`shared/sdr_shared/geo.py`). São
 **18 bairros** em 5 regiões (zona_sul 5, zona_oeste 4, zona_norte 3, zona_leste 3, centro 3). Se o
@@ -163,6 +165,14 @@ local resolver como fora de cobertura (`FORA_DE_COBERTURA`: Osasco, Barueri, Alp
 ABC…), `bairros` e `regiao` são **zerados** e a Mora diz isso em uma frase. Testes:
 `test_geo.py::test_resolver_localidade`, `::test_local_fora_de_cobertura_nao_vira_bairro`,
 `::test_desconhecido_nao_inventa`.
+
+**Com campo faltando, a resposta pergunta por ele e não promete busca** (`qualificador.py::_conferir`).
+A resposta do qualificador termina com **uma** pergunta sobre o primeiro campo faltante (texto fixo
+por campo em `PERGUNTA`). Se o modelo anunciar busca ("vou verificar", "já te mostro", "um
+momento"), a frase é trocada por "Anotado!" + a pergunta certa; sem `?`, a pergunta é acrescentada.
+Quem mostra imóvel é o consultor, e só com o cartão completo — prometer antes deixava o cliente
+esperando uma mensagem que nunca vinha
+(`test_graph_routing.py::test_com_campo_faltando_nao_promete_imoveis_e_pergunta_o_que_falta`).
 
 ### 3.3 Captura de contato
 
@@ -178,11 +188,21 @@ ABC…), `bairros` e `regiao` são **zerados** e a Mora diz isso em uma frase. T
 **Quando a Mora pede contato** (`nodes/qualificador.py::_contexto_contato`):
 
 - canal **≠ web** → nunca pede (`test_contato.py::test_canal_externo_nunca_pede_contato`);
-- canal web e sem nome → pede **só o primeiro nome** (`::test_no_web_pede_o_nome_antes_de_qualquer_contato`);
+- canal web e sem nome → pede **só o primeiro nome**, **uma vez**, logo depois que o cliente diz a
+  intenção (comprar, alugar, investir); naquela resposta não pergunta o próximo campo
+  (`qualificador.py::pede_nome_agora`, `::test_no_web_pede_o_nome_logo_depois_da_intencao_e_uma_vez_so`);
 - canal web, com nome, **sem contato e com cartão completo** → pede **um** contato, de preferência
   telefone (`::test_pede_um_contato_so_quando_ha_compromisso`);
-- **ao reservar uma visita sem contato**, o agendador pede o telefone na própria confirmação
-  (`nodes/agendador.py::run`, `test_agendador_crm.py::test_confirmacao_nao_deixa_placeholder_no_prompt`).
+- **ao escolher horário no site sem contato**, o agendador **segura o horário e pede o telefone
+  antes de reservar** (ver [7.4](#74-no-site-o-horario-espera-o-telefone));
+- quando o cliente responde **só com o contato** (telefone ou e-mail e no máximo seis palavras,
+  `qualificador.py::so_contato`), o qualificador agradece e fecha — não lista imóveis de novo nem
+  repete o número; com visita reservada, diz que o corretor vai confirmar por esse contato
+  (`test_graph_routing.py::test_reconhece_mensagem_que_e_so_contato`,
+  `::test_telefone_depois_da_reserva_nao_traz_mais_imoveis`).
+
+O texto pede **telefone**, nunca "WhatsApp": o canal de mensagem da Vértice é o Telegram (ADR-0007),
+e o número serve ao corretor para ligar ou mandar mensagem.
 
 ### 3.4 Roteamento — regras antes do LLM, e a ordem importa
 
@@ -198,15 +218,21 @@ O supervisor decide por regra determinística; o modelo só entra no último cas
 | 4 | `PEDE_SAIR` (não quero mais avisos…) | reativador (**antes do porteiro de escopo**) |
 | 5 | fora de escopo **e** não pede humano | recusa |
 | 6 | pede humano (`PEDE_HUMANO`, botão "Falar com corretor") ou já está em `handoff` | handoff |
-| 7 | pergunta institucional (`INSTITUCIONAL_FORTE`, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e **sem** horários oferecidos | informações (RAG institucional) |
-| 8 | escolheu horário (botão `slot:` ou texto após oferta) | agendador |
-| 9 | pede visita, ou `pediu_visita` no cartão **e estágio ≠ `agendado`** | agendador |
-| 10 | pede outras opções | consultor |
-| 11 | cartão completo e nada sugerido ainda | consultor |
-| 12 | cartão incompleto | qualificador |
-| 13 | resto | **modelo decide** entre qualificador, consultor, agendador, handoff e informacoes; resposta desconhecida cai em qualificador; **`agendador` com lead já `agendado` é trocado** por consultor/qualificador; **`handoff` em mensagem de até 3 palavras que não pede pessoa é trocado** por consultor/qualificador |
+| 7 | botão **"visitar este imóvel"** (`imovel:<id>\|<título>`) | agendador |
+| 8 | botão de **ampliação da busca** (`ajuste:<tipo>\|…`) | consultor |
+| 9 | há **horário segurado esperando contato** (`horario_pendente`) e a mensagem é só contato, outro `slot:` ou tem até 4 palavras | agendador (fecha a reserva) |
+| 10 | pergunta institucional (`INSTITUCIONAL_FORTE`, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e **sem** horários oferecidos | informações (RAG institucional) |
+| 11 | intenção já é compra ou aluguel e o cliente **cita a outra** com todas as letras (`intencao_citada`; "comprar para alugar" cita as duas e não decide) | qualificador (abre a oportunidade nova e refaz o cartão) |
+| 12 | escolheu horário (botão `slot:` ou texto após oferta) | agendador |
+| 13 | pede visita, ou `pediu_visita` no cartão **e estágio ≠ `agendado`** | agendador |
+| 14 | cartão completo e a mensagem é **só um contato** (`so_contato`) | qualificador (grava e agradece) |
+| 15 | a Mora perguntou como ampliar (`ajuste_pendente`) e o cartão está completo | consultor (lê a resposta escrita) |
+| 16 | pede outras opções | consultor |
+| 17 | cartão completo e nada sugerido ainda | consultor |
+| 18 | cartão incompleto | qualificador |
+| 19 | resto | **modelo decide** entre qualificador, consultor, agendador, handoff e informacoes; a decisão é lida mesmo fora do formato (primeira palavra válida na resposta, sem acento e sem markdown — `interpretar_decisao`); resposta ilegível cai em qualificador (com log só da resposta do modelo); **`agendador` com lead já `agendado` é trocado** por consultor/qualificador; **`handoff` em mensagem de até 3 palavras que não pede pessoa é trocado** por consultor/qualificador |
 
-**Handoff pede corroboração** (linha 13). O modelo mandava para o corretor tudo que não reconhecia
+**Handoff pede corroboração** (linha 19). O modelo mandava para o corretor tudo que não reconhecia
 como assunto de imóvel, e "dim" — erro de digitação de "sim", logo depois de uma visita reservada —
 encaminhou um lead a um humano. Para o cliente isso é sem volta: a Mora silencia e ele passa a
 esperar uma pessoa. Ruído de até três palavras que não contém pedido de atendente volta para o
@@ -226,6 +252,10 @@ Precedências que são decisão de negócio, com o teste que as prende:
 | Telefone enviado após a reserva não reoferece a grade | `test_graph_routing.py::test_telefone_depois_da_reserva_nao_volta_para_o_agendador` |
 | Quem quer remarcar continua chegando ao agendador | `test_graph_routing.py::test_quem_quer_remarcar_continua_chegando_ao_agendador` |
 | O modelo não devolve visita reservada ao agendador | `test_graph_routing.py::test_modelo_nao_devolve_visita_reservada_ao_agendador` |
+| Botão de imóvel e de ampliação vencem a pergunta institucional | `test_agendador_crm.py::test_o_botao_do_imovel_leva_aos_horarios_dele`, `test_graph_routing.py::test_escolher_acima_do_valor_busca_no_bairro_sem_teto` |
+| Trocar compra por aluguel depois de qualificado vai ao qualificador, não ao consultor | `test_graph_routing.py::test_intencao_citada`, `::test_trocar_compra_por_aluguel_depois_de_qualificado_vai_ao_qualificador` |
+| Telefone com cartão completo vai ao qualificador, não traz mais imóveis | `test_graph_routing.py::test_telefone_depois_da_reserva_nao_traz_mais_imoveis` |
+| Resposta do roteador fora do formato não vira qualificador em silêncio | `test_graph_routing.py::test_decisao_do_roteador_e_lida_mesmo_fora_do_formato` |
 | Especialista que não responde nem reencaminha roda **uma vez só** (`MAX_SALTOS = 4`, `ultimo_no`) | `test_graph_routing.py::test_especialista_que_nao_responde_nem_reencaminha_roda_uma_vez_so` |
 
 ### 3.5 Informações institucionais
@@ -322,7 +352,31 @@ Sem nada no perfil pedido **dentro do bairro pedido**, o sistema procura o que e
 perfil (`tools/buscar_imoveis.py::_alternativa`): só com bairro pedido; duas tentativas, parando na
 primeira com resultado — relaxa **quartos**, depois **preço**; busca 3, o prompt recebe **2**. Sem teste.
 
-### 5.4 O que impede repetir
+### 5.4 Sem imóvel no perfil exato: o cliente decide o que ceder
+
+Quando o cliente **nomeou bairros** e a cascata só achou em `vizinhos`, `regiao` ou `cidade`, o
+consultor **não mostra as alternativas de cara**: pergunta como continuar
+(`nodes/consultor.py::_perguntar_ajuste`), em texto fixo e com botões `ajuste:<tipo>|<rótulo>`:
+
+| Opção | Aparece quando | O que muda na busca |
+| --- | --- | --- |
+| `preco` — "<bairro> acima de R$ X" | há teto (`preco_max` ou `ticket`) | busca de novo **sem teto**; a resposta diz em meia frase que as opções passam do valor dele |
+| `vizinhos` — "Bairros vizinhos" | sempre | segue a cascata normal |
+| `quartos` — "<bairro> com menos quartos" | pediu mais de 1 quarto | busca de novo **sem filtro de quartos**; a resposta diz que têm menos quartos |
+
+A resposta pode vir pelo botão ou por escrito ("pode ser em bairro perto", "aumenta o valor"),
+reconhecida por expressão regular enquanto `ajuste_pendente` estiver no estado. A ampliação
+escolhida (`ajuste`) vale enquanto o critério do cartão não mudar; mudou o bairro, o teto ou os
+quartos, a pergunta volta a valer. Antes disso, um lead que pediu 2 quartos em Moema recebeu num
+parágrafo só um studio em Moema e três imóveis em outros bairros — quando tirar o teto teria
+mostrado um imóvel em Moema mesmo
+(`test_graph_routing.py::test_sem_imovel_no_bairro_pergunta_como_ampliar_antes_de_mostrar`,
+`::test_escolher_acima_do_valor_busca_no_bairro_sem_teto`, `::test_resposta_escrita_a_pergunta_de_ajuste`).
+
+Ao mostrar imóveis para quem ainda não deixou contato, o consultor acrescenta, numa linha separada e
+sem insistir, que o corretor manda mais fotos se ele deixar um telefone.
+
+### 5.5 O que impede repetir
 
 | Regra | Efeito | Teste |
 | --- | --- | --- |
@@ -332,7 +386,7 @@ primeira com resultado — relaxa **quartos**, depois **preço**; busca 3, o pro
 
 A memória entre sessões é a tabela `interesses`; o estado do grafo só conhece a conversa atual.
 
-### 5.5 O catálogo que a Mora oferece é o do CRM
+### 5.6 O catálogo que a Mora oferece é o do CRM
 
 | Regra | Vale em | Fonte | Se violada | Teste |
 | --- | --- | --- | --- | --- |
@@ -396,10 +450,29 @@ exceção. O descarte anotado pelo corretor no painel também sobe (`routers/int
 | Com imóvel definido, a grade vem dos slots livres do CRM (`consultar_horarios`), até **8** | `horarios_do_imovel(limite=8)` | `test_agendador_crm.py::test_com_imovel_a_grade_vem_do_crm`, `shared/tests/test_visitas_crm.py::test_horarios_vem_do_crm_quando_ha_imovel` |
 | Lista vazia do CRM significa "não sei", nunca "não há": cai na agenda do corretor | — | `test_agendador_crm.py::test_sem_resposta_do_crm_cai_na_agenda_do_corretor`, `test_visitas_crm.py::test_codigo_desconhecido_nao_inventa_indisponibilidade` |
 | Sem imóvel escolhido, o CRM não é consultado | — | `test_visitas_crm.py::test_sem_imovel_nao_pergunta_ao_crm` |
+| **Horário vencido nunca é oferecido**, venha de onde vier (slot do CRM com início no passado é descartado) | — | `test_visitas_crm.py::test_horario_vencido_nunca_e_oferecido` |
 | Agenda interna (reserva): **10h, 14h e 16h** (Brasília), 5 dias úteis à frente, começando **amanhã**, fins de semana pulados, até 15 slots gerados, **60 min**, horário confirmado sai da grade | `repositories.py::VisitaRepository.horarios_disponiveis` | `test_calendario.py::test_horario_ja_marcado_some_da_oferta`, `::test_sem_corretor_definido_usa_a_grade_da_equipe` |
 | Com corretor definido, a grade interna desconta a agenda Google dele; falha do Google **não esvazia** a oferta | `VisitaRepository._agenda_externa` | `test_calendario.py::test_compromisso_no_google_tira_o_horario_da_oferta`, `::test_google_fora_do_ar_nao_esvazia_a_agenda` |
 
-### 7.2 Como o horário é escolhido
+### 7.2 Qual imóvel — antes de qual horário
+
+A visita é sempre de um imóvel que o **cliente escolheu** (`nodes/agendador.py::_imovel_da_visita`).
+Os candidatos são o **último lote mostrado** (`ultimos_sugeridos`), na ordem da tela:
+
+1. botão **"visitar este imóvel"** (`imovel:<id>|<título>`) → aquele imóvel;
+2. imóvel já escolhido nesta visita (`imovel_escolhido`) → ele;
+3. um candidato só → ele; nenhum → o imóvel da ficha de onde o cliente veio (`imoveis_visualizados`);
+4. vários → escolha pelo texto **só quando inequívoca**: ordinal ("o segundo", "o último") ou palavra
+   que distingue um título dos outros ("o studio", "o de 33 m²"); palavra comum a todos não escolhe.
+
+Sem escolha, a Mora pergunta **"Qual deles você quer visitar?"** com um botão por imóvel, e só
+depois mostra horários. Antes era sempre o primeiro da lista: com três imóveis na tela, o cliente
+clicava num horário e a visita era reservada num imóvel que ele nunca escolheu
+(`test_agendador_crm.py::test_com_varios_imoveis_na_tela_pergunta_qual_antes_do_horario`,
+`::test_o_botao_do_imovel_leva_aos_horarios_dele`, `::test_o_horario_e_reservado_no_imovel_escolhido`,
+`::test_escolha_do_imovel_por_texto_so_quando_inequivoca`). Lote novo na tela zera a escolha anterior.
+
+### 7.3 Como o horário é escolhido
 
 Dois caminhos: **botão** (`slot:<iso>`) ou **texto livre** (ordinais, "14h", "às 3", dia da semana,
 "amanhã", `dd/mm`). **Só confirma se restar exatamente um candidato e o cliente tiver dito ao menos
@@ -408,7 +481,22 @@ frase e reoferece. O identificador do botão nunca entra cru no histórico — v
 (`test_agendador_crm.py::test_clique_no_botao_nao_vira_iso_no_historico`,
 `test_cenarios.py::test_horario_digitado`).
 
-### 7.3 O que uma reserva produz — e o que ela **não** é
+### 7.4 No site, o horário espera o telefone
+
+No chat do site a conversa some quando o cliente fecha a aba: sem telefone ou e-mail não há como o
+corretor confirmar. Por isso, **no canal web, horário escolhido sem contato não é reservado**
+(`agendador.py::_pedir_contato`): fica segurado em `horario_pendente` e a Mora pede "seu nome e
+telefone" (ou só o telefone, se já sabe o nome), em texto fixo. A próxima mensagem — só o contato,
+outro `slot:` ou até 4 palavras — volta ao agendador, passa pela extração e, com contato válido,
+fecha a reserva naquele horário. Sem contato de novo, a Mora insiste uma vez e oferece o botão
+**Falar com corretor**. Horário e telefone na mesma frase ("sexta às 10h, 11 98765-4321") reservam
+direto. No **Telegram** a reserva não espera: o chat continua aberto e o corretor fala por ali
+(`test_agendador_crm.py::test_no_site_sem_contato_o_horario_espera_o_telefone`,
+`::test_o_contato_fecha_a_reserva_do_horario_segurado`,
+`::test_sem_contato_de_novo_insiste_e_oferece_o_corretor`,
+`::test_no_telegram_a_reserva_nao_espera_telefone`).
+
+### 7.5 O que uma reserva produz — e o que ela **não** é
 
 | Passo | Regra | Teste |
 | --- | --- | --- |
@@ -428,7 +516,7 @@ frase e reoferece. O identificador do botão nunca entra cru no histórico — v
 A confirmação ao cliente fala do imóvel pela **descrição**, nunca pelo código
 (`test_agendador_crm.py::test_reserva_fala_do_imovel_pela_descricao_e_nao_pelo_codigo`).
 
-### 7.4 Onde fica o imóvel: mapa do bairro, nunca endereço
+### 7.6 Onde fica o imóvel: mapa do bairro, nunca endereço
 
 A reserva leva um link do Google Maps para **bairro + cidade**
 (`sdr_shared/geo.py::link_do_mapa`), com o texto dizendo o que ele é: a região agora, o endereço
@@ -443,13 +531,15 @@ tem.
 | Detalhe | Regra |
 | --- | --- |
 | Bairro e cidade saem do **cadastro** (`ImovelRepository.get`), não do título do card — que mudou de formato quando o comercial entrou | `nodes/agendador.py::_onde_fica` |
-| O link é **acrescentado ao texto depois do saneamento**, nunca pedido ao modelo: URL escrita por modelo é URL que ele pode inventar, e esta leva alguém a um lugar físico | `nodes/agendador.py` |
-| Vai também em `dados.visita.mapa` (botão no chat do site) e em `local`, que o evento de calendário usa | `apps/web/src/chat/CardVisita.tsx` |
+| O link **nunca entra no texto** nem é pedido ao modelo: URL escrita por modelo é URL que ele pode inventar, e esta leva alguém a um lugar físico. Colado no fim do texto, o link cru também enterrava o pedido de telefone | `nodes/agendador.py` |
+| Vai em `dados.visita.mapa`, e **cada canal o mostra como botão**: o card da visita no site e um botão de link "📍 Ver a região no mapa" no Telegram (só `https://`); vai também em `local`, que o evento de calendário usa | `apps/web/src/chat/CardVisita.tsx`, `canal_telegram/adapter.py` |
 | Sem bairro conhecido, não há link — e a mensagem segue sem ele | `link_do_mapa` devolve `None` |
 
-Teste: `test_cenarios.py::test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco`.
+Testes: `test_cenarios.py::test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco`,
+`services/channels/telegram/tests/test_adapter.py::test_visita_reservada_leva_o_mapa_como_botao_de_link`,
+`::test_sem_visita_nao_ha_botao_de_mapa`.
 
-### 7.5 Escolha do corretor
+### 7.7 Escolha do corretor
 
 Quem atende é escolhido por **região e carga** (`shared/sdr_shared/db/painel.py::CorretorRepository.escolher`):
 (1) corretores **ativos** que atendem a região — **quem não tem região declarada atende todas**;
@@ -694,6 +784,9 @@ adivinhável; descrição de imóvel e trecho de documento passam por `neutraliz
 | **Lock por lead derivado do orçamento do turno**: `orcamento_do_turno_s() = timeout × (1 + MAX_RETRIES) × 2 + 30`, com `MAX_RETRIES = 1` | — | `shared/sdr_shared/ports/factory.py`, `adapters/local/broker.py::_lock_s` | `shared/tests/test_broker_redis.py::test_lock_por_lead_dura_pelo_menos_um_turno_inteiro`, `::test_pendente_de_outro_consumidor_so_e_tomada_depois_de_um_turno_inteiro` |
 | Sem barramento, o turno falha **antes** de começar (`turnos.resultado = barramento`) | — | `handler.py::_barramento_responde` | `test_resiliencia.py::test_sem_barramento_o_turno_falha_antes_de_comecar` |
 | Falha no grafo: fallback honesto + handoff; o worker avisa mesmo se `processar` estourar | — | `handler.py::_responder_falha` | `test_resiliencia.py::test_falha_do_grafo_responde_e_encaminha`, `::test_worker_avisa_mesmo_se_processar_estourar` |
+| Briefing do corretor: a conversa vai ao modelo como **uma transcrição** (Cliente/Mora, envelopada como dado), e não como a troca original — terminada na fala da Mora, a conversa fazia o modelo continuar a frase dela em vez de escrever para o corretor. **Sem nenhuma mensagem no checkpoint, nenhum modelo é chamado** (o reserva inventava um resumo a partir de nada) | — | `nodes/resumidor.py::transcricao` | `test_resiliencia.py::test_resumidor_manda_a_conversa_como_transcricao_terminando_no_usuario`, `::test_resumidor_sem_historico_nao_chama_o_modelo` |
+| Um ciclo do scheduler que falha (ex.: banco reiniciando) é registrado e o laço segue no próximo ciclo, como a drenagem do CRM e a reindexação do acervo | — | `services/scheduler/sdr_scheduler/local_worker.py` | `test_resiliencia.py::test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco` |
+| O estado salvo da conversa aceita **todos** os modelos e enums do projeto: a lista do serializador é gerada dos módulos (`tipos_do_checkpoint`), não escrita à mão | estado volta do banco sem os campos novos | `graph.py::tipos_do_checkpoint` | `test_graph_routing.py::test_estado_salvo_aceita_todos_os_tipos_do_lead` |
 | Áudio: recibo imediato quando há motor; sem motor não se promete resposta; falha vira texto de degradação com log | — | `handler.py::_avisar_que_ouviu` | `test_transcricao.py::test_audio_ganha_recibo_antes_da_transcricao`, `::test_sem_motor_nao_se_promete_resposta` |
 
 ---
@@ -717,19 +810,22 @@ maior** entre o de dólares e o de tokens (`_calcular_orcamento`).
 **Bloqueio por orçamento** é decidido em `handler.py::_bloqueado_por_orcamento`, antes do grafo, e
 auditado como `agente.bloqueado_por_orcamento`.
 
-### 13.3 Modelos e provedores ([ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md), [ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md))
+### 13.3 Modelos e provedores ([ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md), [ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md), [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md))
 
 | Regra | Vale em | Fonte | Se violada | Teste |
 | --- | --- | --- | --- | --- |
-| Três níveis: `conversa`, `roteamento`, `analise`; **`analise` sem configuração cai em `conversa`** | agente, painel | `shared/sdr_shared/db/modelos.py` | — | `test_api.py::test_modelos_aceita_modelo_com_preco_e_muda_o_efetivo` |
+| Cinco papéis: `conversa`, `roteamento`, `extracao`, `informacoes`, `analise`; **papel vazio herda do pai** (`extracao` → `roteamento`; `informacoes` e `analise` → `conversa`), consultando painel e ambiente nível a nível | agente, painel | `shared/sdr_shared/papeis.py`, `db/modelos.py`, `factory.py::modelo_efetivo` | — | `test_api.py::test_modelos_aceita_modelo_com_preco_e_muda_o_efetivo`, `shared/tests/test_openrouter.py::test_precedencia_painel_e_ambiente_nivel_a_nivel`, `services/agent/tests/test_papeis.py::test_extracao_e_informacoes_usam_o_papel_proprio` |
 | **O painel manda, o `.env` é o piso**; campo vazio = "usa o do ambiente" | painel | `modelos.py`, `factory.py::_escolha_do_painel` | — | `shared/tests/test_fallback_provedor.py::test_painel_vence_o_ambiente_na_escolha_do_reserva` |
 | **"Vazio ≠ desligado"**: `fallback_provider = "nenhum"` desliga o reserva herdado do `.env`; em `operacao`, `0` é resposta e vazio é ausência | painel | `modelos.py::reserva`, `db/operacao.py` | apagar o campo não desfaria o ambiente | `test_fallback_provedor.py::test_painel_pode_DESLIGAR_um_reserva_herdado_do_ambiente`, `shared/tests/test_operacao_painel.py::test_vazio_delega_ao_ambiente`, `::test_zero_e_resposta_nao_ausencia` |
-| Provedores aceitos: `anthropic`, `openai`, `ollama` (`openrouter` só para bancada) | painel | `routers/config.py::PROVIDERS` | **422** | `test_api.py::test_modelos_recusa_provedor_e_id_invalidos` |
+| Provedores aceitos: `anthropic`, `openai`, `ollama`, `openrouter` | painel | `routers/config.py::PROVIDERS` | **422** | `test_api.py::test_modelos_recusa_provedor_e_id_invalidos` |
+| **Toda requisição ao OpenRouter exige retenção zero**; só sai com `SDR_OPENROUTER_ZDR=false`, de propósito, na bancada | agente | `adapters/hospedados/openrouter.py` | texto do cliente retido por terceiro | `shared/tests/test_openrouter.py::test_toda_requisicao_ao_openrouter_exige_retencao_zero`, `::test_zdr_so_sai_quando_desligado_de_proposito` |
+| Modelo do OpenRouter sem preço busca o preço no catálogo em vez de ser recusado; a sincronização aceita até 50 IDs `fornecedor/modelo` | painel | `config.py::sincronizar_precos_openrouter` | **422** formato/quantidade; **502** sem nenhum preço | `test_api.py::test_modelo_do_openrouter_busca_o_preco_em_vez_de_recusar`, `::test_sincronizar_precos_do_openrouter` |
+| Modelo que não deixa desligar o raciocínio recebe o **menor esforço aceito**; resposta vazia ou sem `choices` tem uma segunda tentativa antes do reserva | agente | `ports/factory.py`, `openrouter.py` | turno sem resposta | `test_openrouter.py::test_raciocinio_obrigatorio_recebe_o_menor_esforco_aceito`, `::test_resposta_vazia_tenta_de_novo`, `::test_extracao_tenta_de_novo_no_openrouter_quando_vem_sem_choices` |
 | **Modelo sem preço cadastrado é recusado**, porque custo zero desliga o teto em dólar | painel | `config.py::_validar_modelos` | **422** com o caminho para resolver | `test_api.py::test_modelos_recusa_modelo_sem_preco` |
 | **Ollama dispensa preço** (custo local) | painel | idem | — | `test_api.py::test_modelos_ollama_dispensa_preco` |
 | Reserva igual ao primário é recusado; reserva desconhecido é recusado | painel | idem | **422** | `test_api.py::test_reserva_igual_ao_primario_e_recusada`, `::test_reserva_desconhecida_e_recusada` |
 | Reserva de **outra família** troca o modelo pelo equivalente do papel | agente | `factory.py::modelo_do_provedor` | 404 do provedor | `shared/tests/test_factory.py::test_fallback_para_outra_familia_usa_um_modelo_que_existe_la` |
-| Temperatura: **0,0** no roteamento, **0,6** nos demais; `max_tokens = 600` | agente | `factory.py::get_chat_model` | — | sem teste |
+| Temperatura: **0,0** em `roteamento` e `extracao`, **0,6** nos demais (não enviada a modelo que a recusa); teto 600, **1500** em `analise` | agente | `papeis.py`, `factory.py::get_chat_model` | — | `test_openrouter.py::test_todo_papel_tem_temperatura_teto_esforco_e_ordenacao` |
 | `llm_timeout_s` entre 5 e 180; `acervo_refresh_s` é 0 ou ≥ 60; `transcricao` ∈ {auto, whisper_local, off} | painel | `config.py::_validar_operacao` | **422** | `test_api.py::test_operacao_recusa_timeout_fora_da_faixa`, `::test_operacao_recusa_refresh_curto_demais`, `::test_operacao_recusa_motor_desconhecido` |
 
 ---
@@ -807,13 +903,13 @@ fora dele, sem segredo **nada é aceito** (`shared/tests/test_seguranca.py::test
 
 | Recurso | Regras | Fonte | Teste |
 | --- | --- | --- | --- |
-| **Catálogo** | 12 por página (`PAGINA`); filtros por operação, tipo, quartos, suítes, vagas, preço, área, região e bairro; busca com atraso de 350 ms; `GET /imoveis/busca` limite 1–60, ordenação validada (**422**) | `apps/web/src/pages/Imoveis.tsx`, `routers/imoveis.py::busca` | `test_api.py::test_busca_pagina_conta_e_lista_bairros`, `::test_busca_recusa_parametro_invalido` |
+| **Catálogo** | 12 por página (`PAGINA`); filtros por segmento (residencial/comercial), operação, tipo, quartos, suítes, vagas, preço, área, região e bairro; busca com atraso de 350 ms; `GET /imoveis/busca` limite 1–60, ordenação validada (**422**) | `apps/web/src/pages/Imoveis.tsx`, `routers/imoveis.py::busca` | `test_api.py::test_busca_pagina_conta_e_lista_bairros`, `::test_busca_recusa_parametro_invalido` |
 | **Ficha** | pontos de referência do bairro (`geo.BAIRROS[...]["refs"]`), com a ressalva de que o endereço exato vem com o corretor | `routers/imoveis.py::_publico` | `test_api.py::test_publico` |
 | **Favoritos** | ficam **no navegador** | `apps/web/src/pages/Favoritos.tsx` | sem teste |
 | **Vistos recentemente** | até 8 guardados (`MAX`), 4 exibidos | `apps/web/src/lib/vistos.ts`, `VistosRecentemente.tsx` | sem teste |
 | **Simulação de financiamento** | Tabela Price; entrada padrão 20%, juros padrão 10,49% a.a., prazos 10–30 anos; **só venda**; rotulada como estimativa | `apps/web/src/lib/financiamento.ts` | sem teste |
 | **Custo mensal** | aluguel = aluguel + condomínio (IPTU fora); venda = condomínio + IPTU estimado em 0,8% a.a. (`IPTU_ANUAL_ESTIMADO`) | idem | sem teste |
-| **Chat** | sessão assinada pelo servidor, válida **12 h** (`VALIDADE_S`); aos 10 s avisa que ainda procura, aos 60 s oferece humano | `routers/eventos.py`, `apps/web/src/chat/ChatWidget.tsx` | `test_sessao.py` (5 testes), `test_app.py::test_sessao_inventada_pelo_navegador_nao_conecta` |
+| **Chat** | sessão assinada pelo servidor, válida **12 h** (`VALIDADE_S`); aos 10 s avisa que ainda procura, aos 60 s oferece humano; recarregar a página **redesenha a conversa** (`POST /historico`, só com o token da própria sessão, últimas 60 mensagens do canal web); campo limitado a 1 000 caracteres | `routers/eventos.py`, `apps/web/src/chat/ChatWidget.tsx`, `services/channels/local/app.py::historico` | `test_sessao.py` (5 testes), `test_app.py::test_sessao_inventada_pelo_navegador_nao_conecta`, `::test_historico_devolve_a_conversa_da_propria_sessao`, `::test_historico_de_sessao_inventada_nao_le_nada` |
 | **Rastreamento** | exatamente quatro eventos: `viewed_imovel`, `filtered`, `clicked_telegram`, `opened_chat`; sem sessão válida o servidor descarta | `routers/eventos.py::TIPOS` | `test_cenarios.py::test_contexto_do_site` |
 | **Privacidade** | faixa que não bloqueia a navegação; consentimento acontece quando a pessoa entrega contato no chat | `apps/web/src/pages/Privacidade.tsx` | — |
 
@@ -1061,7 +1157,15 @@ Em relação à versão anterior deste documento. Nada foi apagado em silêncio.
 | Seção "Reativação: canal Telegram" | **mantida** | Confirmada em `reativador.py::PREFERENCIA`. |
 | Não havia seção de CRM nem de ponte Mora → CRM | **novas** | Seções 17 e 18. |
 | Não havia seção de limites da API da Mora | **nova** | Seção 19 (corpo, fotos, credenciais). |
-| Não havia catálogo sincronizado com o CRM | **nova** | Seção 5.5 (15 min, purga, fotos painel > CRM > arquivo). |
+| Não havia catálogo sincronizado com o CRM | **nova** | Seção 5.6 (15 min, purga, fotos painel > CRM > arquivo). |
+| "Roteamento: 13 linhas" | **alterada** | Entraram os botões `imovel:` e `ajuste:`, o horário segurado esperando contato, a troca compra ↔ aluguel e a mensagem que é só contato (linhas 7, 8, 9, 11, 14 e 15); a decisão do modelo passou a ser lida fora do formato. |
+| "Ao reservar sem contato, o agendador pede o telefone na própria confirmação" | **alterada** | No site o horário fica segurado e o telefone é pedido **antes** da reserva (7.4); no Telegram nada muda. |
+| "Visita no primeiro imóvel da lista" | **alterada** | A Mora pergunta qual imóvel antes do horário (7.2). |
+| "Sem nome, pede o primeiro nome numa das próximas mensagens" | **alterada** | Pede uma vez, logo depois da intenção (3.3). |
+| "Mapa da região acrescentado ao texto" | **alterada** | Vai só em `dados.visita.mapa`, como botão em cada canal (7.6). |
+| Não havia pergunta de ampliação | **nova** | Seção 5.4: sem imóvel no bairro pedido, o cliente escolhe o que ceder. |
+| "Extração recebe só a mensagem" | **alterada** | Recebe também a última fala da Mora como contexto (3.2). |
+| Não havia horário vencido como regra | **nova** | Slot no passado nunca é oferecido (7.1). |
 | Divergências 11–16 | **novas** | Descobertas nesta revisão. |
 
 ---

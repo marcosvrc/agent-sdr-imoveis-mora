@@ -8,8 +8,10 @@ description: Tipos de teste do Mora, como executar backend e front-ends, CI e o 
 ## Tipos de teste
 
 - **Backend** — testes de integração com Postgres real (pgvector) e LLM falso: grafo do agente, API,
-  canais, governança e segurança.
-- **Front-ends** — build com TypeScript estrito (`web` e `dashboard`).
+  canais, governança e segurança. São **796** em sete suítes (contagem de `pytest --collect-only` em
+  2026-10-07): `services/agent` 361, `shared` 191, `services/crm` 135, `services/api` 69,
+  `services/channels/local` 12, `services/channels/telegram` 12 e `tests/` na raiz 16.
+- **Front-ends** — build com TypeScript estrito (`web`, `dashboard` e `crm`).
 - **Análise estática** — `ruff` no Python, `eslint` (com `react-hooks`) nos front-ends.
 - **Cobertura** — combinada das sete suítes, com piso na CI.
 
@@ -62,11 +64,21 @@ make eval                # avaliação real (gasta token)
 make eval-fake           # valida o harness sem gastar token
 make eval-rag            # só o RAG institucional, com o embedder real
 make eval-recomendacao   # só a recomendação de imóveis, com o embedder real
+make eval-matriz ARGS="--plano"   # candidatos por papel: o que rodaria e quantas chamadas faria
+make eval-matriz ARGS="--papel extracao -n 3"   # compara os candidatos de um papel
 ```
 
-Seis suítes, nenhuma com juiz-LLM: `extracao` (um turno), `coerencia` (o cartão depois de uma
-conversa inteira), `roteamento`, `adversarial`, `rag` e `recomendacao` (o que a busca devolve
-respeita o que o cliente pediu). Detalhe de cada uma em
+Oito suítes, nenhuma com juiz-LLM: `extracao` (um turno, com a pergunta anterior da Mora como
+contexto), `coerencia` (o cartão depois de uma conversa inteira), `roteamento` (14 casos decididos
+pelo modelo), `adversarial`, `rag`, `recomendacao` (o que a busca devolve respeita o que o cliente
+pediu), `informacoes` (a resposta sobre política fica presa ao documento, sem número fora do trecho)
+e `analise` (o briefing do corretor sai inteiro).
+
+**Matriz de candidatos** (`make eval-matriz`, ADR-0016): compara os modelos listados em
+`services/agent/evals/matriz.json` papel a papel, cada candidato num processo próprio, sem reserva e
+sem degradação por orçamento, juntando qualidade, custo, latência, chamadas com erro e quem de fato
+atendeu. `EVAL_EM=docker` roda o harness dentro do container do agente quando a máquina não tem as
+dependências. Os resultados ficam em `services/agent/evals/resultados/`, **fora do git**. Detalhe de cada uma em
 [`services/agent/evals/README.md`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/services/agent/evals/README.md).
 
 ## Integração contínua
@@ -76,8 +88,8 @@ roda dois jobs a cada push / pull request:
 
 | Job | Passos |
 | --- | --- |
-| `python` | `make lint` (ruff) → `make cobertura` (pytest com pgvector + piso de cobertura) → `make eval-fake` (harness com dublês) → conferência do `openapi.json` |
-| `frontend` | `npm ci && npm run build` (TypeScript estrito) → `npm run lint` (eslint) para `web` e `dashboard` |
+| `python` | `make lint` (ruff) → `make tipos` (pyright básico) → `make cobertura` (pytest com pgvector + piso de cobertura) → `make eval-fake` (harness com dublês) → conferência do `openapi.json` |
+| `frontend` | `npm ci && npm run build` (TypeScript estrito) → eslint, em matriz para `web`, `dashboard` e `crm` |
 
 Havia um terceiro job, de infraestrutura (`cdk synth`); saiu com as stacks em nuvem.
 

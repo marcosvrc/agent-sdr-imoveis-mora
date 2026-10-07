@@ -91,8 +91,8 @@ instrução no prompt. Mais em [Contexto](docs/overview/contexto.md) e
 |---|---|---|
 | Linguagens | Python 3.12 · TypeScript 5.5 | Serviços e front-ends |
 | Agente | LangGraph ≥0.2, LangChain Core ≥0.3, Pydantic v2 | Grafo supervisor + especialistas, saída estruturada, contratos |
-| LLM | Anthropic (Claude Sonnet/Haiku, padrão) · OpenAI (reserva) · Ollama (local, sem chave) | Conversa, roteamento/extração e análise, um modelo por papel |
-| Embeddings | `bge-m3` via Ollama ou `text-embedding-3-small` (OpenAI), 1024 dimensões | RAG de imóveis e da base institucional |
+| LLM | Anthropic (Claude Sonnet/Haiku, padrão) · OpenAI (reserva) · OpenRouter (qualquer papel, retenção zero) · Ollama (local, sem chave) | Conversa, roteamento, extração, informações e análise — um modelo por função |
+| Embeddings | `bge-m3` via Ollama ou `text-embedding-3-small` (OpenAI direta ou via OpenRouter), 1024 dimensões | RAG de imóveis e da base institucional |
 | Voz | faster-whisper (CPU, `int8`) | Transcrição de áudio do Telegram |
 | Backend | FastAPI ≥0.115, Uvicorn, psycopg 3 (pool), redis-py, `mcp` SDK, argon2, cryptography | APIs, canais, workers, servidor MCP, senha e cifra |
 | Dados | PostgreSQL 16 + pgvector (HNSW, cosseno) — dois bancos: `sdr` (Mora) e `crm` | Relacional, vetores, checkpoint do grafo, observabilidade |
@@ -100,7 +100,7 @@ instrução no prompt. Mais em [Contexto](docs/overview/contexto.md) e
 | Front-ends | React 18, Vite 7, Tailwind 3.4, TanStack Query 5, React Router 6, Recharts, Zustand (site), vite-plugin-pwa | Site vitrine (PWA), painel da Mora, CRM |
 | Canais | Telegram Bot API (long polling) · WebSocket próprio (site) | Sem URL pública, sem túnel |
 | Execução | Docker Compose (uma imagem Python, um comando por container) | A entrega inteira |
-| Qualidade | pytest (650 testes, Postgres real), ruff, pyright básico, eslint, coverage com piso, harness de avaliação | CI no GitHub Actions |
+| Qualidade | pytest (796 testes, Postgres real), ruff, pyright básico, eslint, coverage com piso, harness de avaliação | CI no GitHub Actions |
 | Docs | MkDocs Material, ADRs, OpenAPI versionado | Portal no GitHub Pages |
 
 Versões e finalidade de cada pacote: [Tecnologias](docs/technical-reference/tecnologias.md).
@@ -244,13 +244,17 @@ Mora faz:
 
 Página completa: **[Modelos de linguagem](docs/architecture/modelos.md)**.
 
-- **Um modelo por papel** (ADR-0010): `conversa` (temperatura 0,6), `roteamento`/extração
-  (temperatura 0, saída estruturada) e `analise` (herda o de conversa se não configurado). Padrões
-  do `.env`: `claude-sonnet-4-5` para conversa e `claude-haiku-4-5` para roteamento; tudo trocável
-  pelo painel, que só aceita modelo com preço cadastrado (Ollama dispensa).
+- **Um modelo por função** (ADR-0010, ADR-0016): cinco papéis — `conversa` (temperatura 0,6),
+  `roteamento` (0, só quando as regras do supervisor não decidem), `extracao` (0, saída estruturada
+  do cartão; vazio herda de `roteamento`), `informacoes` (RAG institucional; vazio herda de
+  `conversa`) e `analise` (briefing fora do turno; vazio herda de `conversa`). Padrões do `.env`:
+  `claude-sonnet-4-5` para conversa e `claude-haiku-4-5` para roteamento; tudo trocável pelo painel,
+  que só aceita modelo com preço cadastrado (Ollama dispensa).
 - **Provedores**: Anthropic (padrão), OpenAI (reserva — é o próprio fornecedor, sem intermediário
-  no dado do cliente), Ollama (100 % local, sem chave), OpenRouter só para bancada (ADR-0009). O id
-  do modelo é traduzido entre famílias na troca de provedor.
+  no dado do cliente), OpenRouter (qualquer papel, pelo painel ou `.env`, com retenção zero ligada
+  por padrão, preço sincronizado do catálogo e custo lido da resposta — ADR-0016) e Ollama (100 %
+  local, sem chave). Com OpenRouter como primário, o reserva deve ser um provedor direto. O id do
+  modelo é traduzido entre famílias na troca de provedor.
 - **Comparativo**: o painel compara os modelos de um provedor pelo **custo do seu uso real** (mix
   de tokens por papel dos últimos dias), pela **latência medida** e por um **contrafactual**
   ("quanto custaria o mês com o modelo X"), com recomendações de uso. Com a tabela de preços atual, a
@@ -262,10 +266,13 @@ Página completa: **[Modelos de linguagem](docs/architecture/modelos.md)**.
   pior caso do turno derivado disso e usado como validade do lock por lead.
 - **Embeddings** `bge-m3` (Ollama) ou `text-embedding-3-small` a 1024 dimensões — a dimensão é
   fixa no schema. **Transcrição** faster-whisper `small`, CPU, `int8`, português.
-- **Qualidade**: o harness de avaliação (`make eval`, `make eval-rag`, `make eval-recomendacao`)
-  existe e é testado no CI com dublês. São **seis** suítes: `extracao`, `coerencia`, `roteamento`,
-  `adversarial`, `rag` e `recomendacao`, nenhuma com juiz-LLM. **Não há resultado com modelo real
-  versionado** — a página diz isso em vez de inventar benchmark.
+- **Qualidade**: o harness de avaliação (`make eval`, `make eval-rag`, `make eval-recomendacao`,
+  `make eval-matriz`) existe e é testado no CI com dublês. São **oito** suítes: `extracao`,
+  `coerencia`, `roteamento`, `adversarial`, `rag`, `recomendacao`, `informacoes` e `analise`, nenhuma
+  com juiz-LLM. `make eval-matriz` compara candidatos papel a papel (`evals/matriz.json`), cada um
+  num processo próprio e sem reserva, juntando qualidade, custo, latência e quem de fato atendeu. Os
+  resultados das execuções ficam em `services/agent/evals/resultados/`, **fora do git** — a página
+  descreve a única execução com modelo real registrada em vez de inventar benchmark.
 
 ## 8. Detalhes do agente e subagentes
 
@@ -348,8 +355,9 @@ Página completa, por horizonte, com motivo e onde mexe: **[Roadmap e limitaçõ
 
 ## 12. Qualidade: testes, CI e segurança
 
-- **Testes:** 650 testes em seis suítes com Postgres real e LLM falso — `channels/local` 10,
-  `channels/telegram` 10, `agent` 263, `api` 64, `crm` 133, `shared` 170 (incluindo a ponte com o
+- **Testes:** 796 testes em sete suítes com Postgres real e LLM falso — `channels/local` 12,
+  `channels/telegram` 12, `agent` 361, `api` 69, `crm` 135, `shared` 191 e `tests/` na raiz 16
+  (conferência do `.env`), contados por `pytest --collect-only` em 2026-10-07 (incluindo a ponte com o
   CRM contra a API real e o broker contra um `redis-server` descartável). `make test` cria e usa os
   bancos `sdr_test` e `crm_test`; uma trava recusa rodar contra banco sem "test" no nome.
 - **Estático:** `make lint` (ruff), `make tipos` (pyright básico — foi o que achou um método

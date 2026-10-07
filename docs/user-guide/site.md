@@ -1,6 +1,6 @@
 ---
 title: Manual do site
-description: Rotas, busca e filtros, ficha do imóvel, widget de chat (sessão, reconexão, botões, recibos), eventos de navegação, Telegram, PWA, acessibilidade e SEO do site vitrine da Vértice Imóveis.
+description: Rotas, busca e filtros, ficha do imóvel, widget de chat (sessão, conversa restaurada, reconexão, botões, recibos), eventos de navegação, Telegram, PWA, acessibilidade e SEO do site vitrine da Vértice Imóveis.
 ---
 
 # Manual do site
@@ -83,24 +83,58 @@ Abrir a ficha registra o evento `viewed_imovel` e guarda o imóvel em **Você vi
 
 ## Widget de chat
 
-O botão flutuante **Abrir conversa com a Mora** fica em todas as páginas; após 5 s sem abrir, aparece
-o convite *"Posso ajudar a achar o imóvel certo — me conta o que você procura?"*. O painel é um diálogo
-(**Conversa com a Mora, assistente virtual**): Escape fecha e o foco volta ao botão. A conversa
-sobrevive à navegação entre páginas — o widget só monta (e conecta) na primeira abertura.
+O botão flutuante **Abrir conversa com a Mora**, com o retrato ilustrado da Mora, fica em todas as
+páginas; após 5 s sem abrir, aparece o convite *"Posso ajudar a achar o imóvel certo — me conta o
+que você procura?"*. O painel é um diálogo (**Conversa com a Mora, assistente virtual**): Escape
+fecha e o foco volta ao botão. A conversa sobrevive à navegação entre páginas — o widget só monta (e
+conecta) na primeira abertura.
+
+### Aparência e uso
+
+- **Cabeçalho** com o retrato da Mora, "assistente virtual" e o estado da conexão; botões
+  **Expandir/Reduzir o chat** (a preferência fica no navegador) e **Fechar** (a conversa continua
+  salva). O retrato também acompanha a última bolha de cada sequência da Mora, junto com o horário.
+- **Atalhos na abertura**: **Comprar**, **Alugar** e **Investir**; aberto a partir de uma ficha, a
+  saudação já cita o imóvel e os atalhos são **Me conte mais sobre ele**, **Ver opções parecidas** e
+  **Agendar visita**.
+- **"Digitando"** com três pontos animados (respeita *reduzir movimento*).
+- **Rolagem que não arrasta quem está lendo**: se a pessoa subiu na conversa, a resposta nova não a
+  puxa para baixo — aparece o botão **Nova mensagem ↓**.
+- **Campo multilinha**: cresce até cerca de 5 linhas; Enter envia, Shift+Enter quebra a linha;
+  limite de **1 000 caracteres**, com contador nos últimos 150.
+- **Falar com um corretor** fica sempre visível sob o campo, não só quando algo dá errado.
+- Mensagem que falhou ganha o botão **Tentar de novo**, que reenvia exatamente o mesmo conteúdo.
+
+### Conversa restaurada ao recarregar
+
+Ao abrir, o widget pede `POST /historico` ao canal web com a própria sessão (`session_id` e `token`
+no corpo, nunca na URL) e redesenha as últimas **60** mensagens daquela sessão no canal web — falas
+do cliente, da Mora e do corretor, com os cartões de imóvel. Os botões de opção só voltam na última
+mensagem da Mora (os anteriores já foram respondidos). Sessão inválida recebe 401 e lista vazia; sem
+histórico, a conversa segue do ponto em que está.
+
+> Nota técnica: `apps/web/src/lib/historico.ts`, `services/channels/local/app.py::historico`
+> (`test_app.py::test_historico_devolve_a_conversa_da_propria_sessao`,
+> `::test_historico_de_sessao_inventada_nao_le_nada`).
+
+**Modo de teste** (`SDR_CHAT_NOVA_CONVERSA=true` no `local/.env`): a sessão vive só em memória, cada
+carregamento da página é um cliente novo e o cabeçalho mostra o botão **Nova conversa**. Em produção
+fica desligado. Ver [Configuração](../getting-started/configuracao.md).
 
 ### Sessão emitida pelo servidor
 
 Antes de conectar, o widget pede `POST /sessao` ao canal web (`VITE_CANAL_URL`, padrão
 `http://localhost:8001`). O servidor emite `session_id`, um `token` assinado e `expira_em`
-(validade de 12 horas). A sessão fica no `sessionStorage` da aba (chave `sdr_sessao`): fechar a aba
-ou expirar inicia outra conversa. O navegador nunca escolhe o próprio id — sem isso bastaria saber o
+(validade de 12 horas). A sessão fica no `sessionStorage` da aba (chave `sdr_sessao`): recarregar a
+página mantém a conversa; fechar a aba ou expirar inicia outra. O navegador nunca escolhe o próprio id — sem isso bastaria saber o
 id de outro visitante para ler a conversa dele. O WebSocket abre em
 `VITE_WS_URL?papel=lead&id=<session_id>&token=<token>`; sessão inválida ou expirada é fechada com
 código 4401.
 
 ### Conexão, reconexão e pendentes
 
-- Cabeçalho: ponto verde e **online**, ou ponto âmbar e **reconectando…** (o texto acompanha a cor).
+- Cabeçalho: ponto verde e **online**, ou ponto âmbar e **reconectando…**, sobre o retrato (o texto
+  acompanha a cor).
 - Queda de conexão reconecta com espera crescente: 1 s, 2 s, 4 s… até 15 s.
 - Mensagens digitadas offline entram numa fila local e são enviadas na reconexão; o campo mostra
   *"Sem conexão — enviaremos ao reconectar"*. Nada é descartado em silêncio.
@@ -112,7 +146,7 @@ código 4401.
 Cada envio leva uma referência (`ref`). O servidor responde `{"evento": "recebido", "ref": …}` assim
 que enfileira a mensagem — só então o widget mostra o *"…"* de digitação. Se não conseguir enfileirar,
 responde `{"evento": "falha_envio"}` e o widget exibe **"Não consegui registrar sua mensagem. Pode
-tentar de novo?"**.
+tentar de novo?"** com o botão **Tentar de novo**.
 
 Espera pela resposta: após 10 s aparece *"Ainda estou procurando as melhores opções para você…"*;
 após 60 s, *"Desculpe a demora — estou com dificuldade para responder agora. Um corretor pode te
@@ -126,14 +160,19 @@ corretor**). Clicar envia o id da opção como mensagem de botão — o mesmo co
 (`slot:<data>|ter 15/09 às 14h`) são agrupados por dia. Também aparecem cartões de imóvel (foto,
 título, preço, motivo) e, após a reserva, o cartão **Horário reservado** com *"O corretor confirma
 com você antes do dia."* e **Adicionar ao Google Agenda** / **Apple / Outlook (.ics)**. O cartão diz
-*reservado*, nunca *confirmado*.
+*reservado*, nunca *confirmado*. Quando há imóveis na tela e o cliente pede visita, a Mora pergunta
+antes **qual deles** (um botão por imóvel); escolhido o horário sem telefone informado, ela segura o
+horário e pede nome e telefone antes de reservar. Sem imóvel no bairro pedido, ela oferece botões
+para **ampliar a busca** (acima do valor, bairros vizinhos, menos quartos). O cartão da visita traz o
+botão **Ver a região no mapa** (bairro, nunca endereço).
 
 ### Limites de texto
 
-O contrato de entrada do agente trunca o conteúdo em **4 000 caracteres** (`MAX_CONTEUDO`) e remove
-caracteres de controle e invisíveis. Acima de 1 200 caracteres a mensagem é recusada pelo porteiro de
-escopo com o pedido de resumir (ver [Manual do agente](agente.md)). Sob o campo de texto: *"Ao enviar,
-seus dados são usados só para este atendimento"*, com link para **Como tratamos seus dados**.
+O campo do widget aceita até **1 000 caracteres**. Do lado do servidor, o contrato de entrada do
+agente trunca o conteúdo em **4 000 caracteres** (`MAX_CONTEUDO`) e remove caracteres de controle e
+invisíveis; acima de 1 200 caracteres a mensagem é recusada pelo porteiro de escopo com o pedido de
+resumir (ver [Manual do agente](agente.md)) — limites que valem para qualquer canal. Sob o campo de
+texto: *"Seus dados servem só a este atendimento."*, com o link **Como tratamos**.
 
 > Nota técnica: `apps/web/src/chat/ChatWidget.tsx`, `apps/web/src/lib/{ws,session}.ts`, `services/channels/local/app.py`, `shared/sdr_shared/messaging/contracts.py`.
 

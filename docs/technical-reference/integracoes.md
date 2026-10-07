@@ -5,7 +5,7 @@ description: Provedores de LLM, canais de mensagem, Google Agenda e o CRM por MC
 
 # Integrações
 
-São cinco, e só cinco: o provedor de LLM, o Ollama, o Telegram, o Google Agenda (opcional) e o CRM
+São cinco, e só cinco: o provedor de LLM (direto ou via OpenRouter), o Ollama, o Telegram, o Google Agenda (opcional) e o CRM
 por MCP. Tudo o mais que o sistema usa — Postgres, Redis, transcrição de voz — roda na própria
 máquina, dentro do `local/docker-compose.yml`.
 
@@ -18,24 +18,30 @@ quando o primário esgota os retries dele:
 |---|---|---|
 | `anthropic` | Padrão | API da Anthropic (`ANTHROPIC_API_KEY`). |
 | `openai` | Alternativo | API da OpenAI (`OPENAI_API_KEY`); modelo trocado pelo equivalente do papel. |
+| `openrouter` | Qualquer papel | Uma chave (`SDR_OPENROUTER_API_KEY`) para centenas de modelos, IDs `fornecedor/modelo`. Retenção zero ligada em toda requisição (`SDR_OPENROUTER_ZDR`); custo lido da resposta; preço sincronizado do catálogo pelo painel. É intermediário no caminho do texto do cliente: use um reserva **direto** ([ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md)). |
 | `ollama` | Local | 100% local, sem custo; qualidade de conversa bem menor. |
 
 Provedor fora dessa lista é recusado no boot com uma mensagem que diz quais valem
 (`shared/sdr_shared/ports/factory.py`) — inclusive o provedor hospedado que existia antes, e que foi
 removido junto com o resto da infraestrutura em nuvem. Sobre a escolha de falar direto com o
 fornecedor do modelo, em vez de um gateway, veja o
-[ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md).
+[ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md); sobre a entrada do OpenRouter
+como provedor e o modelo por função, o [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md).
 
 ## Embeddings
 
-Dois provedores, escolhidos por `SDR_EMBEDDINGS_PROVIDER`, e os dois entregam as **1024
+Três caminhos, escolhidos por `SDR_EMBEDDINGS_PROVIDER`, e todos entregam as **1024
 dimensões** que `imoveis.embedding` e `documentos.embedding` declaram:
 
 - **`openai`** (`text-embedding-3-small`, truncado a 1024 pelo parâmetro `dimensions`) — dispensa o
   container do Ollama. Reindexar o acervo inteiro custa frações de centavo.
+- **`openrouter`** — o mesmo `text-embedding-3-small` com a chave do OpenRouter (sem fornecedor no ID
+  vira `openai/text-embedding-3-small`). Os vetores são os mesmos da opção `openai`, então trocar só
+  o caminho **não** exige reindexar. Vai com `data_collection: deny` (retenção zero não existe para
+  embeddings no OpenRouter hoje).
 - **`ollama`** (`bge-m3`) — sem chave e sem custo, ao preço de um container e de ~1 GB de modelo.
 
-Trocar entre eles **exige reindexar** (`make seed` e `make docs-kb`): distância de cosseno entre
+Trocar de **modelo** **exige reindexar** (`make seed` e `make docs-kb`): distância de cosseno entre
 vetores de modelos diferentes é ruído com aparência de número. Qual recupera melhor no corpus
 deste projeto é medida, não catálogo — `make eval-embeddings` roda os dois lado a lado.
 
@@ -43,8 +49,8 @@ deste projeto é medida, não catálogo — `make eval-embeddings` roda os dois 
 
 Serviço do compose (`--profile ollama`), em `SDR_OLLAMA_URL`. Faz duas coisas:
 
-- **Embeddings** — `bge-m3`, 1024 dimensões, que é o que o schema espera. É o **único** motor de
-  embeddings do projeto; baixe-o com `make ollama-pull`.
+- **Embeddings** — `bge-m3`, 1024 dimensões, que é o que o schema espera, quando
+  `SDR_EMBEDDINGS_PROVIDER=ollama` (padrão do código); baixe-o com `make ollama-pull`.
 - **Conversa**, quando `SDR_LLM_PROVIDER=ollama`.
 
 ## Canais de mensagem

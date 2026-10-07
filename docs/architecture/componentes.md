@@ -358,14 +358,17 @@ por chamada; `nome` e `cartao` (`DADOS_DO_CLIENTE`) entram em envelope em linha;
 template estoura de propósito.
 
 **Governança de LLM por papel.** `ports/factory.py::get_chat_model(papel)` monta o modelo para
-`conversa`, `roteamento` ou `analise`: modelo e provedor vêm da chave `modelos` em `configuracoes`
-quando o painel opinou, senão de `SDR_MODEL_CONVERSA`/`SDR_MODEL_ROTEAMENTO` e `SDR_LLM_PROVIDER`
-(`anthropic` | `openai` | `ollama`; `openrouter` só para bancada). Timeout vem do painel
-(`operacao.llm_timeout_s`) ou de `SDR_LLM_TIMEOUT_S`; `max_retries=MAX_RETRIES=1`, `max_tokens=600`.
+um dos cinco papéis de `shared/sdr_shared/papeis.py` — `conversa`, `roteamento`, `extracao`,
+`informacoes` e `analise` (ADR-0016). Modelo e provedor vêm da chave `modelos` em `configuracoes`
+quando o painel opinou, senão de `SDR_MODEL_<PAPEL>` e `SDR_LLM_PROVIDER` (`anthropic` | `openai` |
+`ollama` | `openrouter`); papel vazio herda do pai (`extracao` → `roteamento`; `informacoes` e
+`analise` → `conversa`). Timeout vem do painel (`operacao.llm_timeout_s`) ou de
+`SDR_LLM_TIMEOUT_S`; `max_retries=MAX_RETRIES=1`; o teto de saída é do papel (600, ou 1500 em
+`analise`). Detalhes em [Modelos de linguagem](modelos.md).
 Toda chamada recebe o callback `RegistradorUso` (`shared/sdr_shared/governanca/uso.py`), que grava
 `uso_llm` com tokens, custo e latência, atribuídos ao nó e ao lead por `ContextVar`. O orçamento
 (`shared/sdr_shared/db/governanca.py`, `LIMITES_PADRAO`) define o `modo`: `degradado` rebaixa
-`conversa`/`analise` para o modelo de `roteamento`; `bloqueado` (150 % do limite, `TETO_DURO`, ou
+todo papel diferente de `roteamento` (inclusive `extracao`) para o modelo de `roteamento`; `bloqueado` (150 % do limite, `TETO_DURO`, ou
 `acao_ao_estourar=bloquear`) faz o handler encaminhar ao corretor sem chamar modelo.
 
 **Fallback de provedor.** Com `SDR_LLM_PROVIDER_FALLBACK` (ou a reserva escolhida no painel),

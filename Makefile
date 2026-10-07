@@ -292,7 +292,7 @@ test-docker: test-db   # mesma suíte, rodando dentro do container do agente (n�
 openapi:       # regera docs/assets/openapi.json a partir do código da API (a CI confere se está em dia)
 	python3 scripts/gerar_openapi.py
 
-diagramas:     # regera os SVG dos diagramas (claro e escuro) a partir de scripts/diagramas/
+diagramas:     # regera os SVG dos diagramas (tema único) a partir de scripts/diagramas/
 	python3 scripts/diagramas/gerar.py
 	@echo "✓ diagramas em docs/assets/diagramas/ — confira o resultado antes de commitar."
 
