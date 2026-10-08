@@ -248,6 +248,20 @@ class _Inerte:
     def consultar_historico(self, crm_lead_id, **k): return []
 
 
+def _causa(e: BaseException) -> str:
+    """A exceção que de fato derrubou a sessão, num texto curto. O cliente MCP roda num TaskGroup
+    do anyio, que embrulha tudo em ExceptionGroup; o que interessa é a primeira folha."""
+    while isinstance(e, BaseExceptionGroup) and e.exceptions:
+        e = e.exceptions[0]
+    resposta = getattr(e, "response", None)
+    if resposta is not None and getattr(resposta, "status_code", None) is not None:
+        if resposta.status_code == 401:
+            return ("401 — o servidor MCP recusou a credencial: SDR_CRM_TOKEN do agente (CRM_MCP_TOKEN "
+                    "no local/.env) tem de ser igual ao CRM_MCP_TOKEN do crm-mcp")
+        return f"HTTP {resposta.status_code}"
+    return f"{type(e).__name__}: {e}" if str(e) else type(e).__name__
+
+
 class CRMviaMCP:
     def __init__(self, url: str | None = None, token: str | None = None) -> None:
         self.url = (url if url is not None else os.environ.get("SDR_CRM_URL", "")).strip()
@@ -279,10 +293,14 @@ class CRMviaMCP:
                                      timeout=TIMEOUT)
             cliente = pilha.enter_context(portal.wrap_async_context_manager(
                 Client(streamable_http_client(self.url, http_client=http))))
-        except Exception:
+        except Exception as e:
             pilha.close()
-            log.warning("não foi possível abrir sessão MCP com o CRM (%s) — a conversa segue",
-                        self.url, exc_info=True)
+            # Uma linha com a causa, não o traceback: o scheduler tenta a cada ciclo, e o
+            # ExceptionGroup do anyio esconde o motivo real (conexão recusada, 401) no fim de
+            # quarenta linhas. O traceback inteiro fica no nível DEBUG.
+            log.warning("não foi possível abrir sessão MCP com o CRM (%s): %s — a conversa segue",
+                        self.url, _causa(e))
+            log.debug("detalhe da falha ao abrir a sessão MCP", exc_info=True)
             yield _Inerte()
             return
 

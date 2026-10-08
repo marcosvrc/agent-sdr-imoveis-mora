@@ -8,7 +8,7 @@ responder porque o sistema comercial caiu transformou um problema interno num pr
 import pytest
 
 from sdr_shared.adapters.crm.ausente import CRMAusente
-from sdr_shared.adapters.crm.via_mcp import CRMviaMCP, _versao
+from sdr_shared.adapters.crm.via_mcp import CRMviaMCP, _causa, _versao
 
 OPERACOES = ("garantir_lead", "garantir_oportunidade", "registrar_interacao",
              "atualizar_preferencias", "mover_estagio", "encaminhar", "consultar_historico",
@@ -66,6 +66,27 @@ def test_crm_fora_do_ar_entrega_sessao_inerte(caplog):
             assert hasattr(s, nome)
         assert s.garantir_lead(object()) is None
         assert s.consultar_historico("x") == []
+
+
+def test_crm_fora_do_ar_avisa_em_uma_linha_com_a_causa(caplog):
+    """O scheduler tenta a cada ciclo: o aviso tem de dizer o motivo em uma linha, sem o
+    traceback de quarenta linhas do ExceptionGroup do anyio."""
+    crm = CRMviaMCP(url="http://127.0.0.1:9/mcp", token="qualquer")
+    with caplog.at_level("WARNING", logger="crm.mcp"), crm.sessao():
+        pass
+    avisos = [r for r in caplog.records if r.levelname == "WARNING" and "sessão MCP" in r.getMessage()]
+    assert avisos and avisos[0].exc_info is None
+    assert "ExceptionGroup" not in avisos[0].getMessage()
+    assert "Error" in avisos[0].getMessage()     # ConnectError, com o nome da exceção real
+
+
+def test_causa_desembrulha_exception_group_e_explica_o_401():
+    import httpx
+    pedido = httpx.Request("POST", "http://crm-mcp:8200/mcp")
+    erro = httpx.HTTPStatusError("x", request=pedido, response=httpx.Response(401, request=pedido))
+    assert _causa(ExceptionGroup("g", [ExceptionGroup("h", [erro])])).startswith("401")
+    recusa = httpx.ConnectError("All connection attempts failed")
+    assert _causa(ExceptionGroup("g", [recusa])) == "ConnectError: All connection attempts failed"
 
 
 def test_excecao_do_chamador_atravessa_a_sessao_inerte():
