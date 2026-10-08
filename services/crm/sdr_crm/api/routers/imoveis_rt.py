@@ -10,6 +10,9 @@ from ..esquemas import FotosImovel, ImovelNovo, SituacaoImovel, SlotNovo
 
 router = APIRouter(tags=["imoveis"])
 
+# Linhas lidas por ida ao banco quando o filtro de orçamento é aplicado fora do SQL (ver `listar`).
+LOTE_ORCAMENTO = 50
+
 
 def _fotos(conn, ids: list[str]) -> dict[str, list[dict]]:
     """Fotos de vários imóveis numa consulta só.
@@ -97,26 +100,39 @@ def listar(ctx: Contexto = Ctx, code: str | None = None,
         valores.append(max_price_cents)
 
     n = protocolo.limite(limit)
-    if (marca := protocolo.decifrar_cursor(cursor)) is not None:
-        onde.append("(created_at, id) < (%s, %s)")
-        valores.extend(marca)
+    marca = protocolo.decifrar_cursor(cursor)
+    filtrar = max_price_cents is not None and budget_basis == "monthly_total"
 
+    def cabe(linha: dict) -> bool:
+        return not filtrar or custos.cabe_no_orcamento(
+            _com_custos(linha), max_price_cents, "monthly_total") is not False
+
+    # Com o filtro em Python, cortar `n + 1` linhas no SQL e filtrar depois devolvia página curta
+    # (e sem próxima, se o corte caísse nos caros) e o cursor saía da linha `n-1` do SQL, não do
+    # último item entregue — pulando ou repetindo imóveis. Agora busca em lotes até ter `n + 1`
+    # que CABEM (ou o catálogo acabar), e o cursor sai do último item devolvido.
+    lote = n + 1 if not filtrar else max(n + 1, LOTE_ORCAMENTO)
+    escolhidas: list[dict] = []
     with leitura() as conn:
-        linhas = conn.execute(
-            f"SELECT * FROM properties WHERE {' AND '.join(onde)} "
-            f"ORDER BY created_at DESC, id DESC LIMIT %s", [*valores, n + 1]).fetchall()
-        ids = [str(x["id"]) for x in linhas]
+        while len(escolhidas) <= n:
+            pagina = conn.execute(
+                f"SELECT * FROM properties WHERE {' AND '.join(onde)}"
+                f"{' AND (created_at, id) < (%s, %s)' if marca else ''} "
+                f"ORDER BY created_at DESC, id DESC LIMIT %s",
+                [*valores, *(marca or ()), lote]).fetchall()
+            escolhidas += [x for x in pagina if cabe(x)]
+            if len(pagina) < lote:
+                break
+            marca = (pagina[-1]["created_at"], pagina[-1]["id"])
+        proximo = None
+        if len(escolhidas) > n:
+            escolhidas = escolhidas[:n]
+            proximo = protocolo.cifrar_cursor(escolhidas[-1]["created_at"], escolhidas[-1]["id"])
+        ids = [str(x["id"]) for x in escolhidas]
         fotos, procura = _fotos(conn, ids), _procura(conn, ids)
 
     itens = [{**_com_custos(x), "photos": fotos.get(str(x["id"]), []),
-              "interested_count": procura.get(str(x["id"]), 0)} for x in linhas]
-    if max_price_cents is not None and budget_basis == "monthly_total":
-        itens = [x for x in itens
-                 if custos.cabe_no_orcamento(x, max_price_cents, "monthly_total") is not False]
-    proximo = None
-    if len(itens) > n:
-        itens = itens[:n]
-        proximo = protocolo.cifrar_cursor(linhas[n - 1]["created_at"], linhas[n - 1]["id"])
+              "interested_count": procura.get(str(x["id"]), 0)} for x in escolhidas]
     return {"items": itens, "next_cursor": proximo}
 
 

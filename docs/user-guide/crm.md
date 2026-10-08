@@ -283,7 +283,9 @@ menor." Botão **+ Novo imóvel** no cabeçalho.
 Nota quando a base é custo mensal: "Custo mensal = aluguel + condomínio + IPTU + outros. Imóvel com
 algum desses valores desconhecido aparece marcado como incompleto, e não é escondido do resultado."
 Isso é feito no servidor: com `monthly_total`, o filtro de preço roda em Python e mantém o que
-"não dá para afirmar" (`api/routers/imoveis_rt.py`, `listar`). A lista traz só `available`, salvo
+"não dá para afirmar" (`api/routers/imoveis_rt.py`, `listar`). A paginação continua certa: o servidor
+lê mais linhas até completar a página com imóveis que cabem, e "próxima página" começa depois do
+último imóvel mostrado — nada é pulado nem repetido. A lista traz só `available`, salvo
 busca por código (`listar`, parâmetro `status`).
 
 **Ordenar por**: "Ordem do servidor (mais recentes)", "Preço — menor primeiro", "Preço — maior
@@ -431,7 +433,10 @@ Cada linha: data/hora, etiqueta, link "oportunidade xxxxxxxx" e, se cancelada, "
   recusa "Cancelar exige motivo."
 - **Confirmar** pode avançar a oportunidade de Qualificado para Visita marcada. **Cancelar** a
   última visita confirmada futura devolve Visita marcada → Qualificado; Negociação não regride
-  (`dominio/funil.py`, `estagio_apos_cancelar_visita`).
+  (`dominio/funil.py`, `estagio_apos_cancelar_visita`) — nem quando alguém move a oportunidade para
+  Negociação no mesmo instante: a oportunidade é travada e relida antes de mudar.
+- **Visita cujo horário já passou não pode ser confirmada**: "Horário no passado: não dá para
+  confirmar." Conclua, marque falta ou cancele.
 - **Duas confirmações no mesmo horário não coexistem**: o índice único do banco decide, e quem
   perde recebe `SLOT_UNAVAILABLE` (`schema.sql`, `visits_slot_confirmado_uk`). A tela explica:
   "Outra visita foi confirmada nesse horário antes desta. O horário é de quem confirmou primeiro —
@@ -453,6 +458,9 @@ Cada linha: data/hora, etiqueta, link "oportunidade xxxxxxxx" e, se cancelada, "
 - **O agente só solicita**: não remarca visita já confirmada ("O agente não remarca visita já
   confirmada."), e não confirma nada.
 - Mesmo horário da visita atual é recusado; horário no passado também.
+- **As travas de solicitar valem para remarcar**: oportunidade Ganha/Perdida ("Oportunidade
+  encerrada não recebe visita."), imóvel fora de Disponível ("Imóvel não está disponível para
+  visita.") e, para o agente, atendimento com um corretor (`HUMAN_IN_CONTROL`).
 
 ### 3.6 Encaminhamentos — `/encaminhamentos`
 

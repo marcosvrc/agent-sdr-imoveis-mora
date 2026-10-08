@@ -22,6 +22,14 @@ log = logging.getLogger("monitoramento")
 RETENCAO_DIAS = 7                 # o suficiente para investigar; a tabela nunca vira problema
 BATIMENTO_S = 30
 PARADO_S = 120                    # sem carimbo por mais que isto = serviço considerado parado
+# Sem carimbo por mais que isto = serviço APOSENTADO, não parado: sai do /health e continua na tela.
+# O caso que motivou: telegram-in bateu ponto uma vez, tiraram o token, e o carimbo velho deixava o
+# /health em 503 para sempre — e um healthcheck que nunca fica verde passa a ser ignorado, inclusive
+# quando o problema for real. Um dia é janela de sobra para alguém ver um serviço que caiu de
+# verdade (o painel mostra a linha em vermelho o tempo todo); passado isso, quem para de rodar de
+# propósito não pode prender a saúde do sistema. Quem SABE que não vai rodar sai na hora com
+# `encerrar_batimento`.
+ABANDONADO_S = 24 * 3600
 
 
 def _conn():
@@ -119,8 +127,21 @@ def iniciar_batimento(servico: str, intervalo_s: int = BATIMENTO_S) -> None:
     threading.Thread(target=laco, name=f"batimento-{servico}", daemon=True).start()
 
 
+def encerrar_batimento(servico: str) -> None:
+    """O serviço sabe que não vai rodar (ex.: telegram-in sem token): apaga o próprio carimbo,
+    para não ficar como "parado" no /health até virar aposentado."""
+    try:
+        with _conn() as c:
+            c.execute("DELETE FROM batimentos WHERE servico = %s", (servico,))
+    except Exception:
+        log.debug("falha ao encerrar o batimento de %s", servico, exc_info=True)
+
+
 def servicos_parados() -> list[dict]:
-    """Quem deveria estar batendo e não bate. Lido pelo /health por OUTRO processo."""
+    """Quem deveria estar batendo e não bate. Lido pelo /health por OUTRO processo.
+
+    Só conta quem bateu dentro de `ABANDONADO_S`: carimbo mais velho que isso é de serviço que
+    deixou de existir nesta instalação, não de um que caiu agora."""
     try:
         with _conn() as c:
             rows = c.execute("""SELECT servico, em, extract(epoch FROM now() - em)::int AS ha_segundos
@@ -128,7 +149,7 @@ def servicos_parados() -> list[dict]:
     except Exception:
         return []
     return [{"servico": r["servico"], "ha_segundos": int(r["ha_segundos"]), "em": r["em"].isoformat()}
-            for r in rows if int(r["ha_segundos"]) > PARADO_S]
+            for r in rows if PARADO_S < int(r["ha_segundos"]) <= ABANDONADO_S]
 
 
 def batimentos() -> list[dict]:
@@ -136,7 +157,8 @@ def batimentos() -> list[dict]:
         rows = c.execute("""SELECT servico, em, detalhe, extract(epoch FROM now() - em)::int AS ha_segundos
                               FROM batimentos ORDER BY servico""").fetchall()
     return [{"servico": r["servico"], "em": r["em"].isoformat(), "ha_segundos": int(r["ha_segundos"]),
-             "vivo": int(r["ha_segundos"]) <= PARADO_S, "detalhe": r["detalhe"]} for r in rows]
+             "vivo": int(r["ha_segundos"]) <= PARADO_S,
+             "abandonado": int(r["ha_segundos"]) > ABANDONADO_S, "detalhe": r["detalhe"]} for r in rows]
 
 
 # ------------------------------------------------- diagnóstico: por que está lento

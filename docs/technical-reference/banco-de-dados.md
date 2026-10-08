@@ -29,6 +29,29 @@ make migrate
 psql "$SDR_DATABASE_DSN" -f shared/sdr_shared/db/schema.sql
 ```
 
+## Restrições e índices que a aplicação usa como regra
+
+| Objeto | O que garante | Por quê |
+| --- | --- | --- |
+| `visitas_corretor_inicio_uk` — único parcial em `visitas (corretor_id, inicio)` `NULLS NOT DISTINCT WHERE status = 'confirmada'` | um horário de um corretor é de uma visita; sem corretor, a grade da equipe é uma agenda só | verificar-e-inserir deixava dois leads passarem juntos; a aplicação traduz a recusa em `HorarioOcupado`. **Só é criado se o banco não tiver o conflito gravado**: com duplicata, o `make migrate` emite um `WARNING` com a contagem e segue — remarque as visitas e rode de novo |
+| `clientes_telefone_idx`, `clientes_email_idx` (únicos parciais) | uma pessoa por telefone/e-mail | `ClienteRepository.vincular` nunca grava em um cliente o contato que é de outro (conflito vai para a auditoria) e, na corrida de dois turnos, quem perde relê o cliente criado |
+| `eventos_navegacao_sessao_idx` (`session_id, tipo`) | `imoveis_vistos` sem varrer a tabela | roda em todo turno do chat do site |
+| `canais_lead_idx` (`lead_id`) | canais de um lead | resposta do corretor, migração de canal, sucessão de oportunidade |
+| `visitas_lead_idx` (`lead_id, inicio`) | visitas de um lead | próxima visita, ficha do cliente, atribuição de corretor |
+| `leads_corretor_abertos_idx` (`corretor_id`, parcial `encerrado_em IS NULL`) | carteira do corretor | desativação, filtro por corretor no painel |
+| `mensagens_direcao_em_idx` (`direcao, em`) | contagens por direção num período | KPIs e série diária da Visão geral |
+
+**Transações.** O pool da Mora abre conexões em **autocommit**: cada `execute` é um commit. Operação
+que mexe em várias tabelas (desativar corretor, atribuir corretor, assumir handoff, sucessão de
+oportunidade, vincular cliente) abre `with conn.transaction():` e usa a **mesma conexão** em todas as
+instruções — os métodos do repositório aceitam `conn=` para isso (`repositories.py::_usar`).
+
+**Fuso.** O Postgres do compose roda em UTC. Corte de dia e mês (orçamento, séries diárias) é feito
+explicitamente em `America/Sao_Paulo` (`em AT TIME ZONE 'America/Sao_Paulo'`), nunca com `em::date`.
+
+**Retenção.** `turnos` e `saude` guardam 7 dias. `eventos_navegacao` ainda não tem retenção: cresce
+com o tráfego do site, e o índice por sessão é o que mantém a consulta do turno barata.
+
 ## Banco de testes
 
 Os testes usam um banco separado, **`sdr_test`**. As suítes apagam tabelas e uma trava recusa rodar

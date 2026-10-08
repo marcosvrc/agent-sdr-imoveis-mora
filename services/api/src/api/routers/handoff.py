@@ -45,18 +45,27 @@ def assumir(lead_id: str, body: AssumirIn | None = None, corretor=Depends(corret
         lead.corretor_id = co.id
     elif not (lead.corretor_id and repo.get(lead.corretor_id)):
         lead.corretor_id = co.id if (co := repo.escolher(lead.cartao.regiao)) else None
-    lead.estagio = Estagio.HANDOFF
-    LeadRepository().upsert(lead)
-    LeadRepository().atribuir_corretor(lead_id, lead.corretor_id)      # visitas futuras acompanham
-    get_scheduler().cancel(lead_id)
     nomes = repo.nomes()
+    # Lead em handoff com OUTRO corretor não muda de dono por aqui: eram dois corretores falando com
+    # o mesmo cliente, e o primeiro descobria pelo cliente. Trocar o responsável é ato explícito
+    # (PUT /leads/{id}/corretor). A condição vai no UPDATE para valer também com dois cliques juntos.
+    if not LeadRepository().assumir_handoff(lead_id, lead.corretor_id):   # visitas futuras acompanham
+        atual = LeadRepository().get(lead_id)
+        dono = atual.corretor_id if atual else None
+        raise HTTPException(409, f"lead já assumido por {nomes.get(dono, dono)}; para trocar o "
+                                 "responsável, use a atribuição de corretor")
+    get_scheduler().cancel(lead_id)
     return {"lead_id": lead_id, "corretor_id": lead.corretor_id, "corretor_nome": nomes.get(lead.corretor_id), "estagio": "handoff"}
 
 
 @router.post("/{lead_id}/responder")
 def responder(lead_id: str, body: Texto, corretor=Depends(corretor_atual)):
-    """Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente."""
-    _lead(lead_id)
+    """Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente.
+
+    Só com o lead em handoff: fora dele a Mora segue respondendo o cliente, e a mensagem do
+    corretor chegava no meio da conversa do agente — duas vozes, uma sem saber da outra."""
+    if _lead(lead_id).estagio != Estagio.HANDOFF:
+        raise HTTPException(409, "o lead não está em atendimento humano: assuma a conversa antes de responder")
     canais = CanalRepository().canais_do_lead(lead_id)
     if not canais:
         raise HTTPException(409, "lead sem canal vinculado")

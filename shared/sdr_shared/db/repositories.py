@@ -1,9 +1,11 @@
 """Repositórios — único lugar com SQL. Serviços nunca escrevem SQL diretamente."""
 import json
 import logging
+from contextlib import nullcontext
 from datetime import datetime, timedelta, timezone
 from typing import ClassVar
 import numpy as np
+from psycopg import errors as erros_pg
 from pgvector.psycopg import register_vector
 from ..models import Lead, Imovel, Visita, CartaoQualificacao, Estagio, Temperatura, AnaliseLead
 
@@ -13,6 +15,22 @@ from .connection import get_pool
 
 def _conn():
     return get_pool().connection()
+
+
+def _usar(conn=None):
+    """A conexão de quem chamou, quando ela vem (para várias instruções caberem numa transação
+    só), ou uma nova do pool. O pool está em autocommit: sem passar a conexão adiante, cada método
+    do repositório é um commit separado, e a falha no meio deixa metade gravada."""
+    return nullcontext(conn) if conn is not None else _conn()
+
+
+# Mover visitas de um corretor para outro (assumir, atribuir, desativar) esbarra no índice único
+# `visitas_corretor_inicio_uk`: se o destino já tem visita naquele horário, o UPDATE em massa
+# estourava inteiro. Só move o que cabe na agenda de quem recebe; o resto fica onde está e volta
+# na contagem de conflitos para quem chamou decidir.
+_SEM_COLISAO = """NOT EXISTS (SELECT 1 FROM visitas o
+                               WHERE o.status = 'confirmada' AND o.inicio = visitas.inicio
+                                 AND o.corretor_id IS NOT DISTINCT FROM %(destino)s AND o.id <> visitas.id)"""
 
 
 DURACAO_PADRAO_MIN = 60
@@ -36,8 +54,8 @@ class LeadRepository:
         r["analise"] = AnaliseLead.model_validate(r["analise"]) if r.get("analise") else None
         return Lead(**r)
 
-    def get(self, lead_id: str) -> Lead | None:
-        with _conn() as c:
+    def get(self, lead_id: str, *, conn=None) -> Lead | None:
+        with _usar(conn) as c:
             r = c.execute(f"SELECT {self.COLS} FROM leads WHERE id = %s", (lead_id,)).fetchone()
         return self._row(r) if r else None
 
@@ -47,7 +65,7 @@ class LeadRepository:
                               WHERE ca.canal = %s AND ca.identificador = %s""", (canal, identificador)).fetchone()
         return self._row(r) if r else None
 
-    def upsert(self, lead: Lead, *, preservar_handoff: bool = False) -> Lead:
+    def upsert(self, lead: Lead, *, preservar_handoff: bool = False, conn=None) -> Lead:
         """Grava o lead inteiro e devolve o que ficou no banco.
 
         `preservar_handoff=True` é o salvamento do fim do turno do agente: o lead foi lido no começo
@@ -56,7 +74,7 @@ class LeadRepository:
         lead sumia da fila do corretor. Com a flag, um lead que está em `handoff` no banco mantém
         estágio e corretor. Quem tira o lead do handoff (o painel, ao devolver) não passa a flag.
         """
-        with _conn() as c:
+        with _usar(conn) as c:
             c.execute("""
                 INSERT INTO leads (id, cliente_id, nome, telefone, email, estagio, temperatura, score, cartao, corretor_id, resumo, analise, analisado_em, analise_solicitada_em, followups_enviados, ultima_mensagem_em, aceita_reativacao, reativado_em)
                 VALUES (%(id)s, %(cliente_id)s, %(nome)s, %(telefone)s, %(email)s, %(estagio)s, %(temperatura)s, %(score)s, %(cartao)s, %(corretor_id)s, %(resumo)s, %(analise)s, %(analisado_em)s, %(analise_solicitada_em)s, %(followups_enviados)s, %(ultima_mensagem_em)s, %(aceita_reativacao)s, %(reativado_em)s)
@@ -80,7 +98,9 @@ class LeadRepository:
                   reativado_em = COALESCE(EXCLUDED.reativado_em, leads.reativado_em)
             """, {**lead.model_dump(exclude={"cartao", "criado_em", "analise", "encerrado_em", "sucessora_id"}), "preservar_handoff": preservar_handoff, "cartao": json.dumps(lead.cartao.model_dump(mode="json")),
                   "analise": json.dumps(lead.analise.model_dump(mode="json")) if lead.analise else None})
-        return self.get(lead.id)
+            # Relê na MESMA conexão: dentro de uma transação de quem chamou, outra conexão ainda
+            # não enxerga a linha que acabou de ser gravada.
+            return self.get(lead.id, conn=c)
 
     def listar(self, estagio: str | None = None, temperatura: str | None = None, limite: int = 200,
                corretor_id: str | None = None) -> list[Lead]:
@@ -93,9 +113,9 @@ class LeadRepository:
                              (estagio, estagio, temperatura, temperatura, corretor_id, corretor_id, limite)).fetchall()
         return [self._row(r) for r in rows]
 
-    def encerrar(self, lead_id: str, sucessora_id: str | None = None) -> None:
+    def encerrar(self, lead_id: str, sucessora_id: str | None = None, *, conn=None) -> None:
         """Fecha a oportunidade sem apagar nada: o histórico do cliente continua inteiro."""
-        with _conn() as c:
+        with _usar(conn) as c:
             c.execute("UPDATE leads SET encerrado_em = now(), sucessora_id = %s WHERE id = %s",
                       (sucessora_id, lead_id))
 
@@ -105,10 +125,37 @@ class LeadRepository:
             c.execute("UPDATE leads SET analise_solicitada_em = now() WHERE id = %s", (lead_id,))
 
     def atribuir_corretor(self, lead_id: str, corretor_id: str | None) -> None:
-        """Vincula o lead (e suas visitas futuras) a um corretor do cadastro."""
-        with _conn() as c:
+        """Vincula o lead (e suas visitas futuras) a um corretor do cadastro.
+
+        Numa transação: com o pool em autocommit eram dois commits, e uma falha entre eles deixava
+        o lead com um corretor e as visitas dele com outro — o painel mostrava um nome na ficha e
+        outro na agenda. Visita que colidiria com a agenda do novo corretor fica com o anterior."""
+        with _conn() as c, c.transaction():
             c.execute("UPDATE leads SET corretor_id = %s WHERE id = %s", (corretor_id, lead_id))
-            c.execute("UPDATE visitas SET corretor_id = %s WHERE lead_id = %s AND inicio >= now()", (corretor_id, lead_id))
+            self._mover_visitas(c, lead_id, corretor_id)
+
+    @staticmethod
+    def _mover_visitas(c, lead_id: str, destino: str | None) -> int:
+        return c.execute(f"""UPDATE visitas SET corretor_id = %(destino)s
+                              WHERE lead_id = %(lead)s AND inicio >= now() AND {_SEM_COLISAO}""",
+                         {"destino": destino, "lead": lead_id}).rowcount
+
+    def assumir_handoff(self, lead_id: str, corretor_id: str | None) -> bool:
+        """Põe o lead em handoff com `corretor_id`, a menos que OUTRO corretor já o tenha assumido.
+
+        A condição está no UPDATE, e não num `if` antes dele, porque dois corretores clicando
+        "Assumir" juntos liam os dois "ninguém assumiu" e o segundo tomava o lead do primeiro —
+        com os dois falando com o mesmo cliente. Devolve False quando o lead já é de outro."""
+        with _conn() as c, c.transaction():
+            r = c.execute("""UPDATE leads SET estagio = 'handoff', corretor_id = %(co)s
+                              WHERE id = %(id)s
+                                AND NOT (estagio = 'handoff' AND corretor_id IS NOT NULL
+                                         AND corretor_id IS DISTINCT FROM %(co)s)
+                              RETURNING id""", {"co": corretor_id, "id": lead_id}).fetchone()
+            if r is None:
+                return False
+            self._mover_visitas(c, lead_id, corretor_id)
+        return True
 
     def funil(self) -> dict[str, int]:
         with _conn() as c:
@@ -461,17 +508,30 @@ class VisitaRepository:
                                   AND inicio >= %s AND inicio < %s""", (corretor_id, de, ate)).fetchall()
         return [(r["inicio"], r["inicio"] + timedelta(minutes=r["duracao_min"] or 60)) for r in rows]
 
-    def slot_livre(self, inicio: datetime, corretor_id: str | None = None) -> bool:
+    def slot_livre(self, inicio: datetime, corretor_id: str | None = None, lead_id: str | None = None) -> bool:
         """Revalidação no momento de gravar: entre a oferta e o clique, alguém pode ter pegado o horário.
-        Horário que já passou não está livre para ninguém — sem isto, ele contava como vago."""
+        Horário que já passou não está livre para ninguém — sem isto, ele contava como vago.
+
+        A visita do PRÓPRIO lead não ocupa o horário para ele (`lead_id`): é o clique repetido, e
+        quem trata é `do_lead_no_horario`. Isto aqui é a mensagem educada; quem garante de fato é
+        o índice único `visitas_corretor_inicio_uk` (ver `agendar`)."""
         if inicio <= datetime.now(timezone.utc):
             return False
         with _conn() as c:
             r = c.execute("""SELECT count(*) AS n FROM visitas
                              WHERE status = 'confirmada' AND inicio = %s
-                               AND (%s::text IS NULL OR corretor_id = %s OR corretor_id IS NULL)""",
-                          (inicio, corretor_id, corretor_id)).fetchone()
+                               AND (%s::text IS NULL OR corretor_id = %s OR corretor_id IS NULL)
+                               AND lead_id IS DISTINCT FROM %s""",
+                          (inicio, corretor_id, corretor_id, lead_id)).fetchone()
         return int(r["n"]) == 0
+
+    def do_lead_no_horario(self, lead_id: str, inicio: datetime) -> Visita | None:
+        """A visita confirmada deste lead neste horário, se ele já a reservou."""
+        with _conn() as c:
+            r = c.execute("""SELECT id, lead_id, imovel_id, tipo, inicio, corretor_id, status FROM visitas
+                              WHERE lead_id = %s AND inicio = %s AND status = 'confirmada'
+                              ORDER BY criada_em LIMIT 1""", (lead_id, inicio)).fetchone()
+        return Visita(**dict(r)) if r else None
 
     def marcar_evento_externo(self, visita_id: str, evento_id: str | None) -> None:
         with _conn() as c:
@@ -513,11 +573,21 @@ class VisitaRepository:
             log.exception("não consegui ler a agenda do corretor %s — ofertando a grade cheia", corretor_id)
             return []
 
-    def agendar(self, v: Visita) -> Visita:
-        with _conn() as c:
-            c.execute("""INSERT INTO visitas (id, lead_id, imovel_id, tipo, inicio, corretor_id, status)
-                         VALUES (%(id)s, %(lead_id)s, %(imovel_id)s, %(tipo)s, %(inicio)s, %(corretor_id)s, %(status)s)
-                         ON CONFLICT (id) DO NOTHING""", v.model_dump())
+    def agendar(self, v: Visita) -> Visita | None:
+        """Grava a visita. Devolve None quando o horário do corretor já é de outra visita.
+
+        O None vem do índice único (`visitas_corretor_inicio_uk`), não de uma consulta antes: dois
+        leads que passaram juntos por `slot_livre` chegam aqui ao mesmo tempo, e só um INSERT entra.
+        """
+        try:
+            with _conn() as c:
+                c.execute("""INSERT INTO visitas (id, lead_id, imovel_id, tipo, inicio, corretor_id, status)
+                             VALUES (%(id)s, %(lead_id)s, %(imovel_id)s, %(tipo)s, %(inicio)s, %(corretor_id)s, %(status)s)
+                             ON CONFLICT (id) DO NOTHING""", v.model_dump())
+        except erros_pg.UniqueViolation as e:
+            if e.diag.constraint_name != "visitas_corretor_inicio_uk":
+                raise
+            return None
         return v
 
     def listar(self, futuras: bool = True) -> list[dict]:

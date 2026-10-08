@@ -1,8 +1,24 @@
 """Repositório de governança de LLM: registro de uso, agregações para o painel, limites e preços."""
 import json
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from .connection import get_pool
+
+# Dia e mês do NEGÓCIO. Em UTC o mês virava às 21h do último dia (Brasília): o orçamento zerava
+# três horas antes, e o teto diário de tokens recomeçava às 21h de todo dia — no pico da noite.
+FUSO = ZoneInfo("America/Sao_Paulo")
+# O mesmo corte dentro do SQL das séries diárias: `em::date` usa o fuso da SESSÃO (UTC no banco),
+# e o uso das 21h às 24h caía no dia seguinte.
+DIA_LOCAL = "(em AT TIME ZONE 'America/Sao_Paulo')::date"
+HOJE_LOCAL = "(now() AT TIME ZONE 'America/Sao_Paulo')::date"
+
+
+def cortes(agora: datetime | None = None) -> tuple[datetime, datetime]:
+    """(início do mês, início do dia) em Brasília, como instantes com fuso."""
+    local = (agora or datetime.now(timezone.utc)).astimezone(FUSO)
+    hoje = local.replace(hour=0, minute=0, second=0, microsecond=0)
+    return hoje.replace(day=1), hoje
 
 LIMITES_PADRAO = {
     "orcamento_mensal_usd": 50.0,      # teto de custo do mês (0 = sem teto)
@@ -87,8 +103,7 @@ class UsoRepository:
     def resumo(self, dias: int = 30) -> dict:
         agora = datetime.now(timezone.utc)
         ini, ini_ant = agora - timedelta(days=dias), agora - timedelta(days=2 * dias)
-        mes = agora.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        hoje = agora.replace(hour=0, minute=0, second=0, microsecond=0)
+        mes, hoje = cortes(agora)
         with _conn() as c:
             def periodo(a, b) -> dict:
                 r = c.execute("""SELECT count(*) AS chamadas,
@@ -104,11 +119,11 @@ class UsoRepository:
                 return d
 
             atual, anterior = periodo(ini, agora), periodo(ini_ant, ini)
-            serie = c.execute("""WITH dias AS (SELECT generate_series((now() - make_interval(days => %(d)s - 1))::date, now()::date, '1 day')::date AS dia)
+            serie = c.execute(f"""WITH dias AS (SELECT generate_series({HOJE_LOCAL} - (%(d)s::int - 1), {HOJE_LOCAL}, '1 day')::date AS dia)
                                  SELECT d.dia,
-                                        coalesce((SELECT sum(tokens_entrada + tokens_cache_leitura + tokens_cache_escrita) FROM uso_llm WHERE em::date = d.dia),0) AS entrada,
-                                        coalesce((SELECT sum(tokens_saida) FROM uso_llm WHERE em::date = d.dia),0) AS saida,
-                                        coalesce((SELECT sum(custo_usd) FROM uso_llm WHERE em::date = d.dia),0) AS custo
+                                        coalesce((SELECT sum(tokens_entrada + tokens_cache_leitura + tokens_cache_escrita) FROM uso_llm WHERE {DIA_LOCAL} = d.dia),0) AS entrada,
+                                        coalesce((SELECT sum(tokens_saida) FROM uso_llm WHERE {DIA_LOCAL} = d.dia),0) AS saida,
+                                        coalesce((SELECT sum(custo_usd) FROM uso_llm WHERE {DIA_LOCAL} = d.dia),0) AS custo
                                  FROM dias d ORDER BY d.dia""", {"d": dias}).fetchall()
             por = lambda campo: [dict(r) for r in c.execute(f"""
                 SELECT {campo} AS chave, count(*) AS chamadas,
@@ -135,12 +150,12 @@ class UsoRepository:
         }
 
     def gasto_do_mes(self) -> float:
-        mes = datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        mes, _ = cortes()
         with _conn() as c:
             return float(c.execute("SELECT coalesce(sum(custo_usd),0) AS v FROM uso_llm WHERE em >= %s", (mes,)).fetchone()["v"])
 
     def tokens_de_hoje(self) -> int:
-        hoje = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        _, hoje = cortes()
         with _conn() as c:
             return int(c.execute("""SELECT coalesce(sum(tokens_entrada + tokens_saida + tokens_cache_escrita + tokens_cache_leitura),0) AS v
                                     FROM uso_llm WHERE em >= %s""", (hoje,)).fetchone()["v"])

@@ -29,7 +29,29 @@ def _visita(conn, vid: str, *, para_alterar: bool = False) -> dict:
              WHERE v.id = %s {'FOR UPDATE OF v' if para_alterar else ''}""", (vid,)).fetchone()
     if linha is None:
         raise NaoEncontrado("Visita não encontrada.", visit_id=vid)
+    if para_alterar:
+        # `FOR UPDATE OF v` trava só a visita: o estágio lido acima podia estar velho, e quem
+        # confirmava ou cancelava gravava por cima de uma negociação aberta em paralelo. Trava a
+        # oportunidade e relê o estágio dela; a ordem (visita → oportunidade) é a mesma em todo
+        # este módulo, e nenhum outro caminho trava oportunidade e depois visita.
+        op = conn.execute("SELECT stage, atendimento FROM opportunities WHERE id = %s FOR UPDATE",
+                          (linha["opportunity_id"],)).fetchone()
+        linha = {**linha, "stage": op["stage"], "atendimento": op["atendimento"]}
     return linha
+
+
+def _travas_de_pedido(conn, ctx: Contexto, visita: dict) -> None:
+    """O que impede PEDIR uma visita impede também REMARCAR: remarcar é pedir um horário novo.
+    Sem isto, o agente remarcava com o corretor no comando, numa oportunidade já fechada ou num
+    imóvel vendido — tudo o que `solicitar` recusa."""
+    if visita["atendimento"] in {"human_pending", "human"} and not ctx.ator.humano:
+        raise AtendimentoHumano("O atendimento está com um corretor: o agente não remarca visitas.")
+    if visita["stage"] in {"won", "lost"}:
+        raise ErroDeNegocio("Oportunidade encerrada não recebe visita.", stage=visita["stage"])
+    imovel = conn.execute("SELECT status FROM properties WHERE id = %s", (visita["property_id"],)).fetchone()
+    if imovel is None or imovel["status"] != "available":
+        raise ErroDeNegocio("Imóvel não está disponível para visita.",
+                            status=imovel["status"] if imovel else None)
 
 
 @router.get("/visits")
@@ -146,6 +168,7 @@ def remarcar(vid: str, corpo: Remarcacao, ctx: Contexto = Ctx):
         if era_confirmada and not ctx.ator.humano:
             # Mesma regra do cancelamento: quebrar compromisso já combinado é ato de gente.
             raise ErroDeNegocio("O agente não remarca visita já confirmada.", status=visita["status"])
+        _travas_de_pedido(conn, ctx, visita)
 
         slot = conn.execute("SELECT * FROM availability_slots WHERE id = %s",
                             (corpo.slot_id,)).fetchone()
@@ -196,6 +219,11 @@ def transicionar(vid: str, corpo: TransicaoVisita, ctx: Contexto = Ctx):
 
         if corpo.target_status in {"confirmed", "completed", "no_show"}:
             ctx.ator.exigir_humano(f"marcar visita como '{corpo.target_status}'")
+        if corpo.target_status == "confirmed":
+            # Solicitar já recusava horário no passado; confirmar não, e a visita "confirmada" de
+            # ontem levava a oportunidade para visita marcada sem visita nenhuma pela frente.
+            if not conn.execute("SELECT %s > now() AS ok", (visita["starts_at"],)).fetchone()["ok"]:
+                raise ErroDeNegocio("Horário no passado: não dá para confirmar.", slot_id=str(visita["slot_id"]))
         elif corpo.target_status == "cancelled":
             ctx.ator.exigir("visits:request")
             if not ctx.ator.humano and visita["status"] != "requested":
@@ -221,10 +249,11 @@ def transicionar(vid: str, corpo: TransicaoVisita, ctx: Contexto = Ctx):
         estagio = None
         if corpo.target_status == "confirmed":
             # Confirmar PODE avançar `qualified` → `visit_scheduled`, e nunca regride negociação.
-            if visita["stage"] == "qualified":
-                conn.execute("UPDATE opportunities SET stage = 'visit_scheduled', "
-                             "updated_at = now(), version = version + 1 WHERE id = %s",
-                             (visita["opportunity_id"],))
+            # O estágio é o relido sob trava em `_visita`; a condição no WHERE é a segunda rede.
+            if visita["stage"] == "qualified" and conn.execute(
+                    "UPDATE opportunities SET stage = 'visit_scheduled', "
+                    "updated_at = now(), version = version + 1 WHERE id = %s AND stage = 'qualified'",
+                    (visita["opportunity_id"],)).rowcount:
                 estagio = "visit_scheduled"
         elif corpo.target_status == "cancelled":
             restam = conn.execute(
@@ -234,10 +263,9 @@ def transicionar(vid: str, corpo: TransicaoVisita, ctx: Contexto = Ctx):
             novo = funil.estagio_apos_cancelar_visita(funil.Contexto(
                 stage=visita["stage"], purpose="", atendimento=visita["atendimento"],
                 preferencias={}, tem_visita_confirmada_futura=restam["n"] > 0))
-            if novo:
-                conn.execute("UPDATE opportunities SET stage = %s, updated_at = now(), "
-                             "version = version + 1 WHERE id = %s",
-                             (novo, visita["opportunity_id"]))
+            if novo and conn.execute("UPDATE opportunities SET stage = %s, updated_at = now(), "
+                                     "version = version + 1 WHERE id = %s AND stage = %s",
+                                     (novo, visita["opportunity_id"], visita["stage"])).rowcount:
                 estagio = novo
 
         auditoria.registrar(conn, ator=ctx.ator, action=f"visit.{corpo.target_status}",

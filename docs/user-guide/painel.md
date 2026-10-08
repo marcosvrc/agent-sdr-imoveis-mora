@@ -124,7 +124,8 @@ Demais blocos:
 
 - **Leads por temperatura** — três cartões (Quente `score 60+`, Morno `score 30–59`, Frio
   `score < 30`) sobre a **base inteira**, não o período. Cada cartão filtra a lista de leads.
-- **Atividade por dia · últimos N dias** e **Funil de leads** (com a taxa de visita).
+- **Atividade por dia · últimos N dias** e **Funil de leads** (com a taxa de visita). Os dias são os
+  de **Brasília**: o lead que chega às 22h conta no dia em que chegou, não no seguinte.
 - **Leads por região**, **Por intenção**, **Por canal**.
 - **Reativação · avisos de imóvel novo** — janela fixa de 30 dias: **Avisos enviados**,
   **Responderam** (só quem voltou em até N h após o aviso), **Viraram visita**, **Pediram para sair**.
@@ -189,8 +190,8 @@ canal) e o estado: **"Mora respondendo automaticamente"** ou **"<Corretor> no co
 
 | Botão | Quando aparece | O que faz |
 | --- | --- | --- |
-| **Assumir conversa** / **Assumir como <Nome>** | Lead fora de handoff | Põe o lead em `handoff`, cancela o follow-up agendado e fixa o responsável: o corretor já vinculado → senão o roteamento por região e menor carga → senão fila da equipe. |
-| **Enviar** (campo *Responder como corretor…*) | Só em handoff | Envia o texto por **todos** os canais do lead, sem passar pelo agente. Se o lead não tem canal vinculado, a API devolve 409 *"lead sem canal vinculado"*. |
+| **Assumir conversa** / **Assumir como <Nome>** | Lead fora de handoff | Põe o lead em `handoff`, cancela o follow-up agendado e fixa o responsável: o corretor já vinculado → senão o roteamento por região e menor carga → senão fila da equipe. Se **outro corretor** já assumiu o lead (por exemplo, em outra aba), a API recusa com 409 *"lead já assumido por <Nome>…"*; trocar o responsável é pelo seletor de corretor. |
+| **Enviar** (campo *Responder como corretor…*) | Só em handoff | Envia o texto por **todos** os canais do lead, sem passar pelo agente. Fora de handoff a **API também recusa** (409 *"o lead não está em atendimento humano: assuma a conversa antes de responder"*) — vale para a tela desatualizada e para quem chama a API direto. Se o lead não tem canal vinculado, 409 *"lead sem canal vinculado"*. |
 | **Devolver à Mora** | Em handoff | Volta o lead para `qualificado` (cartão completo) ou `qualificando`. |
 
 Fora do handoff o campo de resposta é substituído por *"Assuma a conversa para responder ao lead por aqui."*
@@ -335,8 +336,11 @@ Campo **Para onde vai a carteira**: **Fila da equipe (sem dono, qualquer correto
 **Distribuir automaticamente (por região e menor carga)** ou um corretor ativo específico.
 
 - **Desativar corretor** marca `ativo = false`, move leads abertos e visitas futuras para o destino
-  e cria um aviso `lead.transferido` por lead movido. O cadastro **não** é apagado; para reativar, use
-  o interruptor da lista.
+  e cria um aviso `lead.transferido` por lead movido — tudo ou nada: uma falha no meio não deixa
+  metade da carteira movida. O cadastro **não** é apagado; para reativar, use o interruptor da lista.
+- **Distribuir automaticamente** nunca escolhe o próprio corretor que está saindo.
+- Visita futura num horário em que o destino **já tem** outra visita não vai para ele: fica na fila
+  da equipe (a resposta da API conta essas em `movido.visitas_em_conflito`) para alguém remarcar.
 - **Apagar cadastro** só aparece com carteira vazia. A API recusa a remoção com carteira aberta (409).
 - Recusas da API: destino inexistente (422), destino igual ao próprio corretor (422), destino inativo
   (422 *"<Nome> está inativo e não pode receber a carteira"*), carteira aberta sem destino (409).
@@ -348,7 +352,9 @@ Campo **Para onde vai a carteira**: **Fila da equipe (sem dono, qualquer correto
 Descrição: *"Parâmetros da Mora. O follow-up vale no próximo turno do agente; as demais seções ainda
 são declarativas."* Cada seção tem **Restaurar padrão**, **Descartar** e **Salvar alterações**; o selo
 **personalizado** indica valor diferente do padrão e **salvo** confirma a gravação. A API recusa
-campos desconhecidos (422 *"campos desconhecidos em <seção>"*).
+campos desconhecidos (422 *"campos desconhecidos em <seção>"*) e campo com tipo errado (422 com o
+nome do campo, por exemplo *"max_frases: esperado número, veio texto"*) — o formato que a tela envia
+não mudou.
 
 ### Persona do agente
 
@@ -365,7 +371,7 @@ campos desconhecidos (422 *"campos desconhecidos em <seção>"*).
 | **Follow-up automático ligado** | Desligado, *"a Mora só responde quando o cliente escreve"*. |
 | **Tentativas** (minutos desde a última mensagem) | Ao menos 1 e no máximo **10**; cada uma **≥ 5 minutos**. |
 | **Ritmo por temperatura** (Quente / Morno / Frio) | Multiplicador entre **0,05 e 10**. Menor que 1 volta mais cedo. |
-| **Janela de envio** | `HH:MM`; o início precisa ser antes do fim (*"a janela precisa começar antes de terminar"*). |
+| **Janela de envio** | `HH:MM`; o início precisa ser antes do fim (*"a janela precisa começar antes de terminar"*), comparando as horas — `9:00` a `18:00` é aceita. |
 | **Somente em dias úteis** | Interruptor. |
 
 O quadro **Como está valendo agora** simula, para um lead morno, quando cada tentativa cairia com a
@@ -468,7 +474,8 @@ A faixa do topo mostra o estado do agente e o modo (`normal`, `degradado`, `bloq
 Período **7 / 30 / 90 dias** (a API aceita 1–180). Indicadores: **Tokens**, **Custo do período**
 (com equivalente em R$ pela cotação configurada), **Custo por lead atendido**, **Latência média**,
 **Chamadas ao modelo**, **Tokens de entrada**, **Tokens de saída**, **Chamadas com erro**. Gráficos
-**Tokens por dia** e **Custo por dia**; rankings **Por modelo**, **Por etapa do agente**, **Por papel**;
+**Tokens por dia** e **Custo por dia** (dias de Brasília; o gasto do mês e o teto diário de tokens
+também viram à meia-noite de Brasília, não às 21h); rankings **Por modelo**, **Por etapa do agente**, **Por papel**;
 tabela **Chamadas recentes** (Quando, Etapa, Modelo, Entrada, Saída, Custo, Latência, Lead; linhas com
 erro em vermelho).
 
@@ -547,6 +554,8 @@ que a produziram. Regras aplicadas na tela:
 - **Fila e conexões ao longo do tempo** — dois painéis (mensagens na fila e conexões no banco), pico
   por intervalo, amostrado a cada 30 s pelo scheduler.
 - **Serviços** — batimentos de cada worker (*parado há N min* quando morto) e o que cada um conta de si.
+  Serviço sem sinal há mais de **24 h** é considerado desligado de propósito: continua listado, mas
+  não deixa mais o `/health` em 503 (o telegram-in sem token nem chega a aparecer).
 - **Provedores de LLM** — chamadas, taxa de erro e p95 por provedor (*disponibilidade, não custo*).
 - **Como cada turno terminou** — contagem por resultado (`ok`, `handoff`, falhas) e o pior caso do período.
 

@@ -147,3 +147,38 @@ def test_corretor_sem_agenda_conectada_segue_normal(monkeypatch):
     _usar(monkeypatch, cal)
     agendar("l1", None, listar_horarios()[0], corretor_id="cor_ana")
     assert cal.eventos == [] and len(VisitaRepository().listar()) == 1
+
+
+# ---------------------------------------------------------------- clique repetido e corrida
+
+def test_clique_repetido_no_mesmo_horario_devolve_a_visita_ja_marcada():
+    """O cliente toca duas vezes no botão (ou o Telegram reentrega o callback): a segunda reserva
+    é a MESMA visita. Antes, a revalidação contava a visita do próprio lead e respondia "esse
+    horário acabou de ser pego" para quem tinha acabado de pegá-lo."""
+    slot = _primeiro_slot()
+    primeira = agendar("l1", None, slot, corretor_id="cor_ana")
+    segunda = agendar("l1", None, slot, corretor_id="cor_ana")
+    assert segunda.id == primeira.id
+    assert len(VisitaRepository().listar()) == 1
+
+
+def test_corrida_real_o_banco_decide(monkeypatch):
+    """Os dois passaram pela revalidação ao mesmo tempo (aqui forçado: `slot_livre` diz sim aos
+    dois). Sem índice único, os dois INSERTs entravam e o corretor ficava com duas visitas às 10h."""
+    monkeypatch.setattr(VisitaRepository, "slot_livre", lambda self, *a, **k: True)
+    slot = _primeiro_slot()
+    agendar("l1", None, slot, corretor_id="cor_ana")
+    with pytest.raises(HorarioOcupado):
+        agendar("l2", None, slot, corretor_id="cor_ana")
+    assert [v["lead_id"] for v in VisitaRepository().listar()] == ["l1"]
+
+
+def test_corrida_sem_corretor_tambem_colide(monkeypatch):
+    """Sem corretor, a visita é da grade da equipe — que já era tratada como uma agenda só. Num
+    índice comum NULL não colide com NULL, e os dois passariam."""
+    monkeypatch.setattr(VisitaRepository, "slot_livre", lambda self, *a, **k: True)
+    slot = _primeiro_slot()
+    agendar("l1", None, slot)
+    with pytest.raises(HorarioOcupado):
+        agendar("l2", None, slot)
+    assert len(VisitaRepository().listar()) == 1

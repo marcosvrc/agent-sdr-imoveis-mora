@@ -2276,7 +2276,7 @@
     },
     "/handoff/{lead_id}/responder": {
       "post": {
-        "description": "Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente.",
+        "description": "Envia a mensagem do corretor por TODOS os canais do lead (Telegram e/ou web), sem passar pelo agente.\n\nSó com o lead em handoff: fora dele a Mora segue respondendo o cliente, e a mensagem do\ncorretor chegava no meio da conversa do agente — duas vozes, uma sem saber da outra.",
         "operationId": "responder_handoff__lead_id__responder_post",
         "parameters": [
           {

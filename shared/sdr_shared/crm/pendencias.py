@@ -25,6 +25,9 @@ log = logging.getLogger("crm")
 
 MAX_TENTATIVAS = 30          # ~1 dia com o backoff abaixo; depois disso a linha fica para inspeção
 BACKOFF_MAX_S = 3600
+# Por quanto tempo um lote fica reservado para quem o pegou. Folgado para 20 publicações com o CRM
+# lento; se o processo morrer no meio, as linhas voltam a vencer sozinhas depois disso.
+RESERVA_S = 600
 
 
 def _chave(lead_id: str, entrada: MensagemNormalizada, id_entrada: int | None) -> str:
@@ -72,11 +75,19 @@ def drenar(limite: int = 20) -> dict:
     crm = get_crm()
     if not crm.habilitado():
         return saida
+    # Reserva o lote ANTES de publicar: empurra `proxima_em` para frente na mesma instrução que
+    # escolhe as linhas. Com um SELECT simples, dois schedulers (réplica, reinício sobreposto) liam
+    # as mesmas linhas vencidas e publicavam o mesmo turno duas vezes. SKIP LOCKED faz o segundo
+    # pular o que o primeiro está reservando naquele instante, em vez de esperar e pegar igual.
     with get_pool().connection() as conn:
         linhas = conn.execute(
-            """SELECT id, lead_id, turno, tentativas FROM crm_pendencias
-                WHERE proxima_em <= now() AND tentativas < %s
-                ORDER BY criado_em LIMIT %s""", (MAX_TENTATIVAS, limite)).fetchall()
+            """UPDATE crm_pendencias SET proxima_em = now() + make_interval(secs => %s)
+                WHERE id IN (SELECT id FROM crm_pendencias
+                              WHERE proxima_em <= now() AND tentativas < %s
+                              ORDER BY criado_em LIMIT %s FOR UPDATE SKIP LOCKED)
+            RETURNING id, lead_id, turno, tentativas, criado_em""",
+            (RESERVA_S, MAX_TENTATIVAS, limite)).fetchall()
+    linhas.sort(key=lambda r: (r["criado_em"], r["id"]))     # RETURNING não garante ordem
     if not linhas:
         return saida
 

@@ -53,13 +53,17 @@ class MetricasRepository:
                 SELECT coalesce(sum(i.preco), 0) AS v FROM visitas vi JOIN imoveis i ON i.id = vi.imovel_id
                 WHERE vi.status = 'confirmada' AND vi.inicio >= now()""").fetchone()["v"]
 
+            # Dias de Brasília, não do fuso da sessão (UTC): o lead das 22h caía no dia seguinte.
             serie = c.execute("""
-                WITH dias AS (SELECT generate_series((now() - make_interval(days => %(d)s - 1))::date, now()::date, '1 day')::date AS dia)
+                WITH dias AS (SELECT generate_series((now() AT TIME ZONE %(fuso)s)::date - (%(d)s::int - 1),
+                                                     (now() AT TIME ZONE %(fuso)s)::date, '1 day')::date AS dia)
                 SELECT d.dia,
-                       (SELECT count(*) FROM leads    WHERE criado_em::date = d.dia)                     AS leads,
-                       (SELECT count(*) FROM visitas  WHERE criada_em::date = d.dia AND status='confirmada') AS visitas,
-                       (SELECT count(*) FROM mensagens WHERE em::date = d.dia AND direcao = 'in')       AS mensagens
-                FROM dias d ORDER BY d.dia""", {"d": dias}).fetchall()
+                       (SELECT count(*) FROM leads    WHERE (criado_em AT TIME ZONE %(fuso)s)::date = d.dia) AS leads,
+                       (SELECT count(*) FROM visitas  WHERE (criada_em AT TIME ZONE %(fuso)s)::date = d.dia
+                                                        AND status='confirmada')                           AS visitas,
+                       (SELECT count(*) FROM mensagens WHERE (em AT TIME ZONE %(fuso)s)::date = d.dia
+                                                        AND direcao = 'in')                                 AS mensagens
+                FROM dias d ORDER BY d.dia""", {"d": dias, "fuso": "America/Sao_Paulo"}).fetchall()
 
             por_canal = c.execute("SELECT canal, count(DISTINCT lead_id) AS n FROM canais GROUP BY canal").fetchall()
             por_regiao = c.execute("""SELECT coalesce(cartao->>'regiao', 'indefinida') AS regiao, count(*) AS n
@@ -129,18 +133,32 @@ class CorretorRepository:
 
         Tudo numa transação só: metade da carteira movida é pior que nenhuma, porque ninguém sabe
         qual metade. Devolve o que foi movido, para a resposta da API poder dizer ao usuário.
+        (`conn.transaction()` explícito: o pool está em autocommit, e sem ele cada UPDATE abaixo
+        era um commit — a promessa desta docstring não valia.)
+
+        Visita que colidiria com a agenda do destino (ele já tem visita naquele horário) não pode
+        ir para ele — o índice único recusa. Vai para a fila da equipe; se nem lá couber, fica com
+        quem sai. As duas sobras voltam em `visitas_em_conflito` para alguém remarcar.
         """
-        with _conn() as c:
+        from .repositories import _SEM_COLISAO
+        with _conn() as c, c.transaction():
             leads = c.execute("""UPDATE leads SET corretor_id = %s
                                   WHERE corretor_id = %s AND encerrado_em IS NULL
                                   RETURNING id""", (destino, corretor_id)).fetchall()
-            visitas = c.execute("""UPDATE visitas SET corretor_id = %s
-                                    WHERE corretor_id = %s AND inicio >= now()""", (destino, corretor_id)).rowcount
+            mover = f"""UPDATE visitas SET corretor_id = %(destino)s
+                         WHERE corretor_id = %(saindo)s AND inicio >= now() AND {_SEM_COLISAO}
+                         RETURNING id"""
+            visitas = len(c.execute(mover, {"destino": destino, "saindo": corretor_id}).fetchall())
+            conflito = []
+            if destino is not None:
+                conflito = [r["id"] for r in c.execute(mover, {"destino": None, "saindo": corretor_id}).fetchall()]
+            conflito += [r["id"] for r in c.execute(
+                """SELECT id FROM visitas WHERE corretor_id = %s AND inicio >= now()""", (corretor_id,)).fetchall()]
             # Avisos não lidos acompanham a carteira; os lidos ficam com quem os leu (é histórico).
             c.execute("""UPDATE notificacoes SET corretor_id = %s
                           WHERE corretor_id = %s AND lida_em IS NULL""", (destino, corretor_id))
             c.execute("UPDATE corretores SET ativo = false WHERE id = %s", (corretor_id,))
-        return {"leads": [r["id"] for r in leads], "visitas": int(visitas)}
+        return {"leads": [r["id"] for r in leads], "visitas": int(visitas), "visitas_em_conflito": conflito}
 
     def remover(self, corretor_id: str) -> bool:
         """Remoção física. Só para cadastro criado por engano: a API recusa quando há carteira, e o
@@ -174,10 +192,14 @@ class CorretorRepository:
                                 calendario_conectado_em = CASE WHEN %s::text IS NULL THEN NULL ELSE now() END
                          WHERE id = %s""", (guardado, guardado, corretor_id))
 
-    def escolher(self, regiao: str | None) -> Corretor | None:
+    def escolher(self, regiao: str | None, excluir: str | None = None) -> Corretor | None:
         """Roteamento: corretor ATIVO que atende a região (ou atende todas), com menor carga
-        (leads em handoff + visitas futuras). Empate → ordem alfabética. Nenhum → None."""
-        ativos = self.listar(somente_ativos=True)
+        (leads em handoff + visitas futuras). Empate → ordem alfabética. Nenhum → None.
+
+        `excluir` tira um corretor da disputa: na desativação com destino `auto`, quem está saindo
+        ainda está ativo, e com a menor carga era escolhido para receber a própria carteira — o
+        que mandava tudo para a fila da equipe mesmo havendo outro corretor disponível."""
+        ativos = [c for c in self.listar(somente_ativos=True) if c.id != excluir]
         if not ativos:
             return None
         aptos = [c for c in ativos if not c.regioes or (regiao and regiao in c.regioes)] or \

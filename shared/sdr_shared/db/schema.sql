@@ -377,3 +377,47 @@ ALTER TABLE documentos ADD COLUMN IF NOT EXISTS busca tsvector
     to_tsvector('portuguese', coalesce(titulo, '') || ' ' || coalesce(trecho, ''))
   ) STORED;
 CREATE INDEX IF NOT EXISTS documentos_busca_idx ON documentos USING gin (busca);
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Um horário de um corretor é de UMA visita.
+--
+-- A trava era só verificar-e-inserir (`VisitaRepository.slot_livre` + INSERT): dois leads clicando
+-- no mesmo slot ao mesmo tempo passavam os dois pela verificação e o corretor ficava com duas
+-- visitas às 10h. Quem decide agora é o banco; a aplicação traduz a recusa em `HorarioOcupado`.
+--
+-- NULLS NOT DISTINCT (Postgres 15+): visita sem corretor é da fila da equipe, e a grade da equipe
+-- já era tratada como uma agenda só (`slot_livre` sem corretor bloqueia o horário). Num índice
+-- comum, NULL nunca colide com NULL — dois leads sem corretor no mesmo horário passariam.
+--
+-- O índice só é criado se o banco não tiver o conflito gravado: com duplicata, CREATE UNIQUE INDEX
+-- falha e derrubaria o `make migrate` (ON_ERROR_STOP). Nesse caso sai um aviso com a contagem, e
+-- quem opera escolhe qual visita remarcar — cancelar a de um cliente sem falar com ele não é
+-- decisão de migração.
+-- ─────────────────────────────────────────────────────────────────────────────
+DO $$
+DECLARE duplicados INT;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'visitas_corretor_inicio_uk') THEN
+    SELECT count(*) INTO duplicados FROM (
+      SELECT 1 FROM visitas WHERE status = 'confirmada'
+       GROUP BY corretor_id, inicio HAVING count(*) > 1) d;
+    IF duplicados = 0 THEN
+      CREATE UNIQUE INDEX visitas_corretor_inicio_uk ON visitas (corretor_id, inicio)
+        NULLS NOT DISTINCT WHERE status = 'confirmada';
+    ELSE
+      RAISE WARNING 'visitas_corretor_inicio_uk não criado: % horário(s) com mais de uma visita confirmada do mesmo corretor. Remarque-as e rode o migrate de novo.', duplicados;
+    END IF;
+  END IF;
+END $$;
+
+-- Índices das consultas quentes que varriam a tabela inteira:
+--   • eventos_navegacao: `imoveis_vistos` roda em TODO turno do chat do site, por session_id;
+--   • canais(lead_id): `canais_do_lead` (responder do corretor, notificações) e as migrações de canal;
+--   • visitas(lead_id): próxima visita do lead, ficha do cliente, atribuição de corretor;
+--   • leads(corretor_id) abertos: carteira do corretor e a fila filtrada por corretor no painel;
+--   • mensagens(direcao, em): KPIs e série do painel contam mensagens por direção num período.
+CREATE INDEX IF NOT EXISTS eventos_navegacao_sessao_idx ON eventos_navegacao (session_id, tipo);
+CREATE INDEX IF NOT EXISTS canais_lead_idx ON canais (lead_id);
+CREATE INDEX IF NOT EXISTS visitas_lead_idx ON visitas (lead_id, inicio);
+CREATE INDEX IF NOT EXISTS leads_corretor_abertos_idx ON leads (corretor_id) WHERE encerrado_em IS NULL;
+CREATE INDEX IF NOT EXISTS mensagens_direcao_em_idx ON mensagens (direcao, em);

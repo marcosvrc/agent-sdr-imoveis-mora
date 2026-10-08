@@ -6,13 +6,21 @@ Duas coisas acontecem aqui, e as duas existem para o corretor não perder contex
   2. Nova oportunidade — quem comprou ano passado e volta querendo alugar não é a mesma negociação.
      A oportunidade anterior é encerrada (não apagada) e uma nova começa, ligada ao mesmo cliente.
 """
+import logging
 import uuid
 from datetime import datetime, timezone
+
+from psycopg import errors as erros_pg
 
 from ..models import Cliente, Estagio, Intencao, Lead
 from .connection import get_pool
 
 COLS = "id, nome, telefone, email, criado_em, atualizado_em"
+log = logging.getLogger("sdr.db")
+
+# Quantas vezes `vincular` refaz a busca quando perde uma corrida para outro turno. Duas bastam
+# (a segunda já acha o cliente que o outro criou); a terceira é folga, não expectativa.
+TENTATIVAS_VINCULO = 3
 
 # Estágios em que a oportunidade já cumpriu (ou perdeu) seu ciclo. Mudar de intenção aqui abre outra;
 # mudar de intenção no meio da qualificação é o cliente se corrigindo, e só ajusta o cartão.
@@ -54,25 +62,63 @@ class ClienteRepository:
 
         Sem nenhum contato não dá para afirmar que duas conversas são a mesma pessoa, então não
         inventamos um cliente: a oportunidade segue solta até o contato aparecer.
+
+        Dois casos que derrubavam o turno inteiro do agente com violação de índice único:
+          • telefone do cliente A e e-mail do cliente B: o telefone manda (fica A), e o e-mail NÃO
+            é copiado para A — ele é de B. Só se preenche campo vazio com contato que não pertence
+            a mais ninguém; o conflito vai para a auditoria, para um humano decidir se é a mesma
+            pessoa (aí se juntam os cadastros) ou um e-mail digitado errado.
+          • dois turnos com o mesmo telefone novo ao mesmo tempo: os dois buscam, não acham e
+            criam. O INSERT agora não briga (`ON CONFLICT DO NOTHING`), e quem perdeu busca de novo
+            e acha o cliente que o outro acabou de criar.
         """
         if not (lead.telefone or lead.email):
             return lead.cliente_id
-        existente = self.por_contato(lead.telefone, lead.email)
-        cliente_id = existente.id if existente else f"cli_{uuid.uuid4().hex[:12]}"
         tel, mail = _so_digitos(lead.telefone), (lead.email or "").strip().lower() or None
-        with _conn() as c:
-            c.execute("""
-                INSERT INTO clientes (id, nome, telefone, email)
-                VALUES (%(id)s, %(nome)s, %(tel)s, %(mail)s)
-                ON CONFLICT (id) DO UPDATE SET
-                  nome = COALESCE(clientes.nome, EXCLUDED.nome),
-                  telefone = COALESCE(clientes.telefone, EXCLUDED.telefone),
-                  email = COALESCE(clientes.email, EXCLUDED.email),
-                  atualizado_em = now()""",
-                {"id": cliente_id, "nome": lead.nome, "tel": tel, "mail": mail})
-            c.execute("UPDATE leads SET cliente_id = %s WHERE id = %s", (cliente_id, lead.id))
-        lead.cliente_id = cliente_id
-        return cliente_id
+        for _ in range(TENTATIVAS_VINCULO):
+            existente = self.por_contato(tel, mail)
+            try:
+                with _conn() as c, c.transaction():
+                    if existente is None:
+                        r = c.execute("""INSERT INTO clientes (id, nome, telefone, email)
+                                         VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING RETURNING id""",
+                                      (f"cli_{uuid.uuid4().hex[:12]}", lead.nome, tel, mail)).fetchone()
+                        if r is None:
+                            continue                # outro turno criou este contato agora: busca de novo
+                        cliente_id, conflito = r["id"], {}
+                    else:
+                        cliente_id = existente.id
+                        conflito = c.execute("""
+                            WITH dono AS (
+                              SELECT (SELECT id FROM clientes WHERE telefone = %(tel)s AND id <> %(id)s) AS tel_de,
+                                     (SELECT id FROM clientes WHERE lower(email) = %(mail)s AND id <> %(id)s) AS mail_de)
+                            UPDATE clientes SET
+                              nome = COALESCE(clientes.nome, %(nome)s),
+                              telefone = COALESCE(clientes.telefone, CASE WHEN dono.tel_de IS NULL THEN %(tel)s END),
+                              email = COALESCE(clientes.email, CASE WHEN dono.mail_de IS NULL THEN %(mail)s END),
+                              atualizado_em = now()
+                            FROM dono WHERE clientes.id = %(id)s
+                            RETURNING dono.tel_de, dono.mail_de""",
+                            {"id": cliente_id, "nome": lead.nome, "tel": tel, "mail": mail}).fetchone()
+                    c.execute("UPDATE leads SET cliente_id = %s WHERE id = %s", (cliente_id, lead.id))
+            except erros_pg.UniqueViolation:
+                # Corrida no preenchimento: outro turno gravou este e-mail/telefone em outro cliente
+                # entre a checagem e o UPDATE. A transação voltou inteira; tenta de novo.
+                continue
+            if conflito and (conflito["tel_de"] or conflito["mail_de"]):
+                self._auditar_conflito(cliente_id, lead.id, conflito)
+            lead.cliente_id = cliente_id
+            return cliente_id
+        log.warning("não consegui vincular o lead %s a um cliente; segue solto até o próximo turno", lead.id)
+        return lead.cliente_id
+
+    @staticmethod
+    def _auditar_conflito(cliente_id: str, lead_id: str, conflito: dict) -> None:
+        from .auditoria import auditar
+        auditar(acao="cliente.contato_em_conflito", entidade="cliente", entidade_id=cliente_id,
+                ator_tipo="sistema",
+                dados={"lead_id": lead_id, "telefone_de": conflito["tel_de"], "email_de": conflito["mail_de"]},
+                detalhe="O lead informou contato que já pertence a outro cliente; o campo não foi copiado.")
 
     def oportunidades(self, cliente_id: str) -> list[dict]:
         """Histórico completo da pessoa — o que o corretor abre antes de ligar."""
@@ -135,11 +181,13 @@ def nova_oportunidade_se_mudou_intencao(lead: Lead, nova: Intencao) -> Lead | No
             "quartos": None, "tipo_imovel": None, "urgencia": None, "perfil_investidor": None,
             "ticket": None, "retorno_esperado": None, "imoveis_visualizados": [], "pediu_visita": False}),
         corretor_id=lead.corretor_id)
-    repo.upsert(sucessora)
-    with _conn() as c:
+    # Numa transação só (o pool está em autocommit): eram três commits, e falhando o último o
+    # cliente ficava com duas oportunidades abertas e o canal já entregando na nova.
+    with _conn() as c, c.transaction():
+        sucessora = repo.upsert(sucessora, conn=c)
         # o canal do cliente passa a entregar na oportunidade nova; a antiga guarda seu histórico
         c.execute("UPDATE canais SET lead_id = %s WHERE lead_id = %s", (nova_id, lead.id))
+        repo.encerrar(lead.id, nova_id, conn=c)
     lead.encerrado_em = datetime.now(timezone.utc)
     lead.sucessora_id = nova_id
-    repo.encerrar(lead.id, nova_id)
     return sucessora

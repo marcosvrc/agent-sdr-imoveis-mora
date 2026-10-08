@@ -104,6 +104,7 @@ def salvar(chave: str, body: dict):
     desconhecidas = set(body) - set(DEFAULTS[chave])
     if desconhecidas:
         raise HTTPException(422, f"campos desconhecidos em {chave}: {sorted(desconhecidas)}")
+    _validar_tipos(chave, body)
     if chave == "followup":
         _validar_followup(body)
     if chave == "modelos":
@@ -142,6 +143,46 @@ def comparacao_de_modelos(dias: int = Query(30, ge=1, le=365)):
                           recomendado=recomendado, tabela=tabela, dias=dias)
               for p in PAPEIS}
     return {"dias": dias, "papeis": papeis}
+
+
+# Seções cujo default "" significa "vazio = herda do ambiente" e que aceitam número no lugar: o
+# tipo delas é conferido campo a campo em `_validar_operacao`, não pelo default.
+_TIPO_PROPRIO = {"operacao"}
+
+
+def _nome_do_tipo(v: object) -> str:
+    return {bool: "verdadeiro/falso", int: "número", float: "número", str: "texto",
+            list: "lista", dict: "objeto"}.get(type(v), type(v).__name__)
+
+
+def _mesmo_tipo(valor: object, modelo: object) -> bool:
+    # bool é subclasse de int em Python: sem separar, `true` passaria por número e `1` por booleano.
+    if isinstance(modelo, bool) or isinstance(valor, bool):
+        return isinstance(valor, bool) and isinstance(modelo, bool)
+    if isinstance(modelo, (int, float)):
+        return isinstance(valor, (int, float))
+    return isinstance(valor, type(modelo))
+
+
+def _validar_tipos(chave: str, body: dict) -> None:
+    """Cada campo tem o tipo do seu default. Sem isto, `{"conversa": 123}` em /config/modelos
+    chegava a `.strip()` e virava 500, e um `"max_frases": "três"` era gravado e quebrava quem lê.
+
+    O formato aceito é o mesmo de antes — o default é a referência, e é o que o painel já manda.
+    `null` continua aceito (o `GET` devolve o default no lugar); listas conferem o tipo dos itens
+    pelo primeiro item do default."""
+    if chave in _TIPO_PROPRIO:
+        return
+    for campo, valor in body.items():
+        modelo = DEFAULTS[chave][campo]
+        if valor is None:
+            continue
+        if not _mesmo_tipo(valor, modelo):
+            raise HTTPException(422, f"{campo}: esperado {_nome_do_tipo(modelo)}, veio {_nome_do_tipo(valor)}")
+        if isinstance(modelo, list) and modelo:
+            if (ruim := next((x for x in valor if not _mesmo_tipo(x, modelo[0])), None)) is not None:
+                raise HTTPException(422, f"{campo}: cada item precisa ser {_nome_do_tipo(modelo[0])} "
+                                         f"(veio {ruim!r})")
 
 
 def _validar_modelos(body: dict) -> None:
@@ -225,12 +266,19 @@ def sincronizar_precos_openrouter(body: dict):
 
 def _validar_operacao(body: dict) -> None:
     """Cada um destes números tem uma faixa em que ele ainda é o que promete ser."""
+    for campo in ("llm_timeout_s", "acervo_refresh_s"):
+        # `True` é int para o Python: passaria como 1 (e `False` como 0 = desligar o refresh).
+        if isinstance(body.get(campo), bool):
+            raise HTTPException(422, f"{campo}: informe um número de segundos, ou vazio para usar o do ambiente")
     t = body.get("llm_timeout_s")
     if t not in (None, ""):
         if not isinstance(t, (int, float)) or not 5 <= t <= 180:
             raise HTTPException(422, "llm_timeout_s: entre 5 e 180 segundos. Abaixo de 5 o modelo "
                                      "não termina de responder; acima de 180 o cliente já desistiu.")
-    tr = (body.get("transcricao") or "").strip()
+    tr = body.get("transcricao") or ""
+    if not isinstance(tr, str):
+        raise HTTPException(422, "transcricao: informe auto, whisper_local, off — ou vazio para usar o do ambiente")
+    tr = tr.strip()
     if tr and tr not in ("auto", "whisper_local", "off"):
         raise HTTPException(422, f"transcricao: valor desconhecido '{tr}' — use auto, whisper_local ou off")
     r = body.get("acervo_refresh_s")
@@ -265,16 +313,25 @@ def _validar_followup(body: dict) -> None:
         if campo in body and not _hora_valida(body[campo]):
             raise HTTPException(422, f"{campo}: use o formato HH:MM")
     ini, fim = body.get("janela_inicio"), body.get("janela_fim")
-    if ini and fim and _hora_valida(ini) and _hora_valida(fim) and ini >= fim:
+    # Compara as HORAS, não o texto: como texto, "9:00" >= "18:00" (o "9" vem depois do "1") e
+    # uma janela das 9h às 18h era recusada.
+    if ini and fim and _hora_valida(ini) and _hora_valida(fim) and _minutos(ini) >= _minutos(fim):
         raise HTTPException(422, "a janela precisa começar antes de terminar")
 
 
 def _hora_valida(v: object) -> bool:
+    if not isinstance(v, str):
+        return False
     try:
-        h, m = str(v).split(":")
+        h, m = v.split(":")
         return 0 <= int(h) <= 23 and 0 <= int(m) <= 59 and len(m) == 2
     except Exception:
         return False
+
+
+def _minutos(v: str) -> int:
+    h, m = v.split(":")
+    return int(h) * 60 + int(m)
 
 
 @router.get("/followup/previa")

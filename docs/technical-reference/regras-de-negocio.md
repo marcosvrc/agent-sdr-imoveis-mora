@@ -528,8 +528,9 @@ direto. No **Telegram** a reserva não espera: o chat continua aberto e o corret
 
 | Passo | Regra | Teste |
 | --- | --- | --- |
-| 1 | revalidação da colisão (`slot_livre`); ocupado no meio do caminho → reoferece sem culpar ninguém e solta o horário segurado; vencido → reoferece | `test_calendario.py::test_dois_clientes_nao_marcam_o_mesmo_horario`, `::test_a_visita_do_primeiro_cliente_permanece` |
-| 2 | visita gravada com id determinístico `vis_<lead>_<epoch>` — reclicar **não** duplica | sem teste direto |
+| 0 | **clique repetido**: o lead já tem visita confirmada naquele horário → devolve a mesma visita, sem "ocupado", sem segunda auditoria nem notificação (`VisitaRepository.do_lead_no_horario`) | `test_calendario.py::test_clique_repetido_no_mesmo_horario_devolve_a_visita_ja_marcada` |
+| 1 | revalidação da colisão (`slot_livre`, que **não conta a visita do próprio lead**); ocupado no meio do caminho → reoferece sem culpar ninguém e solta o horário segurado; vencido → reoferece | `test_calendario.py::test_dois_clientes_nao_marcam_o_mesmo_horario`, `::test_a_visita_do_primeiro_cliente_permanece` |
+| 2 | visita gravada com id determinístico `vis_<lead>_<epoch>`. **Quem garante o horário é o banco**: índice único parcial `visitas_corretor_inicio_uk` (corretor + início, `status = 'confirmada'`, `NULLS NOT DISTINCT` — sem corretor, a grade da equipe é uma agenda só); dois leads que passam juntos pela revalidação → o segundo recebe `HorarioOcupado` e a grade é reoferecida | `test_calendario.py::test_corrida_real_o_banco_decide`, `::test_corrida_sem_corretor_tambem_colide` |
 | 3 | interesse vira `visita_marcada`; estágio vira `agendado`; `pediu_visita = true` | `test_cenarios.py::test_horario_digitado` |
 | 4 | evento no Google Agenda do corretor **se** conectado; **o Google nunca derruba a visita** | `test_calendario.py::test_visita_vira_evento_na_agenda_do_corretor`, `::test_falha_do_google_nao_impede_a_visita`, `::test_corretor_sem_agenda_conectada_segue_normal` |
 | 5 | auditoria `visita.agendada` e notificação ao corretor (chave = id da visita, sem duplicar) | `test_notificacoes.py::test_visita_agendada_avisa`, `::test_o_mesmo_fato_nao_vira_dois_avisos` |
@@ -582,8 +583,8 @@ que se move numa desativação) é mais ampla: leads abertos + visitas futuras. 
 
 | Ação | O que muda | Fonte | Teste |
 | --- | --- | --- | --- |
-| **Assumir** | estágio vira `handoff`; corretor: body → o já vinculado (se existir no cadastro) → roteamento por região → **fila da equipe** (`corretor_id` nulo); visitas futuras acompanham; **follow-ups são cancelados** | `routers/handoff.py::assumir` | `services/api/tests/test_api.py::test_corretor_auth_e_handoff` |
-| **Responder** | envia por **todos** os canais do lead, sem passar pelo agente; registra como `corretor`; sem canal → **409** | `routers/handoff.py::responder` | idem |
+| **Assumir** | estágio vira `handoff`; corretor: body → o já vinculado (se existir no cadastro) → roteamento por região → **fila da equipe** (`corretor_id` nulo); visitas futuras acompanham (menos a que colidiria com a agenda do novo corretor); **follow-ups são cancelados**. Lead já em `handoff` com **outro** corretor → **409** (trocar o responsável é `PUT /leads/{id}/corretor`); assumir o que já é seu continua 200. A condição está no `UPDATE` (`LeadRepository.assumir_handoff`), então dois cliques juntos não tomam o lead um do outro | `routers/handoff.py::assumir` | `services/api/tests/test_api.py::test_corretor_auth_e_handoff`, `test_dados_api.py::test_assumir_lead_ja_assumido_por_outro_e_409`, `::test_lead_devolvido_pode_ser_assumido_por_outro` |
+| **Responder** | **só com o lead em `handoff`** (fora dele → **409**: a Mora também estaria respondendo); envia por **todos** os canais do lead, sem passar pelo agente; registra como `corretor`; sem canal → **409** | `routers/handoff.py::responder` | `test_api.py::test_corretor_auth_e_handoff`, `test_dados_api.py::test_responder_fora_de_handoff_e_409` |
 | **Devolver** | volta para `qualificado` (cartão completo) ou `qualificando`; o corretor **continua** vinculado | `routers/handoff.py::devolver` | idem |
 | **Devolver a pedido do cliente** | o cliente pede a assistente de volta na conversa (`PEDE_MORA`) → mesmo destino do devolver; audita `lead.devolvido_ao_agente` e notifica o corretor; o turno **segue** e a Mora responde na hora | `handler.py::_devolver_a_mora` | `test_cenarios.py::test_quem_caiu_no_handoff_por_engano_consegue_voltar` |
 | **Trocar corretor** | `PUT /leads/{id}/corretor`; corretor precisa existir; `null` desvincula | `routers/leads.py` | `test_api.py::test_lead_corretor` |
@@ -646,11 +647,17 @@ há carteira aberta (`_resolver_destino`):
 | Destino | Efeito | Teste |
 | --- | --- | --- |
 | `equipe` (ou vazio) | leads e visitas ficam sem dono, na fila | `test_api.py::test_destino_equipe_devolve_para_a_fila_sem_dono` |
-| `auto` | escolhe pela primeira região do corretor que sai e menor carga; sem ninguém, cai na fila | sem teste |
+| `auto` | escolhe pela primeira região do corretor que sai e menor carga, **sem contar quem está saindo** (`escolher(excluir=...)`); sem ninguém, cai na fila | `test_dados_api.py::test_desativar_com_auto_nao_escolhe_quem_esta_saindo` |
 | um corretor | precisa existir, estar **ativo** e não ser o próprio (**422** em cada caso) | `test_api.py::test_destino_invalido_e_recusado_antes_de_mexer_em_qualquer_coisa` |
 
-Numa única transação movem-se leads abertos, visitas futuras e **notificações não lidas**
-(`painel.py::desativar`). **Dois 409:** carteira aberta sem destino; `remover_cadastro=true` com
+Numa única transação (`conn.transaction()` explícito — o pool da Mora é autocommit) movem-se leads
+abertos, visitas futuras e **notificações não lidas** (`painel.py::desativar`): falha no meio não
+deixa metade da carteira movida (`shared/tests/test_consistencia_dados.py::test_desativar_corretor_e_tudo_ou_nada`).
+Visita no horário em que o destino **já tem** outra vai para a fila da equipe (ou fica, se nem lá
+couber) e volta em `movido.visitas_em_conflito` para alguém remarcar
+(`::test_desativar_com_destino_ocupado_no_mesmo_horario_nao_estoura`). O mesmo vale para
+`atribuir_corretor` (assumir, trocar corretor): lead e visitas mudam juntos ou nada muda
+(`::test_atribuir_corretor_move_lead_e_visitas_juntos`). **Dois 409:** carteira aberta sem destino; `remover_cadastro=true` com
 carteira aberta. Cada lead transferido gera `lead.transferido` ao novo dono. Testes:
 `test_api.py::test_desativar_corretor_com_carteira_exige_destino`, `::test_desativar_move_a_carteira_e_avisa_quem_recebeu`, `::test_cadastro_sem_carteira_pode_ser_apagado`.
 
@@ -852,7 +859,10 @@ adivinhável; descrição de imóvel e trecho de documento passam por `neutraliz
 
 Padrões: orçamento mensal **US$ 50** (0 = sem teto); teto de tokens/dia **1.000.000** (0 = sem
 teto); alerta em **80%**; ação ao estourar `degradar`; cotação R$ 5,12. O percentual que vale é **o
-maior** entre o de dólares e o de tokens (`_calcular_orcamento`).
+maior** entre o de dólares e o de tokens (`_calcular_orcamento`). **Mês e dia viram à meia-noite de
+Brasília** (`governanca.py::cortes`, `FUSO`), não em UTC — antes o orçamento zerava às 21h do último
+dia e o teto diário recomeçava às 21h; a série diária da Governança e a da Visão geral agrupam pelo
+dia de Brasília (`shared/tests/test_fuso_indices_saude.py`).
 
 ### 13.2 Os três modos
 
@@ -881,7 +891,9 @@ auditado como `agente.bloqueado_por_orcamento`.
 | Reserva igual ao primário é recusado; reserva desconhecido é recusado | painel | idem | **422** | `test_api.py::test_reserva_igual_ao_primario_e_recusada`, `::test_reserva_desconhecida_e_recusada` |
 | Reserva de **outra família** troca o modelo pelo equivalente do papel | agente | `factory.py::modelo_do_provedor` | 404 do provedor | `shared/tests/test_factory.py::test_fallback_para_outra_familia_usa_um_modelo_que_existe_la` |
 | Temperatura: **0,0** em `roteamento` e `extracao`, **0,6** nos demais (não enviada a modelo que a recusa); teto 600, **1500** em `analise` | agente | `papeis.py`, `factory.py::get_chat_model` | — | `test_openrouter.py::test_todo_papel_tem_temperatura_teto_esforco_e_ordenacao` |
-| `llm_timeout_s` entre 5 e 180; `acervo_refresh_s` é 0 ou ≥ 60; `transcricao` ∈ {auto, whisper_local, off} | painel | `config.py::_validar_operacao` | **422** | `test_api.py::test_operacao_recusa_timeout_fora_da_faixa`, `::test_operacao_recusa_refresh_curto_demais`, `::test_operacao_recusa_motor_desconhecido` |
+| `llm_timeout_s` entre 5 e 180; `acervo_refresh_s` é 0 ou ≥ 60; `transcricao` ∈ {auto, whisper_local, off}; booleano ou tipo errado nesses campos é recusado (antes `"transcricao": 5` dava 500 e `false` em `acervo_refresh_s` passava como 0) | painel | `config.py::_validar_operacao` | **422** | `test_api.py::test_operacao_recusa_timeout_fora_da_faixa`, `::test_operacao_recusa_refresh_curto_demais`, `::test_operacao_recusa_motor_desconhecido`, `test_dados_api.py::test_tipo_errado_e_422_com_o_campo_na_mensagem` |
+| **Cada campo de `PUT /config/{chave}` tem o tipo do seu default** (texto, número, verdadeiro/falso, lista com itens do tipo do default); `null` segue aceito. O formato do corpo não mudou — é o que o painel já manda | painel | `config.py::_validar_tipos` | **422** nomeando o campo (antes, `{"conversa": 123}` dava 500) | `test_dados_api.py::test_tipo_errado_e_422_com_o_campo_na_mensagem`, `::test_corpos_que_o_painel_envia_continuam_aceitos` |
+| Janela do follow-up compara **horas**, não texto: `"9:00"`–`"18:00"` é válida | painel | `config.py::_validar_followup` | **422** só quando o início não é antes do fim | `test_dados_api.py::test_janela_compara_horas_e_nao_texto` |
 
 ---
 
@@ -908,7 +920,14 @@ Retenção de **7 dias** (`RETENCAO_DIAS`). Testes: `test_monitoramento_turno.py
 
 Cada worker carimba `batimentos` a cada **30 s** (`BATIMENTO_S`); sem carimbo há mais de **120 s**
 (`PARADO_S`) o serviço é dado como parado. **`/health` devolve 503** quando o banco não responde
-**ou** algum worker está calado (`services/api/src/api/main.py::health`). No CRM, `/health/live`
+**ou** algum worker está calado (`services/api/src/api/main.py::health`). Carimbo com mais de
+**24 h** (`ABANDONADO_S`) é de serviço **aposentado** nesta instalação: sai do `/health` e continua
+na aba Saúde (`abandonado: true`). Um dia dá tempo de sobra para alguém ver uma queda real; sem o
+corte, um serviço desligado de propósito (telegram-in sem token) deixava o `/health` em 503 para
+sempre — e healthcheck que nunca fica verde é ignorado. Quem sabe que não vai rodar sai na hora
+(`encerrar_batimento`, chamado pelo telegram-in sem token)
+(`shared/tests/test_fuso_indices_saude.py::test_servico_desligado_ha_muito_tempo_nao_derruba_a_saude_para_sempre`,
+`::test_servico_que_parou_agora_continua_derrubando_a_saude`). No CRM, `/health/live`
 não toca no banco e `/health/ready` exige **todas as tabelas do `schema.sql`**. Testes:
 `test_api.py::test_health_devolve_503_quando_um_servico_para`, `test_monitoramento.py::test_servico_calado_aparece_como_parado`,
 `services/crm/tests/test_api_funil.py::test_liveness_nao_depende_do_banco`, `test_api_fotos.py::test_readiness_reprova_quando_falta_tabela`.
@@ -933,14 +952,15 @@ não toca no banco e `/health/ready` exige **todas as tabelas do `schema.sql`**.
 | --- | --- | --- |
 | **Visão geral** | filtrar período (7/14/30/90 dias) | somente leitura; pipeline e ticket **não** seguem o filtro |
 | **Leads** | filtrar, ordenar, sincronizar CRM | exporta só `qualificado`, `agendado` e `handoff` (`routers/leads.py`) |
-| **Ficha do lead** | assumir, devolver, responder, trocar corretor, ligar/desligar avisos, gerar briefing, marcar interesse | **responder só em handoff**; seletor lista **apenas ativos**; briefing considera "sem resposta" após **90 s** (`LeadDetalhe.tsx`) |
+| **Ficha do lead** | assumir, devolver, responder, trocar corretor, ligar/desligar avisos, gerar briefing, marcar interesse | **responder só em handoff** — e a API também recusa (**409**), não só a tela; **assumir lead que outro corretor já assumiu é 409** (troca de responsável é pelo seletor); seletor lista **apenas ativos**; briefing considera "sem resposta" após **90 s** (`LeadDetalhe.tsx`) |
 | **Clientes** | buscar, abrir ficha | quem não deixou contato não aparece (`test_clientes.py::test_sem_contato_nao_inventamos_um_cliente`) |
 | **Imóveis** | subir/remover/reordenar fotos, ver interessados, simular reativação | **12 fotos** por imóvel, **≤ 1,5 MB** cada, reduzidas a 1280 px no navegador; a simulação **não envia nada** |
 | **Corretores** | criar, editar, ativar/desativar, apagar, conectar Google Agenda | desativar **exige destino**; apagar só com carteira vazia; nenhum token do Google passa pelo painel |
 | **Governança** | limites, preços por modelo, comparação de modelos | modelo sem preço é recusado |
 | **Auditoria** | filtrar, exportar CSV | 300 mais recentes; exportar é auditado |
 | **Saúde** | espera, filas, serviços, provedores | leitura |
-| **Configurações** | agente, follow-up, agenda, cobertura, handoff, modelos, operação | **`followup`, `modelos` e `operacao` valem no próximo turno** (cache invalidado ao salvar); `agente`, `agenda`, `cobertura` e `handoff` são declarativas |
+| **Configurações** | agente, follow-up, agenda, cobertura, handoff, modelos, operação | **`followup`, `modelos` e `operacao` valem no próximo turno** (cache invalidado ao salvar); `agente`, `agenda`, `cobertura` e `handoff` são declarativas; campo com tipo errado volta **422** com o nome do campo |
+| **Visão geral / Governança** | séries diárias, gasto do mês, tokens de hoje | os dias e o mês são os de **Brasília** |
 
 **Regiões de cobertura:** a lista da tela (`config.py::DEFAULTS["cobertura"]`) espelha as 5 regiões
 de `shared/sdr_shared/geo.py`, mas **quem decide cobertura é o `geo.py`**, não a configuração.
@@ -1080,6 +1100,7 @@ Atendimento: `agent` · `human_pending` · `human`. **Tabela de transições de 
 | `GET /v1/properties` filtra `status=available` por padrão; buscar por `code` ignora o filtro | — | `test_acervo_do_crm.py::test_vendido_fica_fora_do_indice` |
 | **`interested_count`**: clientes **distintos** com `presented` ou `interested` (rejeitado não conta); o painel do CRM mostra "N clientes de olho" quando **≥ 2** (`interested_count > 1`) | — | `test_api_situacao_imovel.py::test_procura_conta_clientes_distintos_e_ignora_descartado` |
 | **Fotos (`property_photos`)**: referência `https?://`, `alt` opcional, até **20** por imóvel; a posição vem do **índice da lista** (a primeira é a capa); `PUT /photos` substitui a galeria inteira; a mesma URL duas vezes na lista é **422**; a chave única do banco (`property_photos_unica`) é a rede para quem escreve por outro caminho | **422** | `test_api_fotos.py::test_cadastro_com_fotos_guarda_a_ordem_e_devolve_na_leitura`, `::test_url_que_nao_e_http_e_recusada`, `::test_substituir_a_galeria_apaga_o_que_saiu_e_reordena`, `::test_a_mesma_foto_duas_vezes_e_recusada` |
+| **Paginação com `budget_basis=monthly_total`**: o filtro roda fora do SQL, então a listagem lê em lotes (`LOTE_ORCAMENTO = 50`) até juntar `limit + 1` imóveis que cabem, e o cursor sai do **último item devolvido** — antes cortava `limit + 1` linhas no SQL e filtrava depois (página curta, fim antecipado, imóvel pulado ou repetido) | — | `test_api_paginacao_orcamento.py::test_paginar_pelo_total_mensal_nao_pula_nem_repete` |
 | Custos: **nulo é desconhecido, nunca zero**; total mensal só em aluguel; total incompleto sai marcado (`monthly_total_incomplete`) e o filtro por `monthly_total` **não some** com ele | — | `test_api_funil.py::test_custos_saem_discriminados_e_o_desconhecido_nao_vira_zero`, `::test_imovel_com_total_desconhecido_nao_some_do_filtro_por_orcamento`, `test_dominio.py::test_componente_desconhecido_nao_vira_zero` |
 | Código duplicado é recusado | **409** | sem teste |
 | **`GET /v1/brokers`**: só usuários **ativos** com papel `admin` ou `broker`; devolve `id`, `name`, `role`, **nunca e-mail** | — | sem teste |
@@ -1094,8 +1115,9 @@ Atendimento: `agent` · `human_pending` · `human`. **Tabela de transições de 
 | **`taken`** nos slots: `EXISTS visita confirmed/completed`; com `only_free=true` (padrão) os tomados somem, e `taken` só é informação com `only_free=false` — é como a agenda do imóvel mostra o ocupado (`apps/crm/src/paginas/AgendaImovel.tsx`) | — | sem teste |
 | **Solicitar não reserva**: `POST /visits` nasce `requested`; exige oportunidade em `qualified`+ (em `new`/`in_service` devolve o que falta), não encerrada; imóvel `available` e do mesmo propósito; slot do imóvel e no futuro; agente bloqueado quando o atendimento é humano | **409** | `test_api_funil.py::test_solicitar_visita_nao_agenda_nada`, `::test_visita_exige_oportunidade_qualificada`, `::test_imovel_indisponivel_nao_recebe_visita`, `test_mcp.py::test_solicitar_visita_nao_confirma_nada` |
 | Transições: `requested → confirmed/cancelled`; `confirmed → completed/cancelled/no_show`; finais não editáveis | **409** com `allowed` | `test_api_funil.py::test_visita_concluida_nao_e_mais_editavel` |
-| **Confirmar, concluir e no-show são humanas**; confirmar avança `qualified → visit_scheduled` e nunca regride negociação | **403** | `::test_confirmacao_e_humana_e_avanca_o_estagio` |
-| Cancelar exige motivo; o agente só cancela o que ainda está `requested` | **409** | sem teste |
+| **Confirmar, concluir e no-show são humanas**; confirmar avança `qualified → visit_scheduled` e nunca regride negociação — a oportunidade é **travada e relida** (`_visita(..., para_alterar=True)`) e o `UPDATE` exige `stage = 'qualified'`, então uma negociação aberta em paralelo não volta para visita marcada | **403** | `::test_confirmacao_e_humana_e_avanca_o_estagio`, `test_api_visitas_travas.py::test_confirmar_nao_regride_negociacao_que_andou_em_paralelo` |
+| **Não se confirma visita com início no passado** (solicitar já recusava) | **409** "Horário no passado" | `test_api_visitas_travas.py::test_nao_confirma_visita_em_horario_que_ja_passou` |
+| Cancelar exige motivo; o agente só cancela o que ainda está `requested`; o recálculo do estágio usa o estágio relido sob trava e só grava se ele não mudou | **409** | `test_api_visitas_travas.py::test_cancelar_nao_regride_negociacao_que_andou_em_paralelo` |
 | **`visits_slot_confirmado_uk`**: duas confirmações no mesmo slot não coexistem — o índice único parcial decide, não a aplicação ([D-09](../decisions.md)) | **409** `SLOT_UNAVAILABLE` | `::test_duas_confirmacoes_no_mesmo_horario_uma_recebe_409` |
 | A ferramenta MCP **não expõe** confirmação (18 ferramentas; só `solicitar_visita` e `cancelar_visita`) | — | `test_mcp.py::test_agente_nao_tem_como_confirmar_visita`, `::test_handshake_e_catalogo_de_ferramentas` |
 
@@ -1107,6 +1129,7 @@ Atendimento: `agent` · `human_pending` · `human`. **Tabela de transições de 
 | Cancela a antiga e cria a nova **numa transação só**; a antiga recebe `cancelled`, `cancellation_reason` e **`rescheduled_to`** apontando para a nova | — | `::test_remarcar_liga_a_antiga_na_nova` |
 | **Humano remarcando confirmada: a nova nasce `confirmed`**; agente, ou visita que era só solicitação: a nova nasce `requested` | — | `::test_humano_remarcando_confirmada_ja_nasce_confirmada`, `::test_agente_remarca_solicitada_mas_nao_confirmada` |
 | O agente **não remarca** visita confirmada | **409** | `::test_agente_remarca_solicitada_mas_nao_confirmada` |
+| **As travas de solicitar valem para remarcar**: agente com atendimento humano (`HUMAN_IN_CONTROL`), oportunidade `won`/`lost`, imóvel fora de `available` | **409** | `test_api_visitas_travas.py::test_agente_nao_remarca_com_atendimento_humano`, `::test_oportunidade_encerrada_nao_remarca`, `::test_imovel_indisponivel_nao_remarca` |
 | Slot precisa ser do mesmo imóvel, diferente do atual e no futuro | **404** / **409** | `::test_recusas_de_horario` |
 | Horário novo já confirmado: **`SLOT_UNAVAILABLE` e a original fica intacta** (nem o cancelamento acontece) | **409** | `::test_horario_ja_tomado_nao_cancela_a_antiga` |
 
@@ -1138,6 +1161,7 @@ inventa**, **repetir é seguro**.
 | **`external_event_id`** = `mora-msg-<id da mensagem>`; sem id, hash que inclui o lead ([D-13](../decisions.md)) | `publicador.py::_evento` | duas pessoas dizendo "oi" colidiriam | `::test_republicar_o_mesmo_turno_nao_duplica_nada`, `::test_mesma_frase_de_dois_clientes_nao_colide_no_historico` |
 | 412 em preferências: relê e tenta **uma** vez | `publicador.py::_atualizar_preferencias` | — | sem teste |
 | **`crm_pendencias`**: turno não publicado fica na fila; o scheduler drena no laço de 30 s, lotes de 20, **backoff exponencial até 3600 s**, **`MAX_TENTATIVAS = 30`**; depois a linha fica com o erro para inspeção (nunca apagada em silêncio); lead apagado conclui a pendência | `crm/pendencias.py`, `sdr_scheduler/local_worker.py` | turno perdido enquanto o CRM esteve fora | `::test_turno_com_crm_fora_do_ar_fica_na_fila_e_e_publicado_quando_ele_volta` |
+| **O lote é reservado antes de publicar**: um só `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)` empurra `proxima_em` por **600 s** (`RESERVA_S`); um segundo scheduler não vê as linhas, e se o processo morrer elas voltam a vencer sozinhas | `crm/pendencias.py::drenar` | o mesmo turno publicado duas vezes | `shared/tests/test_pendencias_reserva.py::test_dois_schedulers_nao_publicam_a_mesma_linha` |
 | **Vale também para lead já vinculado**: o turno só conta como publicado se as interações (entrada e saída) entraram no histórico; preferência e estágio são estado atual e o próximo turno manda de novo. A interação leva `occurred_at` = hora em que a mensagem **chegou**, não a da republicação | `crm/publicador.py::_publicar`, `::_registrar_conversa` | conversa do período de queda some do CRM, ou entra fora de ordem | `::test_turno_de_lead_ja_vinculado_com_crm_fora_tambem_vai_para_a_fila` |
 | **Reconhecimento**: antes de perguntar, a Mora procura o cliente no CRM **por contato, nunca por nome**; mais de um resultado = não reconhece; procura uma vez por marca de contato. **Só contato verificado pelo canal vincula e semeia** (`reconhecer(lead, contato_verificado=True)`): aí só preenche campo **vazio** do cartão, oportunidade fechada não é contexto, `buy` na volta vira `compra` sem rebaixar `investimento`. Hoje nenhum canal entrega contato verificado | `crm/reconhecimento.py`, `traducao.py::INTENCAO_DO_CRM` | recomeçar do zero é o custo de falhar | `shared/tests/test_reconhecimento_crm.py`, `test_porta_crm.py::test_dois_clientes_com_o_mesmo_contato_nao_reconhecem_ninguem`, `::test_sem_contato_nao_procura` |
 | **Contato autodeclarado que coincide com cliente do CRM não vincula nem semeia**: o lead segue como novo; a coincidência vira auditoria `cliente.contato_coincide` e notificação ao corretor; ao abrir no CRM, a ficha é **nova** (criada sem o e-mail/telefone, que o CRM deduplicaria para a ficha existente) e recebe uma interação `internal` pedindo revisão | `crm/reconhecimento.py::contato_coincidente`, `publicador.py::_abrir` | visitante herdava orçamento e bairros da vítima e escrevia na ficha dela | `test_reconhecimento_crm.py::test_visitante_com_contato_de_cliente_nao_herda_a_ficha_dele`, `::test_contato_coincidente_dito_antes_da_procura_tambem_abre_ficha_nova` |
@@ -1198,6 +1222,16 @@ Pontos onde o comportamento surpreende. São bons candidatos a teste — e algun
 16. **O pedido de visita no CRM move a oportunidade até `qualified` antes do fim do turno**
     (`crm/visitas.py::pedir_visita`), fora da ordem normal do publicador — de propósito, para o
     primeiro pedido de todo lead não ser recusado.
+17. **Visita sem corretor bloqueia o horário de todos**, mas o índice único só impede visita sem
+    corretor × visita sem corretor; visita sem corretor × visita **com** corretor no mesmo horário
+    só é barrada pela revalidação (`slot_livre`), não pelo banco.
+18. **Contato disputado não se resolve sozinho**: telefone de um cliente e e-mail de outro na
+    mesma conversa liga o lead ao dono do telefone e **não copia** o e-mail; o conflito vai para a
+    auditoria (`cliente.contato_em_conflito`) e juntar os cadastros, se forem a mesma pessoa, é
+    manual.
+19. **O telegram-in entrega pelo menos uma vez, não exatamente uma**: o offset só anda depois da
+    publicação, então um update com várias mensagens que falhou no meio republica as que já tinham
+    ido. O agente trata a duplicata como mensagem repetida.
 
 ---
 
@@ -1255,6 +1289,15 @@ Em relação à versão anterior deste documento. Nada foi apagado em silêncio.
 | "Foto: JPEG/PNG/WebP pelo prefixo" | **alterada** | Conferida pela assinatura dos bytes; `/fotos` e `/acervo` com `nosniff` (19). |
 | "Sessão do chat, `state` do OAuth e cofre com a mesma chave (`SDR_SESSAO_SECRET`)" | **alterada** | Uma chave derivada por finalidade; cofre em `enc:v2:` lendo `enc:v1:`; segredo de exemplo recusado (19). |
 | Não havia regra de tempo no login do CRM para e-mail inexistente | **nova** | Argon2 contra hash fictício (17.1). |
+| "Reclicar no mesmo horário não duplica" (sem teste) | **alterada** | Agora devolve a visita existente: antes a revalidação contava a visita do próprio lead e respondia "ocupado" para quem tinha acabado de reservar (7.5). |
+| "Revalidação `slot_livre` impede dois leads no mesmo horário" | **alterada** | A revalidação é a mensagem educada; quem garante é o índice único `visitas_corretor_inicio_uk` (7.5). |
+| "Desativação numa única transação" | **alterada** | A promessa não valia com o pool em autocommit; agora vale, e visita que colide com a agenda do destino vai para a equipe (9.1). Destino `auto` não escolhe mais quem está saindo. |
+| "Assumir: corretor do body" / "Responder: envia por todos os canais" | **alteradas** | Assumir lead de outro corretor é 409; responder fora de handoff é 409 (8). |
+| "Confirmar visita nunca regride negociação" | **alterada** | Só valia sem concorrência; agora com trava na oportunidade e `UPDATE` condicionado. Confirmar no passado é recusado (17.7). |
+| "Remarcar: só status, slot e humano" | **alterada** | Entraram as travas de solicitar (17.7). |
+| "`/health`: qualquer serviço calado há mais de 120 s" | **alterada** | Só até 24 h; depois é serviço aposentado (14.2). |
+| "Orçamento: mês e dia" (sem fuso) | **alterada** | Cortes em Brasília (13.1). |
+| Drenagem de `crm_pendencias` por SELECT simples | **alterada** | Lote reservado antes de publicar (18). |
 
 ---
 

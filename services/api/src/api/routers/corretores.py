@@ -112,7 +112,9 @@ def desativar(corretor_id: str,
     movido = repo.desativar(corretor_id, para)
     _avisar_transferencia(repo, corretor, para, movido)
     return {"acao": "desativado", "corretor_id": corretor_id,
-            "destino": para or "equipe", "movido": {"leads": len(movido["leads"]), "visitas": movido["visitas"]}}
+            "destino": para or "equipe", "movido": {"leads": len(movido["leads"]), "visitas": movido["visitas"],
+                       # visita que bateria com a agenda do destino: foi para a equipe ou ficou
+                       "visitas_em_conflito": len(movido["visitas_em_conflito"])}}
 
 
 def _resolver_destino(repo: CorretorRepository, destino: str | None, saindo: Corretor) -> str | None:
@@ -121,10 +123,8 @@ def _resolver_destino(repo: CorretorRepository, destino: str | None, saindo: Cor
         return None
     if destino == "auto":
         # A região do corretor que sai é a melhor pista de para onde a carteira dele deveria ir.
-        escolhido = repo.escolher(saindo.regioes[0] if saindo.regioes else None)
-        if escolhido and escolhido.id != saindo.id:
-            return escolhido.id
-        return None                       # sem outro ativo: fila da equipe, e não um beco sem saída
+        escolhido = repo.escolher(saindo.regioes[0] if saindo.regioes else None, excluir=saindo.id)
+        return escolhido.id if escolhido else None   # sem outro ativo: fila da equipe, e não um beco sem saída
     alvo = repo.get(destino)
     if not alvo:
         raise HTTPException(422, f"corretor de destino inexistente: {destino}")
