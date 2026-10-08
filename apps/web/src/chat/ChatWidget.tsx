@@ -18,6 +18,29 @@ type Bolha = {
   reenviar?: { texto: string; rotulo: string; botao: boolean };
 };
 
+/** Janela em que o servidor ainda reentrega respostas guardadas (JANELA_PENDENTE_S no canal). */
+const JANELA_REENTREGA_MS = 10 * 60_000;
+
+/** Junta o histórico com o que chegou ao vivo enquanto ele carregava.
+ *
+ *  Ao reabrir/recarregar, a resposta que chegou com o cliente fora está nos DOIS lugares: no
+ *  histórico (o agente gravou) e na reentrega dos pendentes do canal. Antes, se a reentrega
+ *  chegasse primeiro, o histórico era descartado inteiro (a conversa sumia); se chegasse depois,
+ *  a última bolha aparecia duas vezes. Agora o histórico é a base e, do que veio ao vivo, só
+ *  fica o que ele ainda não tem — mesma pessoa e mesmo texto, nos últimos minutos. */
+function fundirHistorico(saudacao: Bolha, vivas: Bolha[], historico: Bolha[]): Bolha[] {
+  const limite = Date.now() - JANELA_REENTREGA_MS;
+  const recentes = historico.filter((h) => new Date(h.em).getTime() >= limite);
+  const novas = vivas.filter((v) => {
+    if (v.aviso) return true;
+    const i = recentes.findIndex((h) => h.de === v.de && h.texto === v.texto);
+    if (i < 0) return true;
+    recentes.splice(i, 1);                       // cada fala do histórico absorve no máximo uma ao vivo
+    return false;
+  });
+  return [saudacao, ...historico, ...novas];
+}
+
 /** Nenhuma espera é infinita: avisamos que está demorando e, passando disso, oferecemos um humano.
  *  RESGATE_MS folgado de propósito: a busca de imóveis chama embeddings (Ollama, no perfil local) e,
  *  rodando em CPU comum, um turno completo pode passar de 40-50s sem nada estar quebrado — visto ao
@@ -50,7 +73,7 @@ const ATALHOS_DO_IMOVEL = ["Me conte mais sobre ele", "Ver opções parecidas", 
 /** Foco automático só onde há teclado físico: no celular ele abriria o teclado por cima da conversa. */
 const temTecladoFisico = () => typeof window !== "undefined" && window.matchMedia?.("(pointer: fine)").matches;
 
-export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", aoFechar, expandido, aoExpandir }: { imovelOrigem?: string; imovelResumo?: ImovelResumo; altura?: string; aoFechar?: () => void; expandido?: boolean; aoExpandir?: () => void }) {
+export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", aoFechar, expandido, aoExpandir, visivel = true }: { imovelOrigem?: string; imovelResumo?: ImovelResumo; altura?: string; aoFechar?: () => void; expandido?: boolean; aoExpandir?: () => void; visivel?: boolean }) {
   const saudacao = (): Bolha => ({
     de: "Mora", em: agora(),
     texto: imovelResumo ? saudacaoDoImovel(imovelResumo) : "Olá! Eu sou a Mora, assistente virtual da Vértice Imóveis. Estou aqui para entender o que você procura e ajudar a encontrar o imóvel ideal para o seu próximo momento.",
@@ -71,6 +94,17 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
   const timers = useRef<number[]>([]);
   const enviados = useRef(new Map<string, { texto: string; rotulo: string; botao: boolean }>());
   const ultimoResumoAnunciado = useRef(imovelResumo?.id);
+  // Referência da última mensagem do cliente ainda sem resposta: o "digitando" só aparece quando o
+  // servidor confirma ESTA (evento `recebido`), não no clique — offline, a mensagem está na fila e
+  // os três pontinhos mentiam que a Mora já estava escrevendo.
+  const aguardando = useRef<string | null>(null);
+  // Lido no envio, não no efeito que conecta: com o imóvel nas dependências, trocar de ficha com o
+  // chat aberto derrubava a conexão (e a fila de mensagens offline junto) só para mudar um campo.
+  const origem = useRef(imovelOrigem);
+  useEffect(() => { origem.current = imovelOrigem; }, [imovelOrigem]);
+  // Leitor de tela: anuncia só a fala NOVA da Mora. A lista em si não é região viva — senão, ao
+  // restaurar o histórico, eram até 60 mensagens lidas em sequência.
+  const [anuncio, setAnuncio] = useState("");
 
   const limparTimers = useCallback(() => { timers.current.forEach(clearTimeout); timers.current = []; }, []);
   const pararEspera = useCallback(() => { limparTimers(); setDigitando(false); setDemorando(false); setResgate(false); }, [limparTimers]);
@@ -83,40 +117,53 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
     setBolhas((b) => [...b, { de: "Mora", em: agora(), texto: `Também vi que você deu uma olhada ${preposicaoTipo(imovelResumo.tipo)} ${(TIPOS[imovelResumo.tipo] ?? imovelResumo.tipo).toLowerCase()} em ${imovelResumo.bairro}, por ${brl(imovelResumo.preco)}${imovelResumo.operacao === "aluguel" ? "/mês" : ""}. Quer falar sobre esse também?` }]);
   }, [imovelResumo]);
 
-  // Recarregou a página no meio da conversa: redesenha o que já foi dito (Nielsen 1 e 6). Só
-  // substitui a tela se nada novo chegou enquanto o histórico carregava.
+  // Recarregou a página no meio da conversa: redesenha o que já foi dito (Nielsen 1 e 6), fundindo
+  // com o que tenha chegado ao vivo enquanto o histórico carregava (ver fundirHistorico).
   useEffect(() => {
     let vivo = true;
     carregarHistorico().then((h) => {
       if (!vivo || !h.length) return;
-      setBolhas((b) => (b.length === 1 ? [b[0], ...h] : b));
+      setBolhas((b) => fundirHistorico(b[0], b.slice(1), h));
     });
     return () => { vivo = false; };
   }, [geracao]);
 
+  // Uma conexão por geração (só "Nova conversa" troca). O ChatLauncher mantém o widget montado
+  // com o chat fechado, então a conexão sobrevive a fechar e abrir.
   useEffect(() => {
-    track("opened_chat", { imovel_id: imovelOrigem });
     conn.current = conectar(
       (r) => {
         pararEspera();
+        aguardando.current = null;
         setBolhas((b) => [...b, { de: "Mora", texto: r.texto, r, em: agora() }]);
+        setAnuncio(`Mora: ${r.texto}`);
         if (temTecladoFisico()) campo.current?.focus();
       },
       (s) => setOnline(s === "on"),
       (e: EventoCanal) => {
+        if (e.evento === "recebido" && e.ref && e.ref === aguardando.current) setDigitando(true);
         if (e.evento === "falha_envio") {
           pararEspera();
+          if (e.ref === aguardando.current) aguardando.current = null;
           const original = e.ref ? enviados.current.get(e.ref) : undefined;
-          setBolhas((b) => [...b, {
-            de: "Mora", aviso: true, em: agora(), reenviar: original,
-            texto: e.texto ?? "Não consegui registrar sua mensagem. Pode tentar de novo?",
-          }]);
+          const texto = e.texto ?? "Não consegui registrar sua mensagem. Pode tentar de novo?";
+          setBolhas((b) => [...b, { de: "Mora", aviso: true, em: agora(), reenviar: original, texto }]);
+          setAnuncio(texto);
         }
       },
     );
+    // O cleanup também encerra a espera: sem isso, o "digitando" de uma conexão fechada ficava
+    // na tela para sempre (nenhuma resposta viria mais por ela).
+    return () => { conn.current?.fechar(); pararEspera(); aguardando.current = null; };
+  }, [pararEspera, geracao]);
+
+  // Cada abertura conta como "opened_chat" (antes era cada montagem, que coincidia com a abertura)
+  // e leva o foco ao campo — o widget agora continua montado com o chat fechado.
+  useEffect(() => {
+    if (!visivel) return;
+    track("opened_chat", { imovel_id: origem.current });
     if (temTecladoFisico()) campo.current?.focus();
-    return () => { conn.current?.fechar(); limparTimers(); };
-  }, [imovelOrigem, pararEspera, limparTimers, geracao]);
+  }, [visivel]);
 
   const novaConversa = () => {
     conn.current?.fechar();
@@ -160,12 +207,14 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
     setBolhas((b) => [...b, { de: "lead", texto: rotulo, em: agora() }]);
     setTexto("");
     limparTimers();
-    setDigitando(true); setDemorando(false); setResgate(false);
+    setDigitando(false); setDemorando(false); setResgate(false);
     // botao=true: o canal marca a mensagem como TipoMensagem.BOTAO (mesmo contrato do Telegram).
     // saudacao_exibida: o widget sempre abre com a bolha de boas-vindas da Mora; sem este aviso, a
     // resposta ao primeiro "oi" se apresentava de novo ("Oi! Eu sou a Mora…") logo abaixo dela.
-    const ref = conn.current?.enviar(t, { saudacao_exibida: true, ...(imovelOrigem ? { imovel_origem: imovelOrigem } : {}), ...(botao ? { botao: true } : {}) });
-    if (ref) enviados.current.set(ref, { texto: t, rotulo, botao });
+    const ref = conn.current?.enviar(t, { saudacao_exibida: true, ...(origem.current ? { imovel_origem: origem.current } : {}), ...(botao ? { botao: true } : {}) });
+    if (ref) { enviados.current.set(ref, { texto: t, rotulo, botao }); aguardando.current = ref; }
+    // Os avisos de demora contam do clique, com ou sem `recebido`: nenhuma espera é infinita,
+    // nem a de uma mensagem que ficou na fila sem conexão.
     timers.current.push(window.setTimeout(() => setDemorando(true), AVISO_MS));
     timers.current.push(window.setTimeout(() => { setDemorando(false); setResgate(true); }, RESGATE_MS));
   };
@@ -227,9 +276,11 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
       </div>
 
       <div className="relative flex-1 overflow-hidden">
-        {/* role=log + aria-live: sem isto, quem usa leitor de tela não fica sabendo que a
-            Mora respondeu — a bolha aparece na tela e não é anunciada em lugar nenhum. */}
-        <div ref={lista} onScroll={aoRolar} role="log" aria-live="polite" aria-relevant="additions text"
+        {/* Quem usa leitor de tela precisa saber que a Mora respondeu — mas só a fala nova. A lista
+            é role=log com aria-live="off" (o role=log sozinho já seria região viva): ao restaurar o
+            histórico, ela anunciava até 60 mensagens em sequência. O anúncio sai da região abaixo. */}
+        <div className="sr-only" aria-live="polite" aria-atomic="true">{anuncio}</div>
+        <div ref={lista} onScroll={aoRolar} role="log" aria-live="off"
              aria-label="Mensagens da conversa" className="h-full space-y-1.5 overflow-y-auto bg-ground p-4">
           {bolhas.map((b, i) => {
             const prox = bolhas[i + 1];

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ORDENACOES, REGIOES, TIPOS, buscarImoveis, preposicaoRegiao, type Filtros as F, type Ordenacao } from "../lib/api";
@@ -29,10 +29,26 @@ function dosParams(sp: URLSearchParams): F {
   return f;
 }
 
-const paraParams = (f: F, ordenar: Ordenacao) => {
+/** `ordenar` vem da URL, que qualquer um edita: valor fora da lista ia direto para a API. */
+function ordenacaoDaUrl(v: string | null): Ordenacao {
+  return ORDENACOES.some((o) => o.v === v) ? (v as Ordenacao) : "relevancia";
+}
+
+/** Página na URL começa em 1 (o que a pessoa lê); por dentro, em 0. Lixo ou negativo vira a 1ª. */
+function paginaDaUrl(v: string | null): number {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 1 ? n - 1 : 0;
+}
+
+// A página mora na URL: em estado local, voltar da ficha do imóvel levava à página 1, e trocar de
+// filtro na página 3 buscava duas vezes (a página 3 com o filtro novo e, depois do reset, a 1).
+// Montar os parâmetros sem `pagina` é o que volta para a 1ª ao trocar filtro ou ordenação — numa
+// única atualização da URL, portanto numa busca só.
+const paraParams = (f: F, ordenar: Ordenacao, pagina = 0) => {
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(f)) if (v !== undefined && v !== "") out[k] = String(v);
   if (ordenar !== "relevancia") out.ordenar = ordenar;
+  if (pagina > 0) out.pagina = String(pagina + 1);
   return out;
 };
 
@@ -45,13 +61,20 @@ const paraParams = (f: F, ordenar: Ordenacao) => {
 export function Imoveis() {
   const { operacao: opUrl, bairro: bairroUrl } = useParams();
   const [sp, setSp] = useSearchParams();
-  const [pagina, setPagina] = useState(0);
   const abrirChat = useChat((s) => s.abrir);
 
   const fixo: F = useMemo(() => (bairroUrl ? { operacao: opUrl, bairro: desslug(bairroUrl) } : {}), [opUrl, bairroUrl]);
 
-  const f = useMemo(() => ({ ...dosParams(sp), ...fixo }), [sp, fixo]);
-  const ordenar = (sp.get("ordenar") as Ordenacao) ?? "relevancia";
+  // Só os filtros, sem página e ordenação: mudar de página não é "filtrar" (não dispara o
+  // `filtered` de novo nem cria outro objeto de filtro).
+  const soFiltros = useMemo(() => {
+    const c = new URLSearchParams(sp);
+    c.delete("pagina"); c.delete("ordenar");
+    return c.toString();
+  }, [sp]);
+  const f = useMemo(() => ({ ...dosParams(new URLSearchParams(soFiltros)), ...fixo }), [soFiltros, fixo]);
+  const ordenar = ordenacaoDaUrl(sp.get("ordenar"));
+  const pagina = paginaDaUrl(sp.get("pagina"));
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: ["busca", f, ordenar, pagina],
@@ -59,7 +82,6 @@ export function Imoveis() {
     placeholderData: keepPreviousData,     // trocar de filtro não pisca a tela inteira
   });
 
-  useEffect(() => { setPagina(0); }, [sp, fixo]);
   useEffect(() => { if (Object.keys(f).length) track("filtered", f as Record<string, unknown>); }, [f]);
 
   // "analia-franco" na URL precisa virar "Anália Franco" na tela: o slug perde o acento, e quem
@@ -84,6 +106,11 @@ export function Imoveis() {
   const trocar = (novo: F) => setSp(paraParams({ ...novo, ...fixo }, ordenar), { replace: true });
   const total = data?.total ?? 0;
   const paginas = Math.ceil(total / PAGINA);
+  // `?pagina=99` de um link antigo (o catálogo encolheu): leva à última que existe.
+  useEffect(() => {
+    if (data && !isFetching && paginas > 0 && pagina >= paginas) setSp(paraParams(f, ordenar, paginas - 1), { replace: true });
+  }, [data, isFetching, paginas, pagina, f, ordenar, setSp]);
+  const irPara = (p: number) => { setSp(paraParams(f, ordenar, p)); window.scrollTo({ top: 0 }); };
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
@@ -130,10 +157,10 @@ export function Imoveis() {
           {isFetching && <Esqueleto className="mx-auto mt-4 h-1 w-24" />}
           {paginas > 1 && (
             <nav aria-label="Paginação" className="mt-8 flex items-center justify-center gap-3">
-              <Botao variante="secundario" disabled={pagina === 0} onClick={() => { setPagina((p) => p - 1); window.scrollTo({ top: 0 }); }}
+              <Botao variante="secundario" disabled={pagina === 0} onClick={() => irPara(pagina - 1)}
                      icone={<Ic.esquerda size={16} />}>Anterior</Botao>
               <span className="text-sm text-ink-muted">Página {pagina + 1} de {paginas}</span>
-              <Botao variante="secundario" disabled={pagina + 1 >= paginas} onClick={() => { setPagina((p) => p + 1); window.scrollTo({ top: 0 }); }}>
+              <Botao variante="secundario" disabled={pagina + 1 >= paginas} onClick={() => irPara(pagina + 1)}>
                 Próxima <Ic.direita size={16} />
               </Botao>
             </nav>

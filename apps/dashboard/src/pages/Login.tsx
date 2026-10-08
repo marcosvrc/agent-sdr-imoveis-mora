@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { login } from "../lib/auth";
 import { Button, Field, Input } from "../components/ui";
 import { Ic } from "../components/Icons";
@@ -8,12 +8,15 @@ export function Login() {
   const [email, setEmail] = useState("corretor@verticeimoveis.com.br"); const [senha, setSenha] = useState(""); const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const nav = useNavigate();
+  // Vem de um 401 no meio do uso (ver sessaoExpirada): explica por que voltou ao login.
+  const expirou = useSearchParams()[0].get("expirou") === "1";
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas p-4">
       <form className="w-full max-w-sm space-y-4 rounded-2xl border border-line bg-surface p-7 shadow-card" onSubmit={async (e) => { e.preventDefault(); setCarregando(true); try { await login(email, senha); nav("/"); } catch { setErro("Token do painel inválido"); } finally { setCarregando(false); } }}>
         <div className="flex items-center gap-2.5"><span className="grid h-9 w-9 place-items-center rounded-lg bg-brand text-brand-ink"><Ic.spark size={18} /></span><div><h1 className="text-base font-semibold">Mora</h1><p className="text-xs text-ink-muted">Painel do agente · Vértice Imóveis</p></div></div>
         <Field label="E-mail"><Input value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" /></Field>
         <Field label="Token do painel"><Input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="em branco usa o dev-token" autoComplete="current-password" /></Field>
+        {expirou && !erro && <p role="status" className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-strong">Sua sessão expirou. Entre de novo.</p>}
         {erro && <p className="rounded-lg bg-bad-soft px-3 py-2 text-xs text-bad-strong">{erro}</p>}
         <Button variante="primario" className="w-full" type="submit" disabled={carregando}>Entrar</Button>
         <p className="text-center text-[11px] text-ink-muted">O token é o <code>SDR_PAINEL_TOKEN</code> do <code>local/.env</code>. Em desenvolvimento, deixe em branco.</p>

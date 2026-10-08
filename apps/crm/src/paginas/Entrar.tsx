@@ -1,7 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Botao, Campo, Erro, FaixaSintetica, entradaCls } from "../componentes/ui";
 import { BASE, ErroApi, api } from "../lib/api";
+import { limparSessaoExpirada } from "../lib/sessao";
 
 /** Login.
  *
@@ -10,8 +11,11 @@ import { BASE, ErroApi, api } from "../lib/api";
  *  estranho quais e-mails existem na base, e num CRM a lista de quem trabalha na imobiliária já é
  *  informação.
  */
-export function Entrar({ erro }: { erro?: unknown }) {
+export function Entrar({ erro, expirou = false }: { erro?: unknown; expirou?: boolean }) {
   const qc = useQueryClient();
+  // Na tela de login nada da sessão anterior fica no cache: com a sessão caída no meio do uso, a
+  // próxima pessoa a entrar neste computador veria por um instante os dados de quem saiu.
+  useEffect(() => { qc.removeQueries({ predicate: (q) => q.queryKey[0] !== "eu" }); }, [qc]);
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [falha, setFalha] = useState<unknown>(erro);
@@ -31,6 +35,7 @@ export function Entrar({ erro }: { erro?: unknown }) {
       // e sem esta checagem a tela voltaria ao formulário em branco — o clássico "cliquei e não
       // aconteceu nada". Descoberto abrindo o painel de verdade.
       await api.eu();
+      limparSessaoExpirada();
       await qc.invalidateQueries({ queryKey: ["eu"] });
     } catch (x) {
       setFalha(x instanceof ErroApi && x.status === 401 && !x.message.includes("inválidos")
@@ -44,8 +49,9 @@ export function Entrar({ erro }: { erro?: unknown }) {
     }
   }
 
-  const expirada = falha instanceof ErroApi && falha.code === "UNAUTHENTICATED"
+  const expiradaNoServidor = falha instanceof ErroApi && falha.code === "UNAUTHENTICATED"
     && falha.message.includes("expirada");
+  const expirada = expirou || expiradaNoServidor;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -66,7 +72,7 @@ export function Entrar({ erro }: { erro?: unknown }) {
             <input className={entradaCls} type="password" autoComplete="current-password" required
                    value={senha} onChange={(e) => setSenha(e.target.value)} />
           </Campo>
-          {falha && !expirada ? <Erro erro={falha} /> : null}
+          {falha && !expiradaNoServidor ? <Erro erro={falha} /> : null}
           <Botao type="submit" variante="primario" ocupado={ocupado} className="w-full justify-center">
             Entrar
           </Botao>

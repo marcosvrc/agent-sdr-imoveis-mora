@@ -1,10 +1,10 @@
-import { token } from "./auth";
+import { sessaoExpirada, token } from "./auth";
 
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const r = await fetch(`${BASE}${path}`, { ...init, headers: { "content-type": "application/json", Authorization: `Bearer ${token()}`, ...(init.headers ?? {}) } });
-  if (r.status === 401) { window.location.href = "/login"; throw new Error("não autenticado"); }
+  if (r.status === 401) sessaoExpirada();
   if (!r.ok) {
     let detalhe = `${r.status} ${path}`;
     try { const j = await r.json(); if (j?.detail) detalhe = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail); } catch { /* sem corpo */ }
@@ -203,6 +203,7 @@ export const api = {
   exportarAuditoria: async (f: { dias: number; acao?: string; entidade?: string }) => {
     // download autenticado: o Authorization não cabe num <a href>, então baixa o blob e entrega ao navegador
     const r = await fetch(`${BASE}/auditoria/exportar${qs(f)}`, { headers: { Authorization: `Bearer ${token()}` } });
+    if (r.status === 401) sessaoExpirada();
     if (!r.ok) throw new Error(`falha ao exportar (${r.status})`);
     const url = URL.createObjectURL(await r.blob());
     const a = document.createElement("a");

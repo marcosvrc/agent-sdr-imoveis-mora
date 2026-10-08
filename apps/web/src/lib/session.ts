@@ -13,14 +13,23 @@ export const NOVA_CONVERSA_A_CADA_VISITA = import.meta.env.VITE_CHAT_NOVA_CONVER
 let memoria: Sessao | null = null;
 let pedido: Promise<Sessao> | null = null;
 
+/** Folga para não conectar com um token que vence no meio do aperto de mão. */
+const MARGEM_MS = 60_000;
+const valida = (s: Sessao) => s.expira_em * 1000 - MARGEM_MS > Date.now();
+
 function ler(): Sessao | null {
-  if (memoria) return memoria;
+  // A memória também vence: com a aba aberta mais de 12 h, devolvê-la sem conferir fazia o widget
+  // reconectar para sempre com um token que o servidor já recusava.
+  if (memoria) {
+    if (valida(memoria)) return memoria;
+    memoria = null;
+  }
   if (NOVA_CONVERSA_A_CADA_VISITA) return null;
   try {
     const cru = sessionStorage.getItem(CHAVE);
     if (!cru) return null;
     const s = JSON.parse(cru) as Sessao;
-    return s.expira_em * 1000 > Date.now() ? (memoria = s) : null;   // expirada: pede outra
+    return valida(s) ? (memoria = s) : null;   // expirada: pede outra
   } catch { return null; }
 }
 
@@ -41,8 +50,11 @@ export async function getSessao(): Promise<Sessao> {
   return pedido;
 }
 
-/** Esquece a sessão atual: a próxima conexão pede outra ao servidor, e o agente vê um lead novo. */
-export function descartarSessao() {
+/** Esquece a sessão atual: a próxima conexão pede outra ao servidor, e o agente vê um lead novo.
+ *  Com `soSe`, só descarta se a sessão guardada ainda for aquela — o 4401 de uma conexão antiga
+ *  não apaga a sessão nova que outra parte do código já obteve. */
+export function descartarSessao(soSe?: string) {
+  if (soSe && memoria && memoria.session_id !== soSe) return;
   memoria = null;
   pedido = null;
   try { sessionStorage.removeItem(CHAVE); } catch { /* sem armazenamento: nada a apagar */ }

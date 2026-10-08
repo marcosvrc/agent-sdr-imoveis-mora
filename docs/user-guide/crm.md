@@ -65,7 +65,10 @@ Tela "CRM da imobiliária", campos **E-mail** e **Senha**, botão **Entrar** (`E
   (`services/crm/sdr_crm/config.py`, `login_tentativas_por_minuto`; `api/contexto.py`,
   `conferir_limite_de_login`).
 - **Sessão**: cookie `crm_session`, HttpOnly, dura **12 horas** (`autenticacao_rt.py`, `DURACAO`).
-  Expirou → a tela de login diz "Sua sessão expirou. Entre de novo para continuar."
+  Expirou → a tela de login diz "Sua sessão expirou. Entre de novo para continuar." Vale também
+  quando a sessão cai **com a tela aberta**: um 401 em qualquer consulta ou ação (não só ao abrir o
+  CRM) leva ao login com esse aviso, e o cache da sessão anterior é apagado
+  (`main.tsx`, `aoFalhar`; `lib/sessao.ts`; `paginas/Entrar.tsx`).
 - **Sair**: botão **Sair** no rodapé do menu. Revoga a sessão no banco (não só apaga o cookie) e
   limpa o cache da tela antes de voltar ao login (`App.tsx`, `sair`; `autenticacao_rt.py`).
 - Limites de tamanho: e-mail até 320 caracteres, senha até 256 (`api/esquemas.py`, `Login`).

@@ -31,7 +31,10 @@ Só a página inicial entra no pacote inicial; as demais carregam quando abertas
 
 A busca chama `GET /imoveis/busca`, que devolve a página, o **total** (para escrever *"38 imóveis
 encontrados"*) e a lista de bairros com contagem. Página de **12** itens, com **Anterior** / **Próxima**
-e *"Página N de M"*.
+e *"Página N de M"*. A página fica na URL (`pagina`, começando em 1): voltar da ficha de um imóvel
+retorna à mesma página, e o link pode ser compartilhado. Trocar filtro ou ordenação volta para a
+página 1 numa única busca. `pagina` inválida (texto, zero, negativa) vira a 1ª; acima da última, leva
+à última.
 
 Barra de filtros (**Filtros de busca**):
 
@@ -56,7 +59,8 @@ critério de tamanho que vale.
 
 Filtros ativos viram chips removíveis (*Operação: Comprar*, *Até: R$ 800.000*…) com **Limpar todos**.
 Sem resultado: **"Nenhum imóvel com esses filtros"**, com **Perguntar à Mora** (abre o chat) e
-**Limpar filtros**. Ordenação fora da lista é recusada pela API (422 *"ordenação inválida"*).
+**Limpar filtros**. `ordenar` na URL fora da lista é ignorado pelo site (vale **Mais relevantes**);
+a API, por sua vez, recusa ordenação fora da lista (422 *"ordenação inválida"*).
 
 O título da página descreve a busca (*"Apartamentos de 2+ quartos à venda em Perdizes"*). Uma
 combinação livre de filtros recebe `noindex`; só as páginas de bairro são indexadas.
@@ -87,7 +91,15 @@ O botão flutuante **Abrir conversa com a Mora**, com o retrato ilustrado da Mor
 páginas; após 5 s sem abrir, aparece o convite *"Posso ajudar a achar o imóvel certo — me conta o
 que você procura?"*. O painel é um diálogo (**Conversa com a Mora, assistente virtual**): Escape
 fecha e o foco volta ao botão. A conversa sobrevive à navegação entre páginas — o widget só monta (e
-conecta) na primeira abertura.
+conecta) na primeira abertura e, daí em diante, **fica conectado com o chat fechado**: fechar só
+esconde o painel. A resposta que chega com o chat fechado já está lá ao reabrir, uma vez só.
+Trocar de imóvel com o chat aberto também mantém a mesma conexão; a próxima mensagem leva o imóvel
+novo como `imovel_origem`.
+
+Acessibilidade: **expandido no celular** (tela cheia), o painel é um diálogo modal
+(`aria-modal="true"`) e o Tab circula só dentro dele; no computador, expandido ou não, é um painel
+ao lado da página e não prende o foco. O leitor de tela anuncia **só a fala nova** da Mora (e avisos
+de falha) — a conversa restaurada do histórico não é lida em sequência.
 
 ### Aparência e uso
 
@@ -113,6 +125,11 @@ do cliente, da Mora e do corretor, com os cartões de imóvel. Os botões de op�
 mensagem da Mora (os anteriores já foram respondidos). Sessão inválida recebe 401 e lista vazia; sem
 histórico, a conversa segue do ponto em que está.
 
+Uma resposta que chegou enquanto a página recarregava vem duas vezes — no histórico e na
+reentrega dos pendentes do canal. O widget funde as duas: o histórico é a base e, do que chegou ao
+vivo enquanto ele carregava, só fica o que ele ainda não tem (mesmo autor e mesmo texto, nos últimos
+10 minutos).
+
 > Nota técnica: `apps/web/src/lib/historico.ts`, `services/channels/local/app.py::historico`
 > (`test_app.py::test_historico_devolve_a_conversa_da_propria_sessao`,
 > `::test_historico_de_sessao_inventada_nao_le_nada`).
@@ -127,9 +144,23 @@ Antes de conectar, o widget pede `POST /sessao` ao canal web (`VITE_CANAL_URL`, 
 `http://localhost:8001`). O servidor emite `session_id`, um `token` assinado e `expira_em`
 (validade de 12 horas). A sessão fica no `sessionStorage` da aba (chave `sdr_sessao`): recarregar a
 página mantém a conversa; fechar a aba ou expirar inicia outra. O navegador nunca escolhe o próprio id — sem isso bastaria saber o
-id de outro visitante para ler a conversa dele. O WebSocket abre em
-`VITE_WS_URL?papel=lead&id=<session_id>&token=<token>`; sessão inválida ou expirada é fechada com
-código 4401.
+id de outro visitante para ler a conversa dele. O WebSocket abre em `VITE_WS_URL?papel=lead`, **sem
+credencial na URL** (URL vai para log de proxy e de acesso): o primeiro quadro é
+`{"session_id": …, "token": …}`, e o servidor responde `{"evento": "pronto"}`. Só depois do `pronto`
+o widget mostra **online** e envia a fila. Sessão inválida ou expirada — ou silêncio por 5 s — é
+fechada com código **4401**; o widget então descarta a sessão guardada e pede outra (antes, ficava
+*"reconectando…"* para sempre com o mesmo token). A sessão em memória também é conferida contra
+`expira_em` antes de cada conexão.
+
+O canal limita o uso (contagem na memória do processo do canal):
+
+| Limite | Valor | Ao passar |
+| --- | --- | --- |
+| Sessões novas (`POST /sessao`) por IP | 20 por hora | 429 com `Retry-After`; o widget tenta de novo com espera crescente |
+| Mensagens por sessão | 15 por minuto | `falha_envio` *"Recebi muitas mensagens em pouco tempo…"* com **Tentar de novo** |
+| Mensagens por IP (todas as sessões) | 200 por hora | idem |
+| Tamanho do quadro | 8 KiB | conexão fechada com 1009 |
+| Texto | 1 000 caracteres | `falha_envio` pedindo para resumir |
 
 ### Conexão, reconexão e pendentes
 
@@ -137,16 +168,21 @@ código 4401.
   acompanha a cor).
 - Queda de conexão reconecta com espera crescente: 1 s, 2 s, 4 s… até 15 s.
 - Mensagens digitadas offline entram numa fila local e são enviadas na reconexão; o campo mostra
-  *"Sem conexão — enviaremos ao reconectar"*. Nada é descartado em silêncio.
+  *"Sem conexão — enviaremos ao reconectar"*. Nada é descartado em silêncio. O `session_id` é
+  preenchido no envio real, com a sessão da conexão aberta — inclusive para o que foi digitado antes
+  de existir sessão. Mensagem com `session_id` diferente do da conexão recebe `falha_envio`
+  (*"Sua conversa foi renovada…"*), não some.
 - Respostas da Mora que chegaram com o visitante offline (refresh, queda) ficam guardadas no servidor
   por 10 minutos e são entregues ao reconectar com a mesma sessão.
 
 ### Recibos: `recebido` e `falha_envio`
 
 Cada envio leva uma referência (`ref`). O servidor responde `{"evento": "recebido", "ref": …}` assim
-que enfileira a mensagem — só então o widget mostra o *"…"* de digitação. Se não conseguir enfileirar,
+que enfileira a mensagem — só então o widget mostra o *"…"* de digitação, e só para o `ref` da última
+mensagem enviada (offline, sem `recebido`, não há "digitando"). Se não conseguir enfileirar,
 responde `{"evento": "falha_envio"}` e o widget exibe **"Não consegui registrar sua mensagem. Pode
-tentar de novo?"** com o botão **Tentar de novo**.
+tentar de novo?"** com o botão **Tentar de novo**. Quadro ilegível vindo do servidor é ignorado sem
+derrubar a conexão.
 
 Espera pela resposta: após 10 s aparece *"Ainda estou procurando as melhores opções para você…"*;
 após 60 s, *"Desculpe a demora — estou com dificuldade para responder agora. Um corretor pode te
@@ -168,7 +204,10 @@ botão **Ver a região no mapa** (bairro, nunca endereço).
 
 ### Limites de texto
 
-O campo do widget aceita até **1 000 caracteres**. Do lado do servidor, o contrato de entrada do
+O campo do widget aceita até **1 000 caracteres**, e o canal web recusa acima disso (ver a tabela
+de limites acima). Do `meta` que o navegador manda, o canal só repassa ao agente `imovel_origem`
+(no formato de id de imóvel, `[A-Za-z0-9_-]{1,64}`) e `saudacao_exibida`; `botao` vira o tipo da
+mensagem e qualquer outra chave (inclusive `nome` e `telefone`) é descartada. Do lado do servidor, o contrato de entrada do
 agente trunca o conteúdo em **4 000 caracteres** (`MAX_CONTEUDO`) e remove caracteres de controle e
 invisíveis; acima de 1 200 caracteres a mensagem é recusada pelo porteiro de escopo com o pedido de
 resumir (ver [Manual do agente](agente.md)) — limites que valem para qualquer canal. Sob o campo de

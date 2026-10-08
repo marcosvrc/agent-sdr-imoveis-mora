@@ -47,9 +47,31 @@ O chat do site não fala com a API REST: fala com o serviço `channels/local`
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/health` | 200 só com o barramento (Redis) de pé; 503 caso contrário. |
-| POST | `/sessao` | Emite `session_id`, `token` assinado e `expira_em` (12 h). O navegador nunca escolhe o próprio id. |
+| POST | `/sessao` | Emite `session_id`, `token` assinado e `expira_em` (12 h). O navegador nunca escolhe o próprio id. Limite de **20 por hora por IP**: acima disso, **429** com `Retry-After`. |
 | POST | `/historico` | Corpo `{"session_id", "token"}`. Devolve as últimas 60 mensagens **do canal web** daquela sessão (`de`: `lead` \| `Mora` \| `corretor`, `texto`, `em`, e `opcoes`/`imoveis` nas falas da Mora), para o widget redesenhar a conversa depois de recarregar a página. Token no corpo, nunca na URL; sessão inválida recebe 401 e lista vazia. |
-| WS | `/ws?papel=lead&id=…&token=…` | Conversa do widget; `papel=dashboard` é o espelho do painel (credencial no primeiro quadro). |
+| WS | `/ws?papel=lead` | Conversa do widget; `papel=dashboard` é o espelho do painel. Nos dois, a credencial vai no **primeiro quadro**, nunca na URL (ver abaixo). |
+
+### WebSocket `/ws`
+
+**Autenticação.** O widget manda `{"session_id": "…", "token": "…"}` como primeiro quadro; o painel,
+`{"token": "<SDR_PAINEL_TOKEN>"}`. Aceita a credencial, o servidor responde `{"evento": "pronto"}`
+(e, para o widget, entrega em seguida as respostas pendentes da sessão, guardadas por até 10 min).
+Credencial errada, quadro que não é objeto JSON ou silêncio por **5 s** fecham a conexão: **4401**
+para o widget (sessão inventada ou expirada — o widget descarta a sessão e pede outra) e **4403**
+para o painel. `id`/`token` na URL são ignorados. `papel` fora de `lead`/`dashboard` fecha com 4400.
+
+**Mensagem do widget.** `{"session_id", "texto", "meta", "ref"}`. Respostas do servidor:
+`{"evento": "recebido", "ref"}` quando enfileira; `{"evento": "falha_envio", "ref", "texto"}` quando
+recusa — `session_id` diferente do autenticado, `texto` acima de **1 000 caracteres**, limite de
+envio atingido ou barramento fora. Do `meta`, só passam ao agente `imovel_origem` (se casar com
+`[A-Za-z0-9_-]{1,64}`, o mesmo formato de `POST /eventos`) e `saudacao_exibida: true`; `botao: true`
+vira `tipo = botao`; o resto (inclusive `nome`, `telefone`) é descartado.
+
+**Limites.** Quadro acima de **8 KiB** fecha com **1009**; quadro sem `texto` ou JSON inválido fecha
+com 1003. Mensagens: **15 por minuto por sessão** e **200 por hora por IP** (somando sessões).
+A contagem fica **na memória do processo**: com vários processos/réplicas, cada um conta sozinho
+(o teto efetivo multiplica) e reiniciar zera — para escalar, mover para o Redis. Atrás de proxy,
+rode o uvicorn com `--proxy-headers` e `--forwarded-allow-ips`, senão todos dividem o IP do proxy.
 
 ## Exemplo
 

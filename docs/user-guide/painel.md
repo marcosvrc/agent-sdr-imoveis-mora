@@ -30,8 +30,11 @@ Regras:
   que o campo em branco envia.
 - **Fora do perfil local**: sem segredo configurado, ninguém entra. O `dev-token` não é aceito.
 - O token fica no `localStorage` do navegador. Não há expiração: revogar o acesso significa trocar o
-  `SDR_PAINEL_TOKEN` e reiniciar os serviços.
-- Qualquer resposta 401 da API redireciona para `/login`.
+  `SDR_PAINEL_TOKEN` e reiniciar os serviços. Se o navegador recusar o `localStorage` (aba anônima,
+  bloqueio), o token vale só enquanto a aba estiver aberta, em vez de o login falhar.
+- Qualquer resposta 401 da API (inclusive na exportação da auditoria) **apaga o token salvo** e leva
+  a `/login`, que mostra *"Sua sessão expirou. Entre de novo."* Antes, o token recusado continuava
+  salvo e o painel abria e caía de novo em seguida.
 - **Sair** (ícone no canto superior direito) apaga o token do navegador.
 
 Toda ação autenticada é registrada com o ator `corretor-dev` / `corretor@local` — o painel tem um
@@ -223,7 +226,12 @@ Marcar **Descartado** tira o imóvel das próximas sugestões da Mora; a mudanç
 **Análise** — *Análise da conversa*: resumo do perfil, **Sentimento** (com tendência), **Engajamento**,
 **Perfil de decisão**, **Confiança da leitura**, **Como se comunica**, **O que move a decisão**,
 **Objeções e dúvidas**, **Sinais de alerta**, **Como abordar**. Rodapé: *"Leitura inferida do texto
-da conversa pela Mora… Não é avaliação psicológica clínica."* Botão **Gerar análise** / **Atualizar**.
+da conversa pela Mora… Não é avaliação psicológica clínica."* Botão **Gerar análise** / **Atualizar**;
+depois do pedido, a tela consulta o lead a cada 3 s por até 45 s — e para ao sair da tela.
+
+Se o lead não puder ser carregado (id inexistente, API fora do ar), a tela mostra **"Não foi possível
+abrir este lead"** com o motivo, **Voltar para os leads** e **Tentar de novo**, em vez de ficar
+carregando para sempre.
 
 **Atendimento**
 
@@ -322,7 +330,7 @@ ações **Editar** e **Desativar <Nome>**.
 | **ID no CRM** | `users.id` desta pessoa no CRM. Dica: *"Vazio: o encaminhamento fica na fila para quem aceitar."* |
 | **Regiões que atende** | Zona Sul, Zona Oeste, Zona Norte, Zona Leste, Centro. *Sem seleção = atende todas.* |
 | **Ativo (recebe handoffs e visitas)** | Interruptor. |
-| **Google Agenda** | Só na edição: **Conectar agenda** abre a janela de consentimento do Google; **Desconectar** volta à grade interna (eventos já criados continuam no Google). Se `SDR_GOOGLE_CLIENT_ID`/`SDR_GOOGLE_CLIENT_SECRET` não estiverem configurados, aparece o aviso de integração não configurada e a Mora usa a grade interna. |
+| **Google Agenda** | Só na edição: **Conectar agenda** abre a janela de consentimento do Google (aberta no próprio clique e preenchida quando a API responde, para o Safari não bloquear; se o navegador bloquear mesmo assim, aparece *"O navegador bloqueou a janela de autorização."* com o link **Abrir a autorização do Google**); **Desconectar** volta à grade interna (eventos já criados continuam no Google). Se `SDR_GOOGLE_CLIENT_ID`/`SDR_GOOGLE_CLIENT_SECRET` não estiverem configurados, aparece o aviso de integração não configurada e a Mora usa a grade interna. |
 
 Botões: **Cancelar**, **Salvar** (desabilitado sem nome).
 

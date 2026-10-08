@@ -9,16 +9,30 @@ import { useState } from "react";
 export function ConexaoAgenda({ corretorId }: { corretorId: string }) {
   const qc = useQueryClient();
   const [desconectando, setDesconectando] = useState(false);
+  // Endereço do consentimento, guardado só quando o navegador barrou a janela: vira link na tela.
+  const [linkManual, setLinkManual] = useState<string | null>(null);
   const { data } = useQuery({ queryKey: ["calendario"], queryFn: api.statusCalendario });
   const conectado = !!data?.corretores?.[corretorId];
 
+  // O Google exige que o consentimento seja dado numa janela do próprio corretor. A janela abre
+  // NO CLIQUE, vazia, e recebe o endereço quando a API responde: o Safari (e o Firefox, com
+  // bloqueio estrito) só permite `window.open` no gesto do usuário — depois de um `await` ele
+  // devolvia null em silêncio e nada acontecia. Sem `noopener` na abertura (com ele o retorno é
+  // sempre null e não daria para pôr o endereço depois); o vínculo é cortado à mão logo abaixo.
   const conectar = useMutation({
-    mutationFn: () => api.conectarCalendario(corretorId),
-    onSuccess: ({ url }) => {
-      // O Google exige que o consentimento seja dado numa janela do próprio corretor.
-      window.open(url, "_blank", "width=520,height=640,noopener");
+    mutationFn: async (janela: Window | null) => ({ janela, ...(await api.conectarCalendario(corretorId)) }),
+    onSuccess: ({ janela, url }) => {
+      if (janela && !janela.closed) {
+        janela.opener = null;
+        janela.location.href = url;
+        setLinkManual(null);
+      } else {
+        setLinkManual(url);                       // bloqueada: o corretor abre pelo link
+      }
     },
+    onError: (_e, janela) => { janela?.close(); },
   });
+  const iniciarConexao = () => conectar.mutate(window.open("about:blank", "_blank", "width=520,height=640"));
   const desconectar = useMutation({
     mutationFn: () => api.desconectarCalendario(corretorId),
     onSuccess: () => { setDesconectando(false); qc.invalidateQueries({ queryKey: ["calendario"] }); },
@@ -45,7 +59,7 @@ export function ConexaoAgenda({ corretorId }: { corretorId: string }) {
           {conectado
             ? <Button tamanho="sm" onClick={() => setDesconectando(true)}>Desconectar</Button>
             : <Button tamanho="sm" variante="primario" icone={<Ic.external size={13} />}
-                onClick={() => conectar.mutate()} disabled={conectar.isPending}>Conectar agenda</Button>}
+                onClick={iniciarConexao} disabled={conectar.isPending}>Conectar agenda</Button>}
         </span>
       </div>
       <p className="mt-2 text-xs text-ink-muted">
@@ -53,8 +67,15 @@ export function ConexaoAgenda({ corretorId }: { corretorId: string }) {
           ? "A Mora não oferece horários em que este corretor já tem compromisso, e cada visita marcada vira um evento na agenda dele — com convite para o cliente."
           : "Conectando, a Mora passa a consultar a disponibilidade real antes de oferecer horários e cria o evento da visita automaticamente."}
       </p>
-      {conectar.isSuccess && !conectado && (
+      {conectar.isSuccess && !conectado && !linkManual && (
         <p className="mt-2 text-xs text-ink-muted">Autorize na janela que abriu e recarregue esta tela.</p>
+      )}
+      {linkManual && !conectado && (
+        <p className="mt-2 text-xs text-warn-strong" role="status">
+          O navegador bloqueou a janela de autorização.{" "}
+          <a href={linkManual} target="_blank" rel="noopener noreferrer" className="font-medium underline">Abrir a autorização do Google</a>
+          {" "}e, depois de autorizar, recarregue esta tela.
+        </p>
       )}
       {conectar.isError && (
         <p className="mt-2 text-xs text-bad-strong">{(conectar.error as Error).message}</p>

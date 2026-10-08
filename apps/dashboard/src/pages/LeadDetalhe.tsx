@@ -1,12 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, brl, type Lead } from "../lib/api";
 import { CANAL, INTENCAO, REGIAO, canalDoLead, dataHora, nomeDoLead, relativo, rotulo } from "../lib/format";
 import { Transcricao } from "../components/Transcricao";
 import { CartaoLead } from "../components/CartaoLead";
 import { AnaliseLeadCard } from "../components/AnaliseLead";
-import { Avatar, Badge, Button, Estagio, IdCopiavel, Input, NomeLead, Select, Skeleton, Tabs, Temperatura, Toggle, cx } from "../components/ui";
+import { Avatar, Badge, Button, EmptyState, Estagio, IdCopiavel, Input, NomeLead, Select, Skeleton, Tabs, Temperatura, Toggle, cx } from "../components/ui";
 import { InteressesDoLead } from "../components/Interesses";
 import { Ic } from "../components/Icons";
 import { useTempoReal } from "../lib/ws";
@@ -16,11 +16,12 @@ type Aba = "perfil" | "imoveis" | "analise" | "atendimento";
 export function LeadDetalhe() {
   const { id = "" } = useParams();
   const qc = useQueryClient();
+  const nav = useNavigate();
   const [aba, setAba] = useState<Aba>("perfil");
   const [texto, setTexto] = useState("");
   const [pedidoEm, setPedidoEm] = useState<string | null>(null);
 
-  const { data: lead } = useQuery({ queryKey: ["lead", id], queryFn: () => api.lead(id) });
+  const { data: lead, error: erroLead, refetch } = useQuery({ queryKey: ["lead", id], queryFn: () => api.lead(id) });
   const { data: msgs } = useQuery({ queryKey: ["mensagens", id], queryFn: () => api.mensagens(id) });
   const { data: corretores } = useQuery({ queryKey: ["corretores"], queryFn: api.corretores });
   const refresh = useCallback(() => { qc.invalidateQueries({ queryKey: ["lead", id] }); qc.invalidateQueries({ queryKey: ["mensagens", id] }); }, [qc, id]);
@@ -31,10 +32,34 @@ export function LeadDetalhe() {
   const responder = useMutation({ mutationFn: (t: string) => api.responder(id, t), onSuccess: () => { setTexto(""); refresh(); } });
   const atribuir = useMutation({ mutationFn: (cid: string | null) => api.atribuirCorretor(id, cid), onSuccess: refresh });
   const reativacao = useMutation({ mutationFn: (aceita: boolean) => api.definirReativacao(id, aceita), onSuccess: refresh });
-  const analisar = useMutation({ mutationFn: () => api.analisarLead(id), onSuccess: () => { setPedidoEm(lead?.analisado_em ?? "nenhuma"); const t = setInterval(() => qc.invalidateQueries({ queryKey: ["lead", id] }), 3000); setTimeout(() => clearInterval(t), 45000); } });
+  // "Analisar" consulta o lead a cada 3s por até 45s, esperando a análise chegar. O intervalo fica
+  // numa ref e é limpo ao sair da tela: antes, quem clicava e voltava para a lista deixava o
+  // intervalo rodando os 45s inteiros (e um por clique), invalidando um lead que nem estava aberto.
+  const sondagem = useRef<{ intervalo?: number; prazo?: number }>({});
+  const pararSondagem = useCallback(() => {
+    clearInterval(sondagem.current.intervalo); clearTimeout(sondagem.current.prazo); sondagem.current = {};
+  }, []);
+  useEffect(() => pararSondagem, [pararSondagem, id]);
+  const analisar = useMutation({ mutationFn: () => api.analisarLead(id), onSuccess: () => {
+    setPedidoEm(lead?.analisado_em ?? "nenhuma");
+    pararSondagem();
+    sondagem.current = {
+      intervalo: window.setInterval(() => qc.invalidateQueries({ queryKey: ["lead", id] }), 3000),
+      prazo: window.setTimeout(pararSondagem, 45000),
+    };
+  } });
 
   const busca = useMemo(() => resumoBusca(lead), [lead]);
   const briefing = useMemo(() => estadoDoBriefing(lead), [lead]);
+  // Erro da API (lead apagado, id errado, API fora) virava esqueleto de carregamento para sempre.
+  if (!lead && erroLead) return (
+    <EmptyState icone="info" titulo="Não foi possível abrir este lead"
+      descricao={(erroLead as Error).message}
+      acao={<div className="flex justify-center gap-2">
+        <Button onClick={() => nav("/leads")} icone={<Ic.chevronLeft size={14} />}>Voltar para os leads</Button>
+        <Button variante="primario" onClick={() => refetch()} icone={<Ic.refresh size={14} />}>Tentar de novo</Button>
+      </div>} />
+  );
   if (!lead) return <Carregando />;
   const emHandoff = lead.estagio === "handoff";
   const ativos = (corretores ?? []).filter((c) => c.ativo);

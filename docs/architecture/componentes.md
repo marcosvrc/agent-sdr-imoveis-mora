@@ -382,9 +382,11 @@ não devolver 404. O callback registra o provedor que atendeu de fato.
 `POST /sessao`, `GET /health` e `WS /ws?papel=lead|dashboard`. A sessão do widget é **emitida e
 assinada pelo servidor** (`shared/sdr_shared/seguranca/sessao.py`: `session_id` aleatório + expiração
 + HMAC-SHA256, `VALIDADE_S = 12 h`; sem `SDR_SESSAO_SECRET` cada processo gera um segredo efêmero, e
-as sessões caem no reinício em vez de aceitar qualquer assinatura). A conexão `papel=lead` só é
-aceita se `validar(id, token)` passar, e só publica no `inbound` mensagens cujo `session_id` é o da
-própria conexão (`lead_id = web_<session_id>`). A conexão `papel=dashboard` recebe o espelho de todas
+as sessões caem no reinício em vez de aceitar qualquer assinatura). A conexão `papel=lead` manda
+`{session_id, token}` no **primeiro quadro** (nunca na URL) e só é aceita se `validar` passar — senão
+fecha com 4401; só publica no `inbound` mensagens cujo `session_id` é o da própria conexão
+(`lead_id = web_<session_id>`), com o `meta` reduzido a uma lista fechada de chaves e limites de
+sessões por IP, mensagens por sessão/IP e tamanho de quadro (ver [API › Canal web](../technical-reference/api.md#canal-web-porta-8001)). A conexão `papel=dashboard` recebe o espelho de todas
 as conversas e por isso exige a **credencial do painel no primeiro quadro** (`{"token": ...}`, prazo
 `PRAZO_CREDENCIAL_S = 5`), nunca na URL; é somente leitura — o corretor responde pelo `/handoff` da
 API. O lifespan consome `outbound-web` numa thread e faz push nas conexões abertas; respostas que

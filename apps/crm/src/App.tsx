@@ -4,6 +4,7 @@ import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "reac
 import { Botao, Carregando, FaixaSintetica, SeletorTema, cx, foco } from "./componentes/ui";
 import { Ic } from "./componentes/Icones";
 import { ErroApi, api } from "./lib/api";
+import { useSessaoExpirada } from "./lib/sessao";
 import { aplicar, temaSalvo } from "./lib/tema";
 import { AgendaImovel } from "./paginas/AgendaImovel";
 import { Auditoria } from "./paginas/Auditoria";
@@ -35,11 +36,12 @@ export function App() {
   // `/auth/me` é a fonte da verdade sobre estar logado: o cookie é HttpOnly, então o JavaScript
   // não tem como olhar e concluir sozinho. Perguntar ao servidor é a única resposta honesta.
   const { data, isLoading, error } = useQuery({ queryKey: ["eu"], queryFn: api.eu });
+  const expirou = useSessaoExpirada();
 
   if (isLoading) {
     return <div className="mx-auto max-w-md p-8"><Carregando linhas={2} /></div>;
   }
-  if (error instanceof ErroApi && error.status === 401) return <Entrar />;
+  if (error instanceof ErroApi && error.status === 401) return <Entrar expirou={expirou} />;
   if (error) return <Entrar erro={error} />;
 
   const ator = data!.data;
