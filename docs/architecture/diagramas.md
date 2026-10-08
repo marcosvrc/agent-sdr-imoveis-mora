@@ -14,7 +14,7 @@ Não há um segundo ambiente: este é o sistema. Os nomes abaixo são os serviç
 
 As portas do host (5433, 6380, 11435) são deslocadas para não colidir com instâncias nativas de
 Postgres, Redis e Ollama, e podem ser ajustadas por `DB_HOST_PORT`, `REDIS_HOST_PORT` e
-`OLLAMA_HOST_PORT`. O `crm-web` e o Langfuse publicam a mesma porta 3000 — os dois não sobem juntos.
+`OLLAMA_HOST_PORT`. Toda porta é publicada só em `127.0.0.1` (`HOST_BIND` abre as de aplicação de propósito); o Langfuse usa a 3001 para não disputar a 3000 do `crm-web`.
 
 ### Leitura do diagrama
 

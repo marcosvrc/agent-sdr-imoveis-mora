@@ -26,7 +26,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 |---|---|---|---|
 | `SDR_ENV` | Não | `dev` | Ambiente lógico. Padrão `dev`. |
 | `SDR_PROFILE` | Não | `local` | `local` (padrão) ou `producao`. Não escolhe adaptador — decide **uma** coisa, e é de segurança: se o `dev-token` do painel vale. |
-| `SDR_DATABASE_DSN` | **Sim** | `postgresql://sdr:sdr@localhost:5432/sdr` | DSN do Postgres (o mesmo banco do painel e do pgvector). |
+| `SDR_DATABASE_DSN` | **Sim** | `postgresql://sdr:sdr@localhost:5433/sdr` | DSN do Postgres (o mesmo banco do painel e do pgvector). No compose já vem preenchido (`db:5432`); do host, o Postgres do compose fica em `5433`. |
 | `SDR_LLM_PROVIDER` | Não | `anthropic` | `anthropic` (padrão), `openai`, `ollama` ou `openrouter` (ADR-0016). |
 | `SDR_LLM_PROVIDER_FALLBACK` | Recomendada | `openai` | Provedor de reserva quando o primário falha. Vazio = sem fallback: cada turno vira mensagem de desculpa. Se for de outra família, o modelo é trocado pelo equivalente do papel (ADR-0009). |
 | `ANTHROPIC_API_KEY` | Se usar `anthropic` | `sk-ant-…` | Chave da Anthropic. **Sem o prefixo `SDR_`** — é o nome que a biblioteca procura no ambiente. |
@@ -49,7 +49,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_CHAT_NOVA_CONVERSA` | Não | `false` | Modo de teste do chat do site: `true` faz cada carregamento da página começar um atendimento novo e mostra o botão "Nova conversa". Aplicar com `docker compose up -d web`. |
 | `SDR_SESSAO_SECRET` | Recomendada | *(gere: `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`)* | Segredo do qual saem três chaves, uma por finalidade (HMAC-SHA256 com os rótulos `sessao`, `oauth`, `cofre`): assina a sessão do chat do site, assina o `state` do OAuth do Google Agenda e cifra o refresh token do calendário no banco. **Os serviços recusam subir com o valor de exemplo que já esteve nos `.env.example`** (era público); `scripts/check_env.py` acusa o mesmo. **Vazio**: cada processo gera uma chave aleatória (com aviso no log) — as sessões de chat caem a cada reinício, o link de conexão da agenda só vale no processo que o emitiu e o refresh token fica em claro (com aviso). **Trocar o valor invalida as credenciais de calendário já guardadas** (exceção: as cifradas com o valor de exemplo continuam legíveis e são regravadas com o novo) e as sessões de chat abertas. |
 | `SDR_PAINEL_TOKEN` | Sim (fora do perfil local) | `exemplo-token-painel` | Credencial única do painel: header `Authorization` da API e WebSocket `papel=dashboard`. No perfil local, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. Com o `dev-token` valendo, a API e o canal registram um aviso ao subir, e `check_env.py` também avisa. |
-| `SDR_CORS_ORIGINS` | Recomendada | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
+| `SDR_CORS_ORIGINS` | Recomendada | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio: no perfil local, só os front-ends do compose (5173, 5174, 3000); fora dele, nenhuma origem externa. |
 | `SDR_GOOGLE_CLIENT_ID` | Não | `exemplo.apps.googleusercontent.com` | OAuth do Google Agenda (opcional). |
 | `SDR_GOOGLE_CLIENT_SECRET` | Não | `exemplo-secret` | OAuth do Google Agenda (opcional). |
 | `SDR_GOOGLE_REDIRECT_URI` | Não | `http://localhost:8000/calendario/callback` | URI de retorno do OAuth. |
@@ -71,6 +71,9 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_EMBEDDINGS_DIMENSOES` | `1024` | Dimensão dos vetores; tem de casar com o `vector(N)` de `shared/sdr_shared/db/schema.sql`. |
 | `SDR_ACERVO_REFRESH_S` | `900` | De quanto em quanto tempo (segundos) o scheduler traz o acervo do CRM de volta ao índice; `0` desliga. O valor salvo no painel (Configurações → Operação) tem precedência. |
 | `DB_HOST_PORT` / `REDIS_HOST_PORT` / `OLLAMA_HOST_PORT` | `5433` / `6380` / `11435` | Portas publicadas **no host** pelo compose, para acesso de fora dele; os containers usam sempre as portas internas. |
+| `HOST_BIND` | `127.0.0.1` | Endereço do host em que o compose publica API, canais, CRM e os três Vite. `0.0.0.0` abre para a rede — defina antes um `SDR_PAINEL_TOKEN` forte. Postgres, Redis, Ollama e Langfuse ficam no loopback sempre. Ver [Executando com Docker](docker.md#acesso-de-outro-aparelho-da-rede). |
+| `CONTAINER_USER` | `mora` | Usuário dos containers Python. `root` é a válvula de escape se um bind mount recusar escrita (ver [Executando com Docker](docker.md#usuario-dos-containers-python)). |
+| `LANGFUSE_HOST_PORT` / `LANGFUSE_NEXTAUTH_SECRET` / `LANGFUSE_SALT` | `3001` / padrão de dev / padrão de dev | Só com `--profile observability`. Nenhum código envia trace ao Langfuse ainda. |
 | `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local. |
 | `SDR_TEST_ALLOW_WIPE` | *(vazio)* | Ignora a trava que impede as suítes de apagar um banco sem "test" no nome. Último recurso. |
 
@@ -117,7 +120,7 @@ reconstruir (`npm run build`); num `.env` lido pelos serviços Python elas não 
 - No perfil local, `SDR_PAINEL_TOKEN` vazio vira `dev-token` (com aviso no log da API e do canal).
 - `SDR_SESSAO_SECRET` vazio: chave aleatória por processo, com aviso; com o valor de exemplo do
   repositório, nenhum serviço sobe.
-- `SDR_CORS_ORIGINS` vazio equivale a `*` — aceitável apenas em desenvolvimento.
+- `SDR_CORS_ORIGINS` vazio aceita só os front-ends do compose no perfil local, e nenhuma origem fora dele.
 
 ## Transcrição de áudio
 

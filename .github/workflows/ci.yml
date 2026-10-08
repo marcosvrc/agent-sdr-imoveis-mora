@@ -1,5 +1,14 @@
 name: ci
 on: [push, pull_request]
+# O GITHUB_TOKEN do workflow só lê. Nenhum passo daqui escreve no repositório, e um passo
+# comprometido (uma action ou um pacote do npm, por exemplo) não ganha permissão de push de graça.
+permissions:
+  contents: read
+# Um push novo no mesmo ramo cancela a execução anterior: o resultado que importa é o do último
+# commit, e duas rodadas da suíte com Postgres em paralelo só gastam minuto de runner.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   python:
     runs-on: ubuntu-latest
@@ -21,7 +30,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        # Cache do pip chaveado pelos pyproject: muda uma dependência, muda a chave.
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "**/pyproject.toml" }
       - run: pip install -e "shared[local]" -e "services/agent[dev]" -e services/api -e "services/crm[mcp,dev]" -e services/scheduler -e services/ingestion pytest fastapi httpx websockets uvicorn ruff coverage pyright
       # Estático antes do teste: erro de nome ou import quebrado aparece em segundos, sem esperar
       # o banco subir e as sete suítes rodarem.
@@ -58,7 +68,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.app }}/package-lock.json
       - run: cd apps/${{ matrix.app }} && npm ci && npm run build
       # Fora do package.json de propósito (ver eslint.config.js): o container `web` do compose roda
       # `npm install` a cada subida da demo e não deve carregar ferramenta de CI junto.
@@ -67,3 +80,34 @@ jobs:
           cd apps/${{ matrix.app }}
           npm i --no-save --legacy-peer-deps eslint@9 typescript-eslint@8 @eslint/js eslint-plugin-react-hooks@5 globals
           npm run lint
+  seguranca:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip, cache-dependency-path: "**/pyproject.toml" }
+      # O mesmo script do `make segredos`. Aqui não existe local/.env, então a parte dos valores
+      # reais é pulada com aviso; ficam os arquivos de credencial versionados e os padrões de chave
+      # na árvore deste commit (`--desde HEAD` faz o intervalo vazio cair no próprio HEAD).
+      - name: Varredura de segredos
+        run: python scripts/checar_segredos.py --desde HEAD
+      # Auditoria sobre o que a IMAGEM instala, e não sobre o ambiente do runner: a lista sai de
+      # local/dependencias.py, a mesma que o Dockerfile usa, num venv limpo. Assim o relatório fala
+      # do whisper e do langgraph que rodam nos containers, e não do setuptools do Ubuntu.
+      - name: Dependências Python (pip-audit)
+        run: |
+          python -m venv /tmp/auditoria
+          python local/dependencias.py . > /tmp/requisitos.txt
+          /tmp/auditoria/bin/pip install -q -r /tmp/requisitos.txt pip-audit
+          /tmp/auditoria/bin/pip-audit --skip-editable
+      # Só dependência de execução (`--omit=dev`) e só a partir de `high`: o que vai para o
+      # navegador do cliente. Os avisos moderados do toolchain de build do Vite apareceriam em todo
+      # push e ensinariam a ignorar o passo. Os três apps rodam mesmo que o primeiro falhe.
+      - name: Dependências do front (npm audit)
+        run: |
+          falhou=0
+          for app in web dashboard crm; do
+            echo "── apps/$app"
+            (cd apps/$app && npm audit --omit=dev --audit-level=high) || falhou=1
+          done
+          exit $falhou

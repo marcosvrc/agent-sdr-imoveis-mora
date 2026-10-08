@@ -1,20 +1,63 @@
 # Imagem única do perfil local: todos os workers Python. Build a partir da raiz do repo (context: ..).
 FROM python:3.12-slim
 WORKDIR /app
-COPY shared /app/shared
-COPY services /app/services
-# shared editável: os volumes do compose montam o código do host por cima, e as edições valem na hora.
+
+# 1) Dependências de terceiros, a partir SÓ dos pyproject.toml. A ordem é o que importa: esta
+# camada só é refeita quando um pyproject muda. Antes o código vinha copiado primeiro, e qualquer
+# edição num .py reinstalava tudo a cada `--build` — inclusive o faster-whisper.
 # O agente vai com o extra `local`, que é onde mora o faster-whisper. Sem ele, todo áudio recebido
 # vira "(áudio não compreendido)" — o import falha e o handler degrada. Custa algumas centenas de MB
 # na imagem (ctranslate2, onnxruntime, av) e a imagem é uma só para todos os serviços, então o
 # scheduler também carrega o peso. É o preço de não manter duas imagens num projeto deste tamanho.
 # O `av` traz o ffmpeg embutido: não é preciso instalar nada de sistema para ler o OGG/Opus do
-# Telegram.
-RUN pip install --no-cache-dir -e "/app/shared[local,openai]" \
-    -e "/app/services/agent[local]" -e /app/services/api \
+# Telegram. `hatchling` e `editables` entram aqui porque a etapa 2 instala sem isolamento de build:
+# o primeiro é o backend dos pyproject, o segundo é o que o pacote editável do hatchling importa
+# em tempo de execução (sem ele o `import sdr_shared` falha, testado).
+COPY local/dependencias.py /tmp/dependencias.py
+COPY shared/pyproject.toml shared/
+COPY services/agent/pyproject.toml services/agent/
+COPY services/api/pyproject.toml services/api/
+COPY services/channels/telegram/pyproject.toml services/channels/telegram/
+COPY services/channels/local/pyproject.toml services/channels/local/
+COPY services/scheduler/pyproject.toml services/scheduler/
+COPY services/ingestion/pyproject.toml services/ingestion/
+COPY services/crm/pyproject.toml services/crm/
+RUN python /tmp/dependencias.py /app > /tmp/requisitos.txt \
+    && pip install --no-cache-dir -r /tmp/requisitos.txt "hatchling>=1.21" "editables>=0.5" \
+    && rm /tmp/dependencias.py /tmp/requisitos.txt
+
+# 2) O código e os pacotes do monorepo, editáveis e SEM dependências (já vieram na etapa 1): leva
+# segundos. Editável porque os volumes do compose montam o código do host por cima de /app/shared
+# e /app/services, e o pacote editável aponta exatamente para esses caminhos — a edição vale na hora.
+# O `channels/local` não é instalado: roda pelo working_dir (`uvicorn app:app`), como sempre.
+# `pip check` no fim: se alguém acrescentar uma dependência num pyproject e ela não chegar à etapa
+# 1, o build falha aqui — e não um container no meio da demonstração, com ModuleNotFoundError.
+COPY shared /app/shared
+COPY services /app/services
+RUN pip install --no-cache-dir --no-deps --no-build-isolation \
+    -e /app/shared -e /app/services/agent -e /app/services/api \
     -e /app/services/channels/telegram \
     -e /app/services/scheduler -e /app/services/ingestion \
-    -e "/app/services/crm[mcp]" \
-    fastapi "uvicorn[standard]" websockets
+    -e /app/services/crm \
+    && pip check
+
+# 3) Usuário sem privilégio. Como root, um processo comprometido (o agente lê texto de qualquer
+# pessoa e chama ferramentas) escrevia em qualquer lugar do container e nos bind mounts com dono
+# root no host Linux. UID/GID 1000 casam com o primeiro usuário de quase todo Linux, então os
+# arquivos que a API grava em data/fotos continuam do dono do clone. No Docker Desktop do Mac o
+# compartilhamento de arquivos não aplica o UID do container ao disco do host: o arquivo nasce
+# como o usuário do Mac, qualquer que seja o UID aqui. Se mesmo assim aparecer "Permission
+# denied" ao gravar num bind mount, `CONTAINER_USER=root` no local/.env devolve o comportamento
+# antigo sem rebuild (ver docs/getting-started/docker.md).
+# HF_HOME fixo, e não derivado do HOME: o cache do whisper (volume `whisper-mora`) fica no mesmo
+# lugar com qualquer usuário, inclusive no escape acima.
+ARG UID=1000
+ARG GID=1000
+RUN groupadd --gid "${GID}" mora \
+    && useradd --uid "${UID}" --gid "${GID}" --create-home --shell /usr/sbin/nologin mora \
+    && mkdir -p /home/mora/.cache/huggingface \
+    && chown -R mora:mora /home/mora/.cache
 ENV PYTHONPATH=/app/services/agent/src \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    HF_HOME=/home/mora/.cache/huggingface
+USER mora

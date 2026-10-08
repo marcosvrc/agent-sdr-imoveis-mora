@@ -3,7 +3,8 @@
 __pycache__/
 node_modules/
 dist/
-cdk.out/
+# Cache incremental do `tsc -b`: muda a cada build e gerava diff em todo commit de front.
+*.tsbuildinfo
 *.egg-info/
 _to_delete/
 data/fotos/

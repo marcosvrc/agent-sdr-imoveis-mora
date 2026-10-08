@@ -10,8 +10,8 @@ A observabilidade em vigor é a **leve** (ADR-0011): tabelas no Postgres (`turno
 sistema** no painel.
 
 Não há stack de métricas / tracing por padrão — a de OpenTelemetry + Grafana foi **revogada** (ADR-0005)
-por consumo de recursos na máquina de desenvolvimento. O **Langfuse** é opcional
-(`--profile observability`) para tracing de prompt / LLM.
+por consumo de recursos na máquina de desenvolvimento. O **Langfuse** sobe por opção
+(`--profile observability`), mas **nenhum código envia trace a ele ainda**.
 
 ## Sinais disponíveis
 
@@ -28,8 +28,13 @@ por consumo de recursos na máquina de desenvolvimento. O **Langfuse** é opcion
 make local    # some o compose; adicione --profile observability para o Langfuse
 ```
 
-Langfuse fica em <http://localhost:3000> e resolve observabilidade de **prompt e conversa** — o que foi
-perguntado ao modelo e o que ele respondeu.
+Langfuse fica em <http://localhost:3001> (a 3000 é do painel do CRM; `LANGFUSE_HOST_PORT` muda) e
+serviria para observabilidade de **prompt e conversa** — o que foi perguntado ao modelo e o que ele
+respondeu. Hoje é só o serviço: não há SDK do Langfuse instalado nem chave configurada, então a
+interface abre vazia. Integrar é trabalho por fazer; até lá, o que existe de observabilidade é o
+das tabelas acima. Quem integrar define `LANGFUSE_NEXTAUTH_SECRET` e `LANGFUSE_SALT` no
+`local/.env` — os padrões do compose são de desenvolvimento, aceitáveis só porque a porta fica no
+loopback.
 
 !!! note "Duas observabilidades diferentes"
     Langfuse cobre prompt / conversa; a stack OTel + Grafana (revogada) cobria saúde de sistema. A

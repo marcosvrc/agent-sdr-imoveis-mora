@@ -35,9 +35,13 @@ Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 | Login do CRM sem oráculo de tempo | Implementado | E-mail inexistente também passa pelo Argon2 (hash fictício) |
 | CORS | Implementado | `SDR_CORS_ORIGINS`; vazio = só os front-ends locais no perfil local, nenhuma origem fora dele |
 | Gerenciamento de secrets | Parcial | Só `.env` (`local/.env`, fora do versionamento). Não há cofre de segredos — a entrega roda na máquina de quem avalia |
-| Criptografia em trânsito | Parcial | Tudo é HTTP/WS em `localhost`; nada está exposto na rede. Chamadas de saída (LLM, Telegram, Google) são HTTPS |
+| Exposição de portas | Implementado | Toda porta do compose publicada só em `127.0.0.1`. `HOST_BIND=0.0.0.0` abre API, canais, CRM e front-ends de propósito; Postgres, Redis, Ollama e Langfuse ficam no loopback sempre |
+| Containers sem root | Implementado | A imagem Python roda como `mora` (UID 1000); `CONTAINER_USER=root` é só válvula de escape para bind mount |
+| Isolamento do ambiente do CRM | Implementado | `crm-api`, `crm-mcp` e `crm-mcp-stdio` não leem o `local/.env`: recebem, nomeadas, só as variáveis `CRM_*` que usam — nada de chave de LLM, token do Telegram ou segredo de sessão da Mora |
+| Criptografia em trânsito | Parcial | Tudo é HTTP/WS no loopback; nada está exposto na rede por padrão. Chamadas de saída (LLM, Telegram, Google) são HTTPS |
 | Tratamento de PII / LGPD | Parcial | Mascaramento na saída; página de privacidade no site. Política de retenção formal: recomendada |
-| Análise de dependências | Recomendado | Não há varredura automatizada no CI |
+| Análise de dependências | Implementado | Job `seguranca` da CI: `pip-audit` nas dependências da imagem e `npm audit --omit=dev --audit-level=high` nos três apps |
+| Varredura de segredos | Implementado | `scripts/checar_segredos.py` na CI (árvore do commit) e em `make segredos` antes do push (valores reais do `local/.env` no histórico) |
 | Moderação do provedor de LLM | Recomendado | Só os guardrails próprios do projeto; nenhum filtro do fornecedor é configurado |
 
 PII = Personally Identifiable Information (informação pessoal identificável).
@@ -63,8 +67,12 @@ saída passa por saneamento antes de virar mensagem. Veja [Fluxo do agente e LLM
 - Rate limiting é **por processo** (não distribuído entre múltiplos workers).
 - Transcrição de áudio: já é tratada como **entrada não confiável** (entra blindada, como o texto do
   cliente), mas **não há teste adversarial específico** de injeção via áudio transcrito.
-- Não há TLS: a entrega é local e nada é servido fora da máquina. Publicar isto em rede exigiria um
-  proxy com certificado na frente, que não existe no repositório.
+- Não há TLS: a entrega é local e nada é servido fora da máquina. `HOST_BIND=0.0.0.0` abre as portas
+  de aplicação para a rede local em HTTP puro — o token do painel trafega em claro no Wi-Fi. Publicar
+  isto de verdade exigiria um proxy com certificado na frente, que não existe no repositório.
+- O `dev-token` do painel é público (está na documentação) e vale sempre que `SDR_PAINEL_TOKEN` está
+  vazio no perfil local. Por isso a publicação no loopback é a defesa, e abrir para a rede pede um
+  token próprio antes.
 
 Os comentários em `services/agent/src/agent/guardrails/` detalham cada ponto.
 

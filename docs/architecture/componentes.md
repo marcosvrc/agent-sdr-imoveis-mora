@@ -33,13 +33,14 @@ apontada.
 **O que é.** Um container `pgvector/pgvector:pg16` (`db` em `local/docker-compose.yml`, publicado
 só no loopback do host em `127.0.0.1:5433`) que hospeda **dois bancos separados**: `sdr`, da Mora,
 e `crm`, do CRM da imobiliária. Há um terceiro, `langfuse`, criado por `local/00-langfuse.sql`
-para o perfil opcional `observability`.
+para o perfil opcional `observability` — vazio enquanto nenhum código enviar trace ao Langfuse.
 
 **Por que dois bancos e não dois schemas.** A regra de integração é "fluxo num sentido só": a Mora
 escreve no CRM pela ponte MCP e nada do CRM toca o banco da Mora (`docs/decisions.md`, D-01/D-02).
 Banco separado torna a regra verificável — uma consulta cruzada precisaria de outra conexão, e o
 `crm-api` recebe um ambiente próprio (`CRM_DATABASE_DSN: postgresql://sdr:sdr@db:5432/crm`) sem
-herdar o DSN da Mora. O ADR-0004 ("um Postgres para tudo") continua válido no sentido de *uma
+herdar o DSN da Mora — nem o `local/.env`: os serviços do CRM mesclam só a base `x-pybase` do
+compose e declaram, uma a uma, as variáveis `CRM_*` que leem. O ADR-0004 ("um Postgres para tudo") continua válido no sentido de *uma
 instância*; o texto dele fala em banco único porque antecede o CRM.
 
 ### Banco da Mora (`shared/sdr_shared/db/schema.sql`)
@@ -407,7 +408,7 @@ agente transcreve antes do grafo (`handler._transcrever_se_audio` →
 no próprio processo (`WhisperModel(SDR_WHISPER_MODEL=small, device="cpu", compute_type="int8")`,
 idioma `pt`). `SDR_TRANSCRICAO_PROVIDER` ∈ `auto` | `whisper_local` | `off`, sobreponível pelo
 painel. O handler manda um recibo ("Recebi seu áudio...") antes de transcrever, e a transcrição
-entra no prompt como texto não confiável. O cache do modelo é o volume `whisper` do compose.
+entra no prompt como texto não confiável. O cache do modelo é o volume `whisper-mora` do compose.
 
 **Limites conhecidos.** As conexões e os `pendentes` do canal web são em memória de um processo;
 reiniciar o `channels` perde o que estava na deque. A reativação proativa só usa o Telegram
@@ -448,12 +449,13 @@ da mudança; `/health/ready` confere banco **e** todas as tabelas listadas no pr
 
 **Front do CRM** (`apps/crm`, serviço `crm-web`, porta `3000`): usa sessão em cookie com
 `credentials: "include"` e o mesmo host da API no navegador (`VITE_CRM_API=http://localhost:8100`),
-sem token de serviço no bundle (D-15). Publica a **mesma porta 3000** do Langfuse opcional; os dois
-não sobem juntos.
+sem token de serviço no bundle (D-15). O Langfuse opcional publica na 3001 para não disputar a 3000.
 
-**Portas publicadas no host** (`local/docker-compose.yml`): `db` 5433 (loopback), `redis` 6380
-(loopback), `ollama` 11435 (perfil), `channels` 8001, `api` 8000, `crm-api` 8100, `crm-mcp` 8200,
-`crm-web` 3000, `web` 5173, `dashboard` 5174, `langfuse` 3000 (perfil).
+**Portas publicadas no host** (`local/docker-compose.yml`), todas em `127.0.0.1`: `db` 5433,
+`redis` 6380, `ollama` 11435 (perfil), `channels` 8001, `api` 8000, `crm-api` 8100, `crm-mcp` 8200,
+`crm-web` 3000, `web` 5173, `dashboard` 5174, `langfuse` 3001 (perfil). `HOST_BIND` troca o
+endereço só das portas de aplicação (canais, APIs, MCP e front-ends); banco, Redis, Ollama e
+Langfuse ficam no loopback sempre.
 
 ## Scheduler
 
@@ -513,7 +515,8 @@ A página `apps/dashboard/src/pages/Saude.tsx` consome isso (`lib/api.ts::saude`
 
 **Logs.** `shared/sdr_shared/log.py::configurar` é chamado por cada serviço e carrega
 `lead_id`/`canal` como contexto (`contexto`/`limpar_contexto` no handler). O Langfuse
-(`--profile observability`) é opcional, para tracing de prompt, e não faz parte do caminho padrão.
+(`--profile observability`, porta 3001) está no compose só como ponto de partida: nenhum código
+envia trace a ele ainda, e ele não faz parte do caminho padrão.
 
 **Limites conhecidos.** Retenção de 7 dias em `turnos` e `saude`; não há duração por nó (só o
 caminho); a amostra de fila depende do scheduler estar vivo — que é justamente o que `batimentos`

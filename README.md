@@ -100,7 +100,7 @@ instrução no prompt. Mais em [Contexto](docs/overview/contexto.md) e
 | Front-ends | React 18, Vite 7, Tailwind 3.4, TanStack Query 5, React Router 6, Recharts, Zustand (site), vite-plugin-pwa | Site vitrine (PWA), painel da Mora, CRM |
 | Canais | Telegram Bot API (long polling) · WebSocket próprio (site) | Sem URL pública, sem túnel |
 | Execução | Docker Compose (uma imagem Python, um comando por container) | A entrega inteira |
-| Qualidade | pytest (796 testes, Postgres real), ruff, pyright básico, eslint, coverage com piso, harness de avaliação | CI no GitHub Actions |
+| Qualidade | pytest (822 testes, Postgres real), ruff, pyright básico, eslint, coverage com piso, harness de avaliação | CI no GitHub Actions |
 | Docs | MkDocs Material, ADRs, OpenAPI versionado | Portal no GitHub Pages |
 
 Versões e finalidade de cada pacote: [Tecnologias](docs/technical-reference/tecnologias.md).
@@ -154,6 +154,10 @@ make corretores                          # equipe de 20 corretores, casada com o
 | CRM — API | http://localhost:8100 | `GET /health/ready` (confere o schema inteiro) |
 | CRM — servidor MCP | http://localhost:8200/mcp | `GET /saude` |
 | Postgres · Redis · Ollama | `127.0.0.1:5433` · `:6380` · `:11435` | só loopback |
+
+Todas as portas acima são publicadas só em `127.0.0.1`: outro aparelho da rede não as alcança. Para
+abrir de propósito (testar no celular), veja `HOST_BIND` em
+[Executando com Docker](docs/getting-started/docker.md#acesso-de-outro-aparelho-da-rede).
 
 Variáveis de ambiente, uma a uma: [Configuração](docs/getting-started/configuracao.md). Execução
 fora do compose, validação e problemas comuns: [Primeiros passos](docs/getting-started/docker.md),
@@ -355,21 +359,23 @@ Página completa, por horizonte, com motivo e onde mexe: **[Roadmap e limitaçõ
 
 ## 12. Qualidade: testes, CI e segurança
 
-- **Testes:** 796 testes em sete suítes com Postgres real e LLM falso — `channels/local` 12,
-  `channels/telegram` 12, `agent` 361, `api` 69, `crm` 135, `shared` 191 e `tests/` na raiz 16
-  (conferência do `.env`), contados por `pytest --collect-only` em 2026-10-07 (incluindo a ponte com o
+- **Testes:** 822 testes em sete suítes com Postgres real e LLM falso — `channels/local` 12,
+  `channels/telegram` 12, `agent` 361, `api` 69, `crm` 135, `shared` 191 e `tests/` na raiz 42
+  (conferência do `.env` e varredura de segredos), contados por `pytest --collect-only` em 2026-10-07 (incluindo a ponte com o
   CRM contra a API real e o broker contra um `redis-server` descartável). `make test` cria e usa os
   bancos `sdr_test` e `crm_test`; uma trava recusa rodar contra banco sem "test" no nome.
 - **Estático:** `make lint` (ruff), `make tipos` (pyright básico — foi o que achou um método
   inexistente no caminho de reconhecimento pelo CRM), `eslint` nas três apps, build TypeScript
   estrito, `npm run a11y` no site.
 - **CI** ([`ci.yml`](.github/workflows/ci.yml)): job `python` (ruff → pyright → cobertura com piso
-  → harness de avaliação com dublês → OpenAPI em dia) e job `frontend` (matriz `web`, `dashboard`,
-  `crm`: `npm ci`, build, eslint).
+  → harness de avaliação com dublês → OpenAPI em dia), job `frontend` (matriz `web`, `dashboard`,
+  `crm`: `npm ci`, build, eslint) e job `seguranca` (varredura de segredos, `pip-audit`,
+  `npm audit --omit=dev --audit-level=high`).
 - **Segurança:** portões próprios por porta (ADR-0008); sessão do widget assinada; credencial do
   painel fora da URL; CRM com argon2, sessão revogável, rate limit, teto de corpo, idempotência,
   scopes e `exigir_humano`; prompts blindados e saída saneada; refresh token do Google cifrado em
-  repouso; Postgres e Redis só em loopback; segredos fora do repositório (`.env.example` com valores
+  repouso; toda porta do compose publicada só em `127.0.0.1` (`HOST_BIND` abre de propósito);
+  containers Python sem root; segredos fora do repositório (`.env.example` com valores
   fictícios). Revisão completa de setembro/2026 com 16 correções aplicadas:
   [`docs/quality/revisao-2026-09.md`](docs/quality/revisao-2026-09.md); página de referência:
   [Segurança e privacidade](docs/quality/seguranca.md).

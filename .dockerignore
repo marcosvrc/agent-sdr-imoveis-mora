@@ -9,10 +9,10 @@ node_modules
 **/*.pyc
 **/.pytest_cache
 **/.venv
-**/cdk.out
 apps
-infra
 local
+# ...exceto o script que lista as dependências a partir dos pyproject (etapa 1 do Dockerfile).
+!local/dependencias.py
 docs
 data
 scripts

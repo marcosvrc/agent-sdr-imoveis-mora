@@ -51,13 +51,13 @@ def montar() -> Diagrama:
     ], "roxo")
 
     bloco(1360, 590, 560, "05", "Opcionais", "sobem por perfil", [
-        ("langfuse :3000", "perfil observability · tracing de LLM"),
+        ("langfuse :3001", "perfil observability · sem integração ainda"),
         ("db-init", "aplica os schemas a cada up"),
     ], "ambar")
 
     d.nota(980, 920, 1840, [
         "As portas do host (5433, 6380, 11435) evitam colidir com instâncias nativas de Postgres, Redis e Ollama, e mudam por DB_HOST_PORT, REDIS_HOST_PORT e OLLAMA_HOST_PORT.",
-        "crm-web e Langfuse publicam a mesma porta 3000 — os dois não sobem juntos. Postgres e Redis são publicados só em 127.0.0.1.",
+        "Toda porta é publicada só em 127.0.0.1; HOST_BIND abre as de aplicação de propósito. O Langfuse usa a 3001 para não disputar a 3000 do crm-web.",
         "Os serviços Python compartilham uma imagem (local/Dockerfile.python): o que muda entre containers é o comando, não a imagem.",
         "Mudança de schema ou de dependência exige docker compose up -d --build; restart não roda o db-init e o /health/ready reprova dizendo isso."])
     d.rodape("topologia")

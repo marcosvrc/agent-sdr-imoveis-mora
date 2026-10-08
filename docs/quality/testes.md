@@ -8,9 +8,10 @@ description: Tipos de teste do Mora, como executar backend e front-ends, CI e o 
 ## Tipos de teste
 
 - **Backend** — testes de integração com Postgres real (pgvector) e LLM falso: grafo do agente, API,
-  canais, governança e segurança. São **796** em sete suítes (contagem de `pytest --collect-only` em
+  canais, governança e segurança. São **822** em sete suítes (contagem de `pytest --collect-only` em
   2026-10-07): `services/agent` 361, `shared` 191, `services/crm` 135, `services/api` 69,
-  `services/channels/local` 12, `services/channels/telegram` 12 e `tests/` na raiz 16.
+  `services/channels/local` 12, `services/channels/telegram` 12 e `tests/` na raiz 42 (conferência
+  do `.env` e a varredura de segredos de `scripts/checar_segredos.py`).
 - **Front-ends** — build com TypeScript estrito (`web`, `dashboard` e `crm`).
 - **Análise estática** — `ruff` no Python, `eslint` (com `react-hooks`) nos front-ends.
 - **Cobertura** — combinada das sete suítes, com piso na CI.
@@ -19,7 +20,7 @@ description: Tipos de teste do Mora, como executar backend e front-ends, CI e o 
 
 ```bash
 make test            # host, Python 3.12 (cria e usa o banco sdr_test)
-make test-docker     # dentro do container do agente
+make test-docker     # as mesmas sete suítes, dentro do container do agente
 ```
 
 !!! warning "Trava de segurança"
@@ -90,6 +91,15 @@ roda dois jobs a cada push / pull request:
 | --- | --- |
 | `python` | `make lint` (ruff) → `make tipos` (pyright básico) → `make cobertura` (pytest com pgvector + piso de cobertura) → `make eval-fake` (harness com dublês) → conferência do `openapi.json` |
 | `frontend` | `npm ci && npm run build` (TypeScript estrito) → eslint, em matriz para `web`, `dashboard` e `crm` |
+| `seguranca` | `scripts/checar_segredos.py --desde HEAD` (arquivos de credencial e padrões de chave na árvore; sem `.env` na CI, a parte dos valores reais é pulada) → `pip-audit` sobre as dependências que a imagem instala (`local/dependencias.py`, num venv limpo) → `npm audit --omit=dev --audit-level=high` nos três apps |
+
+O workflow roda com `permissions: contents: read` e `concurrency` por ramo (um push novo cancela a
+rodada anterior do mesmo ramo); pip e npm usam o cache do `setup-python`/`setup-node`, chaveado
+pelos `pyproject.toml` e pelos `package-lock.json`.
+
+Antes de empurrar, `make segredos` roda a mesma varredura com o seu `local/.env`: procura no
+histórico os valores das variáveis com nome de segredo (`KEY`, `TOKEN`, `SECRET`, `PASSWORD`…, e DSN
+com senha que não seja a de desenvolvimento). Nome de modelo e URL pública não entram.
 
 Havia um terceiro job, de infraestrutura (`cdk synth`); saiu com as stacks em nuvem.
 

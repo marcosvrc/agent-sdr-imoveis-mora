@@ -14,9 +14,18 @@ Duas perguntas diferentes, e as duas importam:
 Nada de valor de segredo é impresso: só o nome da variável, o arquivo e a linha. Sai com status 1
 se achar algo, para poder entrar num hook de pre-push depois.
 
+Na pergunta 1, só conta como segredo a variável com NOME de segredo (KEY, TOKEN, SECRET, PASSWORD…)
+ou o DSN/URL com senha embutida. Antes era toda variável do .env com 12 caracteres ou mais, e
+`SDR_MODEL_CONVERSA=claude-sonnet-4-5` — nome de modelo, público em qualquer documentação — saía
+como achado GRAVE, "NÃO EMPURRE". Relatório que grita por nada ensina a ignorar o relatório.
+
+Na CI não há .env: a pergunta 1 é pulada com aviso e as outras três rodam sobre a árvore do commit
+(`--desde HEAD` faz o intervalo vazio cair no próprio HEAD). É o `make segredos` sem a parte local.
+
 Uso:
     python3 scripts/checar_segredos.py
     python3 scripts/checar_segredos.py --env local/.env --desde origin/master
+    python3 scripts/checar_segredos.py --desde HEAD          # CI: só a árvore do commit
 """
 import argparse
 import re
@@ -43,6 +52,18 @@ PADROES = {
     "chave privada": r"BEGIN [A-Z ]*PRIVATE KEY",
 }
 
+# Nome de variável que denuncia segredo. Por NOME, e não por valor: o valor de uma chave não tem
+# formato garantido (é exatamente o caso que a pergunta 1 existe para pegar), mas quem a guarda
+# num .env sempre a chama de alguma destas coisas.
+NOME_DE_SEGREDO = re.compile(r"KEY|TOKEN|SECRET|PASSWORD|PASSWD|SENHA|CREDENCIA|CREDENTIAL|PRIVATE|SALT", re.I)
+# DSN e URL só são segredo quando carregam senha: `postgresql://sdr:SENHA@host/db`.
+SENHA_EMBUTIDA = re.compile(r"://[^:/@\s]+:([^@\s]+)@")
+# Senhas de desenvolvimento que já estão escritas no compose e na documentação.
+SENHAS_PUBLICAS = {"sdr", "postgres", "password", "senha", "dev", "test"}
+# Valores que são texto de exemplo, não credencial: o .env.example manda trocar, e quem não trocou
+# não vazou nada — no máximo esqueceu de configurar, que é assunto do check_env.py.
+PLACEHOLDER = re.compile(r"troque|cole[_ -]|seu[_ -]|sua[_ -]|exemplo|example|changeme|x{6,}|^dev-token$", re.I)
+
 # Arquivos gerados, onde um "achado" é quase sempre hash de dependência.
 IGNORAR = [":!*package-lock.json", ":!*.lock", ":!*uv.lock", ":!docs/assets/openapi.json"]
 
@@ -52,6 +73,15 @@ def git(*args: str, checar: bool = False) -> str:
     if checar and r.returncode != 0:
         raise SystemExit(f"git {' '.join(args)} falhou: {r.stderr.strip()}")
     return r.stdout
+
+
+def eh_segredo(nome: str, valor: str) -> bool:
+    """Se este par do .env merece ser procurado no histórico."""
+    if len(valor) < 12 or PLACEHOLDER.search(valor):   # abaixo de 12 não é segredo, é palavra comum
+        return False
+    if (m := SENHA_EMBUTIDA.search(valor)):
+        return m.group(1) not in SENHAS_PUBLICAS
+    return bool(NOME_DE_SEGREDO.search(nome))
 
 
 def valores_do_env(caminho: Path) -> dict[str, str]:
@@ -64,8 +94,9 @@ def valores_do_env(caminho: Path) -> dict[str, str]:
         if not linha or linha.startswith("#") or "=" not in linha:
             continue
         k, v = linha.split("=", 1)
-        v = v.strip().strip("'\"")
-        if len(v) >= 12:                     # abaixo disso não é segredo, é palavra comum
+        # Comentário no fim da linha (`CHAVE=valor   # explicação`) não faz parte do valor.
+        v = v.split(" #", 1)[0].strip().strip("'\"")
+        if eh_segredo(k.strip(), v):
             env[k.strip()] = v
     return env
 

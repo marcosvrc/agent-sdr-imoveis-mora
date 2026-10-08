@@ -30,19 +30,45 @@ x-pyenv: &pyenv
   # custo é varrer alguns diretórios Python a cada meio segundo.
   WATCHFILES_FORCE_POLLING: "true"
 
-x-py: &py
+# Base comum a TODO serviço Python — Mora e CRM —, sem ambiente nenhum. O ambiente fica de fora de
+# propósito: o `env_file: .env` carrega a chave da Anthropic, o token do Telegram e o segredo de
+# sessão, e o CRM herdava tudo isso pelo `<<: *py`, contradizendo o "o CRM não enxerga nada da
+# Mora" escrito no próprio `crm-api`. Agora a Mora mescla `x-py` (base + .env + x-pyenv) e o CRM
+# mescla só esta base e declara, uma a uma, as variáveis que lê.
+x-pybase: &pybase
   build: { context: .., dockerfile: local/Dockerfile.python }
-  env_file: .env
-  environment: *pyenv
   # `whisper` é o cache do modelo de transcrição. Volume nomeado porque o download passa de meio
   # giga e sem ele CADA `--force-recreate` baixa tudo de novo — inclusive na véspera de uma
-  # demonstração, com o cliente esperando a resposta do primeiro áudio.
-  volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts", "whisper:/root/.cache/huggingface" ]
+  # demonstração, com o cliente esperando a resposta do primeiro áudio. O caminho é o HOME do
+  # usuário `mora` (a imagem não roda mais como root, ver Dockerfile.python) e o volume ganhou nome
+  # novo, `whisper-mora`: o antigo foi povoado pelo root, e o `mora` não conseguiria gravar nele
+  # nem o arquivo de trava que o huggingface_hub cria ao LER o cache. `tests/` da raiz entra só
+  # para o `make test-docker` rodar as mesmas sete suítes do `make test`.
+  volumes: [ "../shared:/app/shared", "../services:/app/services", "../data:/app/data", "../scripts:/app/scripts", "../tests:/app/tests", "whisper-mora:/home/mora/.cache/huggingface" ]
+  # Worker que cai volta sozinho. Sem isto, uma exceção não tratada num consumidor deixava o
+  # container parado em silêncio: o `docker compose ps` mostrava "Exited" e a fila crescia.
+  restart: unless-stopped
+  # A imagem roda como `mora` (sem root). Esta variável é a válvula de escape, sem rebuild, para o
+  # caso de um bind mount recusar escrita a esse usuário: `CONTAINER_USER=root` no local/.env.
+  user: "${CONTAINER_USER:-mora}"
   depends_on:
     db: { condition: service_healthy }
     db-init: { condition: service_completed_successfully }
-    redis: { condition: service_started }
+    redis: { condition: service_healthy }
 
+x-py: &py
+  <<: *pybase
+  env_file: .env
+  environment: *pyenv
+
+# Portas publicadas no host: TODAS em `127.0.0.1` por padrão. Sem o IP, o Docker publica em
+# 0.0.0.0, e no Docker Desktop isso fura o firewall do Mac: qualquer um no mesmo Wi-Fi (o do
+# escritório, o do café, o da sala da banca) chegava à API e ao painel com o `dev-token`, que é
+# público porque está escrito na documentação. Os serviços de aplicação (api, channels, CRM e os
+# três Vite) leem o endereço de `HOST_BIND`: para abrir de propósito — testar o site no celular,
+# por exemplo — ponha `HOST_BIND=0.0.0.0` no local/.env e defina ANTES um `SDR_PAINEL_TOKEN` forte.
+# Postgres, Redis, Ollama e Langfuse ficam no loopback sempre: não há motivo para outro aparelho
+# falar com eles, e dois deles não têm senha nenhuma.
 services:
   db:
     image: pgvector/pgvector:pg16
@@ -56,7 +82,10 @@ services:
       - ./00-crm.sql:/docker-entrypoint-initdb.d/00-crm.sql
       - ../shared/sdr_shared/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
       - pgdata:/var/lib/postgresql/data
-    healthcheck: { test: ["CMD-SHELL", "pg_isready -U sdr"], interval: 3s, retries: 20 }
+    # timeout explícito: o padrão do Docker é 30 s, e um `pg_isready` pendurado seguraria a subida
+    # inteira por meio minuto a cada tentativa antes de contar como falha.
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U sdr"], interval: 3s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
 
   db-init:                     # cria os bancos e aplica os schemas ANTES de qualquer serviço subir
     # Por que não basta o `docker-entrypoint-initdb.d`: o Postgres só roda aqueles scripts quando o
@@ -96,36 +125,51 @@ services:
 
   redis:                       # Streams + locks: é a fila entre os canais e o agente
     image: redis:7-alpine
+    # AOF ligado e volume próprio: os Streams SÃO a fila. Sem persistência, um `docker compose
+    # restart redis` (ou o Docker Desktop reiniciando) apagava em silêncio toda mensagem de cliente
+    # que ainda não tinha sido consumida — o lead escreveu e a Mora nunca soube. `everysec` é o
+    # padrão do Redis: perde no máximo um segundo numa queda da máquina, sem fsync por comando.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes: [ "redis:/data" ]
     ports: ["127.0.0.1:${REDIS_HOST_PORT:-6380}:6379"]   # loopback, pelo mesmo motivo do db. Host 6380 (6379 costuma estar ocupado)
+    # Com o AOF, o Redis só aceita comando depois de reler o arquivo; "started" não basta.
+    healthcheck: { test: ["CMD", "redis-cli", "ping"], interval: 3s, timeout: 3s, retries: 20 }
+    restart: unless-stopped
 
   ollama:                      # opcional: LLM e embeddings 100% locais
-    image: ollama/ollama
+    # Versão fixa: sem tag, cada `docker compose pull` trazia o Ollama do dia, e uma mudança de
+    # formato de modelo ou de API aparecia como "a busca parou de funcionar" sem nada no diff.
+    # Atualizar é trocar o número aqui, de propósito, e rodar `make ollama-pull` de novo.
+    image: ollama/ollama:0.34.0
     profiles: [ollama]
-    ports: ["${OLLAMA_HOST_PORT:-11435}:11434"]   # host: 11435 (11434 costuma estar ocupado pelo Ollama nativo)
+    # Loopback sempre, mesmo com HOST_BIND aberto: o Ollama não tem autenticação nenhuma, e
+    # publicado na rede ele vira GPU/CPU de graça para qualquer um no mesmo Wi-Fi.
+    ports: ["127.0.0.1:${OLLAMA_HOST_PORT:-11435}:11434"]   # host: 11435 (11434 costuma estar ocupado pelo Ollama nativo)
     volumes: [ "ollama:/root/.ollama" ]
+    restart: unless-stopped
 
-  agent:                       # substitui Lambda do agente
+  agent:                       # worker do turno: consome `inbound` e roda o grafo
     <<: *py
     command: python -c "from agent.handler import local_worker; local_worker()"
     working_dir: /app/services/agent/src
 
-  resumidor:                   # substitui Lambda do Resumidor (consome tópico `resumir`)
+  resumidor:                   # consome o tópico `resumir` (resumo do lead fora do turno)
     <<: *py
     command: python -c "from agent.eventos import local_worker; local_worker()"
     working_dir: /app/services/agent/src
 
-  reativador:                  # substitui Lambda do Reativador (consome tópico `imovel-novo`)
+  reativador:                  # consome o tópico `imovel-novo` (reativa leads que combinam)
     <<: *py
     command: python -c "from agent.reativador import local_worker; local_worker()"
     working_dir: /app/services/agent/src
 
-  channels:                    # substitui API Gateway HTTP + WebSocket + Lambdas de canal
+  channels:                    # HTTP + WebSocket do chat do site e do espelho do painel
     <<: *py
     # --reload-dir: o uvicorn vigia só o working_dir, e metade do código vive em /app/shared.
     command: uvicorn app:app --host 0.0.0.0 --port 8001 --reload
              --reload-dir /app/services/channels/local --reload-dir /app/shared
     working_dir: /app/services/channels/local
-    ports: ["8001:8001"]
+    ports: ["${HOST_BIND:-127.0.0.1}:8001:8001"]
     # /health devolve 503 se o Redis cair — `docker compose ps` passa a mostrar (unhealthy) em vez
     # de "Up" com o chat mudo. start_period cobre a instalação/reload do uvicorn.
     healthcheck:
@@ -134,23 +178,28 @@ services:
       timeout: 5s
       retries: 3
       start_period: 40s
+      start_interval: 2s
 
   telegram-in:                 # long polling — sem tunnel, sem conta de negócio na Meta (ADR-0007)
     <<: *py
     command: python -c "from canal_telegram.inbound import local_worker; local_worker()"
     working_dir: /app/services/channels/telegram
+    # `on-failure`, e não o `unless-stopped` da base: sem SDR_TELEGRAM_BOT_TOKEN o worker avisa e
+    # SAI com status 0, que é o comportamento certo para quem não usa Telegram. Com
+    # `unless-stopped` o Docker o religaria para sempre, e o log viraria o mesmo aviso em laço.
+    restart: on-failure
 
-  telegram-out:                # substitui Lambda outbound do Telegram
+  telegram-out:                # consome `outbound-telegram` e entrega pela Bot API
     <<: *py
     command: python -c "from canal_telegram.outbound import local_worker; local_worker()"
     working_dir: /app/services/channels/telegram
 
-  scheduler:                   # substitui EventBridge Scheduler
+  scheduler:                   # follow-up, amostra de saúde, drenagem do CRM e refresh do acervo
     <<: *py
     command: python -m sdr_scheduler.local_worker
     working_dir: /app/services/scheduler
 
-  api:                         # substitui API Gateway + Lambda FastAPI + Cognito (auth: token estático em dev)
+  api:                         # FastAPI do painel e do site (auth: token estático do painel, ADR-0008)
     <<: *py
     command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
              --reload-dir /app/services/api/src --reload-dir /app/shared
@@ -161,36 +210,46 @@ services:
     environment:
       <<: *pyenv
       SDR_DB_POOL_MAX: "12"
-    ports: ["8000:8000"]
+    ports: ["${HOST_BIND:-127.0.0.1}:8000:8000"]
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health', timeout=3).status==200 else 1)\""]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 40s
+      start_interval: 2s
 
   crm-api:                     # CRM da imobiliária — sistema À PARTE, com banco próprio (D-01/D-02)
-    <<: *py
+    <<: *pybase
     command: uvicorn sdr_crm.api.main:app --host 0.0.0.0 --port 8100 --reload
              --reload-dir /app/services/crm --reload-dir /app/shared
     working_dir: /app/services/crm
-    # Ambiente PRÓPRIO, sem herdar o do agente: o CRM não pode enxergar o DSN da Mora. A separação
-    # é o que impede uma consulta cruzada de aparecer "sem querer" um dia.
+    # Ambiente PRÓPRIO, sem herdar o do agente nem o local/.env: o CRM não pode enxergar o DSN da
+    # Mora, nem a chave do LLM, o token do Telegram ou o segredo de sessão dela. A separação é o que
+    # impede uma consulta cruzada de aparecer "sem querer" um dia. Variável nova do CRM entra aqui,
+    # nomeada — o `${...}` lê do local/.env só o que for citado.
     environment:
       CRM_DATABASE_DSN: postgresql://sdr:sdr@db:5432/crm
       CRM_APP_ENV: development
+      # O seed (`make crm-reset`, que roda neste container) transforma a foto relativa do acervo em
+      # URL absoluta. Antes vinha do .env inteiro; agora só a base, com o mesmo padrão de antes.
+      CRM_FOTOS_BASE_URL: "${CRM_FOTOS_BASE_URL:-${SDR_PUBLIC_API_URL:-http://localhost:8000}}"
       PYTHONPATH: /app/services/crm
       WATCHFILES_FORCE_POLLING: "true"
-    ports: ["8100:8100"]
+    ports: ["${HOST_BIND:-127.0.0.1}:8100:8100"]
+    # start_interval: durante o start_period o Docker confere a cada 2 s em vez de esperar os 30 s
+    # do primeiro intervalo — sem isso o `crm-mcp`, que espera este ficar saudável, levaria meio
+    # minuto para subir mesmo com a API pronta em cinco segundos.
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8100/health/ready', timeout=3).status==200 else 1)\""]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 40s
+      start_interval: 2s
 
   crm-mcp:                     # servidor MCP do CRM por HTTP — é por aqui que a Mora entra
-    <<: *py
+    <<: *pybase
     command: python -m sdr_crm.mcp --http --porta 8200
     working_dir: /app/services/crm
     environment:
@@ -198,19 +257,27 @@ services:
       CRM_API_TOKEN: "${CRM_API_TOKEN-}"      # credencial DESTE servidor na REST do CRM
       CRM_MCP_TOKEN: "${CRM_MCP_TOKEN-}"      # credencial que ELE exige de quem se conecta
       PYTHONPATH: /app/services/crm
-    ports: ["8200:8200"]
-    depends_on: { crm-api: { condition: service_started } }
+    ports: ["${HOST_BIND:-127.0.0.1}:8200:8200"]
+    # `service_healthy`: com `service_started` o servidor subia antes de a REST responder, e a
+    # primeira chamada da Mora levava um erro de conexão que parecia problema de token.
+    depends_on: { crm-api: { condition: service_healthy } }
+    # `on-failure:5` e não `unless-stopped`: sem CRM_MCP_TOKEN o servidor RECUSA subir (sai com
+    # erro), e rodar a Mora sem CRM é um modo suportado. Religar para sempre deixaria o container
+    # em "Restarting" eterno; cinco tentativas cobrem a queda de verdade sem virar laço.
+    restart: on-failure:5
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8200/saude').status==200 else 1)\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8200/saude', timeout=3).status==200 else 1)\""]
       interval: 5s
+      timeout: 5s
       retries: 20
 
   crm-mcp-stdio:               # o MESMO servidor por stdio, para um cliente MCP externo
-    <<: *py
+    <<: *pybase
     profiles: [mcp]            # fora do `up` normal: quem usa stdio é quem sobe o processo
     command: python -m sdr_crm.mcp
     working_dir: /app/services/crm
     stdin_open: true
+    restart: "no"              # processo de `run --rm`, de vida curta: religar não faz sentido
     environment:
       CRM_API_BASE_URL: http://crm-api:8100
       CRM_API_TOKEN: "${CRM_API_TOKEN-}"
@@ -220,6 +287,9 @@ services:
     # causa). Não pede CRM_MCP_TOKEN: em stdio não há porta aberta, e quem já consegue iniciar o
     # processo tem a máquina.
 
+  # Os três Vite rodam com `--host` porque, DENTRO do container, escutar só em localhost deixaria o
+  # servidor inalcançável pela porta publicada. Isso não abre nada para a rede: quem decide é o
+  # IP do `ports:`, que é o loopback (ver HOST_BIND no topo).
   crm-web:                     # painel do CRM (React) — porta 3000, como a especificação documenta
     image: node:20-alpine
     working_dir: /app
@@ -230,45 +300,51 @@ services:
     # diferentes para o navegador, e o cookie de sessão simplesmente não é guardado.
     environment: { VITE_CRM_API: "http://localhost:8100", CHOKIDAR_USEPOLLING: "true" }
     volumes: [ "../apps/crm:/app", "/app/node_modules" ]
-    ports: ["3000:3000"]
+    ports: ["${HOST_BIND:-127.0.0.1}:3000:3000"]
     depends_on: [crm-api]
+    restart: unless-stopped
 
-  web:                         # substitui S3 + CloudFront
+  web:                         # site vitrine (Vite em modo dev)
     image: node:20-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --host"
     environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, VITE_CANAL_URL: http://localhost:8001, VITE_TELEGRAM_BOT_USERNAME: "${SDR_TELEGRAM_BOT_USERNAME}", VITE_CHAT_NOVA_CONVERSA: "${SDR_CHAT_NOVA_CONVERSA:-false}", CHOKIDAR_USEPOLLING: "true" }
     volumes: [ "../apps/web:/app", "/app/node_modules" ]
-    ports: ["5173:5173"]
+    ports: ["${HOST_BIND:-127.0.0.1}:5173:5173"]
+    # `service_started`, e não `service_healthy`: o /health da API devolve 503 quando QUALQUER
+    # worker fica calado (ADR-0011), e o site não pode deixar de subir porque o `reativador` caiu.
+    # A dependência existe para a ordem de subida, não como garantia de saúde.
+    depends_on: [api, channels]
+    restart: unless-stopped
 
-  dashboard:
+  dashboard:                   # painel do corretor (Vite em modo dev)
     image: node:20-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --host --port 5174"
     environment: { VITE_API_URL: http://localhost:8000, VITE_WS_URL: ws://localhost:8001/ws, CHOKIDAR_USEPOLLING: "true" }
     volumes: [ "../apps/dashboard:/app", "/app/node_modules" ]
-    ports: ["5174:5174"]
+    ports: ["${HOST_BIND:-127.0.0.1}:5174:5174"]
+    depends_on: [api, channels]   # started, pelo mesmo motivo do `web`
+    restart: unless-stopped
 
-  # tunnel:                    # só necessário para o WhatsApp (webhook precisa de URL pública).
-  #   image: cloudflare/cloudflared:latest      O Telegram usa long polling (telegram-in acima) e
-  #   command: tunnel --no-autoupdate --url http://channels:8001   não precisa disto. Ver ADR-0007.
-  #   depends_on: [channels]
-
-  langfuse:                    # opcional: observabilidade de LLM local (substitui CloudWatch/X-Ray para prompts)
-    # ATENÇÃO: publica a MESMA porta 3000 do painel do CRM. Os dois não sobem juntos — com o profile
-    # `observability` ligado, um dos dois falha ao vincular a porta. Quem precisar dos dois ao mesmo
-    # tempo troca a porta aqui. (O banco `langfuse` é criado por 00-langfuse.sql, que só roda em
-    # volume novo; num volume antigo, crie à mão como o `crm-migrate` faz.)
+  # Langfuse: NENHUM código do projeto manda trace para ele hoje — não há SDK instalado nem chave
+  # configurada. Fica no compose só como ponto de partida para quem for integrar o tracing de
+  # prompt (ver docs/quality/observabilidade.md), e por isso atrás de um profile que ninguém liga
+  # sem querer. Porta 3001 no host porque a 3000 é do painel do CRM: antes os dois disputavam a
+  # mesma e um deles falhava ao subir. Os segredos têm padrão de desenvolvimento e o serviço só
+  # escuta no loopback; quem for usá-lo de verdade define LANGFUSE_NEXTAUTH_SECRET e LANGFUSE_SALT.
+  langfuse:
     image: langfuse/langfuse:2
     profiles: [observability]
     environment:
       DATABASE_URL: postgresql://sdr:sdr@db:5432/langfuse
-      NEXTAUTH_SECRET: dev
-      SALT: dev
-      NEXTAUTH_URL: http://localhost:3000
-    ports: ["3000:3000"]
+      NEXTAUTH_SECRET: "${LANGFUSE_NEXTAUTH_SECRET:-dev-local-langfuse}"
+      SALT: "${LANGFUSE_SALT:-dev-local-langfuse}"
+      NEXTAUTH_URL: "http://localhost:${LANGFUSE_HOST_PORT:-3001}"
+    ports: ["127.0.0.1:${LANGFUSE_HOST_PORT:-3001}:3000"]
     depends_on:
       db: { condition: service_healthy }
       db-init: { condition: service_completed_successfully }
+    restart: unless-stopped
 
-volumes: { pgdata: {}, ollama: {}, whisper: {} }
+volumes: { pgdata: {}, ollama: {}, whisper-mora: {}, redis: {} }

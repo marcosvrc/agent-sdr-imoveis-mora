@@ -1,4 +1,8 @@
-SERVICES = shared services/agent services/channels/telegram services/api services/scheduler services/ingestion
+# Todo pacote Python do monorepo. Faltavam o CRM e o canal do site: `make setup` deixava os dois sem
+# dependência instalada, e a suíte deles só falhava depois, com ImportError longe da causa.
+SERVICES = shared services/agent services/channels/telegram services/channels/local services/api \
+           services/scheduler services/ingestion services/crm
+APPS = web dashboard crm
 
 # Nada aqui ganha com paralelismo, e vários alvos disputam o mesmo Postgres. Sem isto, um `make -j`
 # rodaria `crm-reset` antes de `crm-migrate` e a falha não apontaria para a causa.
@@ -6,7 +10,7 @@ SERVICES = shared services/agent services/channels/telegram services/api service
 
 .PHONY: tipos ajuda preparar crm-api-pronto setup check-env local local-ollama seed corretores fotos-acervo docs-kb docs-secos migrate \
         crm-migrate crm-seed crm-reset crm-token crm-mcp ollama-pull cli test test-db lint \
-        cobertura diagramas eval eval-matriz eval-fake eval-rag eval-recomendacao eval-embeddings whisper-aquecer test-docker openapi docs
+        cobertura diagramas eval eval-matriz eval-fake eval-rag eval-recomendacao eval-embeddings whisper-aquecer test-docker openapi docs segredos
 
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
@@ -24,7 +28,7 @@ ajuda:
 	@echo "  7. make seed && make docs-kb          indexa acervo e documentos institucionais"
 	@echo "  8. make corretores                    cria a equipe de 20 corretores (opcional)"
 	@echo
-	@echo "Verificar:  make lint · make test · make eval-fake"
+	@echo "Verificar:  make lint · make test · make eval-fake · make segredos (antes do push)"
 	@echo "Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
 	@echo "Demonstrar: site :5173 · painel da Mora :5174 · CRM :3000"
 	@echo "            roteiro em docs/overview/roteiro-demonstracao.md"
@@ -55,9 +59,18 @@ crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
 	echo "✗ crm-api não ficou saudável em 2 min. Veja: cd local && docker compose logs --tail 30 crm-api"; \
 	exit 1
 
+# `uv` quando existe, `pip` quando não — mas a escolha é feita ANTES, por `command -v`. O jeito
+# antigo (`uv sync 2>/dev/null || pip install -e .`) engolia a mensagem do uv e caía no pip em
+# QUALQUER falha dele, inclusive conflito de versão: o setup terminava "verde", com outro conjunto
+# de dependências e sem uma linha dizendo por quê. Agora a primeira falha para o alvo, com o erro.
 setup:
-	for s in $(SERVICES); do (cd $$s && uv sync --all-extras 2>/dev/null || pip install -e .); done
-	cd apps/web && npm install; cd ../dashboard && npm install
+	@set -e; if command -v uv >/dev/null 2>&1; then \
+	  for s in $(SERVICES); do echo "── $$s (uv)"; (cd $$s && uv sync --all-extras); done; \
+	else \
+	  echo "uv não encontrado — usando pip no Python ativo (extras não entram; veja a CI para a lista)"; \
+	  for s in $(SERVICES); do echo "── $$s (pip)"; (cd $$s && pip install -e .); done; \
+	fi
+	@set -e; for a in $(APPS); do echo "── apps/$$a"; (cd apps/$$a && npm install); done
 
 check-env:
 	python3 scripts/check_env.py
@@ -281,13 +294,27 @@ eval-embeddings:
 	@echo "Compare recall@3 e abstenção. Diferença dentro do ruído: fique no mais barato (openai)."
 	@echo "O índice ficou com o provedor da ÚLTIMA passada — rode 'make docs-kb' para voltar ao do .env."
 
+# As MESMAS sete suítes de `make test`. Faltavam três (tests/ da raiz, shared e CRM), então o
+# "passou no docker" não dizia o mesmo que o "passou no host". O CRM roda com o próprio banco de
+# teste, como em `make test`: a separação de D-01 vale na suíte. `tests/` da raiz é montado no
+# compose (`/app/tests`) só para isto; `-p no:cacheprovider` porque /app é do root na imagem e o
+# usuário `mora` não grava ali o .pytest_cache — sem isso a suíte passa com um aviso inútil.
 test-docker: test-db   # mesma suíte, rodando dentro do container do agente (não precisa de Python 3.12 no host)
-	cd local && docker compose exec -T -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test agent sh -c '\
+	cd local && docker compose exec -T -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test \
+	  -e CRM_DATABASE_DSN=postgresql://sdr:sdr@db:5432/crm_test agent sh -c '\
+	  cd /app && python -m pytest -q -p no:cacheprovider tests && \
+	  cd /app/shared && PYTHONPATH=. python -m pytest -q tests && \
 	  cd /app/services/agent && PYTHONPATH=/app/shared:src:. python -m pytest -q tests && \
 	  cd /app/services/api && PYTHONPATH=/app/shared:src python -m pytest -q tests && \
+	  cd /app/services/crm && PYTHONPATH=. python -m pytest -q tests && \
 	  cd /app/services/channels/telegram && PYTHONPATH=/app/shared:. python -m pytest -q tests && \
 	  cd /app/services/channels/local && PYTHONPATH=/app/shared:. python -m pytest -q tests'
 
+
+# Varredura de segredos antes do push: valores reais do local/.env no histórico, arquivos de
+# credencial versionados e padrões de chave. A CI roda o mesmo script sem .env (só as partes 2 a 4).
+segredos:
+	python3 scripts/checar_segredos.py
 
 openapi:       # regera docs/assets/openapi.json a partir do código da API (a CI confere se está em dia)
 	python3 scripts/gerar_openapi.py

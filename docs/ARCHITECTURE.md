@@ -28,8 +28,8 @@ containers é o comando. Os nomes abaixo são os serviços de
 | Canal Telegram | `services/channels/telegram` | `telegram-in`, `telegram-out` | Bot criado sem aprovação (@BotFather) e long polling: sem webhook, sem URL pública, sem túnel (ADR-0007) |
 | Chat do site | `services/channels/local` | `channels` (`:8001`) | O mesmo processo serve o widget do site e o espelho em tempo real do painel |
 | Agente | `services/agent` | `agent`, `resumidor`, `reativador` | Um turno leva de 20 a 40 s e não cabe no fio do HTTP: o agente é worker de fila (ADR-0002) |
-| LLM | — | — | Anthropic (padrão), OpenAI ou Ollama, por `SDR_LLM_PROVIDER`, com reserva em `SDR_LLM_PROVIDER_FALLBACK` |
-| Embeddings | — | `ollama` (`--profile ollama`) | Provedor único: o `bge-m3` dá as 1024 dimensões que o schema espera |
+| LLM | — | — | Anthropic (padrão), OpenAI, OpenRouter (ADR-0016) ou Ollama, por `SDR_LLM_PROVIDER`, com reserva em `SDR_LLM_PROVIDER_FALLBACK` |
+| Embeddings | — | `ollama` (`--profile ollama`), ou nenhum | `SDR_EMBEDDINGS_PROVIDER`: `ollama` (`bge-m3`, local), `openai` ou `openrouter` (`text-embedding-3-small` reduzido a 1024, ADR-0016). Todos entregam as 1024 dimensões que o schema espera; os hospedados dispensam o container do Ollama |
 | RAG | `services/ingestion` | `agent` (execução pontual) | pgvector no mesmo banco do painel, com piso de similaridade e reescrita de consulta (ADR-0001) |
 | Fila | `shared/sdr_shared/adapters/local/broker.py` | `redis` | Streams para os tópicos e locks para a ordem por lead |
 | Dados | `shared/sdr_shared/db` | `db` (`pgvector/pgvector:pg16`) | Registro, vetores, agregação do painel e checkpointer do grafo na mesma base (ADR-0004) |
@@ -39,7 +39,7 @@ containers é o comando. Os nomes abaixo são os serviços de
 | CRM | `services/crm`, `apps/crm` | `crm-api` (`:8100`), `crm-mcp` (`:8200`), `crm-web` (`:3000`) | Sistema à parte, com banco próprio; a Mora entra por MCP sobre HTTP |
 | Segredos | — | `local/.env` | Fora do versionamento; `scripts/check_env.py` recusa valor de exemplo antes de subir |
 | Segurança | `agent/guardrails`, `shared/sdr_shared/seguranca` | — | Guardas determinísticas próprias, no código, não de um provedor |
-| Observabilidade | `shared/sdr_shared/log.py`, tabelas `turnos`/`saude`/`batimentos` | `langfuse` (`--profile observability`) | Observabilidade leve no Postgres (ADR-0011); Langfuse opcional para tracing de prompt |
+| Observabilidade | `shared/sdr_shared/log.py`, tabelas `turnos`/`saude`/`batimentos` | `langfuse` (`--profile observability`, `:3001`) | Observabilidade leve no Postgres (ADR-0011). O Langfuse sobe só como ponto de partida: nenhum código envia trace a ele ainda |
 
 ### 3.1. Detalhes que a execução em container obrigou a acertar
 
@@ -47,11 +47,19 @@ containers é o comando. Os nomes abaixo são os serviços de
   dependem de `shared/`, e o código do host é montado por volume para a edição valer na hora.
 - **As portas publicadas no host são deslocadas** (5433, 6380, 11435) porque Postgres, Redis e
   Ollama nativos costumam ocupar as padrão. Dentro da rede do compose valem sempre as internas.
+- **Toda porta é publicada só em `127.0.0.1`.** Sem o IP, o Docker publica em `0.0.0.0` e a API
+  ficava alcançável por qualquer um no mesmo Wi-Fi com o `dev-token`, que é público. `HOST_BIND`
+  abre as portas de aplicação de propósito; Postgres, Redis, Ollama e Langfuse nunca.
+- **A imagem Python roda sem root** (usuário `mora`) e instala as dependências a partir dos
+  `pyproject.toml` antes de copiar o código, então editar um `.py` não reinstala o whisper.
+- **Os serviços de longa duração têm `restart`**, e o Redis grava em AOF num volume próprio: a fila
+  sobrevive a um reinício.
+- **O CRM não lê o `local/.env`**: os serviços dele recebem, nomeadas, só as variáveis `CRM_*`.
 - **`/health` do `channels` devolve 503 quando o Redis cai**, para o `docker compose ps` mostrar
   `(unhealthy)` em vez de "Up" com o chat mudo.
 - **Os scripts de `docker-entrypoint-initdb.d` só rodam em volume novo.** Por isso `make preparar`
   cria e aplica banco e schema explicitamente, de forma idempotente.
-- **O `crm-web` e o Langfuse publicam a mesma porta 3000** — os dois não sobem juntos.
+- **O Langfuse publica a 3001**, e não a 3000 do `crm-web`: antes os dois disputavam a mesma porta.
 
 ## 4. Fluxo de negócio (máquina de estados do lead)
 
@@ -117,7 +125,7 @@ ponto onde o teste substitui a infraestrutura, não porque haja um segundo conju
 |---|---|---|
 | Postgres, Redis, canais, workers, API, front-ends, CRM | US$ 0 | Containers na máquina de quem avalia |
 | Modelo de conversa e roteamento | Centavos por conversa | Único custo variável; Haiku em roteamento/extração já é a otimização (ADR-0010) |
-| Embeddings (`bge-m3` no Ollama) | US$ 0 | Local, uma vez por documento indexado |
+| Embeddings | US$ 0 com `bge-m3` no Ollama; frações de centavo com `text-embedding-3-small` | Uma vez por documento indexado; o hospedado dispensa o container do Ollama |
 | Transcrição de voz (`faster-whisper`) | US$ 0 | No próprio processo, sem serviço externo nem cobrança por minuto |
 | Bot do Telegram | US$ 0 | Criado no @BotFather, sem verificação |
 
