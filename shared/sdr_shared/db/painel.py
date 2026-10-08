@@ -152,7 +152,17 @@ class CorretorRepository:
         from ..seguranca import cofre
         with _conn() as c:
             r = c.execute("SELECT calendario_refresh_token FROM corretores WHERE id = %s", (corretor_id,)).fetchone()
-        return cofre.decifrar((r or {}).get("calendario_refresh_token"))
+        guardado = (r or {}).get("calendario_refresh_token")
+        token = cofre.decifrar(guardado)
+        if cofre.precisa_recifrar(guardado):
+            # Formato `enc:v1:` (chave sem separação por finalidade): regravar como v2 na primeira
+            # leitura, para o banco não ficar para sempre no formato antigo — e sem pedir ao
+            # corretor que reconecte a agenda. Só se o valor ainda for o mesmo que foi lido.
+            with _conn() as c:
+                c.execute("""UPDATE corretores SET calendario_refresh_token = %s
+                             WHERE id = %s AND calendario_refresh_token = %s""",
+                          (cofre.cifrar(token), corretor_id, guardado))
+        return token
 
     def salvar_credencial_calendario(self, corretor_id: str, refresh_token: str | None) -> None:
         """None desconecta. O token nunca sai daqui — nem para a API, nem para o painel — e fica

@@ -12,12 +12,12 @@ Chamado ao fim de cada turno do agente. Três compromissos, e nenhum deles é ne
 """
 import hashlib
 import logging
-from datetime import UTC
+from datetime import UTC, datetime
 
 from ..messaging import MensagemNormalizada
 from ..models import Estagio, Lead
 from ..ports import get_crm
-from . import traducao, vinculo
+from . import reconhecimento, traducao, vinculo
 
 log = logging.getLogger("crm")
 
@@ -107,12 +107,22 @@ def _abrir(s, lead: Lead) -> vinculo.Vinculo | None:
     if traducao.proposito(lead) is None:
         return None
 
-    crm_lead_id = s.garantir_lead(lead)
+    # Contato digitado no chat que casa com um cliente existente: `criar_lead` deduplicaria e
+    # devolveria a ficha DELE, e a conversa deste visitante entraria no histórico de outra pessoa
+    # (S4). Abre-se uma ficha nova, sem o contato, com uma observação para o corretor revisar.
+    coincide = reconhecimento.contato_coincidente(s, lead)
+    crm_lead_id = s.garantir_lead(reconhecimento.sem_contato(lead) if coincide else lead)
     if not crm_lead_id:
         return None
     aberta = s.garantir_oportunidade(lead, crm_lead_id)
     if not aberta:
         return None
+    if coincide:
+        s.registrar_interacao(
+            crm_lead_id, crm_opportunity_id=aberta[0], canal="mora", direcao="internal",
+            texto=(f"O contato informado no chat coincide com o cliente {coincide}, já cadastrado. "
+                   "Não foi vinculado automaticamente: confirme a identidade antes de juntar as fichas."),
+            quando=datetime.now(UTC).isoformat(), evento_externo=f"mora-contato-coincide-{lead.id}")
     return vinculo.salvar(lead.id, crm_lead_id, aberta[0], aberta[1])
 
 

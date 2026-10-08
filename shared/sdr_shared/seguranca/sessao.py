@@ -10,22 +10,25 @@ import base64
 import hashlib
 import hmac
 import secrets
+import logging
 import time
 
-from ..config import get_settings
+from .chaves import derivar, segredo_configurado
 
 VALIDADE_S = 12 * 3600          # uma sessão de navegação; depois o widget pede outra
 _SEP = "."
+log = logging.getLogger("seguranca")
 
 
-def _segredo() -> bytes:
-    s = get_settings()
-    chave = getattr(s, "sessao_secret", None)
+def _segredo(finalidade: str = "sessao") -> bytes:
+    """Chave HMAC desta finalidade. A sessão do chat e o `state` do OAuth usam o mesmo formato
+    `<id>.<expira>.<assinatura>`; com a mesma chave, um valia pelo outro (ver `chaves.py`)."""
+    chave = segredo_configurado()       # levanta com o valor de exemplo do repositório
     if not chave:
         # Sem segredo configurado o sistema não fica inseguro em silêncio: cada processo gera o seu,
         # o que invalida sessões entre reinícios (visível) em vez de aceitar qualquer assinatura.
         chave = _efemero()
-    return hashlib.sha256(str(chave).encode()).digest()
+    return derivar(str(chave), finalidade)
 
 
 _EFEMERO: str | None = None
@@ -35,11 +38,13 @@ def _efemero() -> str:
     global _EFEMERO
     if _EFEMERO is None:
         _EFEMERO = secrets.token_hex(32)
+        log.warning("SDR_SESSAO_SECRET vazio: chave aleatória deste processo — sessões de chat e "
+                    "links de conexão da agenda deixam de valer a cada reinício")
     return _EFEMERO
 
 
-def _assinar(payload: str) -> str:
-    mac = hmac.new(_segredo(), payload.encode(), hashlib.sha256).digest()
+def _assinar(payload: str, finalidade: str = "sessao") -> str:
+    mac = hmac.new(_segredo(finalidade), payload.encode(), hashlib.sha256).digest()
     return base64.urlsafe_b64encode(mac).decode().rstrip("=")
 
 

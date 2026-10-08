@@ -19,6 +19,7 @@ from pydantic import ValidationError
 from ..config import get_settings
 from ..db.connection import leitura
 from ..erros import ErroDeNegocio
+from .limite_corpo import CorpoGrande, LimiteDeCorpo
 from .routers import (
     autenticacao_rt,
     dashboard_rt,
@@ -46,18 +47,27 @@ app.add_middleware(CORSMiddleware, allow_origins=_cfg.allowed_origins, allow_cre
                    allow_methods=["*"], allow_headers=["*"])
 
 
-@app.middleware("http")
-async def limitar_corpo(request: Request, call_next):
-    """256 KB (seção 11). O limite é conferido pelo Content-Length porque recusar antes de ler o
-    corpo é o ponto — ler 50 MB para depois dizer que é grande demais já gastou a memória."""
-    tamanho = request.headers.get("content-length")
-    if tamanho and tamanho.isdigit() and int(tamanho) > _cfg.corpo_maximo_bytes:
-        return JSONResponse(status_code=413, content={
-            "error": {"code": "PAYLOAD_TOO_LARGE",
-                      "message": f"Corpo acima de {_cfg.corpo_maximo_bytes} bytes.",
+def _corpo_413(teto: int) -> dict:
+    return {"error": {"code": "PAYLOAD_TOO_LARGE", "message": f"Corpo acima de {teto} bytes.",
                       "details": {}, "retryable": False},
-            "request_id": str(uuid.uuid4())})
-    return await call_next(request)
+            "request_id": str(uuid.uuid4())}
+
+
+async def _responder_413(send, teto: int) -> None:
+    await JSONResponse(status_code=413, content=_corpo_413(teto))({"type": "http"}, None, send)
+
+
+# 256 KB (seção 11), contados nos bytes que chegam — não só no Content-Length, que com
+# `Transfer-Encoding: chunked` nem existe (ver limite_corpo.py). Quando o cabeçalho existe, a recusa
+# continua acontecendo antes de ler o corpo.
+app.add_middleware(LimiteDeCorpo, teto_para=lambda _scope: _cfg.corpo_maximo_bytes,
+                   responder=_responder_413)
+
+
+@app.exception_handler(CorpoGrande)
+async def corpo_grande(request: Request, exc: CorpoGrande):
+    """A rota leu o corpo e o `receive` contado estourou: mesmo erro uniforme da seção 7."""
+    return JSONResponse(status_code=413, content=_corpo_413(exc.teto))
 
 
 @app.exception_handler(ErroDeNegocio)

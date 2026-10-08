@@ -1,14 +1,14 @@
 import re
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from sdr_shared.config import get_settings
 from sdr_shared.db import get_pool, servicos_parados
 from sdr_shared.log import configurar as configurar_log
 from .auditoria_mw import AuditoriaMiddleware
+from .limite_corpo import LimiteDeCorpo
 from .routers import imoveis, leads, dashboard, handoff, eventos, corretores, config, governanca, auditoria, clientes, notificacoes, calendario, interesses, reativacao
 
 configurar_log("api")
@@ -67,22 +67,20 @@ app.add_middleware(AuditoriaMiddleware)      # registra tudo que muda o sistema
 
 # Teto de corpo. O CRM tinha o dele desde o início; esta API não tinha nenhum, e a auditoria lê o
 # corpo inteiro em memória antes de a rota rodar — 50 MB num POST autenticado eram 50 MB de RAM.
-# Conferido pelo Content-Length porque recusar ANTES de ler é o ponto. A foto tem teto próprio: o
-# limite geral é menor do que uma imagem legítima em base64 (1,5 MB × 4/3).
+# Contado nos bytes que chegam, e não só no Content-Length: com `Transfer-Encoding: chunked` não há
+# cabeçalho, e o teto antigo deixava passar qualquer tamanho (ver limite_corpo.py). A foto tem teto
+# próprio: o limite geral é menor do que uma imagem legítima em base64 (1,5 MB × 4/3).
 LIMITE_CORPO = 256 * 1024
 LIMITE_CORPO_FOTO = 2_200_000
 _ROTA_FOTO = re.compile(r"^/imoveis/[^/]+/fotos$")
 
 
-@app.middleware("http")
-async def limitar_corpo(request: Request, call_next):
-    tamanho = request.headers.get("content-length")
-    if tamanho and tamanho.isdigit():
-        teto = LIMITE_CORPO_FOTO if (request.method == "POST" and _ROTA_FOTO.match(request.url.path)) \
-            else LIMITE_CORPO
-        if int(tamanho) > teto:
-            return JSONResponse(status_code=413, content={"detail": f"corpo acima de {teto} bytes"})
-    return await call_next(request)
+def _teto(scope) -> int:
+    return LIMITE_CORPO_FOTO if (scope["method"] == "POST" and _ROTA_FOTO.match(scope["path"])) \
+        else LIMITE_CORPO
+
+
+app.add_middleware(LimiteDeCorpo, teto_para=_teto)     # por último = mais externo: conta antes da auditoria
 
 app.include_router(imoveis.router, prefix="/imoveis", tags=["público"])       # sem auth: é a vitrine
 app.include_router(eventos.router, prefix="/eventos", tags=["público"])       # navegação do site → cartão do lead
@@ -101,6 +99,11 @@ app.include_router(calendario.router, prefix="/calendario", tags=["admin"])
 
 
 
+# Sem isto o navegador pode "farejar" o conteúdo e tratar como HTML um arquivo servido como imagem —
+# um upload que escapasse da conferência de assinatura viraria página no domínio da API.
+NOSNIFF = {"X-Content-Type-Options": "nosniff"}
+
+
 @app.get("/fotos/{imovel_id}/{nome}", tags=["público"], include_in_schema=False)
 def foto(imovel_id: str, nome: str):
     """Fotos enviadas pelo painel, servidas do disco pela mesma URL relativa que o card usa."""
@@ -109,7 +112,7 @@ def foto(imovel_id: str, nome: str):
     arq = Path(get_settings().fotos_dir) / imovel_id / nome
     if not arq.is_file():
         raise HTTPException(404)
-    return FileResponse(arq, headers={"Cache-Control": "public, max-age=86400"})
+    return FileResponse(arq, headers={"Cache-Control": "public, max-age=86400", **NOSNIFF})
 
 
 @app.get("/acervo/{categoria}/{nome}", tags=["público"], include_in_schema=False)
@@ -125,7 +128,7 @@ def foto_do_acervo(categoria: str, nome: str):
     arq = Path(get_settings().fotos_acervo_dir) / categoria / nome
     if not arq.is_file():
         raise HTTPException(404)
-    return FileResponse(arq, headers={"Cache-Control": "public, max-age=604800"})
+    return FileResponse(arq, headers={"Cache-Control": "public, max-age=604800", **NOSNIFF})
 
 
 @app.get("/health", tags=["infraestrutura"], summary="Saúde do sistema")

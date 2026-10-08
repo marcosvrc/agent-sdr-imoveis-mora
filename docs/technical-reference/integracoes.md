@@ -81,6 +81,16 @@ Vazio significa ponte desligada: sem `SDR_CRM_URL`, `get_crm()` devolve o adapta
 roda sozinha, sem erro. Do lado do CRM, `CRM_MCP_TOKEN` e `CRM_API_TOKEN` são as credenciais do
 servidor MCP e da API REST. Veja [decisões](../decisions.md) D-01 e D-02.
 
+!!! warning "Contato digitado no chat não identifica ninguém"
+    A Mora procura no CRM o e-mail ou telefone que o cliente informa, mas **não** vincula a conversa
+    à ficha encontrada nem herda as preferências dela: qualquer visitante pode digitar o contato de
+    outra pessoa. A coincidência é sinalizada (auditoria e notificação `cliente.contato_coincide`), e
+    o lead é aberto no CRM como ficha **nova** — sem o contato nos identificadores, porque o
+    `criar_lead` do CRM deduplica por e-mail/telefone e devolveria a ficha existente — com uma
+    interação `internal` pedindo que o corretor confirme a identidade antes de juntar as fichas. Só
+    contato verificado pelo canal vincularia (nenhum canal entrega isso hoje). Ver
+    [regras de negócio §18](regras-de-negocio.md#18-a-ponte-mora-crm).
+
 ## Transcrição de áudio (agente multimodal)
 
 Quando o cliente envia uma **mensagem de voz**, o agente transcreve o áudio e trata o texto como

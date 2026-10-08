@@ -9,7 +9,7 @@ from sdr_shared.db import ClienteRepository, auditar, nova_oportunidade_se_mudou
 from sdr_shared.messaging import RespostaAgente
 from sdr_shared.models import CartaoQualificacao, Estagio, Intencao, Segmento
 from ..llm import llm_conversa, llm_extracao
-from ..prompts import carregar, texto
+from ..prompts import carregar, envelope_em_linha, texto
 from ..state import AgentState
 from ..guardrails.saida import sanear
 from sdr_shared.geo import resolver, resolver_varios
@@ -301,6 +301,15 @@ def _contexto_contato(lead, state) -> str:
 # O valor que muda de escala com a intenção. "Até 800 mil" de compra não é "até 800 mil por mês" de
 # aluguel, nem ticket de investimento: na troca, o teto antigo não pode atravessar.
 _TETOS = ("preco_min", "preco_max", "ticket")
+def _contexto_origem(lead) -> str:
+    """Os ids vêm de fora (botão do site, eventos de navegação, deep link): entram como DADO, no
+    envelope com sentinela, e não como parte da instrução. O handler já filtra o formato, mas um
+    cartão gravado antes do filtro pode trazer texto livre aqui."""
+    if not lead.cartao.imoveis_visualizados:
+        return ""
+    ids = envelope_em_linha(", ".join(lead.cartao.imoveis_visualizados))
+    return (f"O cliente demonstrou interesse nos imóveis {ids} (viu no site). "
+            "Use isso como ponto de partida e não pergunte o que dá para inferir deles.")
 
 
 def run(state: AgentState) -> dict:
@@ -357,10 +366,7 @@ def run(state: AgentState) -> dict:
         # `cartao_extraido_de`: o consultor recebe o turno agora e leria esta mesma frase de novo.
         return {"lead": lead, "proximo": "consultor", "cartao_extraido_de": entrada.conteudo, **recomeco}
 
-    origem = ""
-    if lead.cartao.imoveis_visualizados:
-        origem = (f"O cliente demonstrou interesse nos imóveis {lead.cartao.imoveis_visualizados} (viu no site). "
-                  "Use isso como ponto de partida e não pergunte o que dá para inferir deles.")
+    origem = _contexto_origem(lead)
     cobertura = ""
     if fora_de_cobertura:
         cobertura = (f"ATENÇÃO: o cliente citou {fora_de_cobertura}, que está FORA da área de cobertura. Diga isso com "

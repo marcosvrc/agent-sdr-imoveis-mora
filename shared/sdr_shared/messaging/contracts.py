@@ -1,4 +1,6 @@
 """Contratos entre canais ⇄ agente ⇄ scheduler. Mudar aqui é mudar a API interna do sistema."""
+import json
+import re
 from datetime import datetime, timezone
 from enum import StrEnum
 from pydantic import BaseModel, Field, field_validator
@@ -37,8 +39,19 @@ def _imprimivel(ch: str) -> bool:
     return codigo >= 32 and codigo != 0x7F and codigo not in INVISIVEIS
 
 
+# Formato de id de imóvel aceito do lado de fora (botão do site, deep link, evento de navegação).
+# Um só regex, aqui, para o `/eventos` da API e o handler do agente não divergirem. Use fullmatch:
+# com `match`, o `$` aceita um "\n" no fim.
+ID_IMOVEL = re.compile(r"[A-Za-z0-9_-]{1,64}")
+
 MAX_CONTEUDO = 4000        # ninguém descreve o imóvel que procura em mais que isso; acima é abuso ou erro
 MAX_ID = 128
+# Teto do `meta`. O do Telegram (nome, chat_id, file_id, lat/lng, imovel_origem) e o do site
+# (imovel_origem, saudacao_exibida, botao) ficam em poucas centenas de bytes; o do reativador
+# (motivos, pontos), abaixo de 1 KB. Sem teto, o navegador mandava qualquer dicionário, e ele ia
+# inteiro para `mensagens.meta` a cada turno.
+MAX_META_CHAVES = 16
+MAX_META_BYTES = 2048
 
 
 class MensagemNormalizada(BaseModel):
@@ -62,6 +75,17 @@ class MensagemNormalizada(BaseModel):
         muito mais vezes do que é um ataque — e recusar o turno deixaria a pessoa sem resposta."""
         if isinstance(v, str) and len(v) > MAX_CONTEUDO:
             return v[:MAX_CONTEUDO]
+        return v
+
+    @field_validator("meta")
+    @classmethod
+    def _meta_com_teto(cls, v: dict) -> dict:
+        """Recusa em vez de truncar: nenhum canal legítimo chega perto, e cortar um JSON no meio
+        produziria um `meta` que ninguém mandou."""
+        if len(v) > MAX_META_CHAVES:
+            raise ValueError(f"meta com mais de {MAX_META_CHAVES} campos")
+        if len(json.dumps(v, ensure_ascii=False, default=str).encode()) > MAX_META_BYTES:
+            raise ValueError(f"meta acima de {MAX_META_BYTES} bytes")
         return v
 
     @field_validator("conteudo", "identificador_canal", "lead_id", mode="before")

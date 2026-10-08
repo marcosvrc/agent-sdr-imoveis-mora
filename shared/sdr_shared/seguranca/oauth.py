@@ -11,7 +11,16 @@ Agora o `state` só é aceito se tiver sido emitido por nós, para aquele corret
 import hmac
 import time
 
-from .sessao import _assinar        # mesma chave HMAC da sessão do chat (SDR_SESSAO_SECRET)
+from .sessao import _assinar as _assinar_com
+
+# Chave própria, derivada do mesmo SDR_SESSAO_SECRET: o formato do `state` é igual ao do token de
+# chat (`<id>.<expira>.<assinatura>`), e com a chave da sessão um `state` emitido para o corretor
+# `cor_ana-souza` valia como token de chat da sessão `cor_ana-souza` (ver `chaves.py`).
+FINALIDADE = "oauth"
+
+
+def _assinar(payload: str) -> str:
+    return _assinar_com(payload, FINALIDADE)
 
 VALIDADE_S = 600                    # 10 min: tempo de dar o consentimento, não mais que isso
 _SEP = "."

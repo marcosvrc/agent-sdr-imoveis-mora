@@ -16,6 +16,7 @@ import hashlib
 import secrets
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from functools import lru_cache
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -53,8 +54,21 @@ def hash_senha(senha: str) -> str:
     return _hasher.hash(senha)
 
 
+@lru_cache(maxsize=1)
+def _hash_ficticio() -> str:
+    """Hash de uma senha que ninguém sabe, calculado uma vez por processo."""
+    return _hasher.hash(secrets.token_urlsafe(32))
+
+
 def conferir_senha(hash_guardado: str | None, senha: str) -> bool:
     if not hash_guardado:
+        # E-mail inexistente (ou usuário sem senha): o Argon2 roda do mesmo jeito, contra um hash
+        # fictício. Voltar na hora respondia dezenas de milissegundos mais rápido que uma senha
+        # errada — e o tempo de resposta dizia a um estranho quais e-mails existem na base.
+        try:
+            _hasher.verify(_hash_ficticio(), senha)
+        except Exception:
+            pass
         return False
     try:
         return _hasher.verify(hash_guardado, senha)

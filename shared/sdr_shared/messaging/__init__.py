@@ -1,2 +1,2 @@
 from .contracts import (MensagemNormalizada, RespostaAgente, Canal, TipoMensagem, EventoDominio, Acao,
-                        INICIADAS_PELO_AGENTE)
+                        INICIADAS_PELO_AGENTE, ID_IMOVEL)

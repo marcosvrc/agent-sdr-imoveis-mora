@@ -35,8 +35,16 @@ ROTAS: list[tuple[re.Pattern, str, str, str]] = [
 
 
 # Marcar um aviso como lido muda o sistema, mas registrar isso só afogaria a trilha em ruído.
+# O /eventos é telemetria pública do site (um POST por clique, sem credencial): na trilha virava uma
+# linha por clique de qualquer visitante — ou de um script — e afogava as ações da equipe.
 IGNORADAS = (re.compile(r"^/notificacoes(/.*)?$"),
-             re.compile(r"^/calendario(/.*)?$"))   # auditado com detalhe dentro do próprio router
+             re.compile(r"^/calendario(/.*)?$"),   # auditado com detalhe dentro do próprio router
+             re.compile(r"^/eventos(/.*)?$"))
+
+# Recusas a quem não se identificou. Sem ator não há de quem prestar contas, e registrar cada uma
+# deixava qualquer um na rede encher a trilha com POST/DELETE sem token ou em rota inexistente.
+# Recusa a quem ESTÁ autenticado (um 404 num DELETE do painel) continua registrada.
+RECUSAS_ANONIMAS = {401, 403, 404}
 
 
 def _classificar(caminho: str, metodo: str) -> tuple[str, str, str | None] | None:
@@ -67,6 +75,8 @@ class AuditoriaMiddleware(BaseHTTPMiddleware):
         resposta = await call_next(request)
         acao, entidade, entidade_id = classificacao
         ator = getattr(request.state, "corretor", None) or {}
+        if not ator and resposta.status_code in RECUSAS_ANONIMAS:
+            return resposta
         dados: dict = {"metodo": request.method, "rota": request.url.path,
                        "ms": int((time.perf_counter() - t0) * 1000)}
         if corpo:

@@ -96,6 +96,15 @@ class FotoIn(BaseModel):
     imagem: str      # data:image/jpeg;base64,...
 
 
+def _assinatura_confere(tipo: str, dados: bytes) -> bool:
+    """Assinaturas (magic numbers) de JPEG, PNG e WebP."""
+    if tipo == "jpeg":
+        return dados[:3] == b"\xff\xd8\xff"
+    if tipo == "png":
+        return dados[:8] == b"\x89PNG\r\n\x1a\n"
+    return dados[:4] == b"RIFF" and dados[8:12] == b"WEBP"
+
+
 def _dir(imovel_id: str) -> Path:
     d = Path(get_settings().fotos_dir) / imovel_id
     d.mkdir(parents=True, exist_ok=True)
@@ -120,6 +129,10 @@ def enviar_foto(imovel_id: str, body: FotoIn, request: Request):
     dados = base64.b64decode(m.group(2))
     if len(dados) > MAX_BYTES:
         raise HTTPException(413, "imagem acima de 1,5 MB — reduza antes de enviar")
+    # O prefixo `data:image/...` é escolha de quem envia; os bytes são o que vai para o disco e é
+    # servido em /fotos. HTML com prefixo de PNG passava — confere-se a assinatura do formato.
+    if not _assinatura_confere(m.group(1), dados):
+        raise HTTPException(422, "o conteúdo não é uma imagem do tipo informado")
     ext = {"jpeg": "jpg", "png": "png", "webp": "webp"}[m.group(1)]
     nome = f"{uuid.uuid4().hex}.{ext}"
     (_dir(imovel_id) / nome).write_bytes(dados)

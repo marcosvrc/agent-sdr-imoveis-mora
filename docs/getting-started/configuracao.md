@@ -47,8 +47,8 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_TELEGRAM_BOT_TOKEN` | Não | `000000:exemplo-token` | Token do bot, emitido pelo @BotFather. É o único canal externo. |
 | `SDR_TELEGRAM_BOT_USERNAME` | Não | `mora_vertice_bot` | Usuário do bot, para montar o link `t.me/<usuario>`. |
 | `SDR_CHAT_NOVA_CONVERSA` | Não | `false` | Modo de teste do chat do site: `true` faz cada carregamento da página começar um atendimento novo e mostra o botão "Nova conversa". Aplicar com `docker compose up -d web`. |
-| `SDR_SESSAO_SECRET` | Recomendada | `troque-por-uma-string-aleatoria-longa` | Assina a sessão do chat do site e deriva a chave que cifra o refresh token do calendário no banco. Sem valor, as sessões caem a cada reinício e a credencial fica em claro (com aviso). **Trocar o valor invalida as credenciais de calendário já guardadas.** |
-| `SDR_PAINEL_TOKEN` | Sim (fora do perfil local) | `exemplo-token-painel` | Credencial única do painel: header `Authorization` da API e WebSocket `papel=dashboard`. No perfil local, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. |
+| `SDR_SESSAO_SECRET` | Recomendada | *(gere: `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`)* | Segredo do qual saem três chaves, uma por finalidade (HMAC-SHA256 com os rótulos `sessao`, `oauth`, `cofre`): assina a sessão do chat do site, assina o `state` do OAuth do Google Agenda e cifra o refresh token do calendário no banco. **Os serviços recusam subir com o valor de exemplo que já esteve nos `.env.example`** (era público); `scripts/check_env.py` acusa o mesmo. **Vazio**: cada processo gera uma chave aleatória (com aviso no log) — as sessões de chat caem a cada reinício, o link de conexão da agenda só vale no processo que o emitiu e o refresh token fica em claro (com aviso). **Trocar o valor invalida as credenciais de calendário já guardadas** (exceção: as cifradas com o valor de exemplo continuam legíveis e são regravadas com o novo) e as sessões de chat abertas. |
+| `SDR_PAINEL_TOKEN` | Sim (fora do perfil local) | `exemplo-token-painel` | Credencial única do painel: header `Authorization` da API e WebSocket `papel=dashboard`. No perfil local, vazio vira `dev-token`; fora dele, vazio não aceita ninguém. Com o `dev-token` valendo, a API e o canal registram um aviso ao subir, e `check_env.py` também avisa. |
 | `SDR_CORS_ORIGINS` | Recomendada | `https://app.exemplo.com` | Origens permitidas na API, separadas por vírgula. Vazio = `*` (só em dev). |
 | `SDR_GOOGLE_CLIENT_ID` | Não | `exemplo.apps.googleusercontent.com` | OAuth do Google Agenda (opcional). |
 | `SDR_GOOGLE_CLIENT_SECRET` | Não | `exemplo-secret` | OAuth do Google Agenda (opcional). |
@@ -114,7 +114,9 @@ reconstruir (`npm run build`); num `.env` lido pelos serviços Python elas não 
   O `text-embedding-3-small` nasce com 1536 dimensões e o adaptador pede 1024 (`dimensions`); vetor
   de outro tamanho é recusado antes de gravar. Para usar só o OpenRouter, `SDR_EMBEDDINGS_PROVIDER=openrouter`
   dispensa a `OPENAI_API_KEY` sem reindexar.
-- No perfil local, `SDR_PAINEL_TOKEN` vazio vira `dev-token`.
+- No perfil local, `SDR_PAINEL_TOKEN` vazio vira `dev-token` (com aviso no log da API e do canal).
+- `SDR_SESSAO_SECRET` vazio: chave aleatória por processo, com aviso; com o valor de exemplo do
+  repositório, nenhum serviço sobe.
 - `SDR_CORS_ORIGINS` vazio equivale a `*` — aceitável apenas em desenvolvimento.
 
 ## Transcrição de áudio

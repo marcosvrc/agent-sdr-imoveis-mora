@@ -71,3 +71,7 @@ def configurar(servico: str, nivel: int = logging.INFO) -> None:
     raiz.setLevel(nivel)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
+    # Depois dos handlers, para o aviso/recusa sair no formato do serviço. É aqui porque esta é a
+    # única chamada que TODO processo faz ao subir (ver seguranca/subida.py).
+    from .seguranca.subida import verificar
+    verificar(servico)

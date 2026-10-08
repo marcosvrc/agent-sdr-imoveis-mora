@@ -3,6 +3,13 @@
 É a parte da integração que muda o ATENDIMENTO e não só o registro, então o que se prova aqui é
 comportamento: a Mora chega sabendo o que o corretor já anotou, e não pergunta de novo.
 
+MUDOU (S4): contato AUTODECLARADO no chat não reconhece mais. Um visitante anônimo que digitava o
+telefone ou o e-mail de um cliente existente herdava o orçamento e os bairros dele e passava a
+escrever na ficha dele. Hoje nenhum canal entrega contato verificado, então o caminho normal é o
+autodeclarado: o lead segue como novo e a coincidência fica sinalizada para o corretor. A semeadura
+continua existindo para contato verificado pelo canal (`contato_verificado=True`), e os testes que a
+provam passaram a dizer isso explicitamente.
+
 Contra o CRM de verdade, atrás do MCP. Um dublê provaria que eu chamo o que eu mesmo mandei
 chamar — inútil para uma integração cujo risco é justamente o encontro dos dois vocabulários.
 """
@@ -81,7 +88,7 @@ def test_cliente_conhecido_chega_com_o_cartao_semeado(ligado, crm_api, token_crm
     _criar_no_crm(crm_api, token_crm, email=email, prefs=PREFS)
     lead = novo_lead(email=email)
 
-    assert reconhecer(lead) is True
+    assert reconhecer(lead, contato_verificado=True) is True
     assert lead.cartao.intencao == Intencao.ALUGUEL
     assert lead.cartao.regiao == "São Paulo"
     assert lead.cartao.bairros == ["Pinheiros"]
@@ -105,7 +112,7 @@ def test_o_que_o_cliente_diz_agora_vence_o_registro(ligado, crm_api, token_crm, 
     lead.cartao.intencao = Intencao.COMPRA
     lead.cartao.preco_max = 900_000.0
 
-    reconhecer(lead)
+    reconhecer(lead, contato_verificado=True)
     assert lead.cartao.intencao == Intencao.COMPRA
     assert lead.cartao.preco_max == 900_000.0
     assert lead.cartao.regiao == "São Paulo", "o que estava vazio ainda é aproveitado"
@@ -120,7 +127,7 @@ def test_investimento_nao_e_rebaixado_a_compra(ligado, crm_api, token_crm, novo_
     lead = novo_lead(email=email)
     lead.cartao.intencao = Intencao.INVESTIMENTO
 
-    reconhecer(lead)
+    reconhecer(lead, contato_verificado=True)
     assert lead.cartao.intencao == Intencao.INVESTIMENTO
 
 
@@ -137,16 +144,82 @@ def test_cliente_desconhecido_nao_e_procurado_duas_vezes(ligado, novo_lead):
 
 def test_contato_novo_merece_nova_procura(ligado, crm_api, token_crm, novo_lead):
     """O chat do site é anônimo: o e-mail só aparece no meio da conversa. Se a primeira procura (sem
-    contato nenhum) valesse para sempre, o cliente nunca seria reconhecido."""
+    contato nenhum) valesse para sempre, a coincidência com um cliente do CRM nunca seria vista.
+
+    Antes este teste afirmava que o cartão era semeado ao aparecer o e-mail. Contato digitado no
+    chat não prova identidade (S4): agora a procura acontece, a coincidência é anotada e sinalizada,
+    e o cartão NÃO herda nada."""
     email = f"tardio-{uuid.uuid4().hex[:8]}@exemplo.com"
     _criar_no_crm(crm_api, token_crm, email=email, prefs=PREFS)
 
     lead = novo_lead()
     assert reconhecer(lead) is False        # anônimo: não há por onde procurar
 
-    lead.cartao.email_informado = email     # agora ele se identificou
-    assert reconhecer(lead) is True
-    assert lead.cartao.regiao == "São Paulo"
+    lead.cartao.email_informado = email     # agora ele disse um e-mail
+    assert reconhecer(lead) is False
+    assert lead.cartao.regiao is None
+    from sdr_shared.crm import reconhecimento
+    assert reconhecimento._ja_procurado(lead.id, reconhecimento._marca(lead)) is True
+
+
+# --------------------------------------------------------------------------- S4: contato de outra pessoa
+
+def _sinalizacoes(lead_id: str) -> list[dict]:
+    from sdr_shared.db import AuditoriaRepository
+    return AuditoriaRepository().listar(acao="cliente.contato_coincide", entidade_id=lead_id)
+
+
+def test_visitante_com_contato_de_cliente_nao_herda_a_ficha_dele(ligado, crm_api, token_crm, novo_lead):
+    """O ataque: abrir o chat anônimo e digitar o e-mail (ou telefone) de um cliente do CRM. Antes,
+    o visitante herdava orçamento e bairros da vítima — e a Mora os repetia para ele — e tudo o que
+    ele escrevesse entrava no histórico da ficha dela."""
+    from sdr_shared.crm import publicar_turno
+    from sdr_shared.messaging import Canal, MensagemNormalizada
+    cab = {"Authorization": f"Bearer {token_crm}"}
+    email = f"vitima-{uuid.uuid4().hex[:8]}@exemplo.com"
+    op_vitima = _criar_no_crm(crm_api, token_crm, email=email, prefs=PREFS)
+    vitima = httpx.get(f"{crm_api}/v1/opportunities/{op_vitima}", headers=cab, timeout=10).json()["data"]["lead_id"]
+
+    lead = novo_lead()
+    lead.cartao.email_informado = email
+    assert reconhecer(lead) is False
+    assert lead.cartao.bairros == [] and lead.cartao.preco_max is None, "nada herdado da vítima"
+    assert vinculo.buscar(lead.id) is None, "não pode ser vinculado à oportunidade dela"
+    assert len(_sinalizacoes(lead.id)) == 1, "o corretor precisa ver a coincidência"
+    reconhecer(lead)                        # mesmo contato: não procura nem sinaliza de novo
+    assert len(_sinalizacoes(lead.id)) == 1
+
+    # O turno seguinte, com intenção clara, abre o lead no CRM: tem de ser uma ficha NOVA.
+    lead.cartao.intencao = Intencao.ALUGUEL
+    entrada = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, identificador_canal="s-vit",
+                                  conteudo="quero alugar em Pinheiros")
+    publicar_turno(lead, entrada, texto_saida="Certo!")
+    v = vinculo.buscar(lead.id)
+    assert v is not None and v.crm_lead_id != str(vitima) and v.crm_opportunity_id != str(op_vitima)
+
+    da_vitima = httpx.get(f"{crm_api}/v1/leads/{vitima}/interactions", headers=cab, timeout=10).json()["items"]
+    assert not any("Pinheiros" in (x.get("summary") or "") for x in da_vitima)
+    do_novo = httpx.get(f"{crm_api}/v1/leads/{v.crm_lead_id}/interactions", headers=cab, timeout=10).json()["items"]
+    assert any(x["direction"] == "internal" and "coincide" in x["summary"] for x in do_novo), \
+        "a ficha nova leva a observação para o corretor revisar"
+
+
+def test_contato_coincidente_dito_antes_da_procura_tambem_abre_ficha_nova(ligado, crm_api, token_crm, novo_lead):
+    """O contato pode aparecer no MESMO turno em que a intenção fica clara: a publicação roda antes
+    de qualquer procura, e o CRM deduplica por e-mail — devolveria a ficha da vítima."""
+    from sdr_shared.crm import publicar_turno
+    from sdr_shared.messaging import Canal, MensagemNormalizada
+    email = f"vitima2-{uuid.uuid4().hex[:8]}@exemplo.com"
+    op_vitima = _criar_no_crm(crm_api, token_crm, email=email, prefs=PREFS)
+    lead = novo_lead()
+    lead.cartao.email_informado = email
+    lead.cartao.intencao = Intencao.ALUGUEL
+    entrada = MensagemNormalizada(lead_id=lead.id, canal=Canal.WEB, identificador_canal="s-vit2",
+                                  conteudo=f"quero alugar, meu e-mail é {email}")
+    publicar_turno(lead, entrada, texto_saida="Anotado!")
+    v = vinculo.buscar(lead.id)
+    assert v is not None and v.crm_opportunity_id != str(op_vitima)
+    assert len(_sinalizacoes(lead.id)) == 1
 
 
 # A ambiguidade de contato (dois cadastros, mesmo telefone) NÃO é testável aqui: este CRM
@@ -173,7 +246,7 @@ def test_oportunidade_fechada_nao_vira_contexto(ligado, crm_api, token_crm, novo
                      "closed_at = now() WHERE id = %s", (op_id,))
 
     lead = novo_lead(email=email)
-    assert reconhecer(lead) is False
+    assert reconhecer(lead, contato_verificado=True) is False
     assert lead.cartao.regiao is None
 
 

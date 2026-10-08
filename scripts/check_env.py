@@ -16,6 +16,11 @@ PROVEDORES = {"anthropic", "openai", "ollama", "openrouter"}
 # reindexar, porque vetor de modelo diferente não se compara com o que já está gravado; trocar só o
 # CAMINHO (text-embedding-3-small pela OpenAI ou pelo OpenRouter) não obriga.
 EMBEDDINGS = {"ollama", "openai", "openrouter"}
+# Valores de SDR_SESSAO_SECRET que já estiveram nos `.env.example` do repositório — os serviços
+# recusam subir com eles (sdr_shared/seguranca/chaves.py; repetido aqui porque este script roda com
+# o python do sistema, sem as dependências do projeto).
+SEGREDOS_DE_EXEMPLO = {"dev-local-troque-antes-de-expor-publicamente", "troque-por-uma-string-aleatoria-longa"}
+GERAR_SEGREDO = 'python3 -c "import secrets; print(secrets.token_urlsafe(48))"'
 PLACEHOLDERS = re.compile(r"(COLE_|SEU_ID|SEU_|CHANGE_?ME|<.*>|xxx+|placeholder|preencher)", re.I)
 
 
@@ -52,6 +57,20 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
     for k, v in env.items():
         if v and PLACEHOLDERS.search(v):
             erros.append(f"{k} ainda está com um texto de exemplo, não com o valor real.")
+
+    # Segredo público assina sessões e cifra a agenda com uma chave que qualquer um lê no GitHub.
+    segredo = env.get("SDR_SESSAO_SECRET", "")
+    if segredo in SEGREDOS_DE_EXEMPLO:
+        erros.append("SDR_SESSAO_SECRET está com o valor de exemplo do repositório — os serviços "
+                     f"recusam subir assim. Gere um: {GERAR_SEGREDO}")
+    elif not segredo:
+        avisos.append("SDR_SESSAO_SECRET vazio: cada processo usa uma chave aleatória — as sessões "
+                      "de chat caem a cada reinício e a agenda do Google fica guardada sem cifra. "
+                      f"Gere um: {GERAR_SEGREDO}")
+    # O token público só vale no perfil local, e é por isso que as portas ficam em 127.0.0.1.
+    if env.get("SDR_PROFILE", "local") == "local" and not env.get("SDR_PAINEL_TOKEN"):
+        avisos.append("SDR_PAINEL_TOKEN vazio no perfil local: o token público `dev-token` abre o "
+                      "painel (todas as conversas). Defina um antes de expor este ambiente.")
 
     llm = env.get("SDR_LLM_PROVIDER", "anthropic")
     emb = env.get("SDR_EMBEDDINGS_PROVIDER", "ollama")

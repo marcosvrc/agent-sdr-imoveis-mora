@@ -51,6 +51,9 @@ def _envelope_em_linha(valor: object) -> str:
     return f"<<<DADO_{sentinela}>>>{_neutralizar(valor)}<<<FIM_DADO_{sentinela}>>>"
 
 
+envelope_em_linha = _envelope_em_linha     # para valor do cliente dentro de uma frase montada no nó
+
+
 def _fmt(texto: str, ctx: dict) -> str:
     """Preenche o template. Chave faltante ESTOURA, e é de propósito.
 

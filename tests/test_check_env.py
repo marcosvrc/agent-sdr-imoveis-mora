@@ -122,3 +122,19 @@ def test_embeddings_pelo_openrouter_dispensam_a_chave_da_openai():
                    "SDR_EMBEDDINGS_PROVIDER": "openrouter"})
     assert not any("OPENAI_API_KEY" in x for x in e), "só OpenRouter: nenhuma outra chave exigida"
     assert e == []
+
+
+def test_segredo_de_sessao_com_valor_de_exemplo_e_erro():
+    """O valor estava no local/.env.example, público: assinava o chat e cifrava a agenda."""
+    for exemplo in ("dev-local-troque-antes-de-expor-publicamente", "troque-por-uma-string-aleatoria-longa"):
+        e = erros(SDR_SESSAO_SECRET=exemplo)
+        assert any("SDR_SESSAO_SECRET" in x and "token_urlsafe" in x for x in e)
+    assert erros(SDR_SESSAO_SECRET="Zr8x" * 12) == []
+
+
+def test_segredo_de_sessao_vazio_e_dev_token_avisam():
+    _, avisos = checar(BASE)
+    assert any("SDR_SESSAO_SECRET vazio" in a for a in avisos)
+    assert any("dev-token" in a for a in avisos)
+    _, avisos = checar({**BASE, "SDR_SESSAO_SECRET": "Zr8x" * 12, "SDR_PAINEL_TOKEN": "t" * 32})
+    assert not any("SDR_SESSAO_SECRET" in a or "dev-token" in a for a in avisos)
