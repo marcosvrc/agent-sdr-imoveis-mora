@@ -12,8 +12,10 @@ O caminho mais rápido é o **perfil local** com Docker Compose. Para os detalhe
 
 - Git
 - Docker e Docker Compose
-- Uma chave de LLM (`ANTHROPIC_API_KEY` ou `OPENAI_API_KEY`) — **ou** Ollama, que sobe no próprio
-  compose, para rodar sem custo e sem chave.
+- Uma chave de LLM (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou a do [OpenRouter](../getting-started/openrouter.md))
+  — **ou** Ollama, que sobe no próprio compose, para rodar sem custo e sem chave.
+- Uma chave para os embeddings: o `.env.example` vem com `SDR_EMBEDDINGS_PROVIDER=openai`
+  (`OPENAI_API_KEY`). Com `openrouter` vale a chave do OpenRouter; com `ollama`, nenhuma.
 
 ## Subir
 
@@ -21,12 +23,13 @@ O caminho mais rápido é o **perfil local** com Docker Compose. Para os detalhe
 
 ```bash
 # 1. Clonar e entrar no diretório
-git clone <url-do-repositorio>
-cd agent-sdr-morai
+git clone https://github.com/marcosvrc/agent-sdr-imoveis-mora.git
+cd agent-sdr-imoveis-mora
 
 # 2. Configurar o ambiente do perfil local
 cp -n local/.env.example local/.env
-# edite local/.env: ANTHROPIC_API_KEY e, se for usar o Telegram, o token do bot
+# edite local/.env: a chave do LLM, a dos embeddings e, se for usar o Telegram, o token do bot
+# (só OpenRouter? veja getting-started/openrouter.md)
 
 # 3. Conferir o .env
 make check-env
@@ -34,7 +37,7 @@ make check-env
 # 4. Subir tudo (fica em primeiro plano; siga noutro terminal)
 make local-ollama
 
-# 5. Baixar o modelo de embeddings (demora, uma vez só)
+# 5. Só com SDR_EMBEDDINGS_PROVIDER=ollama: baixar o modelo de embeddings (demora, uma vez só)
 make ollama-pull
 
 # 6. Popular o catálogo (400 imóveis determinísticos + embeddings) e os documentos institucionais

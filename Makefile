@@ -18,13 +18,13 @@ ajuda:
 	@echo "Mora — SDR imobiliário. Ordem de execução a partir de um clone limpo:"
 	@echo
 	@echo "  1. cp -n local/.env.example local/.env   (-n NÃO sobrescreve um .env que já existe)"
-	@echo "     preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN"
+	@echo "     preencha a chave do LLM, a dos embeddings e CRM_MCP_TOKEN (OpenRouter: docs/getting-started/openrouter.md)"
 	@echo "  2. make check-env                     confere o .env antes de subir nada"
 	@echo "  3. make local-ollama                  sobe o compose (primeiro plano; siga noutro terminal)"
 	@echo "  4. make preparar                      massa do CRM (os bancos o compose já criou)"
 	@echo "  5. make crm-token                     emite CRM_API_TOKEN -> cole no local/.env"
 	@echo "     cd local && docker compose up -d crm-mcp agent      (releem o .env)"
-	@echo "  6. make ollama-pull                   baixa o bge-m3 (demora, uma vez só)"
+	@echo "  6. make ollama-pull                   só com embeddings ollama: baixa o bge-m3 (uma vez só)"
 	@echo "  7. make seed && make docs-kb          indexa acervo e documentos institucionais"
 	@echo "  8. make corretores                    cria a equipe de 20 corretores (opcional)"
 	@echo

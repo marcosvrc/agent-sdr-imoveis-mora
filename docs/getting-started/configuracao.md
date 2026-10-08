@@ -65,7 +65,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_FOTOS_DIR` | `data/fotos` | Onde o painel grava foto de imóvel; a API serve essa pasta em `/fotos/...`. |
 | `SDR_FOTOS_ACERVO_DIR` | `data/fotos-acervo` | Fotos do acervo de demonstração, servidas em `/acervo/...`. Prefixo separado de propósito: `/fotos/%` é o que marca foto do painel na precedência do upsert (ADR-0015). |
 | `SDR_ANTHROPIC_WORKSPACE_ID` | *(vazio)* | Obrigatório quando a chave é de organização e não de workspace. |
-| `SDR_OPENROUTER_API_KEY` | *(vazio)* | Chave do OpenRouter, quando ele atende algum papel (ADR-0016). |
+| `SDR_OPENROUTER_API_KEY` | *(vazio)* | Chave do OpenRouter, quando ele atende algum papel (ADR-0016). Passo a passo: [Usando o OpenRouter](openrouter.md). |
 | `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição ao OpenRouter. Desligar só na bancada, com dataset sintético: sem ela, o texto do cliente pode ir para endpoints que o guardam. |
 | `SDR_OPENROUTER_URL` | `https://openrouter.ai/api/v1` | Base da API do OpenRouter (os testes apontam para um servidor falso). |
 | `SDR_EMBEDDINGS_DIMENSOES` | `1024` | Dimensão dos vetores; tem de casar com o `vector(N)` de `shared/sdr_shared/db/schema.sql`. |

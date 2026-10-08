@@ -132,6 +132,7 @@ tabela mas não entram no catálogo porque não casam com nenhum prefixo de fam�
 
 ## OpenRouter
 
+Configuração passo a passo em [Usando o OpenRouter](../getting-started/openrouter.md).
 Detalhe de implementação do [ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md), em
 `factory.py::_construir_openrouter` e `adapters/hospedados/openrouter.py`:
 

@@ -14,12 +14,13 @@ front-ends de uma vez.
 
 ```bash
 # 1. Clonar e entrar no diretório
-git clone <url-do-repositorio>
-cd agent-sdr-morai
+git clone https://github.com/marcosvrc/agent-sdr-imoveis-mora.git
+cd agent-sdr-imoveis-mora
 
 # 2. Configurar o ambiente do perfil local
 cp -n local/.env.example local/.env      # -n NÃO sobrescreve um .env que já existe
-# preencha ANTHROPIC_API_KEY e CRM_MCP_TOKEN
+# preencha a chave do LLM (ANTHROPIC_API_KEY por padrão), a dos embeddings (OPENAI_API_KEY por
+# padrão) e CRM_MCP_TOKEN. Só OpenRouter: ver getting-started/openrouter.md
 
 # 3. Conferir o .env antes de subir nada
 make check-env
@@ -36,7 +37,7 @@ make preparar
 make crm-token
 cd local && docker compose up -d crm-mcp agent     # releem o .env
 
-# 7. Baixar o modelo de embeddings (demora, uma vez só)
+# 7. Só com SDR_EMBEDDINGS_PROVIDER=ollama: baixar o modelo de embeddings (demora, uma vez só)
 make ollama-pull
 
 # 8. Indexar acervo e documentos institucionais

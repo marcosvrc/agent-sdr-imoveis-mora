@@ -7,12 +7,18 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
 
 ??? question "Preciso de conta em algum provedor de nuvem para rodar o Mora?"
     Não. Tudo sobe com `docker compose` na sua máquina, e você pode usar **Ollama** para um LLM 100%
-    local, sem custo. Anthropic e OpenAI são alternativas que exigem uma chave de API.
+    local, sem custo. Anthropic, OpenAI e OpenRouter são alternativas que exigem uma chave de API.
 
 ??? question "Como rodar sem gastar tokens de LLM?"
     Suba com `--profile ollama` (`make local-ollama`) e baixe o modelo de embeddings `bge-m3`
     (`make ollama-pull`). Os testes de backend usam um LLM falso e não gastam token; `make eval-fake`
     também não.
+
+??? question "Dá para usar o OpenRouter?"
+    Sim, para qualquer um dos cinco papéis de modelo e para os embeddings, com uma chave só
+    (`SDR_LLM_PROVIDER=openrouter` e `SDR_OPENROUTER_API_KEY`). Toda requisição sai com retenção zero.
+    Mantenha um reserva direto (`SDR_LLM_PROVIDER_FALLBACK=anthropic` ou `openai`) e sincronize o preço
+    dos modelos no painel antes de salvar. Passo a passo: [Usando o OpenRouter](../getting-started/openrouter.md).
 
 ??? question "Como conecto o Telegram?"
     No Telegram, fale com o **@BotFather** → `/newbot` → escolha um nome e um usuário (que precisa

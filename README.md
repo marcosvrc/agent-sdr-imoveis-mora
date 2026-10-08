@@ -110,8 +110,11 @@ Versões e finalidade de cada pacote: [Tecnologias](docs/technical-reference/tec
 **Para rodar (recomendado):**
 
 - Git, Docker e Docker Compose.
-- Uma chave de LLM — `ANTHROPIC_API_KEY` (padrão) ou `OPENAI_API_KEY` — **ou** nenhuma, usando o
-  perfil `ollama` do compose (modelo local, sem custo; mais lento e menos preciso).
+- Uma chave de LLM — `ANTHROPIC_API_KEY` (padrão), `OPENAI_API_KEY` ou `SDR_OPENROUTER_API_KEY`
+  ([OpenRouter](docs/getting-started/openrouter.md), centenas de modelos com uma chave só) — **ou**
+  nenhuma, usando o perfil `ollama` do compose (modelo local, sem custo; mais lento e menos preciso).
+- Uma chave para os embeddings: o `local/.env.example` vem com `SDR_EMBEDDINGS_PROVIDER=openai`
+  (`OPENAI_API_KEY`); `openrouter` usa a mesma chave do OpenRouter e `ollama` dispensa chave.
 - Opcional: token de bot do Telegram (`@BotFather`) para o canal externo; sem ele sobra o chat do site.
 - Opcional: `CRM_MCP_TOKEN` para ligar a ponte com o CRM; sem ele a Mora roda sozinha.
 
@@ -128,7 +131,7 @@ Detalhes: [Pré-requisitos](docs/getting-started/pre-requisitos.md).
 git clone https://github.com/marcosvrc/agent-sdr-imoveis-mora.git
 cd agent-sdr-imoveis-mora
 
-cp -n local/.env.example local/.env      # edite ANTHROPIC_API_KEY (e CRM_MCP_TOKEN, se for usar o CRM)
+cp -n local/.env.example local/.env      # edite as chaves de LLM e de embeddings (e CRM_MCP_TOKEN, se for usar o CRM)
 make check-env                           # confere o local/.env antes de subir nada
 make local-ollama                        # sobe tudo (ou `make local`, sem o serviço do Ollama)
 
@@ -136,7 +139,7 @@ make local-ollama                        # sobe tudo (ou `make local`, sem o ser
 make preparar                            # bancos, schemas e massa, na ordem certa (idempotente)
 make crm-token                           # credencial da Mora no CRM — aparece UMA vez; cole em CRM_API_TOKEN
 cd local && docker compose up -d crm-mcp agent && cd ..
-make ollama-pull && make seed && make docs-kb   # embeddings, acervo e base institucional
+make seed && make docs-kb                # acervo e base institucional (com embeddings ollama: antes, make ollama-pull)
 make corretores                          # equipe de 20 corretores, casada com o CRM pelo e-mail
 ```
 

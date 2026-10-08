@@ -132,6 +132,7 @@ nav:
   - Primeiros passos:
       - Pré-requisitos: getting-started/pre-requisitos.md
       - Configuração e variáveis de ambiente: getting-started/configuracao.md
+      - Usando o OpenRouter: getting-started/openrouter.md
       - Executando com Docker: getting-started/docker.md
       - Executando manualmente: getting-started/manual.md
       - Validando a instalação: getting-started/validacao.md

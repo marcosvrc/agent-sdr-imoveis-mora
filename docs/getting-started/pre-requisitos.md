@@ -13,8 +13,11 @@ nada implantado em servidor.
 - Git.
 - Docker e Docker Compose v2 — no Mac, o Docker Desktop. O compose usa `start_interval` nos
   healthchecks, que exige Docker Engine 25 ou mais novo (Docker Desktop 4.27+).
-- Uma chave do provedor de LLM escolhido (`ANTHROPIC_API_KEY` ou `OPENAI_API_KEY`) — ou Ollama,
-  que já sobe no compose, para rodar sem custo e sem chave nenhuma.
+- Uma chave do provedor de LLM escolhido (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` ou
+  `SDR_OPENROUTER_API_KEY` — ver [Usando o OpenRouter](openrouter.md)) — ou Ollama, que já sobe no
+  compose, para rodar sem custo e sem chave nenhuma.
+- Uma chave para os embeddings do provedor escolhido em `SDR_EMBEDDINGS_PROVIDER`: `openai` (o que
+  vem no `.env.example`) usa `OPENAI_API_KEY`, `openrouter` usa a do OpenRouter, `ollama` dispensa.
 - (Opcional) Token de bot do Telegram, obtido no `@BotFather`, para exercitar o canal externo.
 - (Opcional) `CRM_MCP_TOKEN`, se quiser a ponte com o CRM. Sem ele a Mora roda sozinha.
 
