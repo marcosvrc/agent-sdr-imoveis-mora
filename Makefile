@@ -168,9 +168,14 @@ crm-migrate:   # aplica o schema do CRM sem reiniciar nada — idempotente, como
 crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --seed 42 --reference-date $(CRM_REF)
 
-crm-reset:     # apaga o dataset e reaplica. Recusa se houver qualquer registro sem marca sintética.
+crm-reset:     # apaga o dataset (e o que foi criado em uso sobre ele) e reaplica. Recusa se houver registro sem marca sintética.
+               # O reset apaga também os leads e oportunidades que a Mora abriu no CRM; os vínculos
+               # do lado da Mora (crm_vinculo, crm_reconhecimento, crm_pendencias) apontariam para
+               # IDs que não existem mais. Limpá-los faz o próximo turno abrir o vínculo de novo.
 	@echo "🗄️  Recriando a massa sintética do CRM…"
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --reset --confirm-reset --seed 42 --reference-date $(CRM_REF)
+	@echo "🔗 Limpando os vínculos da Mora com o CRM antigo…"
+	cd local && docker compose exec -T db psql -q -U sdr -d sdr -c "TRUNCATE crm_vinculo, crm_reconhecimento, crm_pendencias"
 	@echo "✅ massa do CRM recriada (seed 42)."
 	@echo "💡 Próximo, se ainda não tem CRM_API_TOKEN: make crm-token"
 

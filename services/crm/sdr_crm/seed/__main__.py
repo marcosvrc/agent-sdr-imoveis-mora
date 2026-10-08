@@ -41,8 +41,15 @@ def _conferir_ambiente() -> None:
 
 
 def _resetar(dataset_id: str) -> dict:
-    """Apaga apenas o dataset indicado, em uma transação — e aborta se houver dado sem marca
-    sintética. Um único registro real na base significa que este banco não é o que se pensava."""
+    """Apaga o dataset indicado e o que foi criado em uso sobre ele, em uma transação — e aborta se
+    houver dado sem marca sintética. Um único registro real na base significa que este banco não é
+    o que se pensava.
+
+    "Criado em uso" é `dataset_id` nulo: a visita que a Mora marcou num horário do seed, a interação
+    que ela publicou, o lead que ela abriu. Apagar só o lote deixava essas linhas apontando para
+    horários e oportunidades que iam sumir, e o reset morria em ForeignKeyViolation logo na primeira
+    tabela referenciada (`visits` → `availability_slots`) — justamente depois de alguém ter usado o
+    sistema, que é quando se quer recomeçar."""
     with transacao() as conn:
         reais = conn.execute(
             """SELECT (SELECT count(*) FROM leads WHERE NOT synthetic)
@@ -55,7 +62,8 @@ def _resetar(dataset_id: str) -> dict:
                 "SELECT 1 FROM information_schema.columns "
                 "WHERE table_name = %s AND column_name = 'dataset_id'", (tabela,)).fetchone()
             if colunas:
-                r = conn.execute(f"DELETE FROM {tabela} WHERE dataset_id = %s", (dataset_id,))
+                r = conn.execute(f"DELETE FROM {tabela} WHERE dataset_id = %s OR dataset_id IS NULL",
+                                 (dataset_id,))
             else:
                 r = conn.execute(f"DELETE FROM {tabela}")
             apagados[tabela] = r.rowcount

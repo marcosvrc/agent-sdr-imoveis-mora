@@ -179,3 +179,22 @@ def test_a_carteira_se_espalha_pela_equipe_inteira(semeado):
         donos = conn.execute(
             "SELECT count(DISTINCT owner_id) AS n FROM opportunities").fetchone()["n"]
     assert donos >= 20
+
+
+def test_reset_apaga_tambem_o_que_foi_criado_em_uso_sobre_o_lote(semeado):
+    """A Mora marca visita num horário do seed com `dataset_id` nulo. O reset apagava só o lote e
+    morria em ForeignKeyViolation (visits → availability_slots) — depois de qualquer uso real."""
+    from sdr_crm.db.connection import transacao
+    from sdr_crm.seed.__main__ import _resetar
+    with transacao() as conn:
+        base = conn.execute("""SELECT s.id AS slot, s.property_id AS imovel, o.id AS oportunidade
+                                 FROM availability_slots s, opportunities o
+                                WHERE s.dataset_id = 'teste' AND o.dataset_id = 'teste'
+                                  AND NOT EXISTS (SELECT 1 FROM visits v WHERE v.slot_id = s.id)
+                                LIMIT 1""").fetchone()
+        conn.execute("""INSERT INTO visits (opportunity_id, property_id, slot_id, status)
+                        VALUES (%s, %s, %s, 'requested')""",
+                     (base["oportunidade"], base["imovel"], base["slot"]))
+    apagados = _resetar("teste")
+    assert apagados["visits"] == VISITAS + 1
+    assert _contar("visits") == 0 and _contar("availability_slots") == 0
