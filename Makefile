@@ -75,10 +75,14 @@ setup:
 check-env:
 	python3 scripts/check_env.py
 
-local: check-env
+# `--gerar-segredo`: sem SDR_SESSAO_SECRET de verdade, a sessão que o canal emite não vale na API
+# (eventos de navegação descartados) e os serviços recusam o valor de exemplo. Gera um no local/.env.
+local:
+	python3 scripts/check_env.py --gerar-segredo
 	cd local && docker compose up --build
 
-local-ollama: check-env
+local-ollama:
+	python3 scripts/check_env.py --gerar-segredo
 	cd local && docker compose --profile ollama up --build
 
 seed:

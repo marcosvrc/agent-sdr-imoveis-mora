@@ -27,9 +27,11 @@ export function LeadDetalhe() {
   const refresh = useCallback(() => { qc.invalidateQueries({ queryKey: ["lead", id] }); qc.invalidateQueries({ queryKey: ["mensagens", id] }); }, [qc, id]);
   useTempoReal(useCallback((e) => { if (e.resposta?.lead_id === id) refresh(); }, [id, refresh]));
 
-  const assumir = useMutation({ mutationFn: () => api.assumir(id, lead?.corretor_id ?? null), onSuccess: refresh });
+  // 409: outro corretor assumiu antes, ou o lead saiu do handoff enquanto a tela estava aberta. O
+  // clique não fazia nada visível; agora a tela diz o motivo e recarrega o lead.
+  const assumir = useMutation({ mutationFn: () => api.assumir(id, lead?.corretor_id ?? null), onSuccess: refresh, onError: refresh });
   const devolver = useMutation({ mutationFn: () => api.devolver(id), onSuccess: refresh });
-  const responder = useMutation({ mutationFn: (t: string) => api.responder(id, t), onSuccess: () => { setTexto(""); refresh(); } });
+  const responder = useMutation({ mutationFn: (t: string) => api.responder(id, t), onSuccess: () => { setTexto(""); refresh(); }, onError: refresh });
   const atribuir = useMutation({ mutationFn: (cid: string | null) => api.atribuirCorretor(id, cid), onSuccess: refresh });
   const reativacao = useMutation({ mutationFn: (aceita: boolean) => api.definirReativacao(id, aceita), onSuccess: refresh });
   // "Analisar" consulta o lead a cada 3s por até 45s, esperando a análise chegar. O intervalo fica
@@ -108,6 +110,11 @@ export function LeadDetalhe() {
                 </Button>}
           </div>
         </div>
+        {assumir.isError && (
+          <p role="alert" className="border-t border-line px-4 py-2 text-sm text-bad-strong">
+            Não foi possível assumir: {(assumir.error as Error).message}
+          </p>
+        )}
         {/* Faixa de leitura em 5 segundos */}
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line px-4 py-2.5 text-sm">
           {busca.length > 0
@@ -135,12 +142,15 @@ export function LeadDetalhe() {
           </header>
           <div className="min-h-0 flex-1 p-3"><Transcricao msgs={msgs ?? []} altura="h-full min-h-[320px]" /></div>
           <footer className="border-t border-line p-3">
-            {emHandoff ? (
+            {emHandoff ? (<>
               <form className="flex gap-2" onSubmit={(e) => { e.preventDefault(); if (texto.trim()) responder.mutate(texto); }}>
                 <Input autoFocus placeholder="Responder como corretor…" value={texto} onChange={(e) => setTexto(e.target.value)} />
                 <Button variante="primario" type="submit" disabled={responder.isPending || !texto.trim()}>Enviar</Button>
               </form>
-            ) : (
+              {responder.isError && (
+                <p role="alert" className="mt-2 text-sm text-bad-strong">Mensagem não enviada: {(responder.error as Error).message}</p>
+              )}
+            </>) : (
               <p className="flex items-center justify-center gap-1.5 text-xs text-ink-muted"><Ic.info size={13} /> Assuma a conversa para responder ao lead por aqui.</p>
             )}
           </footer>

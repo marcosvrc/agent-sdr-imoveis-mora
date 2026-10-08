@@ -1,9 +1,13 @@
 """Valida local/.env ANTES de subir o compose — erro de configuração aqui vira erro obscuro lá dentro.
 
-Uso: python scripts/check_env.py [caminho/do/.env]   (padrão: local/.env)
+Uso: python scripts/check_env.py [--gerar-segredo] [caminho/do/.env]   (padrão: local/.env)
 Sai com status 1 e explica o que corrigir. Não imprime nenhum segredo.
+
+`--gerar-segredo` (usado por `make local`): se SDR_SESSAO_SECRET estiver vazio ou com o valor de
+exemplo, grava um aleatório no próprio arquivo antes de conferir.
 """
 import re
+import secrets
 import sys
 from pathlib import Path
 
@@ -64,9 +68,11 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
         erros.append("SDR_SESSAO_SECRET está com o valor de exemplo do repositório — os serviços "
                      f"recusam subir assim. Gere um: {GERAR_SEGREDO}")
     elif not segredo:
-        avisos.append("SDR_SESSAO_SECRET vazio: cada processo usa uma chave aleatória — as sessões "
-                      "de chat caem a cada reinício e a agenda do Google fica guardada sem cifra. "
-                      f"Gere um: {GERAR_SEGREDO}")
+        avisos.append("SDR_SESSAO_SECRET vazio: cada processo usa uma chave aleatória — a API não "
+                      "reconhece a sessão emitida pelo canal (os eventos de navegação do site são "
+                      "descartados e a Mora perde os imóveis vistos), as sessões de chat caem a cada "
+                      "reinício e a agenda do Google fica guardada sem cifra. "
+                      f"Gere um: {GERAR_SEGREDO} (ou rode `make local`, que gera sozinho)")
     # O token público só vale no perfil local, e é por isso que as portas ficam em 127.0.0.1.
     if env.get("SDR_PROFILE", "local") == "local" and not env.get("SDR_PAINEL_TOKEN"):
         avisos.append("SDR_PAINEL_TOKEN vazio no perfil local: o token público `dev-token` abre o "
@@ -157,8 +163,31 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
     return erros, avisos
 
 
+def gerar_segredo_se_preciso(caminho: Path) -> bool:
+    """Grava um SDR_SESSAO_SECRET aleatório quando o arquivo não tem um de verdade. Devolve se gravou.
+
+    Vazio "funcionava" com um custo escondido: cada processo inventa a própria chave, e a sessão que
+    o canal emite não vale na API — os eventos de navegação do site eram descartados em silêncio.
+    O valor de exemplo é público. Nenhum dos dois é o que alguém quer ao rodar `make local`."""
+    env, _ = carregar(caminho)
+    if env.get("SDR_SESSAO_SECRET", "") not in ("", *SEGREDOS_DE_EXEMPLO):
+        return False
+    novo = f"SDR_SESSAO_SECRET={secrets.token_urlsafe(48)}"
+    linhas = caminho.read_text(encoding="utf-8").splitlines()
+    trocou = False
+    for i, linha in enumerate(linhas):
+        if re.match(r"\s*SDR_SESSAO_SECRET\s*=", linha):
+            linhas[i] = novo if not trocou else f"# {linha.strip()}   (duplicada, desativada)"
+            trocou = True
+    if not trocou:
+        linhas.append(novo)
+    caminho.write_text("\n".join(linhas) + "\n", encoding="utf-8")
+    return True
+
+
 def main() -> int:
-    caminho = Path(sys.argv[1]) if len(sys.argv) > 1 else RAIZ / "local/.env"
+    args = [a for a in sys.argv[1:] if a != "--gerar-segredo"]
+    caminho = Path(args[0]) if args else RAIZ / "local/.env"
     if not caminho.exists():
         print(f"✗ {caminho} não existe. Rode: cp -n local/.env.example local/.env")
         return 1
@@ -169,6 +198,8 @@ def main() -> int:
         print("  ser lidos deles: cd local && docker compose exec agent printenv | grep -E 'SDR_|_KEY'")
         return 1
 
+    if "--gerar-segredo" in sys.argv[1:] and gerar_segredo_se_preciso(caminho):
+        print(f"✓ gerei um SDR_SESSAO_SECRET novo em {caminho} (sessões de chat abertas vão cair uma vez)")
     env, repetidas = carregar(caminho)
     erros, avisos = checar(env, repetidas)
     for a in avisos:

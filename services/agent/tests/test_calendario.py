@@ -182,3 +182,21 @@ def test_corrida_sem_corretor_tambem_colide(monkeypatch):
     with pytest.raises(HorarioOcupado):
         agendar("l2", None, slot)
     assert len(VisitaRepository().listar()) == 1
+
+
+def test_visita_de_outro_imovel_no_mesmo_horario_nao_devolve_a_primeira():
+    """Visita às 10h no imóvel A e pedido às 10h no imóvel B: devolvia a visita de A como se fosse
+    a de B ("reservado"), e nada era gravado para B."""
+    from sdr_shared.db import ImovelRepository
+    from sdr_shared.models import Imovel
+    for codigo in ("SP-CAL-A", "SP-CAL-B"):
+        ImovelRepository().upsert(Imovel(id=codigo, tipo="apartamento", operacao="aluguel",
+                                         cidade="São Paulo", regiao="zona_oeste", bairro="Pinheiros",
+                                         quartos=2, area_m2=60.0, preco=3000.0, descricao="x"))
+    slot = _primeiro_slot()
+    primeira = agendar("l1", "SP-CAL-A", slot, corretor_id="cor_ana")
+    try:
+        segunda = agendar("l1", "SP-CAL-B", slot, corretor_id="cor_ana")
+    except HorarioOcupado:
+        return                                   # o corretor não está em dois lugares: recusa é honesta
+    assert segunda.id != primeira.id and segunda.imovel_id == "SP-CAL-B"

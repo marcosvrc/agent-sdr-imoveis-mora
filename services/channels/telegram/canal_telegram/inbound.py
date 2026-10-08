@@ -62,6 +62,10 @@ def local_worker():
     """Um processo dedicado (ver `telegram-in` no compose). Sem fila própria — o `offset` só avança
     depois que o update foi publicado no broker (`processar_lote`), então nada se perde se o broker
     cair, e nada é confirmado ao Telegram antes de estar na fila."""
+    # Log estruturado e as checagens de subida (segredo de exemplo recusado) — como os outros
+    # workers. Sem isto, o telegram-in subia aceitando mensagens que ninguém consumiria.
+    from sdr_shared.log import configurar as configurar_log
+    configurar_log("telegram-in")
     s = get_settings()
     if not s.telegram_bot_token:
         log.warning("SDR_TELEGRAM_BOT_TOKEN não configurado — worker do Telegram não vai subir")

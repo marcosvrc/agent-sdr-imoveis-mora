@@ -90,15 +90,27 @@ def test_pendente_de_outro_consumidor_so_e_tomada_depois_de_um_turno_inteiro(ser
     assert b.profundidade(["t2"])["t2"] == 0
 
 
-def test_lock_por_lead_dura_pelo_menos_um_turno_inteiro():
-    """Era 180 s fixos com pior caso de 270 s: expirava com o turno em curso. Agora deriva do mesmo
-    número que define timeout e retries."""
-    from sdr_shared.adapters.local.broker import _lock_s
-    from sdr_shared.ports.factory import MAX_RETRIES, orcamento_do_turno_s
-    from sdr_shared.config import get_settings
-    pior_caso = get_settings().llm_timeout_s * (1 + MAX_RETRIES) * 2
-    assert MAX_RETRIES == 1
-    assert _lock_s() == orcamento_do_turno_s() > pior_caso
+def test_lock_curto_e_renovado_cobre_o_turno_longo_e_some_quando_o_worker_morre(servidor, monkeypatch):
+    """Validade do pior caso do turno inteiro (até ~48 min) sobrevivia ao worker que morria no meio:
+    ao voltar, a retomada esperava o lock órfão vencer e a fila parava. Agora é curto e renovado
+    enquanto o turno roda — cobre o turno longo e, sem renovação, vence sozinho."""
+    from sdr_shared.adapters.local import broker as mod
+    monkeypatch.setattr(mod, "LOCK_S", 0.6)
+    b = mod.RedisBroker()
+    b.publish("t3", "corpo", key="lead-lento")
+    visto = {}
+
+    def turno_lento(_body):
+        time.sleep(1.5)                                    # mais que duas validades do lock
+        visto["lock_vivo"] = b._r.exists("sdr:lock:lead-lento") == 1
+    _consumir_um_ciclo(b, "t3", turno_lento)
+    assert visto["lock_vivo"], "o lock foi renovado enquanto o turno rodava"
+    assert b._r.exists("sdr:lock:lead-lento") == 0, "liberado no fim do turno"
+
+    orfao = b._r.lock("sdr:lock:orfao", timeout=mod.LOCK_S)  # worker que morreu: ninguém renova
+    orfao.acquire()
+    time.sleep(1.0)
+    assert b._r.exists("sdr:lock:orfao") == 0, "lock órfão vence sozinho em LOCK_S"
 
 
 def test_lock_por_lead_cobre_todas_as_chamadas_de_modelo_do_turno():

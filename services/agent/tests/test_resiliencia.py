@@ -139,6 +139,20 @@ def test_barramento_fora_nao_vira_handoff_e_a_mensagem_fica_pendente(monkeypatch
     assert not [e for e in eventos if e[0] in ("falha", "ack")], eventos
 
 
+def test_redis_caindo_no_meio_do_turno_confirma_em_vez_de_repetir_o_turno(monkeypatch):
+    """Erro de Redis DEPOIS que o turno começou (ex.: ao publicar eventos) deixava a mensagem
+    pendente, e ela era reprocessada: entrada gravada duas vezes, resposta enviada duas vezes."""
+    from redis.exceptions import ConnectionError as RedisConnectionError
+    from sdr_shared.adapters.local import broker as mod
+    b, eventos = _broker_com()
+    monkeypatch.setattr(mod, "ESPERA_RETOMADA_S", 0, raising=False)
+
+    def cai_no_meio(_body):
+        raise RedisConnectionError("redis caiu depois do despacho")
+    _consumir(b, eventos, cai_no_meio)
+    assert ("ack",) in [e[:1] for e in eventos] and not [e for e in eventos if e[0] == "falha"], eventos
+
+
 def test_ao_falhar_por_barramento_nao_encaminha_ao_corretor(infra, monkeypatch):
     capturado = {}
 

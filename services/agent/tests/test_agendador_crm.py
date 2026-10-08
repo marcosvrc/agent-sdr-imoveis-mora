@@ -455,3 +455,16 @@ def test_grade_interna_conta_os_dias_no_fuso_de_brasilia():
     slots = VisitaRepository().horarios_disponiveis(dias=1, agora=segunda_22h)
     primeiro = slots[0].astimezone(br)
     assert (primeiro.date().isoformat(), primeiro.hour) == ("2026-10-06", 10), "amanhã (terça) às 10h"
+
+
+def test_soltar_o_horario_desliga_a_rota_grudada_de_visita(infra, grade, pedidos, lead_no_banco):
+    """Depois de soltar, a próxima mensagem não pode voltar à grade pela rota de `pediu_visita`."""
+    from agent.nodes import supervisor
+    pendente = grade[0].inicio.isoformat()
+    out = agendador.run(estado("agora não", sem_contato=True, horario_pendente=pendente,
+                               horarios_oferecidos=[pendente], contato_insistido=True))
+    assert "deixei o horário livre" in out["resposta"].texto
+    assert out["lead"].cartao.pediu_visita is False and out["horarios_oferecidos"] == []
+    depois = supervisor.run({"lead": out["lead"], "entrada": entrada("ok, obrigado"),
+                             "messages": [], "saltos": 0})
+    assert depois["proximo"] != "agendador"

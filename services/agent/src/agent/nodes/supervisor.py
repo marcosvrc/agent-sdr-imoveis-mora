@@ -76,8 +76,13 @@ def intencao_citada(txt: str) -> Intencao | None:
 PEDE_HUMANO = re.compile(
     r"\b(atendente|humano|pessoa de verdade|falar com algu[ée]m)\b"
     r"|\b(falar|conversar|fala|ser atendid[oa])\s+com\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora|pessoa)\b"
-    r"|\b(quero|queria|preciso|prefiro|gostaria\s+de|me\s+(passa|passe|transfere|transfira|coloca)|"
-    r"chama|chame|cad[êe])\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora)\b", re.I)
+    # O verbo de pedido pode vir com preposição ("preciso DE um corretor", "me passa PRO corretor")
+    # e no infinitivo ("pode chamar o corretor?"): a primeira versão só casava "quero um corretor",
+    # e "preciso de um corretor" ia ao qualificador, que respondia com pergunta de qualificação.
+    r"|\b(quero|queria|preciso|prefiro|gostaria|me\s+(passa|passe|transfere|transfira|coloca|encaminha)|"
+    r"chamar|passar|transferir|encaminhar|chama|chame|cad[êe]|tem)\s+"
+    r"(de\s+|d[eo]\s+|pr[oa]\s+|para\s+|ao\s+|com\s+)?"
+    r"(o\s+|a\s+|um\s+|uma\s+|algum\s+|alguma\s+)?(corretor|corretora)\b", re.I)
 _NEGA_HUMANO = re.compile(r"\bn[ãa]o\s+(quero|preciso)\b[^.!?]{0,24}\b(corretor|corretora|atendente|humano|pessoa)\b", re.I)
 
 
@@ -194,12 +199,23 @@ def run(state: AgentState) -> dict:
     # Agora a Mora insiste UMA vez (`contato_insistido`, gravado pelo agendador); na mensagem
     # seguinte sem contato, ou quando o cliente pede claramente outra coisa (outros imóveis),
     # o horário é solto aqui e a mensagem segue o fluxo normal, como se não houvesse pendente.
+    #
+    # Quem solta depende do que a mensagem é. Pedido de outros imóveis, ou pergunta institucional
+    # depois da insistência: solta aqui e a mensagem segue o fluxo normal. Qualquer outra coisa
+    # depois da insistência ("ok", "agora não", "depois eu mando"): vai ao agendador, que solta e
+    # DIZ que soltou ("Sem problema, deixei o horário livre…") — soltar aqui e seguir o fluxo
+    # mandava a mensagem de volta ao agendador pela rota de `pediu_visita`, e ele oferecia a grade
+    # de novo para quem tinha acabado de recusar.
     soltar = {}
     if state.get("horario_pendente") and not (so_contato(txt) or txt.startswith("slot:")):
-        if state.get("contato_insistido") or txt == "Ver outros" or PEDE_OPCOES.search(txt):
-            soltar = {"horario_pendente": None, "contato_insistido": False,
+        pede_opcoes = txt == "Ver outros" or bool(PEDE_OPCOES.search(txt))
+        if pede_opcoes or (state.get("contato_insistido") and pergunta_institucional(txt)):
+            lead.cartao.pediu_visita = False
+            soltar = {"lead": lead, "horario_pendente": None, "contato_insistido": False,
                       "horarios_oferecidos": [], "slots_crm": {}}
             state = {**state, **soltar}
+        elif state.get("contato_insistido"):
+            return {"proximo": "agendador", "saltos": saltos}
     return {**soltar, **_decidir(state, lead, txt, saltos)}
 
 

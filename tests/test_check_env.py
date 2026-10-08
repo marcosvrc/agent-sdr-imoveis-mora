@@ -138,3 +138,17 @@ def test_segredo_de_sessao_vazio_e_dev_token_avisam():
     assert any("dev-token" in a for a in avisos)
     _, avisos = checar({**BASE, "SDR_SESSAO_SECRET": "Zr8x" * 12, "SDR_PAINEL_TOKEN": "t" * 32})
     assert not any("SDR_SESSAO_SECRET" in a or "dev-token" in a for a in avisos)
+
+
+def test_gerar_segredo_grava_quando_vazio_ou_de_exemplo_e_respeita_o_que_existe(tmp_path):
+    """Vazio fazia a API não reconhecer a sessão emitida pelo canal; o de exemplo é público."""
+    import check_env
+    for inicial in ("SDR_SESSAO_SECRET=\n", "SDR_SESSAO_SECRET=dev-local-troque-antes-de-expor-publicamente\n", "SDR_PROFILE=local\n"):
+        env = tmp_path / ".env"
+        env.write_text("# topo\n" + inicial + "OUTRA=1\n", encoding="utf-8")
+        assert check_env.gerar_segredo_se_preciso(env) is True
+        valores, repetidas = check_env.carregar(env)
+        assert len(valores["SDR_SESSAO_SECRET"]) >= 40 and valores["OUTRA"] == "1" and not repetidas
+    env.write_text("SDR_SESSAO_SECRET=um-segredo-de-verdade-que-ja-existia\n", encoding="utf-8")
+    assert check_env.gerar_segredo_se_preciso(env) is False
+    assert "um-segredo-de-verdade" in env.read_text(encoding="utf-8")

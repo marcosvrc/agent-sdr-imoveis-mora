@@ -282,7 +282,11 @@ def _soltar_horario(lead) -> dict:
     reservar eu preciso de um contato" de novo, sem saída. Texto fixo: é uma frase de processo."""
     texto = ("Sem problema, deixei o horário livre. Quando quiser reservar, é só escolher um horário "
              "e me passar um telefone. Posso te ajudar com mais alguma coisa?")
+    # `pediu_visita` desligado: ligado, a próxima mensagem voltava ao agendador pela rota grudada e
+    # recebia a grade de horários de novo. Pedir visita outra vez liga de novo.
+    lead.cartao.pediu_visita = False
     return {"lead": lead, "horario_pendente": None, "contato_insistido": False,
+            "horarios_oferecidos": [], "slots_crm": {},
             "messages": [AIMessage(content=texto)], "resposta": RespostaAgente(lead_id=lead.id, texto=texto)}
 
 

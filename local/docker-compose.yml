@@ -234,6 +234,11 @@ services:
       # O seed (`make crm-reset`, que roda neste container) transforma a foto relativa do acervo em
       # URL absoluta. Antes vinha do .env inteiro; agora só a base, com o mesmo padrão de antes.
       CRM_FOTOS_BASE_URL: "${CRM_FOTOS_BASE_URL:-${SDR_PUBLIC_API_URL:-http://localhost:8000}}"
+      # Ajustes do CRM que a documentação manda fazer no local/.env. Sem estas linhas, o CRM (que não
+      # lê mais o .env inteiro) ignorava o que estivesse lá. Lista de origens em JSON.
+      CRM_ALLOWED_ORIGINS: '${CRM_ALLOWED_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}'
+      CRM_RATE_LIMIT_POR_MINUTO: "${CRM_RATE_LIMIT_POR_MINUTO:-120}"
+      CRM_LOGIN_TENTATIVAS_POR_MINUTO: "${CRM_LOGIN_TENTATIVAS_POR_MINUTO:-10}"
       PYTHONPATH: /app/services/crm
       WATCHFILES_FORCE_POLLING: "true"
     ports: ["${HOST_BIND:-127.0.0.1}:8100:8100"]

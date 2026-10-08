@@ -525,12 +525,16 @@ class VisitaRepository:
                           (inicio, corretor_id, corretor_id, lead_id)).fetchone()
         return int(r["n"]) == 0
 
-    def do_lead_no_horario(self, lead_id: str, inicio: datetime) -> Visita | None:
-        """A visita confirmada deste lead neste horário, se ele já a reservou."""
+    def do_lead_no_horario(self, lead_id: str, inicio: datetime, imovel_id: str | None = None) -> Visita | None:
+        """A visita confirmada deste lead neste horário E neste imóvel, se ele já a reservou.
+
+        O imóvel entra na conta: sem ele, quem tinha visita às 10h no imóvel A e pedia às 10h no
+        imóvel B recebia "reservado" de volta com a visita de A, e nada era gravado para B."""
         with _conn() as c:
             r = c.execute("""SELECT id, lead_id, imovel_id, tipo, inicio, corretor_id, status FROM visitas
                               WHERE lead_id = %s AND inicio = %s AND status = 'confirmada'
-                              ORDER BY criada_em LIMIT 1""", (lead_id, inicio)).fetchone()
+                                AND imovel_id IS NOT DISTINCT FROM %s
+                              ORDER BY criada_em LIMIT 1""", (lead_id, inicio, imovel_id)).fetchone()
         return Visita(**dict(r)) if r else None
 
     def marcar_evento_externo(self, visita_id: str, evento_id: str | None) -> None:

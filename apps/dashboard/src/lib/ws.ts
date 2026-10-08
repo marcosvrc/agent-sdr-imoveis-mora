@@ -17,7 +17,8 @@ export function useTempoReal(onEvento: (e: EventoTempoReal) => void, onStatus?: 
       ws = new WebSocket(`${WS_URL}?papel=dashboard&id=painel`);
       ws.onopen = () => ws.send(JSON.stringify({ token: token() ?? "" }));
       ws.onmessage = (e) => {
-        const ev: EventoTempoReal = JSON.parse(e.data);
+        let ev: EventoTempoReal;
+        try { ev = JSON.parse(e.data); } catch { return; }   // quadro malformado não derruba o tempo real
         if (ev.evento === "pronto") { onStatus?.(true); return; }
         onEvento(ev);
       };

@@ -38,13 +38,17 @@ def agendar(lead_id: str, imovel_id: str | None, inicio: datetime, tipo: str = "
     repo = VisitaRepository()
     # Clique repetido (duplo toque, callback do Telegram reentregue): o horário já é DESTE lead.
     # Devolve a visita que existe — sem "acabou de ser pego", sem segunda auditoria nem notificação.
-    if (existente := repo.do_lead_no_horario(lead_id, inicio)) is not None:
+    if (existente := repo.do_lead_no_horario(lead_id, inicio, imovel_id)) is not None:
         return existente
     # A checagem na oferta não basta: dois clientes podem estar olhando a mesma lista agora.
     if not repo.slot_livre(inicio, corretor_id, lead_id=lead_id):
         raise HorarioOcupado(inicio.isoformat())
 
-    v = Visita(id=f"vis_{lead_id}_{int(inicio.timestamp())}", lead_id=lead_id, imovel_id=imovel_id, tipo=tipo, inicio=inicio, corretor_id=corretor_id)
+    # O imóvel entra no id: com `vis_<lead>_<epoch>`, a visita ao imóvel B no mesmo horário de uma
+    # já marcada no imóvel A batia no `ON CONFLICT (id) DO NOTHING` — nada era gravado, e a função
+    # devolvia uma visita a B que não existia. Visitas antigas mantêm o id que têm.
+    sufixo = f"{imovel_id}_" if imovel_id else ""
+    v = Visita(id=f"vis_{lead_id}_{sufixo}{int(inicio.timestamp())}", lead_id=lead_id, imovel_id=imovel_id, tipo=tipo, inicio=inicio, corretor_id=corretor_id)
     visita = repo.agendar(v)
     if visita is None:
         # Os dois passaram juntos pela checagem acima; o índice único deixou entrar só o outro.

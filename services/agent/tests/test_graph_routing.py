@@ -648,6 +648,9 @@ def test_pergunta_sobre_o_corretor_nao_e_handoff(texto, monkeypatch):
     "quero falar com um corretor", "me passa um corretor", "chama o corretor", "Falar com corretor",
     "quero um atendente", "tem um humano aí?", "quero falar com uma pessoa de verdade",
     "posso falar com alguém?", "cadê o corretor?",
+    # a primeira versão do filtro não pegava preposição nem infinitivo:
+    "preciso de um corretor", "me passa pro corretor", "pode chamar o corretor?",
+    "me transfere para um corretor", "tem corretor?", "consegue me passar para um corretor?",
 ])
 def test_pedido_explicito_de_pessoa_continua_indo_ao_handoff(texto):
     from agent.nodes import supervisor
@@ -728,3 +731,15 @@ def test_resposta_vaga_a_pergunta_de_ajuste_nao_repete_a_pergunta(monkeypatch, t
     out = consultor.run(_estado_consultor(lead, texto, ajuste_pendente=criterio))
     assert out["resposta"].imoveis, "mostra as alternativas em vez de perguntar de novo"
     assert out["ajuste"]["tipo"] == "vizinhos" and not out.get("ajuste_pendente")
+
+
+@pytest.mark.parametrize("texto", ["ok", "agora não", "prefiro não passar", "depois eu mando"])
+def test_recusa_depois_da_insistencia_vai_ao_agendador_que_solta_e_diz(texto):
+    """Soltar o horário no supervisor e seguir o fluxo mandava "agora não" de volta ao agendador
+    pela rota de `pediu_visita`, e ele oferecia a grade de novo para quem tinha acabado de recusar.
+    Agora vai ao agendador AINDA com o pendente, e ele responde "deixei o horário livre"."""
+    from agent.nodes import supervisor
+    out = supervisor.run(_estado(texto, _lead_escolhendo_horario(), horario_pendente=_PENDENTE,
+                                 contato_insistido=True, horarios_oferecidos=[_PENDENTE]))
+    assert out["proximo"] == "agendador"
+

@@ -567,7 +567,7 @@ Formato único: mensagem, código e `request_id` (`erros.py`; `ui.tsx`, `Erro`).
 
 | Código (HTTP) | Quando aparece | O que fazer |
 |---|---|---|
-| `API_INACESSIVEL` (sem status) | "Não consegui falar com a API em http://localhost:8100…" — API fora do ar **ou** bloqueio de CORS (o navegador não distingue) | Confira `docker compose ps crm-api`. Se a API está no ar, o endereço do painel precisa estar em `CRM_ALLOWED_ORIGINS` (padrão: `http://localhost:3000` e `http://127.0.0.1:3000`) (`config.py`; `api/main.py`; `api.ts`) |
+| `API_INACESSIVEL` (sem status) | "Não consegui falar com a API em http://localhost:8100…" — API fora do ar **ou** bloqueio de CORS (o navegador não distingue) | Confira `docker compose ps crm-api`. Se a API está no ar, o endereço do painel precisa estar em `CRM_ALLOWED_ORIGINS` no `local/.env`, como lista JSON (padrão: `["http://localhost:3000","http://127.0.0.1:3000"]`) (`config.py`; `api/main.py`; `api.ts`) |
 | `SESSAO_NAO_PERSISTIU` | login deu 200 mas a sessão não colou | Use o mesmo host no painel e em `VITE_CRM_API` (`Entrar.tsx`) |
 | `UNAUTHENTICATED` (401) | "E-mail ou senha inválidos." / "Sessão expirada." / "Sessão encerrada." | Entre de novo; sessão dura 12 h |
 | `RATE_LIMITED` (429) | mais de 10 tentativas de login por minuto (por IP ou por e-mail), ou mais de 120 chamadas/min por credencial | Aguarde `retry_after_seconds`. O contador é em memória, por instância (`contexto.py`) |

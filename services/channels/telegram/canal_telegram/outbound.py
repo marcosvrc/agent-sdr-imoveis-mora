@@ -20,6 +20,8 @@ def enviar(body_json: str) -> None:
 
 def local_worker():
     from sdr_shared.db import iniciar_batimento
+    from sdr_shared.log import configurar as configurar_log
     from sdr_shared.ports import get_broker
+    configurar_log("telegram-out")         # log estruturado e as checagens de subida, como os outros
     iniciar_batimento("telegram-out")
     get_broker().consume("outbound-telegram", enviar)

@@ -465,7 +465,7 @@ pelo prefixo), validado por `_horario_do_botao`: só um dos `horarios_oferecidos
    (`tools/agenda.py`): horário no passado → `HorarioVencido` → `_oferecer(...)`; `slot_livre` (falso
    também para o passado) → senão `HorarioOcupado` → `_oferecer(..., ocupado_agora=True)`, que solta
    o pendente.
-   Grava `Visita(id=f"vis_{lead_id}_{ts}")`, interesse `visita_marcada`, evento no calendário do
+   Grava `Visita(id=f"vis_{lead_id}_{imovel_id}_{ts}")` (sem imóvel, sem o meio), interesse `visita_marcada`, evento no calendário do
    corretor (falha só loga), auditoria `visita.agendada`, `notificar("visita.agendada")`.
 3. `lead.estagio, lead.cartao.pediu_visita = AGENDADO, True`.
 4. `pedir_visita(lead, imovel_id, slots_crm.get(inicio.isoformat()), observacao=...)` — pedido no
