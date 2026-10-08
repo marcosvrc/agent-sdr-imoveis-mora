@@ -63,6 +63,27 @@ def test_handoff_avisa_o_corretor(infra):
     assert avisos[0]["corretor_id"] == "cor_ana" and avisos[0]["lead_id"] == "l_hand"
 
 
+def test_segundo_handoff_do_mesmo_lead_avisa_de_novo(infra):
+    """A chave era `handoff-{followups_enviados}`: o lead que voltou para a Mora e pediu um corretor
+    de novo gerava a MESMA chave, o ON CONFLICT engolia o aviso, e o corretor nunca soube do
+    segundo pedido. O cliente ouvia "vou passar para o corretor" e ninguém aparecia."""
+    from agent.handler import processar
+    processar(_msg("l_dois", "quero falar com um corretor"))
+    processar(_msg("l_dois", "quero continuar com a Mora"))
+    processar(_msg("l_dois", "quero falar com um corretor"))
+    encaminhados = [a for a in NotificacaoRepository().listar() if a["tipo"] == "lead.encaminhado"]
+    assert len(encaminhados) == 2
+
+
+def test_o_mesmo_handoff_reprocessado_nao_duplica_o_aviso(infra):
+    from agent.nodes import handoff
+    entrada = _msg("l_rep", "quero falar com um corretor")
+    LeadRepository().upsert(Lead(id="l_rep", nome="Marcos"))
+    for _ in range(2):                                   # a mesma mensagem retomada do stream
+        handoff.run({"lead": LeadRepository().get("l_rep"), "entrada": entrada})
+    assert len([a for a in NotificacaoRepository().listar() if a["tipo"] == "lead.encaminhado"]) == 1
+
+
 def test_cliente_que_responde_em_handoff_avisa_de_novo(infra):
     from agent.handler import processar
     LeadRepository().upsert(Lead(id="l_resp", estagio=Estagio.HANDOFF, corretor_id="cor_ana", nome="Marcos"))

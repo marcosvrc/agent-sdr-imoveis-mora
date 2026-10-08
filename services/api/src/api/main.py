@@ -58,9 +58,11 @@ app = FastAPI(
     swagger_ui_parameters={"docExpansion": "none", "defaultModelsExpandDepth": 0,
                            "tryItOutEnabled": True, "persistAuthorization": True},
 )
-# Em produção, defina SDR_CORS_ORIGINS; "*" só faz sentido no desenvolvimento local.
-_origens = [o.strip() for o in (get_settings().cors_origins or "").split(",") if o.strip()] or ["*"]
-app.add_middleware(CORSMiddleware, allow_origins=_origens, allow_methods=["*"], allow_headers=["*"])
+# Origens permitidas: as de SDR_CORS_ORIGINS; vazio = só os front-ends locais no perfil local, e
+# nenhuma fora dele (ver sdr_shared/seguranca/cors.py — o antigo "*" deixava qualquer site usar o
+# dev-token contra localhost).
+from sdr_shared.seguranca.cors import origens as _origens_cors  # noqa: E402
+app.add_middleware(CORSMiddleware, allow_origins=_origens_cors(), allow_methods=["*"], allow_headers=["*"])
 app.add_middleware(AuditoriaMiddleware)      # registra tudo que muda o sistema
 
 # Teto de corpo. O CRM tinha o dele desde o início; esta API não tinha nenhum, e a auditoria lê o

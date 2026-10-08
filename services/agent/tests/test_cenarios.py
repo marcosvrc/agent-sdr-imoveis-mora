@@ -129,6 +129,29 @@ def test_horario_digitado(infra):
     assert len(VisitaRepository().listar()) == 1
 
 
+def test_sem_contato_a_mora_insiste_uma_vez_e_depois_solta_o_horario(infra):
+    """Um lead real, ponta a ponta: escolheu o horário, não quis passar o telefone e perguntou se
+    aceitam pet. Recebia "pra reservar eu preciso de um contato" de novo — e de novo, a cada
+    mensagem. Agora a Mora insiste uma vez; na seguinte, solta o horário e responde o que foi
+    perguntado."""
+    from agent.graph import caminho_atual
+    from agent.handler import get_graph
+    broker, _ = infra
+    processar(msg("l5", "quero visitar um imóvel", canal=Canal.WEB))
+    slot = ultima(broker, "outbound-web")["opcoes"][0].split("|")[0]
+    processar(msg("l5", slot, tipo=TipoMensagem.BOTAO, canal=Canal.WEB))
+    assert "telefone" in ultima(broker, "outbound-web")["texto"]
+    processar(msg("l5", "prefiro não", canal=Canal.WEB))
+    assert "Pra reservar" in ultima(broker, "outbound-web")["texto"]          # a insistência, uma vez
+
+    processar(msg("l5", "vocês aceitam pet?", canal=Canal.WEB))
+    assert "Pra reservar" not in ultima(broker, "outbound-web")["texto"]
+    assert "informacoes" in caminho_atual() and "agendador" not in caminho_atual()
+    estado = get_graph().get_state({"configurable": {"thread_id": "l5"}}).values
+    assert not estado.get("horario_pendente")
+    assert LeadRepository().get("l5").estagio != Estagio.AGENDADO
+
+
 def test_handoff_roteia_para_corretor_da_regiao(infra):
     """Com corretores cadastrados, o handoff escolhe quem atende a região (menor carga) e cita o nome ao cliente."""
     from sdr_shared.db import CorretorRepository

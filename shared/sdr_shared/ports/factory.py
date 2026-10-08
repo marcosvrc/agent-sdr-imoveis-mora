@@ -243,15 +243,19 @@ def modo_do_agente() -> str:
 # Uma tentativa a mais além da primeira, para todo provedor hospedado. O pior caso de um turno
 # é `orcamento_do_turno_s()`; quem serializa turnos por lead (o lock do broker) usa esse número.
 MAX_RETRIES = 1
+# Chamadas de modelo em sequência num turno, no pior caso: rota (supervisor), extração do cartão,
+# a resposta e a extração do consultor quando o turno passa do qualificador para ele.
+CHAMADAS_POR_TURNO = 4
 
 
 def orcamento_do_turno_s(timeout_s: float | None = None) -> float:
-    """Quanto um turno pode levar no pior caso: cada provedor tenta (1 + MAX_RETRIES) vezes até o
-    timeout, e há no máximo dois provedores (principal e reserva). Mais uma folga para banco e
-    embeddings. É a régua do lock por lead — abaixo dela, o lock expira com o turno em curso e
-    duas respostas saem para a mesma mensagem."""
+    """Quanto um turno pode levar no pior caso: cada chamada de modelo tenta (1 + MAX_RETRIES) vezes
+    até o timeout em até dois provedores (principal e reserva), e o turno faz até
+    CHAMADAS_POR_TURNO chamadas. Mais uma folga para banco e embeddings. É a régua do lock por lead
+    — abaixo dela, o lock expira com o turno em curso e duas respostas saem para a mesma mensagem.
+    Media UMA chamada só: com o modelo lento, o lock vencia no meio do turno."""
     espera = timeout_s or _timeout_do_painel() or get_settings().llm_timeout_s
-    return espera * (1 + MAX_RETRIES) * 2 + 30
+    return espera * (1 + MAX_RETRIES) * 2 * CHAMADAS_POR_TURNO + 30
 
 
 _EFEMERO = {"type": "ephemeral"}

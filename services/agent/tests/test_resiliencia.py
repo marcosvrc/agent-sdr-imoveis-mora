@@ -63,8 +63,8 @@ def test_broker_confirma_mensagem_com_erro(monkeypatch):
         def xautoclaim(self, *_a, **_kw): return ["0-0", [], []]
         def lock(self, *_a, **_kw):
             class L:
-                def __enter__(self): return None
-                def __exit__(self, *a): return False
+                def acquire(self, *a, **k): return True
+                def release(self): return None
             return L()
         def xack(self, *a): eventos.append(("ack", *a))
 
@@ -77,6 +77,86 @@ def test_broker_confirma_mensagem_com_erro(monkeypatch):
         pass
     assert ("falha", "corpo", "falhou") in eventos
     assert any(e[0] == "ack" for e in eventos)
+
+
+def _broker_com(lock_que_vence: bool = False):
+    """RedisBroker sobre um Redis de mentira que processa uma mensagem e para."""
+    from sdr_shared.adapters.local import broker as mod
+    from redis.exceptions import LockNotOwnedError
+    eventos = []
+
+    class RedisFake:
+        def xgroup_create(self, *_a, **_kw): pass
+        def xreadgroup(self, _g, _c, streams, **_kw):
+            if "0" in streams.values(): return []
+            if any(e[0] in ("lido",) for e in eventos): raise KeyboardInterrupt
+            eventos.append(("lido",))
+            return [("s", [("1-1", {"key": "k", "body": "corpo"})])]
+        def xautoclaim(self, *_a, **_kw): return ["0-0", [], []]
+        def lock(self, *_a, **_kw):
+            class L:
+                def acquire(self, *a, **k): return True
+                def release(self):
+                    if lock_que_vence:
+                        raise LockNotOwnedError("o lock venceu com o turno em curso")
+            return L()
+        def xack(self, *a): eventos.append(("ack", *a))
+
+    b = mod.RedisBroker.__new__(mod.RedisBroker)
+    b._r = RedisFake()
+    return b, eventos
+
+
+def _consumir(b, eventos, handler):
+    try:
+        b.consume("inbound", handler, ao_falhar=lambda body, erro: eventos.append(("falha", body, str(erro))))
+    except KeyboardInterrupt:
+        pass
+
+
+def test_lock_vencido_ao_liberar_nao_dispara_o_caminho_de_falha():
+    """O turno respondeu o cliente; ao sair, o lock já tinha vencido e `LockNotOwnedError` estourava
+    no `__exit__`. Isso caía no `ao_falhar`: o cliente recebia a resposta E "tive um problema
+    técnico", e o lead ia para o corretor sem ter pedido."""
+    b, eventos = _broker_com(lock_que_vence=True)
+    _consumir(b, eventos, lambda _body: None)
+    assert not [e for e in eventos if e[0] == "falha"]
+    assert any(e[0] == "ack" for e in eventos)
+
+
+def test_barramento_fora_nao_vira_handoff_e_a_mensagem_fica_pendente(monkeypatch):
+    """O handler diz que, sem barramento, a mensagem "fica pendente no stream". Não ficava: o broker
+    chamava `ao_falhar` (que grava HANDOFF) e confirmava a mensagem — o cliente ia para o corretor
+    por causa de um Redis reiniciando, e a mensagem dele não era retomada nunca."""
+    from sdr_shared.ports import BarramentoIndisponivel
+    from sdr_shared.adapters.local import broker as mod
+    b, eventos = _broker_com()
+    monkeypatch.setattr(mod, "ESPERA_RETOMADA_S", 0, raising=False)
+
+    def sem_barramento(_body):
+        raise BarramentoIndisponivel("barramento indisponível")
+    _consumir(b, eventos, sem_barramento)
+    assert not [e for e in eventos if e[0] in ("falha", "ack")], eventos
+
+
+def test_ao_falhar_por_barramento_nao_encaminha_ao_corretor(infra, monkeypatch):
+    capturado = {}
+
+    class BrokerFake:
+        def consume(self, _topic, _handler, ao_falhar=None):
+            capturado["ao_falhar"] = ao_falhar
+        def publish(self, *_a, **_kw):
+            pass
+
+    monkeypatch.setattr("sdr_shared.ports.get_broker", lambda: BrokerFake())
+    h.local_worker()
+    from sdr_shared.models import Lead
+    LeadRepository().upsert(Lead(id="lz"))
+    entrada = MensagemNormalizada(lead_id="lz", canal=Canal.WEB, identificador_canal="sess-lz",
+                                  tipo=TipoMensagem.TEXTO, conteudo="oi")
+    from redis.exceptions import ConnectionError as RedisConnectionError
+    capturado["ao_falhar"](entrada.model_dump_json(), RedisConnectionError("redis fora"))
+    assert LeadRepository().get("lz").estagio != Estagio.HANDOFF
 
 
 def test_sem_barramento_o_turno_falha_antes_de_comecar(infra, monkeypatch):

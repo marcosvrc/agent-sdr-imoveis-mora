@@ -298,9 +298,15 @@ def _contexto_contato(lead, state) -> str:
     return ""
 
 
+# O valor que muda de escala com a intenção. "Até 800 mil" de compra não é "até 800 mil por mês" de
+# aluguel, nem ticket de investimento: na troca, o teto antigo não pode atravessar.
+_TETOS = ("preco_min", "preco_max", "ticket")
+
+
 def run(state: AgentState) -> dict:
     lead, entrada = state["lead"], state["entrada"]
     fora_de_cobertura = None
+    trocou = False
     if entrada.conteudo:
         pergunta = ultima_pergunta(state.get("messages"))
         novo_cartao = _extrair(lead.cartao, entrada.conteudo, pergunta)
@@ -308,6 +314,7 @@ def run(state: AgentState) -> dict:
             novo_cartao = novo_cartao.model_copy(update={"urgencia": urg})
         if novo_cartao.quartos is None and quartos_sem_preferencia(entrada.conteudo, pergunta):
             novo_cartao = novo_cartao.model_copy(update={"quartos": 0})
+        intencao_antes = lead.cartao.intencao
         # quem já fechou um ciclo e volta com outra intenção começa uma oportunidade nova, não sobrescreve a antiga
         if (sucessora := nova_oportunidade_se_mudou_intencao(lead, novo_cartao.intencao)):
             auditar(acao="oportunidade.aberta", entidade="lead", entidade_id=sucessora.id, ator_tipo="agente",
@@ -320,17 +327,35 @@ def run(state: AgentState) -> dict:
                 update={**contato, "intencao": novo_cartao.intencao})
             lead = sucessora
         else:
+            # Troca de intenção sem oportunidade nova (lead ainda QUALIFICADO, não fechou ciclo): o
+            # cartão é o mesmo, e o merge mantinha o teto da intenção antiga — compra até 800 mil
+            # virava aluguel até R$ 800 mil por mês, e a busca seguia com ele. Teto que esta mensagem
+            # não repetiu é o antigo, e cai; bairro e quartos seguem valendo (a pessoa é a mesma).
+            if Intencao.INDEFINIDA not in (intencao_antes, novo_cartao.intencao) and novo_cartao.intencao != intencao_antes:
+                novo_cartao = novo_cartao.model_copy(update={
+                    c: None for c in _TETOS if getattr(novo_cartao, c) == getattr(lead.cartao, c)})
             lead.cartao = novo_cartao
+        trocou = sucessora is not None or (intencao_antes != Intencao.INDEFINIDA
+                                           and lead.cartao.intencao != intencao_antes)
         lead.cartao, fora_de_cobertura = _normalizar_local(lead.cartao, entrada.conteudo)
     _absorver_contato(lead)
     if lead.estagio == Estagio.NOVO and lead.cartao.intencao != Intencao.INDEFINIDA:
         lead.estagio = Estagio.QUALIFICANDO
 
+    # Trocou de intenção: os imóveis mostrados eram da busca antiga (compra), e contavam como "já
+    # sugeridos" — o cartão do aluguel fechava e a busca nova não rodava, porque o consultor só é
+    # chamado direto quando ainda não há sugestão. Zerados, a busca da intenção nova roda quando o
+    # cartão fechar. O histórico de interesses (banco) continua lá.
+    recomeco = ({"imoveis_sugeridos": [], "ultimos_sugeridos": [], "ajuste": None, "ajuste_pendente": None,
+                 "imovel_escolhido": None, "horarios_oferecidos": [], "slots_crm": {},
+                 "horario_pendente": None, "contato_insistido": False} if trocou else {})
+    sugeridos = [] if trocou else state.get("imoveis_sugeridos")
+
     # Cartão ficou completo com esta mensagem: não prometer "vou buscar" — o consultor responde já com os imóveis.
     # (O supervisor decidiu antes da extração; sem isto o modelo inventa uma "ferramenta" em texto.)
-    if lead.cartao.completo() and not state.get("imoveis_sugeridos"):
+    if lead.cartao.completo() and not sugeridos:
         # `cartao_extraido_de`: o consultor recebe o turno agora e leria esta mesma frase de novo.
-        return {"lead": lead, "proximo": "consultor", "cartao_extraido_de": entrada.conteudo}
+        return {"lead": lead, "proximo": "consultor", "cartao_extraido_de": entrada.conteudo, **recomeco}
 
     origem = ""
     if lead.cartao.imoveis_visualizados:
@@ -356,5 +381,5 @@ def run(state: AgentState) -> dict:
         msg = AIMessage(content=texto_final)
 
     opcoes = ["Comprar", "Alugar", "Investir"] if lead.cartao.intencao == Intencao.INDEFINIDA else []
-    return {"lead": lead, "messages": [msg], **({"pediu_nome": True} if pedindo_nome else {}),
+    return {"lead": lead, "messages": [msg], **({"pediu_nome": True} if pedindo_nome else {}), **recomeco,
             "resposta": RespostaAgente(lead_id=lead.id, texto=texto_final, opcoes=opcoes)}

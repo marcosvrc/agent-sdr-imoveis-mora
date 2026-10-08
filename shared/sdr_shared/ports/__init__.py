@@ -1,5 +1,5 @@
 """Portas (interfaces) do que muda entre perfis. Serviços dependem só daqui; adapters/ implementam."""
-from .broker import Broker
+from .broker import BarramentoIndisponivel, Broker
 from .scheduler import FollowupScheduler
 from .embeddings import Embedder
 from .calendario import Calendario

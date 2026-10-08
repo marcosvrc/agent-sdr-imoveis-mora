@@ -156,6 +156,7 @@ estruturada, e é **conservadora por projeto** (`nodes/qualificador.py::_extrair
 | falha na extração devolve o cartão **inalterado** — o turno continua | — | `test_cenarios.py::test_mudanca_nao_derruba_o_turno` |
 | **uma extração por frase**: o consultor não reextrai a mensagem que o qualificador acabou de extrair (`cartao_extraido_de`) | uma chamada de modelo a mais por turno | `test_cenarios.py::test_cartao_completo_nao_extrai_a_mesma_frase_duas_vezes` |
 | cliente qualificado pode **trocar de bairro/critério** no consultor; a intenção fica intacta | busca com bairros antigos | `test_cenarios.py::test_cliente_qualificado_pode_trocar_de_bairro` |
+| **troca de intenção** (compra ↔ aluguel) sem oportunidade nova: o **teto antigo não atravessa** — `preco_min`, `preco_max` e `ticket` que a mensagem não repetiu são zerados (bairros e quartos ficam); e os imóveis já sugeridos, a ampliação e os horários são zerados, para a busca da intenção nova rodar quando o cartão fechar | compra até 800 mil virava aluguel até R$ 800 mil/mês | `test_graph_routing.py::test_troca_real_de_intencao_nao_reaproveita_o_teto` |
 | a extração recebe a **última fala da Mora** (`ultima_pergunta`, até 300 caracteres) marcada como CONTEXTO, não como dado: serve só para saber a que campo uma resposta curta se refere ("1" depois de "quantos quartos?" é `quartos = 1`); os exemplos citados na pergunta nunca viram preferência | resposta curta vira nulo, o cartão não fecha e a Mora promete uma busca que não vem | `test_graph_routing.py::test_extracao_recebe_a_ultima_pergunta_da_mora`, `::test_ultima_pergunta_ignora_o_que_o_cliente_disse` |
 | **redes de segurança por regra** quando o extrator deixa passar: urgência dita com todas as letras ("urgente", "sem pressa", "uns 3 meses") só vale se a mensagem ou a pergunta anterior falam de prazo; "sem preferência"/"tanto faz" sobre quartos vira `quartos = 0` (a busca não filtra) | campo obrigatório nunca fecha | `test_graph_routing.py::test_urgencia_por_regra` |
 
@@ -217,17 +218,20 @@ O supervisor decide por regra determinística; o modelo só entra no último cas
 | 3 | tipo `reativacao` | reativador |
 | 4 | `PEDE_SAIR` (não quero mais avisos…) | reativador (**antes do porteiro de escopo**) |
 | 5 | fora de escopo **e** não pede humano | recusa |
-| 6 | pede humano (`PEDE_HUMANO`, botão "Falar com corretor") ou já está em `handoff` | handoff |
+| 6 | pede humano **explicitamente** (`pede_humano`: "atendente", "humano", "pessoa de verdade", "falar com alguém" valem sozinhos; "corretor" só com pedido — falar/conversar com, quero, preciso, me passa, chama, cadê o corretor; frase que nega, "não quero falar com corretor", não conta), botão "Falar com corretor", ou já está em `handoff` | handoff |
 | 7 | botão **"visitar este imóvel"** (`imovel:<id>\|<título>`) | agendador |
 | 8 | botão de **ampliação da busca** (`ajuste:<tipo>\|…`) | consultor |
-| 9 | há **horário segurado esperando contato** (`horario_pendente`) e a mensagem é só contato, outro `slot:` ou tem até 4 palavras | agendador (fecha a reserva) |
-| 10 | pergunta institucional (`INSTITUCIONAL_FORTE`, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e **sem** horários oferecidos | informações (RAG institucional) |
-| 11 | intenção já é compra ou aluguel e o cliente **cita a outra** com todas as letras (`intencao_citada`; "comprar para alugar" cita as duas e não decide) | qualificador (abre a oportunidade nova e refaz o cartão) |
+| 8a | há horário segurado (`horario_pendente`), a mensagem **não** é contato nem `slot:`, e a Mora **já insistiu uma vez** no contato (`contato_insistido`) **ou** o cliente pede outras opções ("Ver outros", `PEDE_OPCOES`) | **solta o horário** (zera `horario_pendente`, `contato_insistido`, `horarios_oferecidos` e `slots_crm`) e a mensagem segue pelas linhas abaixo como se não houvesse pendente |
+| 9 | há **horário segurado esperando contato** e a mensagem é só contato, outro `slot:` ou tem até 4 palavras **que não são pergunta institucional** | agendador (fecha a reserva ou insiste uma vez) |
+| 10 | pergunta institucional (`INSTITUCIONAL_FORTE` — inclui "horário de atendimento/funcionamento" —, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e, havendo horários oferecidos, **sem cara de escolha de horário** (`ESCOLHE_HORARIO`) | informações (RAG institucional); um horário segurado continua segurado |
+| 11 | intenção já é compra ou aluguel e o cliente **cita a outra** com todas as letras (`intencao_citada`; "comprar para alugar" cita as duas e não decide; **negação** — "não quero comprar agora" — e **pergunta sobre o outro uso sem verbo de desejo** — "quanto rende o aluguel desse?", "dá pra alugar depois?" — não contam) | qualificador (abre a oportunidade nova ou refaz o cartão sem o teto antigo — ver [3.2](#32-extracao-o-que-ela-pode-e-nao-pode-fazer)) |
 | 12 | escolheu horário (botão `slot:` ou texto após oferta) | agendador |
-| 13 | pede visita, ou `pediu_visita` no cartão **e estágio ≠ `agendado`** | agendador |
+| 13 | pede visita (`PEDE_VISITA`: visita, visitar, (re)agendar, (re/des)marcar, "outro horário", "horários", "tem horário" — **"horário" sozinho não**) ou botão "Agendar visita" | agendador |
+| 13a | pede outras opções ("Ver outros", `PEDE_OPCOES`) | consultor — **antes** da rota grudada da linha 13b |
+| 13b | `pediu_visita` no cartão **e estágio ≠ `agendado`** | agendador |
 | 14 | cartão completo e a mensagem é **só um contato** (`so_contato`) | qualificador (grava e agradece) |
 | 15 | a Mora perguntou como ampliar (`ajuste_pendente`) e o cartão está completo | consultor (lê a resposta escrita) |
-| 16 | pede outras opções | consultor |
+| 16 | — (pedir outras opções subiu para a 13a) | — |
 | 17 | cartão completo e nada sugerido ainda | consultor |
 | 18 | cartão incompleto | qualificador |
 | 19 | resto | **modelo decide** entre qualificador, consultor, agendador, handoff e informacoes; a decisão é lida mesmo fora do formato (primeira palavra válida na resposta, sem acento e sem markdown — `interpretar_decisao`); resposta ilegível cai em qualificador (com log só da resposta do modelo); **`agendador` com lead já `agendado` é trocado** por consultor/qualificador; **`handoff` em mensagem de até 3 palavras que não pede pessoa é trocado** por consultor/qualificador |
@@ -250,10 +254,13 @@ Precedências que são decisão de negócio, com o teste que as prende:
 | "Vocês cobram taxa de visita?" vai para informações, não para o agendador | `test_informacoes.py::test_taxa_de_visita_nao_vira_agendamento` |
 | Escolha de horário vence a pergunta institucional | `test_informacoes.py::test_escolha_de_horario_tem_precedencia` |
 | Telefone enviado após a reserva não reoferece a grade | `test_graph_routing.py::test_telefone_depois_da_reserva_nao_volta_para_o_agendador` |
-| Quem quer remarcar continua chegando ao agendador | `test_graph_routing.py::test_quem_quer_remarcar_continua_chegando_ao_agendador` |
+| Quem quer remarcar continua chegando ao agendador ("posso remarcar?", "desmarcar", "reagendar", "outro horário") | `test_graph_routing.py::test_quem_quer_remarcar_continua_chegando_ao_agendador`, `::test_remarcar_chega_ao_agendador` |
+| "Qual o horário de atendimento?" vai para informações, não para o agendador | `test_graph_routing.py::test_horario_de_atendimento_e_pergunta_institucional` |
+| Pergunta **sobre** o corretor ("quando o corretor vai me ligar?", "cobram comissão do corretor?") não é handoff; pedido explícito continua sendo | `test_graph_routing.py::test_pergunta_sobre_o_corretor_nao_e_handoff`, `::test_pedido_explicito_de_pessoa_continua_indo_ao_handoff` |
+| Horário segurado não sequestra a conversa: insiste uma vez, depois solta; pergunta institucional e pedido de opções não vão ao agendador | `test_graph_routing.py::test_depois_de_insistir_o_horario_e_solto_e_a_mensagem_segue`, `::test_pergunta_que_nao_e_contato_nem_horario_nao_vai_ao_agendador`, `::test_com_a_grade_na_tela_pergunta_institucional_vai_ao_no_institucional`, `test_cenarios.py::test_sem_contato_a_mora_insiste_uma_vez_e_depois_solta_o_horario` |
 | O modelo não devolve visita reservada ao agendador | `test_graph_routing.py::test_modelo_nao_devolve_visita_reservada_ao_agendador` |
 | Botão de imóvel e de ampliação vencem a pergunta institucional | `test_agendador_crm.py::test_o_botao_do_imovel_leva_aos_horarios_dele`, `test_graph_routing.py::test_escolher_acima_do_valor_busca_no_bairro_sem_teto` |
-| Trocar compra por aluguel depois de qualificado vai ao qualificador, não ao consultor | `test_graph_routing.py::test_intencao_citada`, `::test_trocar_compra_por_aluguel_depois_de_qualificado_vai_ao_qualificador` |
+| Trocar compra por aluguel depois de qualificado vai ao qualificador, não ao consultor; negar ou perguntar sobre o outro uso não é troca | `test_graph_routing.py::test_intencao_citada`, `::test_trocar_compra_por_aluguel_depois_de_qualificado_vai_ao_qualificador`, `::test_citar_o_outro_uso_nao_e_trocar_de_intencao` |
 | Telefone com cartão completo vai ao qualificador, não traz mais imóveis | `test_graph_routing.py::test_telefone_depois_da_reserva_nao_traz_mais_imoveis` |
 | Resposta do roteador fora do formato não vira qualificador em silêncio | `test_graph_routing.py::test_decisao_do_roteador_e_lida_mesmo_fora_do_formato` |
 | Especialista que não responde nem reencaminha roda **uma vez só** (`MAX_SALTOS = 4`, `ultimo_no`) | `test_graph_routing.py::test_especialista_que_nao_responde_nem_reencaminha_roda_uma_vez_so` |
@@ -365,7 +372,9 @@ consultor **não mostra as alternativas de cara**: pergunta como continuar
 | `quartos` — "<bairro> com menos quartos" | pediu mais de 1 quarto | busca de novo **sem filtro de quartos**; a resposta diz que têm menos quartos |
 
 A resposta pode vir pelo botão ou por escrito ("pode ser em bairro perto", "aumenta o valor"),
-reconhecida por expressão regular enquanto `ajuste_pendente` estiver no estado. A ampliação
+reconhecida por expressão regular enquanto `ajuste_pendente` estiver no estado. Resposta que **não
+escolhe nada** ("tanto faz", "sim", "qualquer um") vale como **bairros vizinhos**: a pergunta não se
+repete (`test_graph_routing.py::test_resposta_vaga_a_pergunta_de_ajuste_nao_repete_a_pergunta`). A ampliação
 escolhida (`ajuste`) vale enquanto o critério do cartão não mudar; mudou o bairro, o teto ou os
 quartos, a pergunta volta a valer. Antes disso, um lead que pediu 2 quartos em Moema recebeu num
 parágrafo só um studio em Moema e três imóveis em outros bairros — quando tirar o teto teria
@@ -453,7 +462,8 @@ exceção. O descarte anotado pelo corretor no painel também sobe (`routers/int
 | Sem imóvel escolhido, o CRM não é consultado | — | `test_visitas_crm.py::test_sem_imovel_nao_pergunta_ao_crm` |
 | **Horário vencido nunca é oferecido**, venha de onde vier (slot do CRM com início no passado é descartado) | — | `test_visitas_crm.py::test_horario_vencido_nunca_e_oferecido` |
 | **`slot:<iso>` só vale se a Mora ofereceu aquele horário (ou o está segurando) e ele ainda não passou.** O prefixo chega como texto: digitado à mão, de botão antigo ou malformado, a Mora reoferece a grade em vez de reservar ou derrubar o turno. Data que não existe ("31/09") não casa com nada e também reoferece | — | `test_agendador_crm.py::test_slot_digitado_fora_da_oferta_nao_vira_visita`, `::test_horario_oferecido_que_ja_passou_nao_e_reservado`, `::test_data_que_nao_existe_reoferece_em_vez_de_derrubar_o_turno` |
-| Agenda interna (reserva): **10h, 14h e 16h** (Brasília), 5 dias úteis à frente, começando **amanhã**, fins de semana pulados, até 15 slots gerados, **60 min**, horário confirmado sai da grade | `repositories.py::VisitaRepository.horarios_disponiveis` | `test_calendario.py::test_horario_ja_marcado_some_da_oferta`, `::test_sem_corretor_definido_usa_a_grade_da_equipe` |
+| Agenda interna (reserva): **10h, 14h e 16h** (Brasília), 5 dias úteis à frente, começando **amanhã no fuso de Brasília** (depois das 21h daqui ainda é o mesmo dia), fins de semana pulados, até 15 slots gerados, **60 min**, horário confirmado sai da grade | `repositories.py::VisitaRepository.horarios_disponiveis` | `test_calendario.py::test_horario_ja_marcado_some_da_oferta`, `::test_sem_corretor_definido_usa_a_grade_da_equipe`, `test_agendador_crm.py::test_grade_interna_conta_os_dias_no_fuso_de_brasilia` |
+| **Nada é reservado no passado**: `agendar` recusa horário vencido (`HorarioVencido`) e `slot_livre` o dá como ocupado | `tools/agenda.py::agendar` | `test_agendador_crm.py::test_agendar_recusa_horario_no_passado` |
 | Com corretor definido, a grade interna desconta a agenda Google dele; falha do Google **não esvazia** a oferta | `VisitaRepository._agenda_externa` | `test_calendario.py::test_compromisso_no_google_tira_o_horario_da_oferta`, `::test_google_fora_do_ar_nao_esvazia_a_agenda` |
 
 ### 7.2 Qual imóvel — antes de qual horário
@@ -473,6 +483,7 @@ clicava num horário e a visita era reservada num imóvel que ele nunca escolheu
 (`test_agendador_crm.py::test_com_varios_imoveis_na_tela_pergunta_qual_antes_do_horario`,
 `::test_o_botao_do_imovel_leva_aos_horarios_dele`, `::test_o_horario_e_reservado_no_imovel_escolhido`,
 `::test_escolha_do_imovel_por_texto_so_quando_inequivoca`). Lote novo na tela zera a escolha anterior.
+Grade nova na tela (`_oferecer`) solta qualquer horário que estivesse segurado.
 
 ### 7.3 Como o horário é escolhido
 
@@ -483,26 +494,41 @@ frase e reoferece. O identificador do botão nunca entra cru no histórico — v
 (`test_agendador_crm.py::test_clique_no_botao_nao_vira_iso_no_historico`,
 `test_cenarios.py::test_horario_digitado`).
 
+**Contato que chega no meio do agendamento é absorvido sempre** (`so_contato` ou telefone na frase):
+o telefone mandado com a grade na tela, antes de escolher o horário, já vale para a reserva
+(`test_agendador_crm.py::test_telefone_mandado_com_a_grade_na_tela_nao_se_perde`).
+
 ### 7.4 No site, o horário espera o telefone
 
 No chat do site a conversa some quando o cliente fecha a aba: sem telefone ou e-mail não há como o
 corretor confirmar. Por isso, **no canal web, horário escolhido sem contato não é reservado**
 (`agendador.py::_pedir_contato`): fica segurado em `horario_pendente` e a Mora pede "seu nome e
 telefone" (ou só o telefone, se já sabe o nome), em texto fixo. A próxima mensagem — só o contato,
-outro `slot:` ou até 4 palavras — volta ao agendador, passa pela extração e, com contato válido,
-fecha a reserva naquele horário. Sem contato de novo, a Mora insiste uma vez e oferece o botão
-**Falar com corretor**. Horário e telefone na mesma frase ("sexta às 10h, 11 98765-4321") reservam
+outro `slot:` ou até 4 palavras que não sejam pergunta institucional — volta ao agendador, passa pela
+extração e, com contato válido, fecha a reserva naquele horário. **Contato válido é o que o lead
+gravou** (`lead.telefone`/`lead.email`): telefone sem DDD (8–9 dígitos) não conta, e a Mora pede o
+número com DDD. Sem contato de novo, a Mora insiste **uma vez** (`contato_insistido`) e oferece o
+botão **Falar com corretor**. Na mensagem seguinte ainda sem contato, **o horário é solto**: o
+supervisor zera o pendente e a mensagem segue o fluxo normal ("vocês aceitam pet?" vai para
+informações). Pedir outras opções ("Ver outros") também solta; pergunta institucional vai para
+informações e mantém o horário segurado. **O pendente vale enquanto não passar**: vencido, é
+descartado e a grade é oferecida de novo; tomado por outra pessoa (`HorarioOcupado`), também é solto
+junto com a reoferta. Horário e telefone na mesma frase ("sexta às 10h, 11 98765-4321") reservam
 direto. No **Telegram** a reserva não espera: o chat continua aberto e o corretor fala por ali
 (`test_agendador_crm.py::test_no_site_sem_contato_o_horario_espera_o_telefone`,
 `::test_o_contato_fecha_a_reserva_do_horario_segurado`,
 `::test_sem_contato_de_novo_insiste_e_oferece_o_corretor`,
+`::test_insiste_uma_vez_so_e_depois_solta_o_horario`,
+`::test_telefone_sem_ddd_nao_conta_como_contato`,
+`::test_horario_segurado_que_ja_passou_e_descartado`,
+`::test_horario_segurado_tomado_por_outro_e_solto`,
 `::test_no_telegram_a_reserva_nao_espera_telefone`).
 
 ### 7.5 O que uma reserva produz — e o que ela **não** é
 
 | Passo | Regra | Teste |
 | --- | --- | --- |
-| 1 | revalidação da colisão (`slot_livre`); ocupado no meio do caminho → reoferece sem culpar ninguém | `test_calendario.py::test_dois_clientes_nao_marcam_o_mesmo_horario`, `::test_a_visita_do_primeiro_cliente_permanece` |
+| 1 | revalidação da colisão (`slot_livre`); ocupado no meio do caminho → reoferece sem culpar ninguém e solta o horário segurado; vencido → reoferece | `test_calendario.py::test_dois_clientes_nao_marcam_o_mesmo_horario`, `::test_a_visita_do_primeiro_cliente_permanece` |
 | 2 | visita gravada com id determinístico `vis_<lead>_<epoch>` — reclicar **não** duplica | sem teste direto |
 | 3 | interesse vira `visita_marcada`; estágio vira `agendado`; `pediu_visita = true` | `test_cenarios.py::test_horario_digitado` |
 | 4 | evento no Google Agenda do corretor **se** conectado; **o Google nunca derruba a visita** | `test_calendario.py::test_visita_vira_evento_na_agenda_do_corretor`, `::test_falha_do_google_nao_impede_a_visita`, `::test_corretor_sem_agenda_conectada_segue_normal` |
@@ -571,6 +597,13 @@ lead** (`handler.py`, chave `int(time.time()) // 900`). Testes:
 `test_notificacoes.py::test_cliente_que_responde_em_handoff_avisa_de_novo`,
 `test_followup.py::test_cliente_que_responde_em_handoff_nao_leva_followup_por_cima`,
 `test_monitoramento_turno.py::test_turno_que_morre_em_handoff_tambem_conta`.
+
+**Cada encaminhamento avisa o corretor** (`lead.encaminhado`). A chave do aviso é a mensagem que
+pediu o encaminhamento (`handoff-<recebida_em>`): o lead que voltou para a Mora e pediu um corretor
+de novo gera um aviso novo; a mesma mensagem retomada da fila não duplica. A chave antiga
+(`handoff-<followups_enviados>`) se repetia no segundo pedido, e o aviso era descartado
+(`test_notificacoes.py::test_segundo_handoff_do_mesmo_lead_avisa_de_novo`,
+`::test_o_mesmo_handoff_reprocessado_nao_duplica_o_aviso`).
 
 **Silêncio, mas não beco.** A primeira mensagem do cliente depois do encaminhamento recebe **um**
 aviso — e só um por handoff — dizendo que o corretor foi chamado e como voltar para a assistente
@@ -740,9 +773,10 @@ Regex determinística **antes** de gastar token. Ordem:
 | # | Verificação | Limite | Teste |
 | --- | --- | --- | --- |
 | 1 | Texto gigante | `LIMITE_TEXTO = 1200` caracteres | `test_seguranca.py::test_mensagem_gigante_e_barrada` |
-| 2 | Injeção de prompt | vence tudo, inclusive pedido legítimo junto | `::test_tentativa_de_reprogramar_o_agente_e_recusada`, `::test_injecao_disfarcada_de_pedido_legitimo_tambem_e_recusada` |
-| 3 | Fora do domínio sempre (`FORA_SEMPRE`) | bitcoin, day trade, eleição, remédio, poema… | `::test_assunto_fora_do_dominio_e_recusado` |
-| 4 | Domínio ou conversa | **passa**, mesmo com ruído junto | `::test_conversa_legitima_passa` |
+| 2 | Conversa curta conhecida (`CONVERSA`, ancorada na mensagem **inteira**: "oi", "obrigado", "você é um robô?", "você é uma IA?") | **passa** — antes da injeção, porque "você é um robô?" casava com "você é um…" | `::test_frase_legitima_que_parecia_ataque_passa` |
+| 3 | Injeção de prompt | vence tudo, inclusive pedido legítimo junto; "esquece tudo" só é ataque quando esquece o que **disseram à Mora** ("esqueça tudo que te falaram", "tudo acima", "as instruções") — "esquece tudo, quero alugar agora" passa | `::test_tentativa_de_reprogramar_o_agente_e_recusada`, `::test_injecao_disfarcada_de_pedido_legitimo_tambem_e_recusada`, `::test_afrouxar_o_porteiro_nao_abre_o_ataque` |
+| 4 | Fora do domínio sempre (`FORA_SEMPRE`) | bitcoin, day trade, eleição, remédio, poema…; cargo depois de tipo de logradouro ("Rua Deputado Lacerda Franco", "Rua Senador Queirós", "Av. Presidente…") é nome de rua e não conta | `::test_assunto_fora_do_dominio_e_recusado`, `::test_frase_legitima_que_parecia_ataque_passa` |
+| 4a | Domínio | **passa**, mesmo com ruído junto | `::test_conversa_legitima_passa` |
 | 5 | Fora do domínio (fraco) | perde para o domínio ("receita" também é receita de aluguel) | `::test_assunto_fora_do_dominio_e_recusado` |
 | 6 | Nada casou | **passa** — na dúvida, atende | `::test_na_duvida_o_cliente_tem_o_beneficio` |
 
@@ -791,9 +825,10 @@ adivinhável; descrição de imóvel e trecho de documento passam por `neutraliz
 | Regra | Valor | Fonte | Teste |
 | --- | --- | --- | --- |
 | **Poda do histórico 40 → 24**: acima de `MAX_HISTORICO = 40` mensagens, ficam as últimas `HISTORICO_APOS_PODA = 24`; o cartão sobrevive | — | `services/agent/src/agent/state.py::podar_historico`, `graph.py` | `test_cenarios.py::test_historico_longo_e_podado_e_o_cartao_sobrevive` |
-| **Lock por lead derivado do orçamento do turno**: `orcamento_do_turno_s() = timeout × (1 + MAX_RETRIES) × 2 + 30`, com `MAX_RETRIES = 1` | — | `shared/sdr_shared/ports/factory.py`, `adapters/local/broker.py::_lock_s` | `shared/tests/test_broker_redis.py::test_lock_por_lead_dura_pelo_menos_um_turno_inteiro`, `::test_pendente_de_outro_consumidor_so_e_tomada_depois_de_um_turno_inteiro` |
-| Sem barramento, o turno falha **antes** de começar (`turnos.resultado = barramento`) | — | `handler.py::_barramento_responde` | `test_resiliencia.py::test_sem_barramento_o_turno_falha_antes_de_comecar` |
-| Falha no grafo: fallback honesto + handoff; o worker avisa mesmo se `processar` estourar | — | `handler.py::_responder_falha` | `test_resiliencia.py::test_falha_do_grafo_responde_e_encaminha`, `::test_worker_avisa_mesmo_se_processar_estourar` |
+| **Lock por lead derivado do orçamento do turno inteiro**: `orcamento_do_turno_s() = timeout × (1 + MAX_RETRIES) × 2 × CHAMADAS_POR_TURNO + 30`, com `MAX_RETRIES = 1` e `CHAMADAS_POR_TURNO = 4` (rota, extração, resposta, extração do consultor). O mesmo número é a ociosidade mínima para tomar a mensagem pendente de outro consumidor | — | `shared/sdr_shared/ports/factory.py`, `adapters/local/broker.py::_lock_s` | `shared/tests/test_broker_redis.py::test_lock_por_lead_dura_pelo_menos_um_turno_inteiro`, `::test_lock_por_lead_cobre_todas_as_chamadas_de_modelo_do_turno`, `::test_pendente_de_outro_consumidor_so_e_tomada_depois_de_um_turno_inteiro` |
+| **Lock vencido ao liberar não é falha do turno**: `LockError` na liberação só vai para o log — nunca dispara `ao_falhar` (que mandaria "problema técnico" depois da resposta e encaminharia o lead) | — | `adapters/local/broker.py::_processar` | `test_resiliencia.py::test_lock_vencido_ao_liberar_nao_dispara_o_caminho_de_falha` |
+| Sem barramento, o turno falha **antes** de começar (`turnos.resultado = barramento`, `BarramentoIndisponivel`); o broker **não confirma** a mensagem nem chama `ao_falhar`: ela fica pendente e é retomada da PEL a cada ciclo até o barramento voltar | — | `handler.py::_barramento_responde`, `broker.py::_processar` | `test_resiliencia.py::test_sem_barramento_o_turno_falha_antes_de_comecar`, `::test_barramento_fora_nao_vira_handoff_e_a_mensagem_fica_pendente` |
+| Falha no grafo: fallback honesto + handoff; o worker avisa mesmo se `processar` estourar. **Falha de barramento nunca vira handoff**: com o barramento fora, `_responder_falha` e `ao_falhar` só registram em log | — | `handler.py::_responder_falha` | `test_resiliencia.py::test_falha_do_grafo_responde_e_encaminha`, `::test_worker_avisa_mesmo_se_processar_estourar`, `::test_ao_falhar_por_barramento_nao_encaminha_ao_corretor` |
 | **O fim do turno não desfaz o "Assumir"**: o handler salva com `preservar_handoff=True`; lead que está em `handoff` no banco mantém estágio e corretor, mesmo que o turno tenha lido outro estado no começo. Devolver pelo painel continua tirando do handoff | — | `handler.py`, `repositories.py::LeadRepository.upsert` | `test_resiliencia.py::test_assumir_durante_o_turno_nao_e_desfeito_pelo_fim_do_turno`, `::test_devolver_pelo_painel_continua_tirando_do_handoff` |
 | Briefing do corretor: a conversa vai ao modelo como **uma transcrição** (Cliente/Mora, envelopada como dado), e não como a troca original — terminada na fala da Mora, a conversa fazia o modelo continuar a frase dela em vez de escrever para o corretor. **Sem nenhuma mensagem no checkpoint, nenhum modelo é chamado** (o reserva inventava um resumo a partir de nada) | — | `nodes/resumidor.py::transcricao` | `test_resiliencia.py::test_resumidor_manda_a_conversa_como_transcricao_terminando_no_usuario`, `::test_resumidor_sem_historico_nao_chama_o_modelo` |
 | Um ciclo do scheduler que falha (ex.: banco reiniciando) é registrado e o laço segue no próximo ciclo, como a drenagem do CRM e a reindexação do acervo | — | `services/scheduler/sdr_scheduler/local_worker.py` | `test_resiliencia.py::test_ciclo_do_scheduler_que_falha_nao_derruba_o_laco` |
@@ -1182,6 +1217,18 @@ Em relação à versão anterior deste documento. Nada foi apagado em silêncio.
 | "Turno de lead vinculado sempre conta como publicado" | **alterada** | Só conta se a conversa entrou no histórico do CRM (18). |
 | Não havia regra para `slot:` fora da oferta | **nova** | Só horário oferecido e futuro vira reserva (7.1). |
 | Divergências 11–16 | **novas** | Descobertas nesta revisão. |
+| "Horário segurado: a próxima mensagem de até 4 palavras volta ao agendador; sem contato, a Mora insiste uma vez" | **alterada** | A insistência não tinha limite (a cada mensagem curta, o mesmo pedido). Agora `contato_insistido` marca a insistência; na mensagem seguinte sem contato o supervisor **solta o horário** (linha 8a); "Ver outros" também solta; pergunta institucional vai para informações. O pendente vencido é descartado, o tomado por outra pessoa é solto (7.4). |
+| "Pergunta institucional só sem horários oferecidos" | **alterada** | `horarios_oferecidos` só era zerado na reserva e trancava a rota para sempre; agora só a cara de escolha de horário (`ESCOLHE_HORARIO`) tem precedência (linha 10). |
+| "Pede outras opções → consultor" (linha 16) | **alterada** | Subiu para antes da rota grudada de `pediu_visita` (linha 13a): "Ver outros" depois de pedir visita mostrava a grade. |
+| "`PEDE_HUMANO` casa corretor, atendente, humano…" | **alterada** | "corretor" só com pedido ("falar com", "quero", "me passa", "chama", "cadê"); pergunta sobre o corretor e frase que nega não são handoff (linha 6). |
+| "`PEDE_VISITA` casa visita, agendar, marcar, horário" | **alterada** | "horário" sozinho saiu (horário de atendimento é institucional); entraram remarcar, desmarcar, reagendar, "outro horário" e "horários" (linha 13). |
+| "Troca de intenção: cita a outra com todas as letras" | **alterada** | Negação e pergunta sobre o outro uso não contam; na troca sem oportunidade nova o teto antigo não atravessa e a busca recomeça (3.2, linha 11). |
+| "Contato no agendamento: `telefone_informado` basta" | **alterada** | Vale o contato gravado no lead; sem DDD a Mora pede o DDD (7.4). Contato chegado com a grade na tela é absorvido (7.3). |
+| Não havia regra para resposta vaga à pergunta de ampliação | **nova** | "tanto faz"/"sim" vale como bairros vizinhos (5.4). |
+| "Agenda interna começa amanhã" (em UTC) | **alterada** | O dia é contado em Brasília (7.1); `agendar` e `slot_livre` recusam o passado. |
+| "Notificação de handoff com chave `handoff-<followups_enviados>`" | **alterada** | A chave é a mensagem que pediu (`handoff-<recebida_em>`): o segundo encaminhamento avisa (8). |
+| "Porteiro: injeção vence tudo" | **alterada** | Conversa curta conhecida ("você é um robô?") é vista antes; "esquece tudo" do cliente e rua com nome de deputado/senador passam; os ataques continuam barrados (12.1). |
+| "Lock por lead = pior caso de uma chamada" | **alterada** | Cobre as 4 chamadas do turno; erro ao liberar o lock só vai ao log; falha de barramento deixa a mensagem pendente e não vira handoff (12.5). |
 
 ---
 

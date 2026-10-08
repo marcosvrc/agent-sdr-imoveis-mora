@@ -11,6 +11,7 @@ log = logging.getLogger(__name__)
 
 BLOCK_MS = 5_000                    # quanto o XREADGROUP espera por mensagem no servidor
 SOCKET_TIMEOUT_S = BLOCK_MS / 1000 + 10  # SEMPRE maior que o block, senão o cliente estoura antes do servidor responder
+ESPERA_RETOMADA_S = 2               # com mensagem pendente por falta de barramento, quanto esperar antes de retomar
 
 
 def _lock_s() -> float:
@@ -65,8 +66,13 @@ class RedisBroker:
         stream, group, consumer = f"sdr:{topic}", f"{topic}-workers", "w1"
         self._ensure_group(stream, group)
         log.info("consumindo %s (grupo %s)", stream, group)
-        self._retomar_pendentes(stream, group, consumer, handler, ao_falhar)
+        pendentes = not self._retomar_pendentes(stream, group, consumer, handler, ao_falhar)
         while True:
+            if pendentes:
+                # O laço lê só `>`: a mensagem que ficou pendente por falta de barramento só seria
+                # relida no próximo boot. Espera um pouco e retoma a PEL daqui mesmo, até esvaziar.
+                time.sleep(ESPERA_RETOMADA_S)
+                pendentes = not self._retomar_pendentes(stream, group, consumer, handler, ao_falhar)
             try:
                 lidos = self._r.xreadgroup(group, consumer, {stream: ">"}, count=1, block=BLOCK_MS) or []
             except (redis.TimeoutError, redis.ConnectionError) as e:
@@ -77,12 +83,32 @@ class RedisBroker:
                 continue
             for _, msgs in lidos:
                 for mid, data in msgs:
-                    self._processar(stream, group, mid, data, handler, ao_falhar)
+                    pendentes |= not self._processar(stream, group, mid, data, handler, ao_falhar)
 
-    def _processar(self, stream, group, mid, data, handler, ao_falhar) -> None:
+    def _processar(self, stream, group, mid, data, handler, ao_falhar) -> bool:
+        """Processa uma mensagem. Devolve False quando ela ficou PENDENTE (barramento fora) — quem
+        chama tenta retomá-la depois; nos outros casos ela é confirmada."""
+        from sdr_shared.ports.broker import BarramentoIndisponivel
         try:
-            with self._r.lock(f"sdr:lock:{data['key']}", timeout=_lock_s()):
+            trava = self._r.lock(f"sdr:lock:{data['key']}", timeout=_lock_s())
+            trava.acquire()
+            try:
                 handler(data["body"])
+            finally:
+                # Liberar o lock é arrumação, não atendimento. Com `with`, o `LockNotOwnedError` de um
+                # lock que venceu durante o turno saía do `__exit__` como se o TURNO tivesse falhado:
+                # o cliente já tinha a resposta e recebia em seguida "tive um problema técnico", e o
+                # lead ia para o corretor sem ter pedido. O turno terminou; registra e segue.
+                try:
+                    trava.release()
+                except redis.exceptions.LockError:
+                    log.warning("lock do lead venceu durante o turno de %s em %s (turno concluído)", mid, stream)
+        except (BarramentoIndisponivel, redis.ConnectionError, redis.TimeoutError):
+            # Sem barramento o turno não começou (ver `processar` no agente). A mensagem fica na
+            # PEL, sem XACK e sem `ao_falhar` — que avisaria o cliente por um barramento que não
+            # entrega e o mandaria ao corretor por um problema de infraestrutura.
+            log.warning("barramento indisponível em %s; %s fica pendente para ser retomada", stream, mid)
+            return False
         except Exception as e:
             log.exception("falha processando %s em %s", mid, stream)
             if ao_falhar:
@@ -90,9 +116,10 @@ class RedisBroker:
                     ao_falhar(data["body"], e)      # avisa o cliente; sem isto ele espera para sempre
                 except Exception:
                     log.exception("falha também no tratamento de erro de %s", mid)
-        self._r.xack(stream, group, mid)            # sempre confirma: reprocessar repetiria o erro
+        self._r.xack(stream, group, mid)            # confirma: reprocessar repetiria o erro
+        return True
 
-    def _retomar_pendentes(self, stream, group, consumer, handler, ao_falhar) -> None:
+    def _retomar_pendentes(self, stream, group, consumer, handler, ao_falhar) -> bool:
         """Mensagem entregue e não confirmada quando o worker caiu fica na PEL do grupo — e o laço
         principal lê só com `>`, que é "o que nunca foi entregue". Sem isto, a mensagem de um
         cliente que chegou no instante da queda ficava pendente para sempre, contando em
@@ -100,12 +127,14 @@ class RedisBroker:
 
         Duas passadas: a PEL deste consumidor (id `0`: tudo que era meu), e depois o que estiver
         parado há mais que um turno inteiro em nome de qualquer outro consumidor (XAUTOCLAIM), que
-        é o caso de um worker antigo que morreu com nome diferente."""
-        retomadas = 0
+        é o caso de um worker antigo que morreu com nome diferente.
+
+        Devolve False se alguma continuou pendente (barramento ainda fora)."""
+        retomadas, tudo_feito = 0, True
         try:
             for _, msgs in self._r.xreadgroup(group, consumer, {stream: "0"}, count=100) or []:
                 for mid, data in msgs:
-                    self._processar(stream, group, mid, data, handler, ao_falhar)
+                    tudo_feito &= self._processar(stream, group, mid, data, handler, ao_falhar)
                     retomadas += 1
             inicio = "0-0"
             while True:
@@ -115,15 +144,17 @@ class RedisBroker:
                     if data is None:            # entrada apagada do stream (maxlen): só sobra o id na PEL
                         self._r.xack(stream, group, mid)
                         continue
-                    self._processar(stream, group, mid, data, handler, ao_falhar)
+                    tudo_feito &= self._processar(stream, group, mid, data, handler, ao_falhar)
                     retomadas += 1
                 if proximo in ("0-0", "0") or not msgs:
                     break
                 inicio = proximo
         except (redis.TimeoutError, redis.ConnectionError) as e:
             log.warning("não consegui retomar pendentes de %s (%s); sigo com a fila nova", stream, type(e).__name__)
+            tudo_feito = False
         if retomadas:
             log.info("%d mensagem(ns) pendente(s) retomada(s) em %s", retomadas, stream)
+        return tudo_feito
 
     def _ensure_group(self, stream: str, group: str) -> None:
         try:

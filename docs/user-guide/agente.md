@@ -49,14 +49,14 @@ o que dispara cada caminho (expressões copiadas de `supervisor.py`, `escopo.py`
 | Intenção | O que dispara | Para onde vai |
 | --- | --- | --- |
 | Não quero mais avisos | *"não quero mais receber avisos"*, *"parar de receber"*, *"me tira da lista"*, *"sair da lista"*, *"descadastr…"*, *"me remova"*, *"pare de me avisar"* | Opt-out imediato (precede tudo) |
-| Falar com humano | *corretor*, *atendente*, *humano*, *pessoa de verdade*, *falar com alguém*, botão **Falar com corretor** | Handoff |
+| Falar com humano | *atendente*, *humano*, *pessoa de verdade*, *falar com alguém*; *corretor* só quando pedido (*"quero falar com um corretor"*, *"me passa um corretor"*, *"chama o corretor"*, *"cadê o corretor?"*); botão **Falar com corretor**. Pergunta **sobre** o corretor (*"quando o corretor vai me ligar?"*, *"vocês cobram comissão do corretor?"*) e *"não quero falar com corretor"* não contam | Handoff |
 | Botão de imóvel ou de ampliação | **visitar este imóvel** (`imovel:…`); **acima do valor / bairros vizinhos / menos quartos** (`ajuste:…`) | Agendador / Consultor |
-| Contato para o horário segurado | telefone ou e-mail (ou resposta curta) depois de a Mora segurar um horário no site | Agendador (fecha a reserva) |
-| Pergunta institucional | *fiador*, *avalista*, *caução*, *seguro fiança*, *vistoria*, *IPTU*, *ITBI*, *escritura*, *financiamento*, *documentação*, *reajuste*, *rescisão*, *pet/cachorro/gato*; ou pergunta (*como funciona*, *qual*, *quanto*, *vocês cobram/aceitam/exigem…*) sobre *taxa*, *prazo*, *entrada*, *contrato*, *comissão*, *garantia*, *multa*, *repasse* | Informações (base de documentos) |
-| Mudou de compra para aluguel (ou o contrário) | *alugar*, *aluguel*, *locação* para quem queria comprar; *comprar*, *adquirir* para quem queria alugar | Qualificador (abre uma oportunidade nova) |
+| Contato para o horário segurado | telefone ou e-mail (ou resposta curta que não seja pergunta institucional) depois de a Mora segurar um horário no site. Depois de **uma** insistência sem contato, ou se a pessoa pede outras opções, o horário é solto e a mensagem segue normalmente | Agendador (fecha a reserva) |
+| Pergunta institucional | *fiador*, *avalista*, *caução*, *seguro fiança*, *vistoria*, *IPTU*, *ITBI*, *escritura*, *financiamento*, *documentação*, *reajuste*, *rescisão*, *pet/cachorro/gato*, *horário de atendimento/funcionamento*; ou pergunta (*como funciona*, *qual*, *quanto*, *vocês cobram/aceitam/exigem…*) sobre *taxa*, *prazo*, *entrada*, *contrato*, *comissão*, *garantia*, *multa*, *repasse*. Vale mesmo com a grade de horários na tela, desde que a mensagem não pareça escolha de horário | Informações (base de documentos) |
+| Mudou de compra para aluguel (ou o contrário) | *alugar*, *aluguel*, *locação* para quem queria comprar; *comprar*, *adquirir* para quem queria alugar. Não contam: negação (*"não quero comprar agora"*) e pergunta sobre o outro uso (*"quanto rende o aluguel desse?"*, *"dá pra alugar depois?"*) | Qualificador (abre uma oportunidade nova ou refaz o cartão) |
 | Escolha de horário | botão `slot:…`, ou, com horários já oferecidos, *"14h"*, *"terça"*, *"amanhã"*, *"15/09"*, *"o primeiro"* | Agendador (confirma) |
-| Quer visitar | *visitar*, *visita*, *agendar*, *marcar*, *conhecer o imóvel*, *horário*, botão **Agendar visita** | Agendador (oferece horários) |
-| Quer opções | *opções*, *me mostra*, *mostrar*, *o que vocês tem*, *outros imóveis*, *ver outros*, botão **Ver outros** | Consultor |
+| Quer visitar | *visitar*, *visita*, *agendar*/*reagendar*, *marcar*/*remarcar*/*desmarcar*, *conhecer o imóvel*, *outro horário*, *horários*, *tem horário*, botão **Agendar visita** (*"horário"* sozinho, como em *"qual o horário de atendimento?"*, não) | Agendador (oferece horários) |
+| Quer opções | *opções*, *me mostra*, *mostrar*, *o que vocês tem*, *outros imóveis*, *ver outros*, botão **Ver outros** — mesmo depois de ter pedido visita | Consultor |
 | Só o contato, com cartão completo | *"11 98765-4321"*, *"meu e-mail é …"* | Qualificador (grava e agradece, sem mostrar imóveis de novo) |
 | Cartão completo e ainda sem sugestão | qualquer mensagem | Consultor |
 | Cartão incompleto | qualquer mensagem | Qualificador |
@@ -111,7 +111,10 @@ em uma frase, oferece as regiões atendidas (a mais próxima primeiro) e não pr
 **Mudou de ideia.** Depois de qualificado, o cliente pode trocar bairro ou faixa: a mensagem nova
 atualiza o cartão antes da busca (*"quero ver na Vila Mariana e na Vila Madalena"* muda os bairros e a
 região, sem mudar a intenção). Se a pessoa volta com **outra intenção** (era compra, agora aluguel),
-abre-se uma nova oportunidade — o contato continua o mesmo.
+abre-se uma nova oportunidade — o contato continua o mesmo. Se ainda estava em qualificação, o
+cartão é o mesmo, mas **o teto da intenção antiga não vale para a nova**: "compra até 800 mil" não
+vira "aluguel até R$ 800 mil por mês" — a Mora pergunta o valor de novo (a menos que a pessoa já o
+tenha dito na mesma frase) e faz a busca do zero.
 
 ## Pedir imóveis
 
@@ -123,7 +126,9 @@ do teto, quartos) mais similaridade da descrição. Regras:
   como continuar** em vez de despejar alternativas: *"Em Moema não encontrei apartamento de 2 quartos
   até R$ 6 mil agora. Como prefere que eu continue?"*, com botões **Moema acima de R$ 6 mil**,
   **Bairros vizinhos** e **Moema com menos quartos** (também vale responder por escrito). Escolhida a
-  ampliação, ela deixa claro em meia frase o que mudou (passa do valor, tem menos quartos).
+  ampliação, ela deixa claro em meia frase o que mudou (passa do valor, tem menos quartos). Resposta
+  que não escolhe nada (*"tanto faz"*, *"sim"*, *"qualquer um"*) vale como **bairros vizinhos**: ela
+  mostra as alternativas em vez de perguntar de novo.
 - A lista é o resultado de **uma** busca, não o estoque inteiro: ela nunca conclui indisponibilidade
   por conta própria.
 - O texto conecta 1 a 3 imóveis ao que a pessoa pediu (bairro e um diferencial de cada, sem repetir o
@@ -147,18 +152,24 @@ do teto, quartos) mais similaridade da descrição. Regras:
 4. **No site, sem telefone informado**, a Mora segura o horário e pede antes de reservar: *"Ótimo,
    ter 15/09 às 14h! Pra eu reservar, me passa seu nome e telefone? O corretor usa esse contato para
    confirmar a visita e mandar a localização."* Recebido o contato, a reserva sai naquele horário; sem
-   ele, ela insiste uma vez e oferece **Falar com corretor**. No Telegram não há essa espera.
+   ele, ela insiste **uma vez** e oferece **Falar com corretor**. Se a mensagem seguinte ainda não
+   traz contato, ela **solta o horário** e responde ao que foi dito (*"vocês aceitam pet?"* vai para
+   a base de documentos; **Ver outros** mostra imóveis). Telefone sem DDD não basta: ela pede o número
+   com DDD. Telefone mandado antes de escolher o horário já vale para a reserva. Se o horário
+   segurado passou (a pessoa voltou dias depois), ela oferece a grade de novo em vez de reservar no
+   passado. No Telegram não há essa espera.
 5. Ao reservar, a Mora diz que o horário está **reservado** e que o corretor confirma em seguida. O
    site mostra o cartão **Horário reservado** com botão de agenda e **Ver a região no mapa**; no
    Telegram, o mapa vem num botão de link. Se alguém pegou o horário entre a
-   oferta e o clique, ela reoferece em vez de confirmar em falso.
-6. Horário que já passou nunca é oferecido. Se o corretor tem Google Agenda conectada, a Mora só oferece horários livres e cria o evento com
+   oferta e o clique, ela reoferece em vez de confirmar em falso (e solta o horário que segurava).
+6. Horário que já passou nunca é oferecido nem reservado. A grade interna começa no dia seguinte
+   pelo relógio de Brasília. Se o corretor tem Google Agenda conectada, a Mora só oferece horários livres e cria o evento com
    convite ao cliente; senão usa a grade interna.
 
 **Remarcar**: depois da reserva, o pedido de visita não fica "grudado" — a pessoa pode mandar o
-telefone sem receber a grade de novo. Para trocar, basta dizer (*"quero remarcar"*, *"outro horário"*):
-as palavras *marcar*/*horário* levam de volta ao agendador, que oferece a grade e reserva o novo
-horário. Não há fluxo de cancelamento por conversa: cancelamento é tratado pelo corretor.
+telefone sem receber a grade de novo. Para trocar, basta dizer (*"posso remarcar?"*, *"outro horário"*,
+*"preciso desmarcar"*, *"dá pra reagendar?"*): essas palavras levam de volta ao agendador, que
+oferece a grade e reserva o novo horário. Não há fluxo de cancelamento por conversa: cancelamento é tratado pelo corretor.
 
 ## Falar com corretor
 
@@ -170,7 +181,8 @@ Quando o cliente pede um humano (ou clica **Falar com corretor**), a Mora respon
 (sem corretor apto na região: *"…para um corretor, que continua com você por aqui em instantes."*).
 A partir daí o lead está em **handoff**: a Mora fica **em silêncio** — mensagens novas do cliente são
 registradas e viram aviso ao corretor, mas não geram resposta automática — até o corretor devolver
-a conversa pelo painel. O follow-up agendado é cancelado.
+a conversa pelo painel. O follow-up agendado é cancelado. Cada encaminhamento gera um aviso novo ao
+corretor — inclusive o segundo, de quem voltou para a Mora e pediu um corretor de novo.
 
 A escolha do corretor segue a região do cartão e a menor carga entre os corretores ativos daquela
 região (`test_handoff_roteia_para_corretor_da_regiao`: pedido de zona sul vai para a corretora de zona
@@ -249,7 +261,9 @@ O porteiro de escopo (`services/agent/src/agent/guardrails/escopo.py`) decide se
   da equipe, é só pedir — ou me diga o que procura em um imóvel e seguimos daqui."*
 
 Vocabulário do negócio autoriza a conversa mesmo com ruído junto (*"receita"* de aluguel e *"cozinha
-americana"* não são recusados). Na dúvida, atende. Homóglifos e acentos são normalizados antes de
+americana"* não são recusados). Também passam: *"você é um robô?"* (pergunta, não reprogramação),
+*"esquece tudo, quero alugar agora"* (o cliente desfazendo o próprio pedido) e endereços com cargo no
+nome (*"Rua Deputado Lacerda Franco"*, *"Rua Senador Queirós"*). Na dúvida, atende. Homóglifos e acentos são normalizados antes de
 julgar; ataque em inglês ou parafraseado pode passar da regra e depende do modelo — é o risco residual
 medido pelo dataset adversarial.
 

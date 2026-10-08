@@ -560,3 +560,171 @@ def test_trocar_compra_por_aluguel_depois_de_qualificado_vai_ao_qualificador():
     card = ImovelCard(id="SP-1", titulo="Studio · Perdizes", preco=1.0, foto=None, motivo="x")
     out = supervisor.run({"lead": lead, "entrada": e, "imoveis_sugeridos": [card], "saltos": 0})
     assert out["proximo"] == "qualificador"
+
+
+# ------------------------------------------- horário segurado não sequestra a conversa
+
+def _lead_escolhendo_horario():
+    from sdr_shared.models import Estagio, Lead
+    lead = Lead(id="lead-pend", nome="Marcos", estagio=Estagio.QUALIFICADO)
+    c = lead.cartao
+    c.intencao, c.regiao, c.preco_max, c.quartos, c.urgencia = Intencao.ALUGUEL, "zona_oeste", 3500, 2, "imediata"
+    c.pediu_visita = True
+    return lead
+
+
+_PENDENTE = "2099-01-05T13:00:00+00:00"
+
+
+@pytest.mark.parametrize("texto, destino", [
+    ("vocês aceitam pet?", "informacoes"),
+    ("Ver outros", "consultor"),
+])
+def test_depois_de_insistir_o_horario_e_solto_e_a_mensagem_segue(texto, destino):
+    """Um lead real: escolheu o horário, não quis passar telefone, perguntou se aceitam pet — e
+    recebeu "pra reservar eu preciso de um contato" de novo, a cada mensagem, sem saída."""
+    from agent.nodes import supervisor
+    out = supervisor.run(_estado(texto, _lead_escolhendo_horario(), horario_pendente=_PENDENTE,
+                                 contato_insistido=True, horarios_oferecidos=[_PENDENTE],
+                                 imoveis_sugeridos=["SP-0001"]))
+    assert out["proximo"] == destino
+    assert out["horario_pendente"] is None and out["horarios_oferecidos"] == []
+
+
+@pytest.mark.parametrize("texto, destino", [
+    ("vocês aceitam pet?", "informacoes"),
+    ("Ver outros", "consultor"),
+    ("me mostra outras opções", "consultor"),
+])
+def test_pergunta_que_nao_e_contato_nem_horario_nao_vai_ao_agendador(texto, destino):
+    """Pendente não é passe livre para o agendador: pergunta institucional e pedido de opções têm
+    dono, mesmo com a grade de horários ainda no estado."""
+    from agent.nodes import supervisor
+    out = supervisor.run(_estado(texto, _lead_escolhendo_horario(), horario_pendente=_PENDENTE,
+                                 horarios_oferecidos=[_PENDENTE], imoveis_sugeridos=["SP-0001"]))
+    assert out["proximo"] == destino
+
+
+def test_resposta_ao_pedido_de_contato_continua_indo_ao_agendador():
+    from agent.nodes import supervisor
+    lead = _lead_escolhendo_horario()
+    for texto in ("11 98765-4321", "Marcos", f"slot:{_PENDENTE}"):
+        assert supervisor.run(_estado(texto, lead, horario_pendente=_PENDENTE))["proximo"] == "agendador"
+    # antes de insistir, resposta curta ainda é a resposta ao pedido (o agendador insiste uma vez)
+    assert supervisor.run(_estado("prefiro não", lead, horario_pendente=_PENDENTE))["proximo"] == "agendador"
+
+
+def test_com_a_grade_na_tela_pergunta_institucional_vai_ao_no_institucional():
+    """`horarios_oferecidos` ficava no estado e trancava a rota de informações para sempre."""
+    from agent.nodes import supervisor
+    out = supervisor.run(_estado("precisa de fiador?", _lead_escolhendo_horario(),
+                                 horarios_oferecidos=[_PENDENTE]))
+    assert out["proximo"] == "informacoes"
+
+
+# ------------------------------------------- "corretor" na frase não é pedido de corretor
+
+@pytest.mark.parametrize("texto", [
+    "quando o corretor vai me ligar?",
+    "vocês cobram comissão do corretor?",
+    "o corretor vai junto na visita?",
+    "não quero falar com corretor, só ver as opções",
+])
+def test_pergunta_sobre_o_corretor_nao_e_handoff(texto, monkeypatch):
+    """Logo depois de reservar a visita, "quando o corretor vai me ligar?" encaminhava o lead a um
+    humano — a Mora calava, e a pergunta ficava sem resposta até alguém abrir o painel."""
+    from agent.nodes import supervisor
+
+    class Falso:                                   # o que não casa regra nenhuma vai ao modelo
+        def invoke(self, _):
+            return type("M", (), {"content": "consultor"})()
+    monkeypatch.setattr(supervisor, "llm_roteamento", lambda: Falso())
+    assert not supervisor.pede_humano(texto), texto
+    assert supervisor.run(_estado(texto, _lead_com_visita_reservada(),
+                                  imoveis_sugeridos=["SP-0001"]))["proximo"] != "handoff"
+
+
+@pytest.mark.parametrize("texto", [
+    "quero falar com um corretor", "me passa um corretor", "chama o corretor", "Falar com corretor",
+    "quero um atendente", "tem um humano aí?", "quero falar com uma pessoa de verdade",
+    "posso falar com alguém?", "cadê o corretor?",
+])
+def test_pedido_explicito_de_pessoa_continua_indo_ao_handoff(texto):
+    from agent.nodes import supervisor
+    assert supervisor.run(_estado(texto, _lead_com_visita_reservada()))["proximo"] == "handoff"
+
+
+# ------------------------------------------- "horário" sozinho não é pedido de visita
+
+def test_horario_de_atendimento_e_pergunta_institucional():
+    from agent.nodes import supervisor
+    lead = _lead_com_visita_reservada()
+    lead.cartao.pediu_visita = False
+    assert supervisor.run(_estado("qual o horário de atendimento de vocês?", lead))["proximo"] == "informacoes"
+
+
+@pytest.mark.parametrize("texto", ["posso remarcar?", "preciso desmarcar a visita", "tem outro horário?",
+                                   "dá pra reagendar pra semana que vem?"])
+def test_remarcar_chega_ao_agendador(texto):
+    from agent.nodes import supervisor
+    lead = _lead_com_visita_reservada()
+    assert supervisor.run(_estado(texto, lead, imoveis_sugeridos=["SP-0001"]))["proximo"] == "agendador"
+
+
+# ------------------------------------------- troca de intenção só quando é troca
+
+@pytest.mark.parametrize("txt", [
+    "quanto rende o aluguel desse?",
+    "não quero comprar agora",
+    "nao vou alugar, era só curiosidade",
+    "dá pra alugar depois?",
+])
+def test_citar_o_outro_uso_nao_e_trocar_de_intencao(txt):
+    """"quanto rende o aluguel desse?" é pergunta de comprador; "não quero comprar agora" é
+    locatário dizendo que segue locatário. Os dois iam para o qualificador como troca."""
+    from agent.nodes.supervisor import intencao_citada
+    assert intencao_citada(txt) is None
+
+
+def test_troca_real_de_intencao_nao_reaproveita_o_teto(monkeypatch):
+    """Lead QUALIFICADO em compra até 800 mil diz que agora quer alugar: o cartão seguia com
+    `preco_max = 800000`, e a busca procurava aluguel de até R$ 800 mil por mês."""
+    from sdr_shared.messaging import Canal, MensagemNormalizada, TipoMensagem
+    from sdr_shared.models import CartaoQualificacao, Estagio, ImovelCard, Lead
+    from langchain_core.messages import AIMessage
+    from agent.nodes import qualificador
+
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="":
+                        cartao.model_copy(update={"intencao": Intencao.ALUGUEL}))
+    monkeypatch.setattr(qualificador, "llm_conversa", lambda: type("L", (), {
+        "invoke": lambda self, _m: AIMessage(content="Anotado! Até quanto por mês?")})())
+    monkeypatch.setattr(qualificador, "auditar", lambda **k: None)
+    lead = Lead(id="l-troca-q", estagio=Estagio.QUALIFICADO, cartao=CartaoQualificacao(
+        intencao=Intencao.COMPRA, bairros=["Pinheiros"], regiao="zona_oeste", preco_max=800_000,
+        quartos=2, urgencia="imediata"))
+    e = MensagemNormalizada(lead_id=lead.id, canal=Canal.TELEGRAM, tipo=TipoMensagem.TEXTO,
+                            identificador_canal="1", conteudo="na verdade quero alugar")
+    card = ImovelCard(id="SP-1", titulo="Apto · Pinheiros", preco=790000.0, foto=None, motivo="x")
+    out = qualificador.run({"lead": lead, "entrada": e, "messages": [], "imoveis_sugeridos": [card]})
+    assert out["lead"].cartao.intencao == Intencao.ALUGUEL
+    assert out["lead"].cartao.preco_max is None, "teto de compra não vira teto de aluguel"
+    assert out["imoveis_sugeridos"] == [], "os imóveis de compra não contam como já mostrados"
+
+
+@pytest.mark.parametrize("texto", ["tanto faz", "sim", "qualquer um"])
+def test_resposta_vaga_a_pergunta_de_ajuste_nao_repete_a_pergunta(monkeypatch, texto):
+    """"Como prefere que eu continue?" — "tanto faz". A Mora perguntava de novo, igual, com os mesmos
+    botões; e de novo a cada "sim". Resposta que não escolhe nada vira bairros vizinhos."""
+    from langchain_core.messages import AIMessage
+    from agent.nodes import consultor
+    _busca_falsa(monkeypatch, [])
+
+    class _Llm:
+        def invoke(self, msgs):
+            return AIMessage(content="Em bairros vizinhos:\n• Butantã\n\nQuer agendar?")
+    monkeypatch.setattr(consultor, "llm_conversa", lambda: _Llm())
+    lead = _lead_moema()
+    criterio = consultor._criterio(lead.cartao)
+    out = consultor.run(_estado_consultor(lead, texto, ajuste_pendente=criterio))
+    assert out["resposta"].imoveis, "mostra as alternativas em vez de perguntar de novo"
+    assert out["ajuste"]["tipo"] == "vizinhos" and not out.get("ajuste_pendente")

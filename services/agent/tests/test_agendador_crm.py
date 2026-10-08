@@ -354,3 +354,104 @@ def test_horario_oferecido_que_ja_passou_nao_e_reservado(infra, lead_no_banco, p
                         lambda *a, **k: [Horario(inicio=amanha, slot_id="s-amanha")])
     out = agendador.run(estado(f"slot:{ontem.isoformat()}", horarios_oferecidos=[ontem.isoformat()]))
     assert out["lead"].estagio != Estagio.AGENDADO and not pedidos
+
+
+# --------------------------------------------------------------- o horário segurado não prende ninguém
+
+def _sem_extracao(monkeypatch):
+    """Extração que não acha nada: o cliente respondeu sem passar contato."""
+    from agent.nodes import qualificador
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="": cartao)
+
+
+def test_insiste_uma_vez_so_e_depois_solta_o_horario(infra, grade, pedidos, monkeypatch):
+    """Um lead real: escolheu o horário, não quis passar telefone, e a cada mensagem — sobre pet,
+    sobre outro imóvel — recebia de novo "pra reservar eu preciso de um contato". A documentação
+    promete insistir UMA vez; depois disso o horário é solto e a conversa segue."""
+    _sem_extracao(monkeypatch)
+    pendente = grade[0].inicio.isoformat()
+    primeira = agendador.run(estado("prefiro não passar", sem_contato=True, horario_pendente=pendente))
+    assert primeira["contato_insistido"] is True and primeira["horario_pendente"] == pendente
+    segunda = agendador.run(estado("não vou passar", sem_contato=True, horario_pendente=pendente,
+                                   contato_insistido=True))
+    assert segunda["horario_pendente"] is None, "depois de insistir uma vez, o horário é solto"
+    assert "Pra reservar" not in (segunda["resposta"].texto if segunda.get("resposta") else "")
+    assert pedidos == []
+
+
+def test_horario_segurado_que_ja_passou_e_descartado(infra, grade, pedidos, monkeypatch, lead_no_banco):
+    """O pendente não tinha validade: o cliente sumiu, voltou dois dias depois com o telefone, e a
+    Mora reservou uma visita no passado. Vencido, ele é descartado e a grade é oferecida de novo."""
+    from agent.nodes import qualificador
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="":
+                        cartao.model_copy(update={"telefone_informado": "11 98765-4321"}))
+    ontem = (datetime.now(UTC) - timedelta(days=1)).replace(minute=0, second=0, microsecond=0)
+    out = agendador.run(estado("11 98765-4321", sem_contato=True, horario_pendente=ontem.isoformat(),
+                               horarios_oferecidos=[ontem.isoformat()]))
+    assert pedidos == [] and out["lead"].estagio != Estagio.AGENDADO
+    assert out["horario_pendente"] is None
+    assert out["resposta"].opcoes[0].startswith("slot:"), "reoferece a grade"
+    assert out["lead"].telefone == "11987654321", "o contato que chegou não se perde"
+
+
+def test_agendar_recusa_horario_no_passado(lead_no_banco):
+    from agent.tools import agenda
+    ontem = datetime.now(UTC) - timedelta(days=1)
+    with pytest.raises(agenda.HorarioVencido):
+        agenda.agendar("lead-ag", None, ontem)
+    from sdr_shared.db import VisitaRepository
+    assert not VisitaRepository().slot_livre(ontem), "horário que passou não está livre para ninguém"
+
+
+def test_horario_segurado_tomado_por_outro_e_solto(infra, grade, pedidos, monkeypatch, lead_no_banco):
+    """`HorarioOcupado` reoferecia a grade mas deixava o pendente apontando o horário ocupado: a
+    mensagem seguinte tentava reservar o mesmo horário e "acabou de ser ocupado" se repetia."""
+    from agent.tools.agenda import HorarioOcupado
+
+    def ocupado(*a, **k):
+        raise HorarioOcupado("x")
+    monkeypatch.setattr(agendador, "agendar", ocupado)
+    from agent.nodes import qualificador
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="":
+                        cartao.model_copy(update={"telefone_informado": "11 98765-4321"}))
+    out = agendador.run(estado("11 98765-4321", sem_contato=True,
+                               horario_pendente=grade[0].inicio.isoformat(),
+                               horarios_oferecidos=[h.inicio.isoformat() for h in grade]))
+    assert out["horario_pendente"] is None
+    assert out["resposta"].opcoes[0].startswith("slot:")
+
+
+def test_telefone_mandado_com_a_grade_na_tela_nao_se_perde(infra, grade, pedidos, lead_no_banco):
+    """O cliente viu os horários e, antes de escolher, mandou o telefone. O número sumia: na
+    escolha do horário a Mora pedia o contato de novo."""
+    oferecidos = [h.inicio.isoformat() for h in grade]
+    st = estado("11 98765-4321", sem_contato=True, horarios_oferecidos=oferecidos)
+    out = agendador.run(st)
+    assert out["lead"].telefone == "11987654321"
+    st2 = estado(f"slot:{oferecidos[0]}", horarios_oferecidos=oferecidos)
+    st2["lead"] = out["lead"]
+    out2 = agendador.run(st2)
+    assert out2["lead"].estagio == Estagio.AGENDADO, "com o contato já dado, reserva direto"
+
+
+def test_telefone_sem_ddd_nao_conta_como_contato(infra, grade, pedidos, monkeypatch):
+    """"98765-4321" ia para `telefone_informado` e destravava a reserva, mas o lead só grava número
+    com DDD: a visita saía sem telefone nenhum para o corretor ligar."""
+    from agent.nodes import qualificador
+    monkeypatch.setattr(qualificador, "_extrair", lambda cartao, msg, pergunta="":
+                        cartao.model_copy(update={"telefone_informado": "98765-4321"}))
+    out = agendador.run(estado("98765-4321", sem_contato=True,
+                               horario_pendente=grade[0].inicio.isoformat()))
+    assert pedidos == [] and out["lead"].estagio != Estagio.AGENDADO
+    assert "DDD" in out["resposta"].texto
+
+
+def test_grade_interna_conta_os_dias_no_fuso_de_brasilia():
+    """Depois das 21h de Brasília já é o dia seguinte em UTC: a grade pulava o "amanhã" do cliente."""
+    from zoneinfo import ZoneInfo
+    from sdr_shared.db import VisitaRepository
+    br = ZoneInfo("America/Sao_Paulo")
+    segunda_22h = datetime(2026, 10, 5, 22, 0, tzinfo=br)          # segunda-feira, 22h em SP
+    slots = VisitaRepository().horarios_disponiveis(dias=1, agora=segunda_22h)
+    primeiro = slots[0].astimezone(br)
+    assert (primeiro.date().isoformat(), primeiro.hour) == ("2026-10-06", 10), "amanhã (terça) às 10h"

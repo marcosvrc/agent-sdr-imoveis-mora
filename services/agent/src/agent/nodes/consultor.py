@@ -177,6 +177,11 @@ def run(state: AgentState) -> dict:
     ajuste = state.get("ajuste") if (state.get("ajuste") or {}).get("criterio") == criterio else None
     if (tipo := _ajuste_escolhido(state, mensagem, criterio)):
         ajuste = {"tipo": tipo, "criterio": criterio}
+    elif state.get("ajuste_pendente") == criterio:
+        # Respondeu à pergunta sem escolher nada: "tanto faz", "sim", "qualquer um". A pergunta saía
+        # de novo, igual, com os mesmos botões — e de novo a cada "sim". Quem diz que tanto faz
+        # aceita ver o que há por perto: bairros vizinhos, mantendo o teto e os quartos que pediu.
+        ajuste = {"tipo": "vizinhos", "criterio": criterio}
     cartao_busca = lead.cartao
     if ajuste and ajuste["tipo"] == "preco":
         cartao_busca = lead.cartao.model_copy(update={"preco_max": None, "ticket": None})

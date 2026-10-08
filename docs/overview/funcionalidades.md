@@ -334,12 +334,12 @@ Com CRM ausente (`get_crm()` devolve `CRMAusente`), tudo isso é silencioso e a 
 
 ### Resiliência
 
-- **Barramento fora**: `_barramento_responde()` faz `PING` no Redis antes de qualquer trabalho; falhando, registra o turno como `barramento` e levanta — a mensagem fica pendente no stream e é retomada quando o worker volta (`RedisBroker._retomar_pendentes`, `xautoclaim`).
+- **Barramento fora**: `_barramento_responde()` faz `PING` no Redis antes de qualquer trabalho; falhando, registra o turno como `barramento` e levanta `BarramentoIndisponivel` — o broker não confirma a mensagem nem chama `ao_falhar`: ela fica pendente no stream e é retomada da PEL a cada ciclo até o barramento voltar (`RedisBroker._retomar_pendentes`, `xautoclaim`). Falha de barramento nunca vira handoff.
 - **Turno falhou** (`processar` → `except`): audita `agente.turno_falhou` com o traceback, registra `erro` em `turnos` e chama `_responder_falha`: escolhe corretor, move a `HANDOFF`, responde "Tive um problema técnico aqui… já avisei {nome}" com `Acao.HANDOFF`. Se até isso falhar, o worker tem `ao_falhar` como rede final.
 - **Sem embedder**: busca de imóveis por filtros SQL; busca institucional devolve vazio.
 - **Sem CRM / CRM instável**: leitura de horários devolve vazio (agenda local); publicação vai à fila; reconhecimento devolve `False`.
 - **Sem Google**: `_agenda_externa` oferece a grade cheia; evento não criado é só log.
-- **Lock por lead**: `RedisBroker` serializa turnos do mesmo lead com `sdr:lock:<key>`, cuja validade é derivada de `orcamento_do_turno_s()` (timeout × 2 tentativas × 2 provedores + 30 s).
+- **Lock por lead**: `RedisBroker` serializa turnos do mesmo lead com `sdr:lock:<key>`, cuja validade é derivada de `orcamento_do_turno_s()` (timeout × 2 tentativas × 2 provedores × 4 chamadas por turno + 30 s). Lock que vence durante o turno só gera log ao ser liberado — não dispara o caminho de falha.
 - **Observabilidade do turno**: `registrar_turno` grava um INSERT por turno em `turnos` com resultado (`ok`, `reativacao`, `erro`, `vazao`, `barramento`, `handoff`, `orcamento`), duração, estágio e o caminho no grafo — inclusive nas saídas antecipadas.
 
 ### Estado, por funcionalidade

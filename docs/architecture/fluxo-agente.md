@@ -112,11 +112,12 @@ Definido em `services/agent/src/agent/state.py` como `TypedDict(total=False)`. O
 | `imoveis_sugeridos` | `list[ImovelCard]` | consultor (acumula), reativador (acumula) | Sim — usado para não repetir |
 | `ultimos_sugeridos` | `list[str]` | consultor (ids do último lote mostrado) | Sim — são os candidatos entre os quais o cliente escolhe o que visitar |
 | `imovel_escolhido` | `str \| None` | agendador (`_oferecer`); zerado na reserva e por lote novo do consultor | Sim — o imóvel da visita em andamento |
-| `horario_pendente` | `str \| None` (ISO) | agendador (`_pedir_contato`); zerado na reserva | Sim — horário segurado esperando o contato do cliente (só no site) |
+| `horario_pendente` | `str \| None` (ISO) | agendador (`_pedir_contato`); zerado na reserva, em toda grade nova (`_oferecer`), ao insistir sem sucesso (`_soltar_horario`), pelo supervisor quando solta o horário e pelo qualificador na troca de intenção | Sim — horário segurado esperando o contato do cliente (só no site); vencido, é descartado |
+| `contato_insistido` | `bool` | agendador (`_pedir_contato(insistindo=True)` liga; reserva, oferta e soltura desligam); supervisor (desliga ao soltar) | Sim — a Mora já insistiu uma vez no contato deste horário: na próxima sem contato, solta |
 | `ajuste_pendente` | `list \| None` | consultor (`_perguntar_ajuste`); zerado na próxima busca | Sim — a Mora perguntou como ampliar a busca e espera a resposta |
 | `ajuste` | `dict \| None` (`{tipo, criterio}`) | consultor | Sim — ampliação escolhida; vale enquanto o critério do cartão não mudar |
 | `pediu_nome` | `bool` | qualificador | Sim — o nome é pedido uma vez só |
-| `horarios_oferecidos` | `list[str]` (ISO) | agendador (`_oferecer`); zerado na reserva | Sim — é o que liga o turno 2 ao turno 1 |
+| `horarios_oferecidos` | `list[str]` (ISO) | agendador (`_oferecer`); zerado na reserva, quando o supervisor solta o horário e na troca de intenção | Sim — é o que liga o turno 2 ao turno 1 |
 | `slots_crm` | `dict[str, str]` ISO → `slot_id` | agendador | Sim; zerado na reserva |
 | `resposta` | `RespostaAgente` | especialistas | Reset por turno |
 | `cartao_extraido_de` | `str \| None` | qualificador | Reset por turno |
@@ -160,28 +161,46 @@ e o único nó com arestas condicionais.
 3. `tipo == FOLLOWUP` → `followup`; `tipo == REATIVACAO` → `reativador`.
 4. `reativador.PEDE_SAIR.search(txt)` → `reativador` (opt-out). Vem **antes** do porteiro porque
    "não quero mais nada" seria lido como fora de escopo.
-5. `veredito = escopo.avaliar(txt)`; se reprovado **e** não `PEDE_HUMANO` → `recusa` (com `veredito`
-   no estado).
-6. `txt == "Falar com corretor"` ou `PEDE_HUMANO` ou `lead.estagio == HANDOFF` → `handoff`.
+5. `veredito = escopo.avaliar(txt)`; se reprovado **e** não `pede_humano(txt)` → `recusa` (com
+   `veredito` no estado).
+6. `txt == "Falar com corretor"` ou `pede_humano(txt)` ou `lead.estagio == HANDOFF` → `handoff`.
+   `pede_humano` exige pedido explícito: "atendente", "humano", "pessoa de verdade" e "falar com
+   alguém" valem sozinhos; "corretor" só com verbo de pedido ("falar com", "quero", "me passa",
+   "chama", "cadê") e sem negação ("não quero falar com corretor"). "Quando o corretor vai me
+   ligar?" não é handoff.
+6a. **Soltar o horário segurado** (em `run`, antes de `_decidir`): há `horario_pendente`, a mensagem
+   não é `so_contato` nem `slot:`, e `contato_insistido` está ligado **ou** a mensagem pede outras
+   opções ("Ver outros", `PEDE_OPCOES`) → o supervisor devolve `horario_pendente=None`,
+   `contato_insistido=False`, `horarios_oferecidos=[]`, `slots_crm={}` junto com a decisão, e as
+   regras abaixo rodam sobre o estado já solto. É o que limita a insistência no contato a uma vez.
+   Daqui em diante as regras moram em `_decidir(state, lead, txt, saltos)`.
 7. `txt.startswith(ESCOLHA)` (`"imovel:"`, botão "visitar este imóvel") → `agendador`.
 8. `txt.startswith("ajuste:")` (como ampliar a busca sem imóvel exato) → `consultor`.
-9. `horario_pendente` e (`so_contato(txt)` ou `slot:` ou até 4 palavras) → `agendador`: é a resposta
-   ao pedido de contato, que fecha a reserva do horário segurado.
-10. `not txt.startswith("slot:") and not horarios_oferecidos and pergunta_institucional(txt)` →
-   `informacoes`. Antes do agendador porque "vocês cobram taxa de visita?" contém "visita".
+9. `horario_pendente` e (`so_contato(txt)` ou `slot:` ou até 4 palavras que **não** são
+   `pergunta_institucional`) → `agendador`: é a resposta ao pedido de contato, que fecha a reserva
+   do horário segurado (ou insiste uma vez).
+10. `not txt.startswith("slot:") and pergunta_institucional(txt)` e **não** (`horarios_oferecidos` e
+   `ESCOLHE_HORARIO`) → `informacoes`. Antes do agendador porque "vocês cobram taxa de visita?"
+   contém "visita". A grade na tela só tem precedência sobre o que parece escolha de horário — antes
+   qualquer `horarios_oferecidos` trancava a rota, e ele só era zerado na reserva.
 11. Intenção do cartão é compra ou aluguel e `intencao_citada(txt)` é a **outra** → `qualificador`,
-   que abre a oportunidade nova e refaz o cartão. O consultor mantém a intenção de propósito e, pela
-   rota do modelo, buscava "compra" para quem acabara de pedir aluguel. "comprar para alugar" cita as
-   duas e não decide.
+   que abre a oportunidade nova (ou refaz o cartão sem o teto antigo) e zera os imóveis sugeridos. O
+   consultor mantém a intenção de propósito e, pela rota do modelo, buscava "compra" para quem
+   acabara de pedir aluguel. "comprar para alugar" cita as duas e não decide; negação ("não quero
+   comprar agora") e pergunta sobre o outro uso sem verbo de desejo ("quanto rende o aluguel
+   desse?", "dá pra alugar depois?") também não.
 12. `txt.startswith("slot:")` ou (`horarios_oferecidos` e `ESCOLHE_HORARIO`) → `agendador`.
-13. `txt == "Agendar visita"` ou `PEDE_VISITA` ou (`cartao.pediu_visita` e `estagio != AGENDADO`) →
-   `agendador`. A exceção `!= AGENDADO` desgruda a rota depois da reserva
-   (`test_telefone_depois_da_reserva_nao_volta_para_o_agendador`).
+13. `txt == "Agendar visita"` ou `PEDE_VISITA` → `agendador` ("horário" sozinho não casa; remarcar,
+   desmarcar e reagendar sim).
+13a. `txt == "Ver outros"` ou `PEDE_OPCOES` → `consultor` — antes da rota grudada, senão "Ver outros"
+   depois de pedir visita mostrava a grade.
+13b. `cartao.pediu_visita` e `estagio != AGENDADO` → `agendador`. A exceção `!= AGENDADO` desgruda a
+   rota depois da reserva (`test_telefone_depois_da_reserva_nao_volta_para_o_agendador`).
 14. `cartao.completo()` e `so_contato(txt)` → `qualificador`, que grava o contato e agradece — antes o
    número caía no modelo de rota, ia ao consultor e o cliente recebia mais imóveis
    (`test_telefone_depois_da_reserva_nao_traz_mais_imoveis`).
 15. `ajuste_pendente` e `cartao.completo()` → `consultor` (resposta escrita à pergunta de ampliação).
-16. `txt == "Ver outros"` ou `PEDE_OPCOES` → `consultor`.
+16. (pedir outras opções subiu para a 13a.)
 17. `cartao.completo()` e sem `imoveis_sugeridos` → `consultor`.
 18. `not cartao.completo()` → `qualificador`.
 19. Resto → LLM de roteamento.
@@ -192,15 +211,21 @@ máximo seis palavras ("meu zap é…", "pode ligar nesse").
 As expressões, copiadas do código:
 
 ```python
-PEDE_HUMANO = re.compile(r"\b(corretor|atendente|humano|pessoa de verdade|falar com alguém)\b", re.I)
-PEDE_VISITA = re.compile(r"\b(visitar|visita|agendar|marcar|conhecer o im[oó]vel|hor[aá]rio)\b", re.I)
+PEDE_HUMANO = re.compile(
+    r"\b(atendente|humano|pessoa de verdade|falar com algu[ée]m)\b"
+    r"|\b(falar|conversar|fala|ser atendid[oa])\s+com\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora|pessoa)\b"
+    r"|\b(quero|queria|preciso|prefiro|gostaria\s+de|me\s+(passa|passe|transfere|transfira|coloca)|"
+    r"chama|chame|cad[êe])\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora)\b", re.I)
+_NEGA_HUMANO = re.compile(r"\bn[ãa]o\s+(quero|preciso)\b[^.!?]{0,24}\b(corretor|corretora|atendente|humano|pessoa)\b", re.I)
+PEDE_VISITA = re.compile(r"\b(visitar|visita|(re)?agendar|(re|des)?marcar|conhecer o im[oó]vel|"
+                         r"outro hor[aá]rio|hor[aá]rios|tem hor[aá]rio)\b", re.I)
 ESCOLHE_HORARIO = re.compile(r"(\b\d{1,2}\s*(h|hs|hrs|horas|:\d{2})\b|\b(seg|ter|qua|qui|sex|segunda|ter[çc]a|quarta|quinta|sexta|amanh[ãa]|primeir[oa]|segund[oa]|terceir[oa]|[úu]ltim[oa])\b|\b\d{1,2}/\d{1,2}\b)", re.I)
 PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s? )?tem|outros? im[oó]ve(l|is)|ver outros)\b", re.I)
 
 INSTITUCIONAL_FORTE = re.compile(
     r"\b(fiador|avalista|cau[çc][ãa]o|seguro.fian[çc]a|vistoria|iptu|itbi|escritura|financiamento|"
     r"documenta[çc][ãa]o|documentos? (necess[áa]rios?|preciso|exigidos?)|reajuste|rescis[ãa]o|"
-    r"pet|cachorro|gato|animal de estima[çc][ãa]o)\b", re.I)
+    r"pet|cachorro|gato|animal de estima[çc][ãa]o|hor[aá]rios? de (atendimento|funcionamento))\b", re.I)
 PERGUNTA = (r"(como funciona|qual|quais|quanto|precis[oa]|posso|pode|tem|h[áa]|existe|"
             r"voc[eê]s? (cobra|aceita|exige|pede|trabalha))")
 INSTITUCIONAL_FRACO = re.compile(
@@ -220,9 +245,16 @@ fracos ("taxa", "prazo", "entrada") só contam com uma marca de pergunta até 60
 3. `_normalizar`: minúscula → `NFKC` + tabela `_CONFUNDIVEIS` (homóglifos cirílicos/gregos → ASCII;
    dígitos e leetspeak ficam de fora porque "2 quartos" e "apto 101" são vocabulário do domínio) →
    `NFKD` sem acento → espaços colapsados.
-4. `INJECAO.search` → `injecao` (sempre recusa, mesmo falando de imóvel junto).
-5. `FORA_SEMPRE.search` → `fora_do_dominio` (bitcoin, hack, eleição, remédio, poema...).
-6. `CONVERSA.match` ou `DOMINIO.search` → `SEGUIR`.
+4. `CONVERSA.match` → `SEGUIR`. Antes da injeção: "você é um robô?" casava com "você é um…" e o
+   cliente era tratado como atacante. `CONVERSA` é ancorada na mensagem inteira, então não carrega
+   instrução junto.
+5. `INJECAO.search` → `injecao` (sempre recusa, mesmo falando de imóvel junto). "esquece tudo" só é
+   injeção quando esquece o que disseram à Mora ("tudo que te falaram", "tudo acima", "as
+   instruções"); "esquece tudo, quero alugar agora" passa.
+6. `FORA_SEMPRE.search(_sem_logradouro(t))` → `fora_do_dominio` (bitcoin, hack, eleição, remédio,
+   poema...). `_sem_logradouro` troca cargo depois de tipo de logradouro ("rua deputado", "rua
+   senador", "av. presidente") por "logradouro": é nome de rua, não política.
+6b. `DOMINIO.search` → `SEGUIR`.
 7. `FORA_DO_DOMINIO.search` → `fora_do_dominio` (código, tradução, futebol, receita...). Culinária fica
    no grupo fraco de propósito: "receita" de aluguel e "cozinha americana" são do domínio.
 8. Na dúvida → `SEGUIR`.
@@ -231,7 +263,10 @@ fracos ("taxa", "prazo", "entrada") só contam com uma marca de pergunta até 60
 INJECAO = re.compile(r"""(
     ignore?\s+(todas?\s+)?(as\s+)?(suas\s+)?(instruc|regras|ordens|diretrizes)
   | desconsidere\s+(as\s+)?(instruc|regras|tudo)
-  | esquec[ae]\s+(tudo|as\s+instruc|suas\s+regras)
+  # "esquece tudo, quero alugar agora" é o cliente desfazendo o próprio pedido, e era recusado.
+  # Ataque é esquecer o que DISSERAM à Mora (ou o que está acima), não o que o cliente disse.
+  | esquec[ae]\s+(tudo\s+(o\s+)?que\s+(te|lhe|voce|vc)\s|tudo\s+(acima|antes|anterior)|
+                 (as\s+|suas\s+)?instruc|(as\s+|suas\s+)?regras)
   | (revele|mostre|repita|imprima|qual\s+e|me\s+(diga|passe))\s+(o\s+)?(seu\s+)?(system\s*prompt|prompt\s+(do\s+)?sistema|suas\s+instruc|prompt\s+inicial)
   | voce\s+(agora\s+)?(e|sera|vai\s+ser)\s+(um|uma|o|a)\s
   | a\s+partir\s+de\s+agora\s+voce
@@ -304,10 +339,14 @@ Todos recebem o `AgentState` e devolvem um delta. `_cronometrado` loga a duraç�
      `nova_oportunidade_se_mudou_intencao(lead, novo_cartao.intencao)`: se devolve uma sucessora,
      audita `oportunidade.aberta`, extrai o cartão da sucessora **só desta mensagem** preservando
      `nome_informado`/`telefone_informado`/`email_informado`, e `lead = sucessora`. Senão,
-     `lead.cartao = novo_cartao`. Em seguida `_normalizar_local`.
+     `lead.cartao = novo_cartao` — e, se a intenção mudou (troca sem oportunidade nova, lead ainda
+     `QUALIFICADO`), os tetos (`preco_min`, `preco_max`, `ticket`) que a mensagem não repetiu são
+     zerados (`_TETOS`). Em seguida `_normalizar_local`. Houve troca (sucessora ou intenção mudada):
+     o turno devolve `imoveis_sugeridos=[]`, `ultimos_sugeridos=[]`, `ajuste`/`ajuste_pendente`
+     nulos e a agenda em andamento zerada, para a busca da intenção nova rodar quando o cartão fechar.
   2. `_absorver_contato(lead)`.
   3. `NOVO` + intenção definida → `estagio = QUALIFICANDO`.
-  4. Cartão completo e sem `imoveis_sugeridos` → devolve `{"lead", "proximo": "consultor",
+  4. Cartão completo e sem `imoveis_sugeridos` (ou acabou de trocar de intenção) → devolve `{"lead", "proximo": "consultor",
      "cartao_extraido_de": entrada.conteudo}` **sem chamar o modelo de conversa**: o consultor
      responde já com imóveis no mesmo turno.
 - **LLM:** `llm_conversa()` com `carregar("qualificador", nome, intencao, faltantes, contexto_origem,
@@ -340,8 +379,9 @@ Todos recebem o `AgentState` e devolvem um delta. `_cronometrado` loga a duraç�
   2. `InteresseRepository().por_situacao(lead.id)`: `descartados` nunca voltam; `ja_vistos` =
      sugeridos neste estado ∪ `sugerido` no banco.
   3. Ampliação (`_ajuste_escolhido`): botão `ajuste:<preco|vizinhos|quartos>` ou, com
-     `ajuste_pendente` igual ao critério atual, resposta escrita reconhecida por regex. `preco` busca
-     sem teto; `quartos` busca sem filtro de quartos; a escolha (`ajuste`) vale enquanto
+     `ajuste_pendente` igual ao critério atual, resposta escrita reconhecida por regex; resposta que
+     não casa nenhuma opção ("tanto faz", "sim") vale como `vizinhos` — a pergunta não se repete.
+     `preco` busca sem teto; `quartos` busca sem filtro de quartos; a escolha (`ajuste`) vale enquanto
      `_criterio(cartao)` não mudar.
   4. `buscar_com_contexto(cartao_busca, preferencia=conteudo, limite=6)` (cascata bairro → vizinhos →
      região → cidade; `nivel` diz onde parou). Se o cliente **nomeou bairros**, a busca ampliou para
@@ -377,12 +417,24 @@ ficha) → vários, `_escolher_pelo_texto` (ordinal, "último", ou palavra que s
 candidatos e nenhuma escolha → `_perguntar_imovel`: texto fixo "Qual deles você quer visitar?" com um
 botão `imovel:` por candidato, sem horários.
 
-**Contato antes da reserva (só canal WEB).** `_tem_contato` é sempre verdadeiro fora do site. No
-site, horário escolhido sem telefone/e-mail → `_pedir_contato`: texto fixo pedindo "seu nome e
-telefone" (ou só o telefone), `horario_pendente = inicio`. Na volta, a mensagem passa por `_extrair`
-+ `_absorver_contato`; com contato, segue para a reserva naquele horário; sem, `_pedir_contato(...,
-insistindo=True)` com o botão **Falar com corretor**. Horário e telefone na mesma frase reservam
-direto.
+**Contato que chega é absorvido sempre.** No começo de `run`, mensagem com contato (`so_contato` ou
+telefone na frase) passa por `_extrair` + `_absorver_contato`, em qualquer ponto do agendamento —
+inclusive com a grade na tela e nenhum horário escolhido (antes o número se perdia e a Mora o pedia
+de novo na escolha do horário).
+
+**Contato antes da reserva (só canal WEB).** `_tem_contato` é sempre verdadeiro fora do site; no
+site vale só o contato **validado no lead** (`lead.telefone` ou `lead.email`) — `telefone_informado`
+sem DDD não conta. Horário escolhido sem contato → `_pedir_contato`: texto fixo pedindo "seu nome e
+telefone" (ou só o telefone; ou o número com DDD, se veio sem), `horario_pendente = inicio`. Na
+volta, a mensagem passa pela extração; com contato, segue para a reserva naquele horário; sem,
+`_pedir_contato(..., insistindo=True)` com o botão **Falar com corretor** e `contato_insistido=True`.
+Se ainda assim chegar aqui sem contato e com `contato_insistido`, `_soltar_horario` zera o pendente
+com um texto fixo — mas o caminho normal é o supervisor soltar antes (regra 6a). Horário e telefone
+na mesma frase reservam direto.
+
+**Pendente vencido.** Antes de usar `horario_pendente`, ele passa por `_horario_do_botao`: no passado
+(ou ilegível), é descartado e a grade é oferecida de novo — sem isso o cliente que voltava dias
+depois com o telefone ganhava uma visita no passado.
 
 **Turno 1 — oferta (`_oferecer`).** Acontece quando não há escolha reconhecível.
 
@@ -398,7 +450,8 @@ direto.
 - LLM: `carregar("agendador", nome, imovel=descrever_imovel(...), horarios=[formatar(h)], nota,
   contexto_contato)`.
 - Saída: `horarios_oferecidos=[iso...]`, `slots_crm`, `imovel_escolhido=imovel_id`,
-  `opcoes=[f"slot:{iso}|{rótulo}"]`. O canal renderiza como lista; o `id` do botão é `slot:<iso>`.
+  `horario_pendente=None`, `contato_insistido=False` (grade nova na tela: nada fica segurado — é o
+  que solta o horário tomado por outra pessoa), `opcoes=[f"slot:{iso}|{rótulo}"]`. O canal renderiza como lista; o `id` do botão é `slot:<iso>`.
   Horário com início no passado nunca chega aqui: `horarios_do_imovel` descarta slot vencido.
 
 **Turno 2 — reserva.** `inicio` vem de `txt.startswith("slot:")` (botão web ou Telegram — o código
@@ -409,7 +462,9 @@ pelo prefixo), validado por `_horario_do_botao`: só um dos `horarios_oferecidos
 
 1. Sem `corretor_id` → `CorretorRepository().escolher(cartao.regiao)`.
 2. `agendar(lead.id, imovel_id, inicio, corretor_id, titulo, local, email_cliente)`
-   (`tools/agenda.py`): `slot_livre` → senão `HorarioOcupado` → `_oferecer(..., ocupado_agora=True)`.
+   (`tools/agenda.py`): horário no passado → `HorarioVencido` → `_oferecer(...)`; `slot_livre` (falso
+   também para o passado) → senão `HorarioOcupado` → `_oferecer(..., ocupado_agora=True)`, que solta
+   o pendente.
    Grava `Visita(id=f"vis_{lead_id}_{ts}")`, interesse `visita_marcada`, evento no calendário do
    corretor (falha só loga), auditoria `visita.agendada`, `notificar("visita.agendada")`.
 3. `lead.estagio, lead.cartao.pediu_visita = AGENDADO, True`.
@@ -421,13 +476,15 @@ pelo prefixo), validado por `_horario_do_botao`: só um dos `horarios_oferecidos
    O prompt proíbe "agendado/marcado/confirmado": a visita fica **reservada**; quem confirma é o
    corretor.
 7. Saída: `horarios_oferecidos=[]`, `slots_crm={}`, `imovel_escolhido=None`, `horario_pendente=None`,
+   `contato_insistido=False`,
    `RespostaAgente(acao=Acao.AGENDAR, dados={"visita": {"inicio", "duracao_min": 60, "imovel_id",
    "titulo", "local", "rotulo", "mapa"}})`. O link do mapa (bairro + cidade) **não entra no texto**:
    cada canal o mostra como botão — o card da visita no site, um botão de link no Telegram.
 
 **Remarcação.** Não há nó nem estado de remarcação: quem já está `AGENDADO` volta ao agendador só
-por `"Agendar visita"`, `PEDE_VISITA` ou `slot:`/`ESCOLHE_HORARIO` com oferta pendente
-(`test_quem_quer_remarcar_continua_chegando_ao_agendador`). Uma nova reserva cria outra `Visita`;
+por `"Agendar visita"`, `PEDE_VISITA` (que casa remarcar, desmarcar, reagendar, "outro horário") ou
+`slot:`/`ESCOLHE_HORARIO` com oferta pendente
+(`test_quem_quer_remarcar_continua_chegando_ao_agendador`, `test_remarcar_chega_ao_agendador`). Uma nova reserva cria outra `Visita`;
 cancelamento da anterior pelo agente — não localizado.
 
 ### 5.4 Informações (`nodes/informacoes.py`)
@@ -448,7 +505,9 @@ cancelamento da anterior pelo agente — não localizado.
   `CorretorRepository().escolher(regiao)` (ativo que atende a região, menor carga = leads em handoff
   + visitas futuras, empate alfabético).
 - Auditoria `lead.encaminhado_corretor` (`resultado="erro"` quando não há corretor);
-  `notificar("lead.encaminhado", chave=f"handoff-{followups_enviados}")`.
+  `notificar("lead.encaminhado", chave=f"handoff-{entrada.recebida_em}")` — um aviso por mensagem
+  que pediu o encaminhamento: o segundo handoff do mesmo lead avisa de novo, a mesma mensagem
+  reprocessada não duplica.
 - **Sem LLM.** Texto fixo: "Combinado{, nome}! Vou passar nossa conversa para {primeiro nome}, da
   equipe de corretores, que continua com você por aqui em instantes." `Acao.HANDOFF`.
 - O encaminhamento no CRM não é feito aqui: é o `publicador._encaminhar` no fim do turno.

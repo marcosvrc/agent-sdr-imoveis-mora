@@ -462,7 +462,10 @@ class VisitaRepository:
         return [(r["inicio"], r["inicio"] + timedelta(minutes=r["duracao_min"] or 60)) for r in rows]
 
     def slot_livre(self, inicio: datetime, corretor_id: str | None = None) -> bool:
-        """Revalidação no momento de gravar: entre a oferta e o clique, alguém pode ter pegado o horário."""
+        """Revalidação no momento de gravar: entre a oferta e o clique, alguém pode ter pegado o horário.
+        Horário que já passou não está livre para ninguém — sem isto, ele contava como vago."""
+        if inicio <= datetime.now(timezone.utc):
+            return False
         with _conn() as c:
             r = c.execute("""SELECT count(*) AS n FROM visitas
                              WHERE status = 'confirmada' AND inicio = %s
@@ -474,7 +477,8 @@ class VisitaRepository:
         with _conn() as c:
             c.execute("UPDATE visitas SET evento_externo_id = %s WHERE id = %s", (evento_id, visita_id))
 
-    def horarios_disponiveis(self, dias: int = 5, corretor_id: str | None = None) -> list[datetime]:
+    def horarios_disponiveis(self, dias: int = 5, corretor_id: str | None = None,
+                             agora: datetime | None = None) -> list[datetime]:
         """Slots 10h/14h/16h (Brasília) nos próximos dias úteis, menos o que já está comprometido.
 
         Com um corretor definido, desconta também a agenda real dele (Google, quando conectada);
@@ -484,13 +488,16 @@ class VisitaRepository:
             ocupados = {r["inicio"] for r in c.execute(
                 "SELECT inicio FROM visitas WHERE status = 'confirmada' AND inicio > now()").fetchall()}
 
-        slots, d = [], datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        # O "dia" é o do cliente, em Brasília. Contado em UTC, depois das 21h daqui já era o dia
+        # seguinte lá: a grade de segunda às 22h começava na quarta, e o "amanhã" do cliente sumia.
+        brasilia = timezone(timedelta(hours=-3))
+        slots, d = [], (agora or datetime.now(timezone.utc)).astimezone(brasilia).date()
         while len(slots) < dias * 3:
             d += timedelta(days=1)
             if d.weekday() >= 5:
                 continue
             for h in (10, 14, 16):
-                s = d.replace(hour=h + 3)           # UTC-3 → UTC
+                s = datetime(d.year, d.month, d.day, h, tzinfo=brasilia).astimezone(timezone.utc)
                 if s not in ocupados:
                     slots.append(s)
         if not corretor_id or not slots:

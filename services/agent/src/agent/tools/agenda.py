@@ -23,9 +23,18 @@ class HorarioOcupado(Exception):
     """Entre a oferta e o clique, alguém pegou o horário. Quem chama reoferece."""
 
 
+class HorarioVencido(Exception):
+    """O horário já passou. Quem chama reoferece — sem dizer que "alguém pegou", porque ninguém pegou."""
+
+
 def agendar(lead_id: str, imovel_id: str | None, inicio: datetime, tipo: str = "visita",
             corretor_id: str | None = None, titulo: str = "", local: str = "",
             email_cliente: str | None = None) -> Visita:
+    # Última barreira contra visita no passado. O agendador já filtra o botão vencido, mas o horário
+    # segurado à espera do telefone não tinha validade: o cliente sumiu, voltou dois dias depois com
+    # o número, e a reserva saiu para anteontem — com aviso ao corretor e evento no calendário.
+    if inicio <= datetime.now(timezone.utc):
+        raise HorarioVencido(inicio.isoformat())
     repo = VisitaRepository()
     # A checagem na oferta não basta: dois clientes podem estar olhando a mesma lista agora.
     if not repo.slot_livre(inicio, corretor_id):

@@ -15,7 +15,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from sdr_shared.config import get_settings                # noqa: E402
 from sdr_shared.log import configurar as configurar_log  # noqa: E402
 from sdr_shared.ports import get_broker                  # noqa: E402
 from sdr_shared.messaging import TipoMensagem, MensagemNormalizada, Canal  # noqa: E402
@@ -54,8 +53,8 @@ app = FastAPI(title="Mora — canais (perfil local)", lifespan=lifespan)
 # O site (5173) e o painel (5174) chamam este serviço (8001) de outra origem — sem isto, o navegador
 # aceita a resposta do servidor mas BLOQUEIA a leitura no JS (erro de CORS), e o widget nunca chega a
 # abrir o WebSocket: fica preso tentando de novo, sempre "sem conexão". Mesma config da `api`.
-_origens = [o.strip() for o in (get_settings().cors_origins or "").split(",") if o.strip()] or ["*"]
-app.add_middleware(CORSMiddleware, allow_origins=_origens, allow_methods=["*"], allow_headers=["*"])
+from sdr_shared.seguranca.cors import origens as _origens_cors  # noqa: E402
+app.add_middleware(CORSMiddleware, allow_origins=_origens_cors(), allow_methods=["*"], allow_headers=["*"])
 
 
 @app.get("/health")

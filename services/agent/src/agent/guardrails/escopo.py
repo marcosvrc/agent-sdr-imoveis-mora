@@ -45,7 +45,10 @@ def _normalizar(texto: str) -> str:
 INJECAO = re.compile(r"""(
     ignore?\s+(todas?\s+)?(as\s+)?(suas\s+)?(instruc|regras|ordens|diretrizes)
   | desconsidere\s+(as\s+)?(instruc|regras|tudo)
-  | esquec[ae]\s+(tudo|as\s+instruc|suas\s+regras)
+  # "esquece tudo, quero alugar agora" é o cliente desfazendo o próprio pedido, e era recusado.
+  # Ataque é esquecer o que DISSERAM à Mora (ou o que está acima), não o que o cliente disse.
+  | esquec[ae]\s+(tudo\s+(o\s+)?que\s+(te|lhe|voce|vc)\s|tudo\s+(acima|antes|anterior)|
+                 (as\s+|suas\s+)?instruc|(as\s+|suas\s+)?regras)
   | (revele|mostre|repita|imprima|qual\s+e|me\s+(diga|passe))\s+(o\s+)?(seu\s+)?(system\s*prompt|prompt\s+(do\s+)?sistema|suas\s+instruc|prompt\s+inicial)
   | voce\s+(agora\s+)?(e|sera|vai\s+ser)\s+(um|uma|o|a)\s
   | a\s+partir\s+de\s+agora\s+voce
@@ -65,6 +68,18 @@ FORA_SEMPRE = re.compile(r"""(
   | \b(rem[eé]di\w*|medicament\w*|sintoma\w*|doenc\w*|diagnostic\w*|vacina\w*)
   | \b(poema|poesia|soneto|piada|letra\s+de\s+musica)
 )""", re.X)
+
+# São Paulo tem rua de deputado, de senador e de presidente: "apartamento na Rua Deputado Lacerda
+# Franco" era recusado como política. O cargo depois de um tipo de logradouro é nome de rua, e sai
+# da frase antes de procurar assunto proibido (só para essa regra — injeção continua vendo tudo).
+_LOGRADOURO_COM_CARGO = re.compile(
+    r"\b(rua|r|avenida|av|alameda|al|praca|travessa|tv|largo|viaduto|estrada|rodovia|ponte|parque|vila|jardim)"
+    r"\.?\s+(deputad[oa]|senador[a]?|president[ea]|governador[a]?|vereador[a]?|prefeit[oa]|ministr[oa])\b")
+
+
+def _sem_logradouro(t: str) -> str:
+    return _LOGRADOURO_COM_CARGO.sub(r"\1 logradouro", t)
+
 
 # Assunto que só conta como fora do escopo quando a mensagem não fala do nosso mundo.
 FORA_DO_DOMINIO = re.compile(r"""(
@@ -95,7 +110,7 @@ DOMINIO = re.compile(r"""\b(
 CONVERSA = re.compile(r"^(oi+|ola|opa|eae?|bom\s+dia|boa\s+tarde|boa\s+noite|tudo\s+bem\??|obrigad[oa]|valeu|ok|okay|certo"
                       r"|sim|nao|claro|blz|beleza|perfeito|legal|otimo|isso|pode\s+ser|aham|uhum|entendi|show|top"
                       r"|tchau|ate\s+mais|abraco|por\s+favor|desculpa?|como\s+(voce\s+)?(esta|vai)|quem\s+e\s+voce"
-                      r"|voce\s+e\s+(um\s+)?(rob[oô]|humano|pessoa|ia|bot)\??)[\s!.?,]*$")
+                      r"|voce\s+e\s+(um\s+|uma\s+)?(rob[oô]|humano|pessoa|ia|bot)\??)[\s!.?,]*$")
 
 LIMITE_TEXTO = 1200          # acima disso ninguém está descrevendo um imóvel
 
@@ -122,11 +137,17 @@ def avaliar(texto: str | None) -> Veredito:
         return Veredito(False, "texto_gigante", f"{len(bruto)} caracteres")
 
     t = _normalizar(bruto)
+    # Conversa curta conhecida ANTES da regra de injeção: "você é um robô?" casava com "você é um…"
+    # (a tentativa de dar outra persona ao agente) e o cliente que só queria saber com quem falava
+    # era tratado como atacante. `CONVERSA` é ancorada na mensagem inteira — não há espaço para
+    # carregar uma instrução junto.
+    if CONVERSA.match(t):
+        return SEGUIR
     if (m := INJECAO.search(t)):
         return Veredito(False, "injecao", m.group(0)[:80])
-    if (m := FORA_SEMPRE.search(t)):
+    if (m := FORA_SEMPRE.search(_sem_logradouro(t))):
         return Veredito(False, "fora_do_dominio", m.group(0)[:80])
-    if CONVERSA.match(t) or DOMINIO.search(t):
+    if DOMINIO.search(t):
         return SEGUIR                                  # falou do nosso mundo: segue, mesmo com ruído junto
     if (m := FORA_DO_DOMINIO.search(t)):
         return Veredito(False, "fora_do_dominio", m.group(0)[:80])

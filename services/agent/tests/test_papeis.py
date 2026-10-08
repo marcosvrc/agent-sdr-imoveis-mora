@@ -19,4 +19,4 @@ def test_extracao_e_informacoes_usam_o_papel_proprio():
     assert "llm_extracao()" in inspect.getsource(qualificador._extrair)
     assert "llm_roteamento" not in inspect.getsource(qualificador)
     assert "llm_informacoes()" in inspect.getsource(informacoes.run)
-    assert "llm_roteamento()" in inspect.getsource(supervisor.run)
+    assert "llm_roteamento()" in inspect.getsource(supervisor._decidir)     # as regras de `run`, depois do porteiro

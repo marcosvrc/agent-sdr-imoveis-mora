@@ -14,7 +14,7 @@ from ..guardrails.saida import sanear
 from sdr_shared.crm import horarios_do_imovel, pedir_visita
 from sdr_shared.geo import link_do_mapa
 
-from ..tools.agenda import HorarioOcupado, listar_horarios, agendar, formatar
+from ..tools.agenda import HorarioOcupado, HorarioVencido, listar_horarios, agendar, formatar
 
 DIAS = ["seg", "ter", "qua", "qui", "sex", "sáb", "dom"]
 _SEMANA = {"segunda": 0, "seg": 0, "terca": 1, "ter": 1, "quarta": 2, "qua": 2, "quinta": 3, "qui": 3, "sexta": 4, "sex": 4,
@@ -231,9 +231,13 @@ def _perguntar_imovel(state: AgentState, lead, candidatos: list) -> dict:
 
 def _tem_contato(lead, canal) -> bool:
     """No site, a conversa some quando o cliente fecha a aba: sem telefone ou e-mail não há volta.
-    No Telegram o chat continua aberto, e o corretor fala com ele por ali."""
+    No Telegram o chat continua aberto, e o corretor fala com ele por ali.
+
+    Vale o contato JÁ VALIDADO no lead, não o que a extração achou na frase. "98765-4321", sem DDD,
+    ia para `telefone_informado`, destravava a reserva — e `_absorver_contato`, que só grava número
+    com DDD, deixava o lead sem telefone: a visita saía sem ninguém para o corretor ligar."""
     from sdr_shared.messaging import Canal
-    return canal != Canal.WEB or bool(lead.telefone or lead.email or lead.cartao.tem_contato())
+    return canal != Canal.WEB or bool(lead.telefone or lead.email)
 
 
 def _absorver_contato_da_mensagem(state: AgentState, lead, txt: str) -> None:
@@ -253,42 +257,70 @@ def _pedir_contato(state: AgentState, lead, inicio: datetime, insistindo: bool =
     # Telefone, não "WhatsApp": o canal de mensagem da Vértice é o Telegram (ADR-0007), e o número
     # serve ao corretor para ligar ou mandar mensagem, seja qual for o aplicativo do cliente.
     o_que = "seu nome e telefone" if not lead.nome else "seu telefone"
-    if insistindo:
+    if lead.cartao.telefone_informado and not lead.telefone:       # mandou o número, mas sem DDD
+        texto = (f"Pra reservar {formatar(inicio)} eu preciso do telefone com DDD: "
+                 "me manda o número completo, com os dois dígitos da cidade?")
+    elif insistindo:
         texto = (f"Pra reservar {formatar(inicio)} eu preciso de um contato: me passa {o_que}? "
                  "Se preferir, um corretor pode te atender direto.")
     else:
         texto = (f"Ótimo, {formatar(inicio)}! Pra eu reservar, me passa {o_que}? "
                  "O corretor usa esse contato para confirmar a visita e mandar a localização.")
     lead.cartao.pediu_visita = True
-    return {"lead": lead, "horario_pendente": inicio.isoformat(), "messages": [AIMessage(content=texto)],
+    # `contato_insistido` é o que limita a insistência a UMA vez: o supervisor o lê na mensagem
+    # seguinte e, se ainda não veio contato, solta o horário em vez de mandar para cá de novo.
+    return {"lead": lead, "horario_pendente": inicio.isoformat(), "contato_insistido": insistindo,
+            "messages": [AIMessage(content=texto)],
             "resposta": RespostaAgente(lead_id=lead.id, texto=texto,
                                        opcoes=["Falar com corretor"] if insistindo else [])}
 
 
+def _soltar_horario(lead) -> dict:
+    """Já insistiu uma vez e o contato não veio: o horário volta a ficar livre.
+
+    Insistir a cada mensagem prendia o cliente — perguntou de pet, de outro imóvel, e recebeu "pra
+    reservar eu preciso de um contato" de novo, sem saída. Texto fixo: é uma frase de processo."""
+    texto = ("Sem problema, deixei o horário livre. Quando quiser reservar, é só escolher um horário "
+             "e me passar um telefone. Posso te ajudar com mais alguma coisa?")
+    return {"lead": lead, "horario_pendente": None, "contato_insistido": False,
+            "messages": [AIMessage(content=texto)], "resposta": RespostaAgente(lead_id=lead.id, texto=texto)}
+
+
 def run(state: AgentState) -> dict:
+    from .qualificador import so_contato
     lead, entrada = state["lead"], state["entrada"]
     sugeridos = state.get("imoveis_sugeridos") or []
     txt = entrada.conteudo or ""
+    # Contato na mensagem vira contato no lead, em QUALQUER ponto do agendamento. Só era absorvido
+    # com um horário já escolhido: o cliente que mandava o telefone com a grade na tela perdia o
+    # número, e na escolha do horário a Mora pedia de novo o que ele tinha acabado de dar.
+    absorvido = so_contato(txt) or so_contato_na_mensagem(txt)   # "sexta às 10h, 11 98765-4321" também
+    if absorvido:
+        _absorver_contato_da_mensagem(state, lead, txt)
     imovel_id, candidatos = _imovel_da_visita(state, lead, txt)
     if imovel_id is None and candidatos:
         return _perguntar_imovel(state, lead, candidatos)
 
+    pendente = state.get("horario_pendente")
+    if pendente and _horario_do_botao(f"slot:{pendente}", state) is None:
+        # O pendente não tinha validade: o cliente sumia, voltava dias depois com o telefone e a
+        # visita era reservada no passado. Vencido, é descartado e a grade vai de novo (`_oferecer`).
+        pendente = None
     inicio = None
     if txt.startswith("slot:"):                                   # botão (web ou Telegram) — independe do tipo
         inicio = _horario_do_botao(txt, state)
     elif state.get("horarios_oferecidos"):                        # texto livre depois de uma oferta
         inicio = _resolver_horario(txt, state["horarios_oferecidos"])
-    pendente = state.get("horario_pendente")
     if inicio is None and pendente:                               # a resposta ao pedido de contato
         inicio = datetime.fromisoformat(pendente)
-        _absorver_contato_da_mensagem(state, lead, txt)
-        if not _tem_contato(lead, entrada.canal):
-            return _pedir_contato(state, lead, inicio, insistindo=True)
-    elif inicio is not None and not _tem_contato(lead, entrada.canal):
-        if so_contato_na_mensagem(txt):                           # "sexta às 10h, 11 98765-4321"
+        if not absorvido:                                         # o nome, sozinho, também vale
             _absorver_contato_da_mensagem(state, lead, txt)
         if not _tem_contato(lead, entrada.canal):
-            return _pedir_contato(state, lead, inicio)
+            if state.get("contato_insistido"):
+                return _soltar_horario(lead)
+            return _pedir_contato(state, lead, inicio, insistindo=True)
+    elif inicio is not None and not _tem_contato(lead, entrada.canal):
+        return _pedir_contato(state, lead, inicio)
 
     if inicio is not None:
         if not lead.corretor_id:                                  # visita ganha um corretor pela região (mesma regra do handoff)
@@ -306,6 +338,9 @@ def run(state: AgentState) -> dict:
         except HorarioOcupado:
             # Alguém pegou o horário entre a oferta e o clique: reoferece em vez de confirmar em falso.
             return _oferecer(state, lead, imovel_id, txt, ocupado_agora=True)
+        except HorarioVencido:
+            # Horário escrito por extenso que casou com um da grade antiga, já passado.
+            return _oferecer(state, lead, imovel_id, txt)
         lead.estagio, lead.cartao.pediu_visita = Estagio.AGENDADO, True
         # A Mora reservou o horário; quem confirma a visita é o corretor. O pedido no CRM é o que
         # faz o painel dele mostrar a mesma coisa que o cliente ouviu. Falhar aqui não desfaz a
@@ -330,7 +365,7 @@ def run(state: AgentState) -> dict:
         # do telefone e a enterrava: a última coisa que o cliente lia era o mapa, não o pedido.
         texto = sanear(msg.content, lead.id)
         return {"lead": lead, "messages": [msg], "horarios_oferecidos": [], "slots_crm": {},
-                "imovel_escolhido": None, "horario_pendente": None,
+                "imovel_escolhido": None, "horario_pendente": None, "contato_insistido": False,
                 "resposta": RespostaAgente(lead_id=lead.id, texto=texto, acao=Acao.AGENDAR,
                                            dados={"visita": visita})}
 
@@ -362,8 +397,12 @@ def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool 
                                           imovel=descrever_imovel(imovel_id, state.get("imoveis_sugeridos") or []),
                                           horarios=[formatar(h) for h in horarios], nota=nota,
                                           contexto_contato=contexto), *state["messages"]])
-    # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista
+    # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista.
+    # Grade nova na tela: nenhum horário fica segurado. Com o pendente intacto, o horário que outra
+    # pessoa acabou de pegar continuava "esperando o contato", a mensagem seguinte tentava reservá-lo
+    # de novo e "acabou de ser ocupado" se repetia; o vencido virava visita no passado.
     return {"lead": lead, "messages": [msg], "horarios_oferecidos": [h.isoformat() for h in horarios],
             "slots_crm": slots_crm, "imovel_escolhido": imovel_id,
+            "horario_pendente": None, "contato_insistido": False,
             "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id),
                                        opcoes=[f"slot:{h.isoformat()}|{formatar(h)}" for h in horarios])}

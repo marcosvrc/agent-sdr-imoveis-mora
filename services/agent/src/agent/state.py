@@ -20,6 +20,7 @@ class AgentState(TypedDict, total=False):
     ultimos_sugeridos: list[str]              # ids do ÚLTIMO lote mostrado — entre eles o cliente escolhe o que visitar
     imovel_escolhido: str | None              # imóvel da visita em andamento; zera quando a visita é reservada
     horario_pendente: str | None              # horário escolhido esperando o contato do cliente para virar reserva
+    contato_insistido: bool                   # a Mora já insistiu no contato deste pendente; na próxima, solta o horário
     ajuste_pendente: list | None              # critério sem imóvel exato: a Mora perguntou como ampliar e espera a resposta
     ajuste: dict | None                       # ampliação escolhida ({tipo, criterio}); vale enquanto o critério não mudar
     pediu_nome: bool                          # a Mora já perguntou o nome (pergunta uma vez só)

@@ -101,3 +101,20 @@ def test_sem_segredo_guarda_em_claro_e_avisa(monkeypatch, caplog):
     with caplog.at_level("WARNING", logger="seguranca"):
         assert cofre.cifrar("x") == "x"
     assert any("sem cifra" in r.message for r in caplog.records)
+
+
+def test_cors_sem_configuracao_so_libera_os_front_ends_locais(monkeypatch):
+    """O vazio era `*`: qualquer site aberto no navegador chamava localhost:8000 com o dev-token."""
+    from sdr_shared.config import get_settings
+    from sdr_shared.seguranca import cors
+    monkeypatch.delenv("SDR_CORS_ORIGINS", raising=False)
+    for perfil, esperado in (("local", True), ("producao", False)):
+        monkeypatch.setenv("SDR_PROFILE", perfil)
+        get_settings.cache_clear()
+        o = cors.origens()
+        assert "*" not in o
+        assert ("http://localhost:5173" in o) is esperado
+    monkeypatch.setenv("SDR_CORS_ORIGINS", "https://site.exemplo.com, https://painel.exemplo.com")
+    get_settings.cache_clear()
+    assert cors.origens() == ["https://site.exemplo.com", "https://painel.exemplo.com"]
+    get_settings.cache_clear()

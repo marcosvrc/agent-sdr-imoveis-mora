@@ -12,6 +12,7 @@ from sdr_shared.crm import reconhecer
 from sdr_shared.log import configurar as configurar_log, contexto, limpar_contexto
 from sdr_shared.messaging import MensagemNormalizada, TipoMensagem, Canal, INICIADAS_PELO_AGENTE
 from sdr_shared.models import Lead, Estagio
+from sdr_shared.ports.broker import BarramentoIndisponivel
 from .graph import build_graph, build_checkpointer, caminho_atual, novo_caminho
 from .guardrails import vazao
 from .dispatch import cancelar_followup, despachar, publicar_eventos, reagendar_followup
@@ -110,10 +111,11 @@ def processar(entrada: MensagemNormalizada) -> None:
     # Sem barramento não há como entregar a resposta. Descobrir isso no fim — depois do modelo,
     # do lead gravado e do histórico registrado — era a pior hora: o trabalho estava feito e a
     # resposta se perdia em silêncio. Um PING antes de tudo falha alto e barato; a mensagem fica
-    # pendente no stream e é retomada quando o worker volta (ver `_retomar_pendentes`).
+    # pendente no stream (o broker não a confirma nem chama `ao_falhar` para este erro) e é
+    # retomada quando o barramento volta (ver `_retomar_pendentes`).
     if not _barramento_responde():
         _fim("barramento")
-        raise RuntimeError("barramento indisponível: turno não iniciado para não perder a resposta")
+        raise BarramentoIndisponivel("barramento indisponível: turno não iniciado para não perder a resposta")
 
     # Turno que a Mora começa (follow-up, aviso de imóvel novo) não é o cliente digitando: não
     # passa pela vazão, não entra no histórico como mensagem recebida e não carimba atividade.
@@ -307,10 +309,25 @@ def _avisar_que_o_corretor_foi_chamado(lead: Lead, entrada: MensagemNormalizada,
         log.exception("falha ao avisar o lead %s de que o corretor foi chamado", lead.id)
 
 
+def _falha_de_barramento(erro: Exception) -> bool:
+    try:
+        import redis
+        do_redis: tuple = (redis.ConnectionError, redis.TimeoutError)
+    except ImportError:                              # perfil sem Redis
+        do_redis = ()
+    return isinstance(erro, (BarramentoIndisponivel, *do_redis))
+
+
 def _responder_falha(lead: Lead, entrada: MensagemNormalizada) -> None:
     """Último recurso: avisa o cliente com honestidade e passa para um corretor humano."""
     from sdr_shared.messaging import RespostaAgente, Acao
     from .nodes.handoff import escolher_corretor
+    # Sem barramento o aviso não chega a ninguém — e o HANDOFF gravado aqui deixava o lead com o
+    # corretor por causa de um Redis reiniciando: a Mora calava nas mensagens seguintes, e o
+    # cliente nem tinha sido avisado. Falha de infraestrutura não vira atendimento humano.
+    if not _barramento_responde():
+        log.error("barramento fora: o lead %s não foi encaminhado ao corretor pela falha do turno", lead.id)
+        return
     estagio_antes = lead.estagio
     try:
         corretor = escolher_corretor(lead)
@@ -376,6 +393,9 @@ def local_worker():
 
     def ao_falhar(body: str, _erro: Exception) -> None:
         """Rede de segurança do worker: mesmo que `processar` estoure antes do try interno, o cliente recebe algo."""
+        if _falha_de_barramento(_erro):
+            log.warning("falha de barramento no turno: sem aviso nem handoff, a mensagem é retomada depois")
+            return
         try:
             entrada = MensagemNormalizada.model_validate_json(body)
             lead = LeadRepository().get(entrada.lead_id) or Lead(id=entrada.lead_id)

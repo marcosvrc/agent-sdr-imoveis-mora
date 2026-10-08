@@ -33,7 +33,11 @@ def run(state: AgentState) -> dict:
                       + (f" em {', '.join(str(b) for b in busca)}" if busca else "")
                       + (". Sem telefone: responda pelo painel." if not lead.telefone else f" · {lead.telefone}"),
               dados={"temperatura": str(lead.temperatura), "score": lead.score},
-              chave=f"handoff-{lead.followups_enviados}")
+              # A chave identifica ESTE encaminhamento: a mensagem que o pediu. Era
+              # `handoff-{followups_enviados}`, que não muda quando o lead volta para a Mora e pede um
+              # corretor de novo — o segundo aviso batia na mesma chave, o ON CONFLICT o engolia, e o
+              # corretor nunca soube. A mesma mensagem retomada do stream continua sem duplicar.
+              chave=f"handoff-{state['entrada'].recebida_em.isoformat()}")
     nome = f", {lead.nome}" if lead.nome else ""
     if corretor:
         primeiro = corretor.split()[0]

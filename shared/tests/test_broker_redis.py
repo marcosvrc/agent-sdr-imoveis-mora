@@ -99,3 +99,14 @@ def test_lock_por_lead_dura_pelo_menos_um_turno_inteiro():
     pior_caso = get_settings().llm_timeout_s * (1 + MAX_RETRIES) * 2
     assert MAX_RETRIES == 1
     assert _lock_s() == orcamento_do_turno_s() > pior_caso
+
+
+def test_lock_por_lead_cobre_todas_as_chamadas_de_modelo_do_turno():
+    """O lock durava o pior caso de UMA chamada de modelo, mas o turno faz até quatro (rota,
+    extração, conversa e a extração do consultor). Vencido no meio, a mensagem seguinte do mesmo
+    lead entrava em paralelo."""
+    from sdr_shared.ports.factory import CHAMADAS_POR_TURNO, MAX_RETRIES, orcamento_do_turno_s
+    from sdr_shared.config import get_settings
+    uma_chamada = get_settings().llm_timeout_s * (1 + MAX_RETRIES) * 2
+    assert CHAMADAS_POR_TURNO >= 4
+    assert orcamento_do_turno_s() >= uma_chamada * 4

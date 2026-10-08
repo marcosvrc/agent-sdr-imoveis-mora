@@ -44,6 +44,17 @@ def interpretar_decisao(bruto) -> str | None:
 
 _FALA_ALUGUEL = re.compile(r"\balug(ar|uel|ueis|o)\b|\bloca[cç][aã]o\b", re.I)
 _FALA_COMPRA = re.compile(r"\bcompr(ar|a|o)\b|\badquirir\b", re.I)
+# Citar o outro uso não é trocar de intenção. "não quero comprar agora", de quem aluga, é o
+# contrário de uma troca; "quanto rende o aluguel desse?", de quem compra, é pergunta sobre o
+# imóvel que ele já quer. As duas iam para o qualificador como troca, e a de cima abria uma
+# oportunidade de compra para quem tinha acabado de dizer que não ia comprar.
+_NEGA_INTENCAO = re.compile(r"\bn[ãa]o\s+(quero|vou|pretendo|penso em|estou pensando em|tenho interesse em|"
+                            r"preciso|busco|procuro)\s+(mais\s+)?(em\s+)?(compr|alug|adquir|loca)", re.I)
+_DESEJO = re.compile(r"\b(quero|queria|prefiro|gostaria|pretendo|penso em|pensando em|procur\w*|busc\w*|"
+                     r"na verdade|mudei|mudar para)\b", re.I)
+# A coisa (o aluguel, a compra) ou a possibilidade ("dá pra alugar depois?") — não o pedido.
+_OUTRO_USO = re.compile(r"\b(aluguel|loca[cç][aã]o|compra)\b|\b(d[áa]|daria|posso|pode|consigo)\s+(pra|para\s+)?"
+                        r"\s*(alugar|comprar)\b", re.I)
 
 
 def intencao_citada(txt: str) -> Intencao | None:
@@ -51,11 +62,35 @@ def intencao_citada(txt: str) -> Intencao | None:
     aluguel, compra = bool(_FALA_ALUGUEL.search(txt)), bool(_FALA_COMPRA.search(txt))
     if aluguel == compra:
         return None
+    if _NEGA_INTENCAO.search(txt):
+        return None
+    if "?" in txt and not _DESEJO.search(txt) and _OUTRO_USO.search(txt):
+        return None
     return Intencao.ALUGUEL if aluguel else Intencao.COMPRA
 
 
-PEDE_HUMANO = re.compile(r"\b(corretor|atendente|humano|pessoa de verdade|falar com alguém)\b", re.I)
-PEDE_VISITA = re.compile(r"\b(visitar|visita|agendar|marcar|conhecer o im[oó]vel|hor[aá]rio)\b", re.I)
+# Pedido EXPLÍCITO de uma pessoa. "corretor" sozinho casava qualquer menção: "quando o corretor vai
+# me ligar?", logo depois de reservar a visita, virava handoff — a Mora calava e a pergunta ficava
+# sem resposta até alguém abrir o painel; "vocês cobram comissão do corretor?" também. Atendente,
+# humano e pessoa de verdade continuam valendo sozinhos: ninguém cita essas palavras à toa aqui.
+PEDE_HUMANO = re.compile(
+    r"\b(atendente|humano|pessoa de verdade|falar com algu[ée]m)\b"
+    r"|\b(falar|conversar|fala|ser atendid[oa])\s+com\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora|pessoa)\b"
+    r"|\b(quero|queria|preciso|prefiro|gostaria\s+de|me\s+(passa|passe|transfere|transfira|coloca)|"
+    r"chama|chame|cad[êe])\s+(o\s+|a\s+|um\s+|uma\s+)?(corretor|corretora)\b", re.I)
+_NEGA_HUMANO = re.compile(r"\bn[ãa]o\s+(quero|preciso)\b[^.!?]{0,24}\b(corretor|corretora|atendente|humano|pessoa)\b", re.I)
+
+
+def pede_humano(txt: str) -> bool:
+    """"não quero falar com corretor" cita o pedido para recusá-lo."""
+    return bool(PEDE_HUMANO.search(txt)) and not _NEGA_HUMANO.search(txt)
+
+
+# "horário" sozinho não é pedido de visita: "qual o horário de atendimento de vocês?" ia para o
+# agendador e recebia a grade. E "remarcar", "desmarcar", "reagendar" não casavam `\bmarcar\b` —
+# quem já tinha visita e queria mudá-la caía no modelo de rota, que não pode mandá-la ao agendador.
+PEDE_VISITA = re.compile(r"\b(visitar|visita|(re)?agendar|(re|des)?marcar|conhecer o im[oó]vel|"
+                         r"outro hor[aá]rio|hor[aá]rios|tem hor[aá]rio)\b", re.I)
 ESCOLHE_HORARIO = re.compile(r"(\b\d{1,2}\s*(h|hs|hrs|horas|:\d{2})\b|\b(seg|ter|qua|qui|sex|segunda|ter[çc]a|quarta|quinta|sexta|amanh[ãa]|primeir[oa]|segund[oa]|terceir[oa]|[úu]ltim[oa])\b|\b\d{1,2}/\d{1,2}\b)", re.I)
 PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s? )?tem|outros? im[oó]ve(l|is)|ver outros)\b", re.I)
 
@@ -68,7 +103,7 @@ PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s?
 INSTITUCIONAL_FORTE = re.compile(
     r"\b(fiador|avalista|cau[çc][ãa]o|seguro.fian[çc]a|vistoria|iptu|itbi|escritura|financiamento|"
     r"documenta[çc][ãa]o|documentos? (necess[áa]rios?|preciso|exigidos?)|reajuste|rescis[ãa]o|"
-    r"pet|cachorro|gato|animal de estima[çc][ãa]o)\b", re.I)
+    r"pet|cachorro|gato|animal de estima[çc][ãa]o|hor[aá]rios? de (atendimento|funcionamento))\b", re.I)
 PERGUNTA = (r"(como funciona|qual|quais|quanto|precis[oa]|posso|pode|tem|h[áa]|existe|"
             r"voc[eê]s? (cobra|aceita|exige|pede|trabalha))")
 INSTITUCIONAL_FRACO = re.compile(
@@ -148,10 +183,28 @@ def run(state: AgentState) -> dict:
     # Porteiro: fora do assunto ou tentando reprogramar o agente não entra no fluxo de atendimento.
     # Pedir um humano é exceção — isso é legítimo em qualquer contexto e tem precedência.
     veredito = escopo.avaliar(txt)
-    if not veredito and not PEDE_HUMANO.search(txt):
+    if not veredito and not pede_humano(txt):
         return {"proximo": "recusa", "veredito": veredito, "saltos": saltos}
-    if txt == "Falar com corretor" or PEDE_HUMANO.search(txt) or lead.estagio == Estagio.HANDOFF:
+    if txt == "Falar com corretor" or pede_humano(txt) or lead.estagio == Estagio.HANDOFF:
         return {"proximo": "handoff", "saltos": saltos}
+
+    # Horário segurado esperando o contato. Ele prendia a conversa: toda mensagem de até quatro
+    # palavras ia ao agendador, que repetia "pra reservar eu preciso de um contato" sem limite — o
+    # cliente perguntava de pet, pedia outros imóveis, e recebia o mesmo pedido de telefone.
+    # Agora a Mora insiste UMA vez (`contato_insistido`, gravado pelo agendador); na mensagem
+    # seguinte sem contato, ou quando o cliente pede claramente outra coisa (outros imóveis),
+    # o horário é solto aqui e a mensagem segue o fluxo normal, como se não houvesse pendente.
+    soltar = {}
+    if state.get("horario_pendente") and not (so_contato(txt) or txt.startswith("slot:")):
+        if state.get("contato_insistido") or txt == "Ver outros" or PEDE_OPCOES.search(txt):
+            soltar = {"horario_pendente": None, "contato_insistido": False,
+                      "horarios_oferecidos": [], "slots_crm": {}}
+            state = {**state, **soltar}
+    return {**soltar, **_decidir(state, lead, txt, saltos)}
+
+
+def _decidir(state: AgentState, lead, txt: str, saltos: int) -> dict:
+    """O resto das regras, depois do porteiro e do handoff."""
     # Antes do agendador de propósito: "vocês cobram taxa de visita?" contém "visita" e cairia lá,
     # oferecendo horário para quem pediu uma informação. A escolha de horário (slot:/data) tem
     # precedência sobre isto, porque aí o cliente já está no meio do agendamento.
@@ -160,9 +213,16 @@ def run(state: AgentState) -> dict:
     if txt.startswith("ajuste:"):                     # como ampliar a busca sem imóvel exato: o consultor busca de novo
         return {"proximo": "consultor", "saltos": saltos}
     # Horário escolhido esperando o contato: o nome e o telefone que chegam agora fecham a reserva.
-    if state.get("horario_pendente") and (so_contato(txt) or txt.startswith("slot:") or len(txt.split()) <= 4):
+    # Pergunta institucional não é resposta ao pedido de contato, mesmo curta ("aceita pet?"): vai
+    # para informações e o horário continua segurado. (Pedido de opções já soltou o horário em `run`.)
+    if state.get("horario_pendente") and (so_contato(txt) or txt.startswith("slot:") or (
+            len(txt.split()) <= 4 and not pergunta_institucional(txt))):
         return {"proximo": "agendador", "saltos": saltos}
-    if not txt.startswith("slot:") and not state.get("horarios_oferecidos") and pergunta_institucional(txt):
+    # A grade de horários na tela não tranca mais a rota de informações: `horarios_oferecidos` só é
+    # zerado quando a visita é reservada, e "precisa de fiador?" dias depois de ver a grade caía no
+    # agendador. O que a grade protege é a ESCOLHA do horário ("pode ser terça?"), e só ela.
+    if (not txt.startswith("slot:") and pergunta_institucional(txt)
+            and not (state.get("horarios_oferecidos") and ESCOLHE_HORARIO.search(txt))):
         return {"proximo": "informacoes", "saltos": saltos}
     # Troca de compra para aluguel (ou o contrário) depois de qualificado. Quem trata é o
     # qualificador: ele abre a oportunidade nova e refaz o cartão. O consultor mantém a intenção de
@@ -178,8 +238,13 @@ def run(state: AgentState) -> dict:
     # intenção e vira uma rota grudada: o cliente manda o telefone que a Mora acabou de pedir, cai
     # no agendador de novo, e recebe a grade de horários outra vez — sobre uma visita que já está
     # reservada. Quem quiser remarcar diz isso, e aí cai nas duas condições explícitas acima.
-    if txt == "Agendar visita" or PEDE_VISITA.search(txt) or (
-            lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO):
+    if txt == "Agendar visita" or PEDE_VISITA.search(txt):
+        return {"proximo": "agendador", "saltos": saltos}
+    # Pedir outros imóveis vem ANTES da rota grudada: com `pediu_visita` ligado, o botão "Ver
+    # outros" ia para o agendador e o cliente recebia a grade de horários no lugar dos imóveis.
+    if txt == "Ver outros" or PEDE_OPCOES.search(txt):
+        return {"proximo": "consultor", "saltos": saltos}
+    if lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO:
         return {"proximo": "agendador", "saltos": saltos}
     # Resposta ao pedido de contato. A Mora pede o telefone ao reservar a visita (ou ao mostrar as
     # opções); o número chegava ao modelo de rota, que via cartão completo e mandava para o
@@ -188,8 +253,6 @@ def run(state: AgentState) -> dict:
     if lead.cartao.completo() and so_contato(txt):
         return {"proximo": "qualificador", "saltos": saltos}
     if state.get("ajuste_pendente") and lead.cartao.completo():      # resposta escrita à pergunta "como prefere?"
-        return {"proximo": "consultor", "saltos": saltos}
-    if txt == "Ver outros" or PEDE_OPCOES.search(txt):
         return {"proximo": "consultor", "saltos": saltos}
     if lead.cartao.completo() and not state.get("imoveis_sugeridos"):
         return {"proximo": "consultor", "saltos": saltos}
@@ -222,6 +285,6 @@ def run(state: AgentState) -> dict:
     # Mensagem de até três palavras que não pede pessoa nenhuma é erro de digitação, resposta curta
     # ou ruído — não é reclamação nem pedido de atendente. Pedido explícito continua passando:
     # `PEDE_HUMANO` e o botão "Falar com corretor" são tratados lá em cima, antes do modelo.
-    if decisao == "handoff" and len(txt.split()) <= 3 and not PEDE_HUMANO.search(txt):
+    if decisao == "handoff" and len(txt.split()) <= 3 and not pede_humano(txt):
         decisao = "consultor" if lead.cartao.completo() else "qualificador"
     return {"proximo": decisao, "saltos": saltos}
