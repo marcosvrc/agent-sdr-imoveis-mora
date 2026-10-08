@@ -446,5 +446,4 @@ incremental e purga só a partir de leitura completa (ADR-0015, `sdr_ingestion/a
 - **CI** (`.github/workflows/ci.yml`): ruff, pyright, testes com cobertura, `make eval-fake`, verificação de que `docs/assets/openapi.json` está em dia (`scripts/gerar_openapi.py --verificar`), build e eslint dos três front-ends; `docs.yml` publica este portal.
 - **Segredos**: `scripts/checar_segredos.py`; cofre e OAuth em `shared/sdr_shared/seguranca/`. Ver [Segurança](../quality/seguranca.md).
 
-Para o que **não** está pronto e os débitos técnicos, veja [Roadmap e limitações](../project/roadmap.md)
-e [Pendências](../project/pendencias.md).
+Para o que **não** está pronto e os débitos técnicos, veja [Roadmap e limitações](../project/roadmap.md).

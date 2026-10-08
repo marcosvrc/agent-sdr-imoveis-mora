@@ -20,7 +20,7 @@ a ordem sugerida de execução; nenhum item abaixo tem código escrito.
 | 3 | **Publicar a especificação OpenAPI do CRM** | `make openapi` gera só a da API da Mora; as rotas do CRM (`/properties/{id}/status`, `/visits/{id}/reschedule`, `/brokers`) existem só no `/openapi.json` do serviço no ar | `scripts/gerar_openapi.py`, `docs/technical-reference/openapi.md` |
 | 4 | **Sessão individual no painel da Mora** | Hoje um token único para a equipe (`SDR_PAINEL_TOKEN`); a auditoria registra "painel", não a pessoa. O CRM já tem login por usuário — o painel pode reaproveitar o modelo | `services/api/src/api/auth.py`, `apps/dashboard/src/lib/auth.ts` |
 | 5 | **Correlação entre serviços** | O CRM gera `request_id` próprio e a Mora loga por `lead_id`; nada atravessa o MCP. Propagar um id de turno pelo cabeçalho do MCP liga o turno à linha de auditoria do CRM | `shared/sdr_shared/adapters/crm/via_mcp.py`, `services/crm/sdr_crm/mcp/` |
-| 6 | **Escapar `%`/`_` na busca `ILIKE`** e trocar `CORS *` padrão por lista explícita fora do perfil local | Achados menores da revisão de setembro que ficaram fora do plano de 16 itens | `services/api/src/api/routers/imoveis.py`, `services/api/src/api/main.py` |
+| 6 | **Escapar `%`/`_` na busca `ILIKE`** e trocar `CORS *` padrão por lista explícita fora do perfil local | Ajustes menores de robustez ainda não aplicados | `services/api/src/api/routers/imoveis.py`, `services/api/src/api/main.py` |
 
 ### Médio prazo — operar com mais de um corretor de verdade
 
@@ -72,6 +72,3 @@ a ordem sugerida de execução; nenhum item abaixo tem código escrito.
   aquela não tem substituto.
 - Custo variável: só as chamadas ao modelo. Embeddings, transcrição e banco rodam na máquina.
 
-!!! tip "Transformar pendências em issues"
-    A sugestão do projeto é converter estes itens e as [Pendências de documentação](pendencias.md) em
-    issues, atualizando as páginas correspondentes quando resolvidas.

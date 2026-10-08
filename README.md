@@ -63,8 +63,8 @@ implantado, e isso é escolha (ver [Roadmap](docs/project/roadmap.md)).
 
 Imobiliárias perdem lead no intervalo entre o primeiro contato e a primeira resposta humana: o
 cliente escreve à noite, pelo celular, e quer saber na hora se o imóvel serve, quanto custa e quando
-pode visitar. O desafio (briefing em [`docs/agente-sdr-imobiliario.md`](docs/agente-sdr-imobiliario.md))
-pede um agente que faça esse primeiro atendimento com IA generativa, para a **Vértice Imóveis**, uma
+pode visitar. O Mora é um agente que faz esse primeiro
+atendimento com IA generativa, para a **Vértice Imóveis**, uma
 imobiliária fictícia de São Paulo, em três cenários: **compra**, **investimento** e **follow-up** de
 quem parou de responder.
 
@@ -376,8 +376,7 @@ Página completa, por horizonte, com motivo e onde mexe: **[Roadmap e limitaçõ
   scopes e `exigir_humano`; prompts blindados e saída saneada; refresh token do Google cifrado em
   repouso; toda porta do compose publicada só em `127.0.0.1` (`HOST_BIND` abre de propósito);
   containers Python sem root; segredos fora do repositório (`.env.example` com valores
-  fictícios). Revisão completa de setembro/2026 com 16 correções aplicadas:
-  [`docs/quality/revisao-2026-09.md`](docs/quality/revisao-2026-09.md); página de referência:
+  fictícios). Página de referência:
   [Segurança e privacidade](docs/quality/seguranca.md).
 - **Observabilidade:** [Observabilidade](docs/quality/observabilidade.md) e a tela Saúde.
 

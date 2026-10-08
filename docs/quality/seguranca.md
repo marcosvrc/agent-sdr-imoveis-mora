@@ -79,4 +79,4 @@ Os comentários em `services/agent/src/agent/guardrails/` detalham cada ponto.
 ## Dados pessoais e LGPD
 
 Há mascaramento de PII na saída e uma página de privacidade no site. Uma **política formal de retenção
-e exclusão** de dados é recomendada e ainda não existe (ver [Pendências](../project/pendencias.md)).
+e exclusão** de dados é recomendada e ainda não existe (ver [Roadmap e limitações](../project/roadmap.md)).
