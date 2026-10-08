@@ -79,16 +79,51 @@ def local_worker():
     base = f"https://api.telegram.org/bot{s.telegram_bot_token}"
     offset = None
     with httpx.Client(timeout=35) as http:
+        anunciar_bot(http, base)
         while True:
             try:
                 params = {"timeout": 30, "allowed_updates": ["message", "callback_query"]}
                 if offset is not None:
                     params["offset"] = offset
                 r = http.get(f"{base}/getUpdates", params=params)
-                r.raise_for_status()
+                if r.is_error:
+                    # Sem raise_for_status: o HTTPStatusError do httpx traz a URL, e a URL traz o token.
+                    log.warning("getUpdates recusado (%s): %s — tentando de novo em 5s",
+                                r.status_code, _motivo(r))
+                    time.sleep(5)
+                    continue
                 offset, completo = processar_lote(r.json().get("result", []), offset)
                 if not completo:
                     time.sleep(5)              # broker fora: espera antes de pedir o mesmo update de novo
-            except Exception:
-                log.exception("getUpdates falhou — tentando de novo em 5s")
+            except Exception as e:
+                log.warning("getUpdates falhou (%s) — tentando de novo em 5s", type(e).__name__)
                 time.sleep(5)
+
+
+def _motivo(r: httpx.Response) -> str:
+    try:
+        return r.json().get("description") or "sem descrição"
+    except ValueError:
+        return "sem descrição"
+
+
+def anunciar_bot(http: httpx.Client, base: str) -> None:
+    """Uma linha no log dizendo QUAL bot está sendo ouvido — ou por que o token não serve.
+
+    O worker não dizia nada ao subir: com token certo ou errado, `docker compose logs telegram-in`
+    vinha vazio, e não havia como saber se ele estava vivo. 409 no getUpdates (outra instância do
+    mesmo bot lendo as mensagens) também ganha explicação."""
+    try:
+        r = http.get(f"{base}/getMe")
+    except Exception as e:
+        log.warning("não consegui falar com a API do Telegram (%s)", type(e).__name__)
+        return
+    if r.status_code == 401:
+        log.error("SDR_TELEGRAM_BOT_TOKEN recusado pelo Telegram (401): token errado ou revogado. "
+                  "Gere outro no @BotFather e recrie: docker compose up -d telegram-in telegram-out")
+    elif r.is_error:
+        log.warning("getMe recusado (%s): %s", r.status_code, _motivo(r))
+    else:
+        bot = (r.json().get("result") or {}).get("username", "?")
+        log.info("ouvindo o bot @%s por long polling. Se aparecer 409 no getUpdates, outra instância "
+                 "deste bot está lendo as mensagens — só pode haver uma.", bot)

@@ -15,6 +15,7 @@ Uso:
 import json
 import logging
 import os
+import re
 import sys
 from contextvars import ContextVar
 
@@ -59,14 +60,32 @@ def json_ligado() -> bool:
     return os.getenv("SDR_PROFILE", "producao").strip().lower() != "local"
 
 
+# Segredos que já apareceram em log por acidente: o token de bot do Telegram vai na URL da Bot API,
+# e qualquer traceback de httpx a imprimia inteira. Mascarar na saída é a rede de proteção; o
+# código de cada canal continua evitando logar URL.
+_SEGREDOS = (re.compile(r"\bbot\d{6,}:[A-Za-z0-9_-]{30,}"), re.compile(r"\b\d{6,}:AA[A-Za-z0-9_-]{30,}"))
+
+
+class _Mascarar(logging.Formatter):
+    def __init__(self, interno: logging.Formatter):
+        super().__init__()
+        self.interno = interno
+
+    def format(self, record: logging.LogRecord) -> str:
+        texto = self.interno.format(record)
+        for padrao in _SEGREDOS:
+            texto = padrao.sub("<token-do-bot>", texto)
+        return texto
+
+
 def configurar(servico: str, nivel: int = logging.INFO) -> None:
     """Idempotente: substitui os handlers da raiz. Chamar uma vez, no ponto de entrada do processo."""
     raiz = logging.getLogger()
     for h in list(raiz.handlers):
         raiz.removeHandler(h)
     h = logging.StreamHandler(sys.stdout)
-    h.setFormatter(FormatadorJSON(servico) if json_ligado()
-                   else logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    h.setFormatter(_Mascarar(FormatadorJSON(servico) if json_ligado()
+                             else logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")))
     raiz.addHandler(h)
     raiz.setLevel(nivel)
     logging.getLogger("httpx").setLevel(logging.WARNING)
