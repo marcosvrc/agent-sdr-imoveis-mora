@@ -43,16 +43,16 @@ def main() -> int:
     if "--verificar" in sys.argv:
         atual = DESTINO.read_text(encoding="utf-8") if DESTINO.is_file() else ""
         if atual == novo:
-            print(f"openapi.json em dia ({len(json.loads(novo)['paths'])} caminhos)")
+            print(f"✅ openapi.json em dia ({len(json.loads(novo)['paths'])} caminhos)")
             return 0
-        print("openapi.json DESATUALIZADO — rode `make openapi` e faça commit do resultado.", file=sys.stderr)
+        print("❌ openapi.json DESATUALIZADO — rode `make openapi` e faça commit do resultado.", file=sys.stderr)
         return 1
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
     DESTINO.write_text(novo, encoding="utf-8")
     spec = json.loads(novo)
     operacoes = [op for ops in spec["paths"].values() for op in ops.values()]
     protegidas = sum(1 for op in operacoes if op.get("security"))
-    print(f"{DESTINO.relative_to(RAIZ)}: {len(spec['paths'])} caminhos, "
+    print(f"✅ {DESTINO.relative_to(RAIZ)}: {len(spec['paths'])} caminhos, "
           f"{len(operacoes)} operações ({protegidas} exigem autenticação)")
     return 0
 

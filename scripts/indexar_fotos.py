@@ -87,15 +87,15 @@ def main(largura: int = 1200, qualidade: int = 78) -> None:
         arquivos = sorted(p.name for p in pasta.glob(f"{categoria}*-[0-9][0-9].jpg"))
         pool[categoria] = [f"/acervo/{categoria}/{n}" for n in arquivos]
         total += len(arquivos)
-        print(f"{categoria}: {len(arquivos)} foto(s)")
+        print(f"📷 {categoria}: {len(arquivos)} foto(s)")
     if not PROCEDENCIA.exists():
         PROCEDENCIA.write_text(MODELO_PROCEDENCIA, encoding="utf-8")
     DESTINO.write_text(json.dumps(pool, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"\n{total} foto(s) em {DESTINO.relative_to(RAIZ)}")
+    print(f"\n✅ {total} foto(s) em {DESTINO.relative_to(RAIZ)}")
     if total:
-        print("Agora regere o acervo: python scripts/gerar_imoveis.py")
+        print("💡 Agora regere o acervo: python scripts/gerar_imoveis.py")
     else:
-        print("Nenhuma foto encontrada — o acervo seguirá com as URLs de exemplo.\n"
+        print("⚠️  Nenhuma foto encontrada — o acervo seguirá com as URLs de exemplo.\n"
               f"Coloque os arquivos em {ORIGEM.relative_to(RAIZ)}/<categoria>/ e rode de novo.")
 
 

@@ -26,7 +26,7 @@ PADRAO = ["crm:read", "leads:write", "opportunities:write", "interactions:write"
 def emitir(nome: str, scopes: list[str], dias: int | None) -> int:
     invalidos = sorted(set(scopes) - SCOPES)
     if invalidos:
-        print(f"✗ scope inexistente: {', '.join(invalidos)}", file=sys.stderr)
+        print(f"❌ scope inexistente: {', '.join(invalidos)}", file=sys.stderr)
         return 1
     token, hash_ = novo_token("crm")
     with transacao() as conn:
@@ -37,8 +37,8 @@ def emitir(nome: str, scopes: list[str], dias: int | None) -> int:
                RETURNING id""", (nome, hash_, scopes, dias, dias)).fetchone()
     print(f"id:     {linha['id']}")
     print(f"scopes: {' '.join(scopes)}")
-    print(f"token:  {token}")
-    print("\nGuarde agora — o banco só tem o hash e este valor não é recuperável.")
+    print(f"🔑 token:  {token}")
+    print("\n⚠️  Guarde agora — o banco só tem o hash e este valor não é recuperável.")
     return 0
 
 
@@ -61,9 +61,9 @@ def revogar(ident: str) -> int:
             "UPDATE service_credentials SET revoked_at = now() "
             "WHERE id = %s AND revoked_at IS NULL RETURNING name", (ident,)).fetchone()
     if linha is None:
-        print("✗ credencial não encontrada ou já revogada", file=sys.stderr)
+        print("❌ credencial não encontrada ou já revogada", file=sys.stderr)
         return 1
-    print(f"✓ credencial de {linha['name']} revogada — a próxima chamada dela é recusada.")
+    print(f"✅ credencial de {linha['name']} revogada — a próxima chamada dela é recusada.")
     return 0
 
 

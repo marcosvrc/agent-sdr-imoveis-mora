@@ -76,7 +76,7 @@ def _senha_de_bootstrap() -> None:
         if not sem_senha:
             return
         from ..api.auth import hash_senha
-        print("\nAcesso ao painel (aparece só nesta execução):")
+        print("\n🔐 Acesso ao painel (aparece só nesta execução):")
         for u in sem_senha:
             senha = secrets.token_urlsafe(12)
             conn.execute("UPDATE users SET password_hash = %s WHERE id = %s",

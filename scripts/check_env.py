@@ -189,27 +189,27 @@ def main() -> int:
     args = [a for a in sys.argv[1:] if a != "--gerar-segredo"]
     caminho = Path(args[0]) if args else RAIZ / "local/.env"
     if not caminho.exists():
-        print(f"✗ {caminho} não existe. Rode: cp -n local/.env.example local/.env")
+        print(f"❌ {caminho} não existe. Rode: cp -n local/.env.example local/.env")
         return 1
     exemplo = RAIZ / "local/.env.example"
     if exemplo.exists() and caminho.read_bytes() == exemplo.read_bytes():
-        print(f"✗ {caminho} é byte a byte igual ao .env.example — provavelmente foi sobrescrito por")
-        print("  um `cp` sem `-n`. Se os containers ainda estiverem no ar, os valores antigos podem")
-        print("  ser lidos deles: cd local && docker compose exec agent printenv | grep -E 'SDR_|_KEY'")
+        print(f"❌ {caminho} é byte a byte igual ao .env.example — provavelmente foi sobrescrito por")
+        print("   um `cp` sem `-n`. Se os containers ainda estiverem no ar, os valores antigos podem")
+        print("   ser lidos deles: cd local && docker compose exec agent printenv | grep -E 'SDR_|_KEY'")
         return 1
 
     if "--gerar-segredo" in sys.argv[1:] and gerar_segredo_se_preciso(caminho):
-        print(f"✓ gerei um SDR_SESSAO_SECRET novo em {caminho} (sessões de chat abertas vão cair uma vez)")
+        print(f"🔑 gerei um SDR_SESSAO_SECRET novo em {caminho} (sessões de chat abertas vão cair uma vez)")
     env, repetidas = carregar(caminho)
     erros, avisos = checar(env, repetidas)
     for a in avisos:
-        print(f"! {a}")
+        print(f"⚠️  {a}")
     for e in erros:
-        print(f"✗ {e}")
+        print(f"❌ {e}")
     if erros:
-        print(f"\n{len(erros)} problema(s) em {caminho}. Corrija antes de subir o compose.")
+        print(f"\n🛑 {len(erros)} problema(s) em {caminho}. Corrija antes de subir o compose.")
         return 1
-    print(f"✓ {caminho} está coerente.")
+    print(f"✅ {caminho} está coerente.")
     return 0
 
 

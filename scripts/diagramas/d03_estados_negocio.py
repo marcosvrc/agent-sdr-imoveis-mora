@@ -35,8 +35,8 @@ def montar() -> Diagrama:
     # handler._devolver_a_mora (o cliente pede a Mora de volta) e POST /handoff/{id}/devolver
     # (o corretor devolve pelo painel): QUALIFICADO com cartão completo, QUALIFICANDO sem ele.
     volta = [(1810, 695), (1890, 695), (1890, 200)]
-    d.aresta(volta + [(1190, 200), (1190, 250)], "verde", raio=14)
-    d.aresta(volta + [(870, 200), (870, 250)], "verde", raio=14)
+    d.aresta([*volta, (1190, 200), (1190, 250)], "verde", raio=14)
+    d.aresta([*volta, (870, 200), (870, 250)], "verde", raio=14)
     d.add('<text x="1540" y="168" class="t-seta x-verde" text-anchor="middle">devolvido à Mora: o cliente pede a Mora de volta</text>')
     d.add('<text x="1540" y="184" class="t-seta x-verde" text-anchor="middle">ou o corretor devolve pelo painel (POST /handoff/{id}/devolver)</text>')
     d.add('<text x="1204" y="226" class="t-seta x-verde">cartão completo</text>')

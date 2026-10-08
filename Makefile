@@ -15,24 +15,25 @@ APPS = web dashboard crm
 # Primeiro alvo do arquivo = o que `make` sozinho executa. Ser a ajuda é deliberado: quem chega ao
 # projeto digita `make` antes de ler qualquer coisa, e o que ele precisa saber é a ORDEM.
 ajuda:
-	@echo "Mora — SDR imobiliário. Ordem de execução a partir de um clone limpo:"
+	@echo "🏡 Mora — SDR imobiliário. Ordem de execução a partir de um clone limpo:"
 	@echo
-	@echo "  1. cp -n local/.env.example local/.env   (-n NÃO sobrescreve um .env que já existe)"
-	@echo "     preencha a chave do LLM, a dos embeddings e CRM_MCP_TOKEN (OpenRouter: docs/getting-started/openrouter.md)"
-	@echo "  2. make check-env                     confere o .env antes de subir nada"
-	@echo "  3. make local-ollama                  sobe o compose (primeiro plano; siga noutro terminal)"
-	@echo "  4. make preparar                      massa do CRM (os bancos o compose já criou)"
-	@echo "  5. make crm-token                     emite CRM_API_TOKEN -> cole no local/.env"
-	@echo "     cd local && docker compose up -d crm-mcp agent      (releem o .env)"
-	@echo "  6. make ollama-pull                   só com embeddings ollama: baixa o bge-m3 (uma vez só)"
-	@echo "  7. make seed && make docs-kb          indexa acervo e documentos institucionais"
-	@echo "  8. make corretores                    cria a equipe de 20 corretores (opcional)"
+	@echo "  1️⃣  cp -n local/.env.example local/.env   🔑 preencha as chaves (LLM, embeddings, CRM_MCP_TOKEN)"
+	@echo "                                          (-n NÃO sobrescreve um .env que já existe; OpenRouter: docs/getting-started/openrouter.md)"
+	@echo "  2️⃣  make check-env                     🔍 confere o .env antes de subir nada"
+	@echo "  3️⃣  make local                          🚀 sobe o compose (primeiro plano; siga noutro terminal)"
+	@echo "                                          make local-ollama se usar o Ollama"
+	@echo "  4️⃣  make preparar                       🗄️  massa do CRM (os bancos o compose já criou)"
+	@echo "  5️⃣  make crm-token                      🔑 emite CRM_API_TOKEN → cole no local/.env"
+	@echo "                                          cd local && docker compose up -d crm-mcp agent   (releem o .env)"
+	@echo "  6️⃣  make ollama-pull                    🦙 só com embeddings ollama: baixa o bge-m3 (uma vez só)"
+	@echo "  7️⃣  make seed && make docs-kb           🏠📚 indexa acervo e documentos institucionais"
+	@echo "  8️⃣  make corretores                     👥 cria a equipe de 20 corretores (opcional)"
 	@echo
-	@echo "Verificar:  make lint · make test · make eval-fake · make segredos (antes do push)"
-	@echo "Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
-	@echo "Acessar:    site :5173 · painel da Mora :5174 · CRM :3000"
+	@echo "🧪 Verificar:  make lint · make test · make eval-fake · make segredos (antes do push)"
+	@echo "📊 Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
+	@echo "🌐 Acessar:    site http://localhost:5173 · painel http://localhost:5174 · CRM http://localhost:3000"
 	@echo
-	@echo "Sem CRM a Mora roda sozinha: pule 4, 5 e a parte de CRM. Os alvos avisam."
+	@echo "💡 Sem CRM a Mora roda sozinha: pule 4, 5 e a parte de CRM. Os alvos avisam."
 
 # Tudo que precisa acontecer entre "compose no ar" e "emitir o token", na ordem das dependências.
 # Existe porque essa ordem já me custou dois enganos: o schema do CRM precisa do banco `crm`, que
@@ -40,8 +41,9 @@ ajuda:
 # rodar este de novo não estraga nada.
 preparar: migrate crm-migrate crm-api-pronto crm-reset
 	@echo
-	@echo "✓ bancos e massa prontos. Agora: make crm-token, cole CRM_API_TOKEN no local/.env e rode"
-	@echo "  cd local && docker compose up -d crm-mcp agent"
+	@echo "✅ bancos e massa prontos."
+	@echo "💡 Ainda sem CRM_API_TOKEN no local/.env? make crm-token, cole o valor e rode"
+	@echo "   cd local && docker compose up -d crm-mcp agent"
 
 crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
 	@# Entre `crm-migrate` e `crm-reset` há um passo que não é óbvio: quando o banco `crm` não
@@ -49,13 +51,13 @@ crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
 	@# banco não o traz de volta sozinho, e o `crm-reset` seguinte falharia com um erro do docker
 	@# sobre container não estar rodando — que não diz nada sobre o banco.
 	cd local && docker compose up -d crm-api
-	@echo "aguardando o crm-api ficar saudável…"
+	@echo "⏳ aguardando o crm-api ficar saudável…"
 	@cd local && for i in $$(seq 1 60); do \
 	  estado=$$(docker compose ps --format '{{.Health}}' crm-api 2>/dev/null); \
-	  if [ "$$estado" = "healthy" ]; then echo "✓ crm-api saudável"; exit 0; fi; \
+	  if [ "$$estado" = "healthy" ]; then echo "✅ crm-api saudável"; exit 0; fi; \
 	  sleep 2; \
 	done; \
-	echo "✗ crm-api não ficou saudável em 2 min. Veja: cd local && docker compose logs --tail 30 crm-api"; \
+	echo "❌ crm-api não ficou saudável em 2 min. Veja: cd local && docker compose logs --tail 30 crm-api"; \
 	exit 1
 
 # `uv` quando existe, `pip` quando não — mas a escolha é feita ANTES, por `command -v`. O jeito
@@ -64,38 +66,46 @@ crm-api-pronto:  # sobe o crm-api e ESPERA ficar saudável
 # de dependências e sem uma linha dizendo por quê. Agora a primeira falha para o alvo, com o erro.
 setup:
 	@set -e; if command -v uv >/dev/null 2>&1; then \
-	  for s in $(SERVICES); do echo "── $$s (uv)"; (cd $$s && uv sync --all-extras); done; \
+	  for s in $(SERVICES); do echo "📦 $$s (uv)"; (cd $$s && uv sync --all-extras); done; \
 	else \
-	  echo "uv não encontrado — usando pip no Python ativo (extras não entram; veja a CI para a lista)"; \
-	  for s in $(SERVICES); do echo "── $$s (pip)"; (cd $$s && pip install -e .); done; \
+	  echo "⚠️  uv não encontrado — usando pip no Python ativo (extras não entram; veja a CI para a lista)"; \
+	  for s in $(SERVICES); do echo "📦 $$s (pip)"; (cd $$s && pip install -e .); done; \
 	fi
-	@set -e; for a in $(APPS); do echo "── apps/$$a"; (cd apps/$$a && npm install); done
+	@set -e; for a in $(APPS); do echo "📦 apps/$$a"; (cd apps/$$a && npm install); done
 
 check-env:
-	python3 scripts/check_env.py
+	@echo "🔍 Conferindo o local/.env…"
+	@python3 scripts/check_env.py
 
 # `--gerar-segredo`: sem SDR_SESSAO_SECRET de verdade, a sessão que o canal emite não vale na API
 # (eventos de navegação descartados) e os serviços recusam o valor de exemplo. Gera um no local/.env.
 local:
-	python3 scripts/check_env.py --gerar-segredo
+	@echo "🔍 Conferindo o local/.env…"
+	@python3 scripts/check_env.py --gerar-segredo
+	@echo "🐳 Subindo o compose (primeiro plano). Siga noutro terminal; Ctrl+C para parar."
 	cd local && docker compose up --build
 
 local-ollama:
-	python3 scripts/check_env.py --gerar-segredo
+	@echo "🔍 Conferindo o local/.env…"
+	@python3 scripts/check_env.py --gerar-segredo
+	@echo "🐳 Subindo o compose com o Ollama (primeiro plano). Siga noutro terminal; Ctrl+C para parar."
 	cd local && docker compose --profile ollama up --build
 
 seed:
+	@echo "🏠 Gerando e indexando o acervo de imóveis…"
 	cd local && docker compose exec agent python /app/scripts/gerar_imoveis.py 250 150
 	cd local && docker compose exec -w /app/services/ingestion agent python -m sdr_ingestion.ingest_imoveis /app/data/imoveis/imoveis.json
-	@echo "✓ acervo indexado. Com CRM configurado ele veio de lá; sem CRM, do arquivo."
+	@echo "✅ acervo indexado. Com CRM configurado ele veio de lá; sem CRM, do arquivo."
 
 # Equipe de demonstração: cria os corretores de data/equipe/corretores.json na Mora e casa cada um
 # com o `users` do CRM pelo e-mail — é `crm_user_id` que faz o encaminhamento subir com destinatário.
 # Roda DENTRO do container, como `make seed`: no host os padrões de conexão apontam para 5432
 # enquanto o compose publica em 5433, e o pior desfecho seria semear no banco errado em silêncio.
 corretores:
+	@echo "👥 Semeando a equipe de corretores…"
 	cd local && docker compose exec -e CRM_DATABASE_DSN=postgresql://sdr:sdr@db:5432/crm agent python /app/scripts/semear_corretores.py --vincular-crm
-	@echo "✓ equipe semeada. Sem CRM no ar eles ficam sem crm_user_id — a ponte fica desligada, e o CRM atribui a quem aceitar."
+	@echo "✅ equipe semeada."
+	@echo "💡 Sem CRM no ar eles ficam sem crm_user_id — a ponte fica desligada, e o CRM atribui a quem aceitar."
 
 # Fotos do acervo de demonstração: normaliza o que estiver em data/fotos-acervo/<categoria>/ e
 # redistribui 2–3 fotos por imóvel, coerentes com o tipo. Roda no HOST, e não no container: é
@@ -103,7 +113,8 @@ corretores:
 fotos-acervo:
 	python3 scripts/indexar_fotos.py
 	python3 scripts/gerar_imoveis.py
-	@echo "✓ fotos indexadas — rode 'make seed' para reindexar o acervo."
+	@echo "✅ fotos indexadas."
+	@echo "💡 Rode 'make seed' para reindexar o acervo."
 
 # Documentos institucionais (FAQ, política de visita, taxas) → base de conhecimento que a Mora
 # consulta: fatia, gera embeddings e grava na tabela `documentos` do pgvector. Exige `make migrate`
@@ -115,9 +126,10 @@ fotos-acervo:
 # era falhar; o pior, numa máquina com Postgres nativo na 5432, era indexar os documentos no banco
 # errado, em silêncio, e o agente nunca os ver.
 docs-kb:
+	@echo "📚 Indexando os documentos institucionais…"
 	cd local && docker compose exec -w /app/services/ingestion agent \
 	  python -m sdr_ingestion.ingest_documentos /app/data/documentos
-	@echo "✓ documentos institucionais indexados na tabela \`documentos\` — a Mora já consulta daqui."
+	@echo "✅ documentos institucionais indexados na tabela \`documentos\` — a Mora já consulta daqui."
 
 whisper-aquecer:  # baixa o modelo de transcrição ANTES da demonstração
                # O faster-whisper busca o modelo na primeira vez que transcreve, e `small` passa de
@@ -125,15 +137,16 @@ whisper-aquecer:  # baixa o modelo de transcrição ANTES da demonstração
                # — e quem está do outro lado só vê a Mora muda. O cache é um volume nomeado, então
                # isto se paga uma vez por máquina, não por container.
 	cd local && docker compose exec -T agent python -c "\
-from agent.tools.transcricao import _modelo_whisper; _modelo_whisper(); print('modelo de transcrição pronto')"
+from agent.tools.transcricao import _modelo_whisper; _modelo_whisper(); print('✅ modelo de transcrição pronto')"
 
 docs-secos:    # lista o que seria indexado, sem tocar no banco nem gerar embedding
 	cd local && docker compose exec -w /app/services/ingestion agent \
 	  python -m sdr_ingestion.ingest_documentos /app/data/documentos --seco
 
 migrate:       # (re)aplica o schema no Postgres do compose — idempotente (CREATE/ALTER ... IF NOT EXISTS)
+	@echo "🗄️  Aplicando o schema da Mora…"
 	cd local && docker compose exec -T db psql -q -U sdr -d sdr -v ON_ERROR_STOP=1 < ../shared/sdr_shared/db/schema.sql
-	@echo "✓ schema da Mora aplicado no banco \`sdr\` (idempotente)."
+	@echo "✅ schema da Mora aplicado no banco \`sdr\` (idempotente)."
 
 # ============================== CRM imobiliário (docs/decisions.md D-01) ==============================
 # Sistema à parte, com banco próprio. A Mora publica nele o que a conversa descobre; nada daqui
@@ -145,29 +158,35 @@ crm-migrate:   # aplica o schema do CRM sem reiniciar nada — idempotente, como
                # passo de `make`, dependia de alguém rodá-lo ANTES do compose — e o compose sobe
                # primeiro, então o `crm-api` batia em `FATAL: database "crm" does not exist` toda
                # vez. O alvo continua aqui para aplicar uma mudança de schema com o ambiente no ar.
+	@echo "🗄️  Aplicando o schema do CRM…"
 	cd local && printf '%s\n' "SELECT 'CREATE DATABASE crm' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'crm')\\gexec" \
 	  | docker compose exec -T db psql -q -U sdr -d postgres
 	cd local && docker compose exec -T db psql -q -U sdr -d crm -v ON_ERROR_STOP=1 < ../services/crm/sdr_crm/db/schema.sql
-	@echo "✓ banco \`crm\` pronto e schema aplicado. Próximo: make crm-reset"
+	@echo "✅ banco \`crm\` pronto e schema aplicado."
+	@echo "💡 Próximo: make crm-reset"
 
 crm-seed:      # massa sintética determinística: mesmos parâmetros, mesmo dataset e mesmos IDs
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --seed 42 --reference-date $(CRM_REF)
 
 crm-reset:     # apaga o dataset e reaplica. Recusa se houver qualquer registro sem marca sintética.
+	@echo "🗄️  Recriando a massa sintética do CRM…"
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.seed --reset --confirm-reset --seed 42 --reference-date $(CRM_REF)
-	@echo "✓ massa do CRM recriada (seed 42). Próximo: make crm-token"
+	@echo "✅ massa do CRM recriada (seed 42)."
+	@echo "💡 Próximo, se ainda não tem CRM_API_TOKEN: make crm-token"
 
 crm-token:     # emite a credencial da Mora. O token aparece UMA vez — copie para local/.env.
+	@echo "🔑 Emitindo a credencial da Mora no CRM (o token aparece UMA vez)…"
 	cd local && docker compose exec -w /app/services/crm crm-api python -m sdr_crm.credenciais emitir --nome mora
 
 crm-mcp:       # servidor MCP por stdio, para um cliente MCP externo (Claude Desktop e afins).
-	@echo "O servidor HTTP já sobe com o compose — é por ele que a Mora entra (crm-mcp:8200/mcp)."
-	@echo "Este alvo é o transporte stdio. -T é obrigatório: sem ele o terminal se mistura ao JSON-RPC."
+	@echo "ℹ️  O servidor HTTP já sobe com o compose — é por ele que a Mora entra (crm-mcp:8200/mcp)."
+	@echo "ℹ️  Este alvo é o transporte stdio. -T é obrigatório: sem ele o terminal se mistura ao JSON-RPC."
 	cd local && docker compose run --rm -T crm-mcp-stdio
 
 CRM_REF ?= 2026-09-17T12:00:00Z
 
 ollama-pull:   # garante o serviço (profile ollama) de pé antes de baixar o modelo de embeddings
+	@echo "🦙 Baixando o bge-m3 no Ollama (demora na primeira vez)…"
 	cd local && docker compose --profile ollama up -d ollama && docker compose --profile ollama exec ollama ollama pull bge-m3
 
 cli: check-env
@@ -209,6 +228,7 @@ else
 endif
 
 test: test-db
+	@echo "🧪 Rodando as sete suítes…"
 	export SDR_DATABASE_DSN=$(TEST_DSN); \
 	python3 -m pytest -q tests
 	export SDR_DATABASE_DSN=$(TEST_DSN); cd shared && PYTHONPATH=. python3 -m pytest -q tests
@@ -286,16 +306,16 @@ eval-recomendacao:  # a busca de IMÓVEIS com o embedder de verdade. Reindexa da
 # Exige as duas pontas prontas: Ollama no ar com o bge-m3 (`make ollama-pull`) e OPENAI_API_KEY no
 # local/.env. O custo da passada da OpenAI é de frações de centavo.
 eval-embeddings:
-	@echo "───────── ollama (bge-m3)"
+	@echo "🦙 ───────── ollama (bge-m3)"
 	@export SDR_DATABASE_DSN=$(TEST_DSN) SDR_EMBEDDINGS_PROVIDER=ollama; \
 	  cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
 	@echo
-	@echo "───────── openai (text-embedding-3-small, 1024 dims)"
+	@echo "🤖 ───────── openai (text-embedding-3-small, 1024 dims)"
 	@export SDR_DATABASE_DSN=$(TEST_DSN) SDR_EMBEDDINGS_PROVIDER=openai; \
 	  cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals --suite rag $(ARGS)
 	@echo
-	@echo "Compare recall@3 e abstenção. Diferença dentro do ruído: fique no mais barato (openai)."
-	@echo "O índice ficou com o provedor da ÚLTIMA passada — rode 'make docs-kb' para voltar ao do .env."
+	@echo "📊 Compare recall@3 e abstenção. Diferença dentro do ruído: fique no mais barato (openai)."
+	@echo "⚠️  O índice ficou com o provedor da ÚLTIMA passada — rode 'make docs-kb' para voltar ao do .env."
 
 # As MESMAS sete suítes de `make test`. Faltavam três (tests/ da raiz, shared e CRM), então o
 # "passou no docker" não dizia o mesmo que o "passou no host". O CRM roda com o próprio banco de
@@ -317,14 +337,16 @@ test-docker: test-db   # mesma suíte, rodando dentro do container do agente (n�
 # Varredura de segredos antes do push: valores reais do local/.env no histórico, arquivos de
 # credencial versionados e padrões de chave. A CI roda o mesmo script sem .env (só as partes 2 a 4).
 segredos:
-	python3 scripts/checar_segredos.py
+	@echo "🔍 Procurando credenciais no que vai subir…"
+	@python3 scripts/checar_segredos.py
 
 openapi:       # regera docs/assets/openapi.json a partir do código da API (a CI confere se está em dia)
 	python3 scripts/gerar_openapi.py
 
 diagramas:     # regera os SVG dos diagramas (tema único) a partir de scripts/diagramas/
 	python3 scripts/diagramas/gerar.py
-	@echo "✓ diagramas em docs/assets/diagramas/ — confira o resultado antes de commitar."
+	@echo "✅ diagramas em docs/assets/diagramas/."
+	@echo "💡 Confira o resultado antes de commitar."
 
 docs:          # portal de documentação em http://127.0.0.1:8000 (MkDocs Material)
 	pip install -r docs-requirements.txt && mkdocs serve

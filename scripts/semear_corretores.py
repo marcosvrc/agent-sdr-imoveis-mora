@@ -53,7 +53,7 @@ def _vinculos_do_crm() -> dict[str, str]:
     """
     dsn = os.getenv("CRM_DATABASE_DSN") or os.getenv("CRM_TEST_DSN")
     if not dsn:
-        print("… --vincular-crm sem CRM_DATABASE_DSN: seguindo sem vínculo")
+        print("⚠️  --vincular-crm sem CRM_DATABASE_DSN: seguindo sem vínculo")
         return {}
     try:
         import psycopg
@@ -61,7 +61,7 @@ def _vinculos_do_crm() -> dict[str, str]:
         with psycopg.connect(dsn, row_factory=dict_row) as c:
             rows = c.execute("SELECT id, email FROM users").fetchall()
     except Exception as e:                                   # noqa: BLE001 - seed não derruba por isto
-        print(f"… CRM inalcançável ({type(e).__name__}): seguindo sem vínculo")
+        print(f"⚠️  CRM inalcançável ({type(e).__name__}): seguindo sem vínculo")
         return {}
     return {str(r["email"]).lower(): str(r["id"]) for r in rows}
 
@@ -90,10 +90,10 @@ def main(vincular_crm: bool = False, listar: bool = False) -> None:
                              ativo=pessoa["ativo"], foto=None, crm_user_id=crm_user_id))
     inativos = sum(1 for x in pessoas if not x["ativo"])
     total = len(repo.listar())
-    print(f"✓ {len(pessoas)} corretores semeados ({novos} novo(s)); {total} no cadastro; "
+    print(f"✅ {len(pessoas)} corretores semeados ({novos} novo(s)); {total} no cadastro; "
           f"{inativos} inativo(s); {ligados} com vínculo no CRM")
     if vincular_crm and not ligados:
-        print("  (nenhum e-mail casou com `users` do CRM — rode `make crm-seed` antes)")
+        print("💡 (nenhum e-mail casou com `users` do CRM — rode `make crm-seed` antes)")
 
 
 if __name__ == "__main__":

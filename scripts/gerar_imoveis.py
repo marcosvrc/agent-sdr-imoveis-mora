@@ -266,7 +266,7 @@ def main(residenciais: int = 250, comerciais: int = 150, seed: int = 42) -> None
     destino.write_text(json.dumps(imoveis, ensure_ascii=False, indent=2), encoding="utf-8")
     fonte = (f"pool de {sum(len(v) for v in POOL.values())} fotos"
              if POOL else "fotos de exemplo (pool vazio)")
-    print(f"{len(imoveis)} imóveis — {residenciais} residenciais, {comerciais} comerciais; "
+    print(f"🏠 {len(imoveis)} imóveis — {residenciais} residenciais, {comerciais} comerciais; "
           f"{fonte} — em {destino.relative_to(RAIZ)}")
 
 

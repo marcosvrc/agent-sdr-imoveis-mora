@@ -86,7 +86,7 @@ def eh_segredo(nome: str, valor: str) -> bool:
 
 def valores_do_env(caminho: Path) -> dict[str, str]:
     if not caminho.exists():
-        print(f"  ! {caminho} não existe — pulei a checagem dos valores reais")
+        print(f"  ⚠️  {caminho} não existe — pulei a checagem dos valores reais")
         return {}
     env = {}
     for linha in caminho.read_text(encoding="utf-8").splitlines():
@@ -112,7 +112,7 @@ def exemplos(caminho: Path) -> set[str]:
 
 
 def checar_valores_reais(env: dict[str, str], publicos: set[str]) -> int:
-    print("=== 1. valores reais do .env dentro do histórico")
+    print("🔍 1. valores reais do .env dentro do histórico")
     achados = 0
     for chave, valor in env.items():
         # -S conta ocorrências por commit: acha mesmo o segredo que entrou e depois saiu.
@@ -121,28 +121,28 @@ def checar_valores_reais(env: dict[str, str], publicos: set[str]) -> int:
             continue
         n = len(saida.strip().splitlines())
         if valor in publicos:
-            print(f"  ok   {chave}: é o valor de exemplo, já público")
+            print(f"  ✅ {chave}: é o valor de exemplo, já público")
         else:
-            print(f"  !!!  {chave}: aparece em {n} commit(s) — NÃO EMPURRE")
+            print(f"  🚨 {chave}: aparece em {n} commit(s) — NÃO EMPURRE")
             achados += 1
     if not achados:
-        print("  nenhum segredo real encontrado")
+        print("  ✅ nenhum segredo real encontrado")
     return achados
 
 
 def checar_arquivos_rastreados() -> int:
-    print("\n=== 2. arquivos de credencial rastreados")
+    print("\n🔍 2. arquivos de credencial rastreados")
     suspeitos = [f for f in git("ls-files").splitlines()
                  if ARQUIVOS_SUSPEITOS.search(f) and not f.endswith(".example")]
     for f in suspeitos:
-        print(f"  !!!  {f}")
+        print(f"  🚨 {f}")
     if not suspeitos:
-        print("  nenhum")
+        print("  ✅ nenhum")
     return len(suspeitos)
 
 
 def checar_padroes(desde: str) -> int:
-    print(f"\n=== 3. padrões de segredo nos commits de {desde} até HEAD")
+    print(f"\n🔍 3. padrões de segredo nos commits de {desde} até HEAD")
     commits = git("rev-list", f"{desde}..HEAD").split() or ["HEAD"]
     # Um LOCAL, um achado. Os padrões se sobrepõem de propósito — a chave da Anthropic começa com
     # `sk-` e também casa com a regra da OpenAI — e relatar a mesma linha duas vezes infla a
@@ -155,19 +155,19 @@ def checar_padroes(desde: str) -> int:
             if linha.strip():
                 por_local.setdefault(":".join(linha.split(":")[:3]), nome)
     for local, nome in sorted(por_local.items()):
-        print(f"  !!!  {nome}: {local}")
+        print(f"  🚨 {nome}: {local}")
     if not por_local:
-        print("  nenhum")
+        print("  ✅ nenhum")
     return len(por_local)
 
 
 def checar_temporarios() -> int:
-    print("\n=== 4. arquivos temporários versionados por engano")
+    print("\n🔍 4. arquivos temporários versionados por engano")
     lixo = [f for f in git("ls-files").splitlines() if f.endswith((".tmp", ".b64", ".orig", ".rej"))]
     for f in lixo:
-        print(f"  !    {f}")
+        print(f"  ⚠️  {f}")
     if not lixo:
-        print("  nenhum")
+        print("  ✅ nenhum")
     return len(lixo)
 
 
@@ -186,9 +186,9 @@ def main() -> int:
 
     print()
     if graves:
-        print(f"✗ {graves} achado(s) grave(s). NÃO empurre — me mostre o nome da variável, nunca o valor.")
+        print(f"🛑 {graves} achado(s) grave(s). NÃO empurre — me mostre o nome da variável, nunca o valor.")
         return 1
-    print("✓ nada de credencial no que vai subir." + (f" ({leves} arquivo(s) temporário(s) — só asseio)" if leves else ""))
+    print("✅ nada de credencial no que vai subir." + (f" ({leves} arquivo(s) temporário(s) — só asseio)" if leves else ""))
     return 0
 
 

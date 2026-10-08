@@ -64,7 +64,7 @@ def indexar_local(arquivos: list[Path], raiz: Path) -> int:
             # que o fatiador não entende). Apagar aqui zeraria silenciosamente o que já estava
             # indexado deste arquivo: um "✓ 0 trecho(s)" que na verdade apagou a política inteira.
             # Esvaziar a base tem de ser um ato explícito, não efeito colateral de um parse vazio.
-            print(f"! {nome}: nenhum trecho aproveitável — mantido o que já estava indexado",
+            print(f"⚠️  {nome}: nenhum trecho aproveitável — mantido o que já estava indexado",
                   file=sys.stderr)
             continue
         try:
@@ -80,7 +80,7 @@ def indexar_local(arquivos: list[Path], raiz: Path) -> int:
         for tr, vetor in zip(trechos, vetores, strict=True):
             repo.upsert(tr, vetor)
         total += len(trechos)
-        print(f"  ✓ {nome}: {len(trechos)} trecho(s)"
+        print(f"  📄 {nome}: {len(trechos)} trecho(s)"
               + (f" (substituindo {removidos})" if removidos else ""))
     return total
 
@@ -89,17 +89,17 @@ def main(pasta: str = "data/documentos", seco: bool = False) -> int:
     raiz = Path(pasta)
     arquivos = coletar(pasta)
     if not arquivos:
-        print(f"nenhum documento em {raiz} (extensões aceitas: {', '.join(sorted(EXTENSOES))})")
+        print(f"⚠️  nenhum documento em {raiz} (extensões aceitas: {', '.join(sorted(EXTENSOES))})")
         return 0
 
     if seco:
-        print(f"(seco) {len(arquivos)} documento(s) seriam processados:")
+        print(f"🔍 (seco) {len(arquivos)} documento(s) seriam processados:")
         for a in arquivos:
             print(f"  {a.relative_to(raiz).as_posix()}  assunto={metadata(a, raiz)['assunto']}")
         return 0
 
     total = indexar_local(arquivos, raiz)
-    print(f"✓ {total} trecho(s) indexados em `documentos` — a Mora já consulta daqui.")
+    print(f"✅ {total} trecho(s) indexados em `documentos` — a Mora já consulta daqui.")
     return 0
 
 

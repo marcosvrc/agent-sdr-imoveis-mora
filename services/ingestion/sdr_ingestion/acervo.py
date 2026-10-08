@@ -124,9 +124,9 @@ def carregar(caminho: str) -> tuple[list[Imovel], bool]:
             orfaos += 1
         imoveis.append(im)
 
-    print(f"  acervo do CRM: {len(imoveis)} disponíveis"
+    print(f"  🔗 acervo do CRM: {len(imoveis)} disponíveis"
           + (f", {orfaos} sem dados de vitrine" if orfaos else ""))
     if orfaos:
-        print(f"! {orfaos} imóvel(is) do CRM não têm foto nem região no arquivo do acervo; "
+        print(f"⚠️  {orfaos} imóvel(is) do CRM não têm foto nem região no arquivo do acervo; "
               f"região deduzida do bairro", file=sys.stderr)
     return imoveis, True
