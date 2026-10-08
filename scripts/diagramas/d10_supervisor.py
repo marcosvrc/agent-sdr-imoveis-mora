@@ -15,10 +15,11 @@ REGRAS = [
     ("Horário segurado e chegou contato, slot: ou até 4 palavras não institucionais?", "agendador", "azul"),
     ("Pergunta institucional ou consultiva, sem slot: e sem escolher horário da grade?", "informacoes", "azul"),
     ("Intenção já é compra ou aluguel e o cliente pediu a outra?", "qualificador", "azul"),
+    ("Pede detalhes de um imóvel já mostrado (PEDE_DETALHES)?", "consultor", "azul"),
     ("Prefixo slot:, ou horários oferecidos + ESCOLHE_HORARIO?", "agendador", "azul"),
-    ('"Agendar visita" ou PEDE_VISITA?', "agendador", "azul"),
+    ('"Agendar visita", ou PEDE_VISITA sem adiar a visita?', "agendador", "azul"),
     ('"Ver outros" ou PEDE_OPCOES?', "consultor", "azul"),
-    ("pediu_visita ligado e estágio ≠ AGENDADO?", "agendador", "azul"),
+    ("pediu_visita ligado, estágio ≠ AGENDADO e sem adiar a visita?", "agendador", "azul"),
     ("Cartão completo e a mensagem é só um contato?", "qualificador", "azul"),
     ("A Mora perguntou como ampliar e o cartão está completo?", "consultor", "azul"),
     ("Cartão completo e ainda sem imóveis sugeridos?", "consultor", "azul"),
@@ -30,7 +31,7 @@ REGRAS = [
 def montar() -> Diagrama:
     d = Diagrama(
         nome="supervisor", titulo="Ordem de decisão do supervisor",
-        subtitulo="Vinte e uma regras determinísticas antes de gastar um token",
+        subtitulo="Vinte e duas regras determinísticas antes de gastar um token",
         largura=1700, altura=2650,
         alt=("Escada de decisão do supervisor: cada regra é avaliada na ordem; a primeira que "
              "casa define o especialista, e só o que sobra vai ao modelo de roteamento."))

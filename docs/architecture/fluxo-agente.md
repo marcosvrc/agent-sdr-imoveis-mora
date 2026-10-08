@@ -192,12 +192,17 @@ e o único nó com arestas condicionais.
    acabara de pedir aluguel. "comprar para alugar" cita as duas e não decide; negação ("não quero
    comprar agora") e pergunta sobre o outro uso sem verbo de desejo ("quanto rende o aluguel
    desse?", "dá pra alugar depois?") também não.
+11a. Há `imoveis_sugeridos`, a mensagem não é `slot:` nem "Agendar visita" e casa `PEDE_DETALHES`
+   ("mais detalhes da segunda opção", "tem mais fotos dele?") → `consultor`, que responde sobre o
+   imóvel citado **sem buscar de novo e sem grade de horários** (`consultor._detalhar`, prompt
+   `consultor_detalhes`) e o guarda em `imovel_escolhido`: "Agendar visita" em seguida já mostra a
+   grade dele. Antes da regra 12 porque "segunda opção" casa `ESCOLHE_HORARIO` (segunda-feira).
 12. `txt.startswith("slot:")` ou (`horarios_oferecidos` e `ESCOLHE_HORARIO`) → `agendador`.
-13. `txt == "Agendar visita"` ou `PEDE_VISITA` → `agendador` ("horário" sozinho não casa; remarcar,
+13. `txt == "Agendar visita"` ou (`PEDE_VISITA` e não `ADIA_VISITA`) → `agendador` ("horário" sozinho não casa; remarcar,
    desmarcar e reagendar sim).
 13a. `txt == "Ver outros"` ou `PEDE_OPCOES` → `consultor` — antes da rota grudada, senão "Ver outros"
    depois de pedir visita mostrava a grade.
-13b. `cartao.pediu_visita` e `estagio != AGENDADO` → `agendador`. A exceção `!= AGENDADO` desgruda a
+13b. `cartao.pediu_visita`, `estagio != AGENDADO` e não `ADIA_VISITA` → `agendador`. A exceção `!= AGENDADO` desgruda a
    rota depois da reserva (`test_telefone_depois_da_reserva_nao_volta_para_o_agendador`).
 14. `cartao.completo()` e `so_contato(txt)` → `qualificador`, que grava o contato e agradece — antes o
    número caía no modelo de rota, ia ao consultor e o cliente recebia mais imóveis
@@ -224,6 +229,14 @@ PEDE_VISITA = re.compile(r"\b(visitar|visita|(re)?agendar|(re|des)?marcar|conhec
                          r"outro hor[aá]rio|hor[aá]rios|tem hor[aá]rio)\b", re.I)
 ESCOLHE_HORARIO = re.compile(r"(\b\d{1,2}\s*(h|hs|hrs|horas|:\d{2})\b|\b(seg|ter|qua|qui|sex|segunda|ter[çc]a|quarta|quinta|sexta|amanh[ãa]|primeir[oa]|segund[oa]|terceir[oa]|[úu]ltim[oa])\b|\b\d{1,2}/\d{1,2}\b)", re.I)
 PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s? )?tem|outros? im[oó]ve(l|is)|ver outros)\b", re.I)
+PEDE_DETALHES = re.compile(
+    r"\b(mais\s+)?detalhes?\b|\bmais\s+(fotos?|informa[çc][õo]es|infos?)\b"
+    r"|\b(me\s+)?(fala|conta|diz|explica)\s+mais\b|\bfotos?\s+d[oaei]s?\b"
+    r"|\b(como|qual)\s+[ée]\s+(o|a)\s+(primeir|segund|terceir|[úu]ltim)[oa]\b", re.I)
+ADIA_VISITA = re.compile(
+    r"\bantes\s+de\s+(agendar|marcar|visitar)\b"
+    r"|\b(ainda\s+)?n[ãa]o\s+(quero|vou|preciso|pretendo)\s+(agendar|marcar|visitar)\b"
+    r"|\bdepois\s+(eu\s+)?(agendo|marco)\b|\bsem\s+(agendar|marcar)\b", re.I)
 
 INSTITUCIONAL_FORTE = re.compile(
     r"\b(fiador|avalista|cau[çc][ãa]o|seguro.fian[çc]a|vistoria|iptu|itbi|escritura|financiamento|"

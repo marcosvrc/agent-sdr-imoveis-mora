@@ -4,13 +4,13 @@ import re
 
 from langchain_core.messages import AIMessage
 
-from sdr_shared.db import InteresseRepository
+from sdr_shared.db import ImovelRepository, InteresseRepository
 from sdr_shared.messaging import RespostaAgente
 from sdr_shared.models import Estagio
 from ..llm import llm_conversa
 from ..prompts import carregar
 from ..state import AgentState
-from ..tools.buscar_imoveis import buscar_com_contexto
+from ..tools.buscar_imoveis import buscar_com_contexto, ficha
 from ..guardrails.saida import sanear
 
 log = logging.getLogger("agent.consultor")
@@ -158,9 +158,44 @@ def _absorver_mudanca(lead, mensagem: str) -> None:
         log.warning("não consegui atualizar o cartão do lead %s; sigo com o anterior", lead.id, exc_info=True)
 
 
+OPCOES_DEPOIS_DOS_CARDS = ["Agendar visita", "Ver outros", "Falar com corretor"]
+
+
+def _detalhar(state: AgentState, lead, mensagem: str) -> dict:
+    """Responde sobre um imóvel que já está na tela, sem buscar de novo e sem grade de horários.
+
+    O imóvel citado ("a segunda opção", "o studio") vira o `imovel_escolhido`: se o cliente
+    clicar em "Agendar visita" em seguida, a grade já é a dele, sem perguntar qual de novo.
+    """
+    from .agendador import _candidatos, _escolher_pelo_texto
+    candidatos = _candidatos(state, lead)
+    alvo = _escolher_pelo_texto(mensagem, candidatos)
+    if alvo is None and len(candidatos) == 1:
+        alvo = candidatos[0].id
+    alvos = [c for c in candidatos if c.id == alvo] or candidatos
+    repo = ImovelRepository()
+    linhas = []
+    for c in alvos:
+        i = repo.get(c.id)
+        partes = [f"- {c.titulo} — R$ {c.preco:,.0f}"]
+        if i:
+            partes.append(ficha(i))
+            if i.descricao:
+                partes.append(f"anúncio: {i.descricao}")
+        linhas.append(" — ".join(partes))
+    msg = llm_conversa().invoke([carregar("consultor_detalhes", nome=lead.nome or "cliente",
+                                          imoveis="\n".join(linhas)), *state["messages"]])
+    return {"lead": lead, "messages": [msg], "imovel_escolhido": alvo,
+            "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id),
+                                       opcoes=OPCOES_DEPOIS_DOS_CARDS)}
+
+
 def run(state: AgentState) -> dict:
     lead = state["lead"]
     mensagem = state["entrada"].conteudo or ""
+    from .supervisor import PEDE_DETALHES
+    if state.get("imoveis_sugeridos") and PEDE_DETALHES.search(mensagem) and not mensagem.startswith(AJUSTE):
+        return _detalhar(state, lead, mensagem)
     # Quando o qualificador acabou de extrair esta mesma frase e passou o turno para cá, o cartão
     # já está atualizado: extrair de novo era uma chamada de modelo repetida em todo turno que
     # completava o cartão (introduzida junto com `_absorver_mudanca`, sem ninguém medir).
@@ -224,4 +259,4 @@ def run(state: AgentState) -> dict:
             "ajuste": ajuste, "ajuste_pendente": None,
             "imovel_escolhido": None,                  # lote novo na tela: a escolha anterior não vale mais
             "resposta": RespostaAgente(lead_id=lead.id, texto=sanear(msg.content, lead.id), imoveis=cards,
-                                       opcoes=["Agendar visita", "Ver outros", "Falar com corretor"] if cards else [])}
+                                       opcoes=OPCOES_DEPOIS_DOS_CARDS if cards else [])}

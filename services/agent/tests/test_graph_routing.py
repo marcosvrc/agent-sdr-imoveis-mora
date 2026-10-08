@@ -743,3 +743,72 @@ def test_recusa_depois_da_insistencia_vai_ao_agendador_que_solta_e_diz(texto):
                                  contato_insistido=True, horarios_oferecidos=[_PENDENTE]))
     assert out["proximo"] == "agendador"
 
+
+
+def _lead_com_opcoes_na_tela():
+    from sdr_shared.models import Estagio, ImovelCard, Lead
+    lead = Lead(id="lead-detalhe", nome="Ramos", estagio=Estagio.QUALIFICADO)
+    c = lead.cartao
+    c.intencao, c.bairros, c.regiao, c.preco_max, c.quartos, c.urgencia = \
+        Intencao.ALUGUEL, ["Pinheiros"], "zona_oeste", 4000, 1, "30 dias"
+    cards = [ImovelCard(id="SP-1", titulo="Studio · Pinheiros", preco=3200.0, foto=None, motivo="x"),
+             ImovelCard(id="SP-2", titulo="Apartamento 1q · Pinheiros", preco=3800.0, foto=None, motivo="y")]
+    return lead, {"imoveis_sugeridos": cards, "ultimos_sugeridos": ["SP-1", "SP-2"]}
+
+
+@pytest.mark.parametrize("grade", [False, True])
+def test_pedir_detalhes_antes_de_agendar_nao_traz_a_grade(grade):
+    """Relato do cliente: "Antes de agendar pode mandar mais detalhes da segunda opção?" casava
+    PEDE_VISITA ("agendar"), ia ao agendador, e a resposta falava dos detalhes com a grade de
+    horários embaixo. Com a grade já na tela, "segunda" ainda casava ESCOLHE_HORARIO (segunda-feira)."""
+    from agent.nodes import supervisor
+    lead, extra = _lead_com_opcoes_na_tela()
+    if grade:
+        extra["horarios_oferecidos"] = ["2026-10-12T13:00:00+00:00"]
+        lead.cartao.pediu_visita = True
+    txt = "Antes de agendar pode mandar mais detalhes da segunda opção?"
+    assert supervisor.run(_estado(txt, lead, **extra))["proximo"] == "consultor"
+
+
+def test_adiar_a_visita_nao_e_pedir_visita():
+    from agent.nodes import supervisor
+    lead, _ = _lead_com_opcoes_na_tela()
+    lead.cartao.pediu_visita = True              # a rota grudada também não vale para quem adia
+    assert supervisor.run(_estado("ainda não quero agendar, to pensando", lead))["proximo"] != "agendador"
+
+
+def test_pedido_de_visita_continua_chegando_ao_agendador():
+    from agent.nodes import supervisor
+    lead, extra = _lead_com_opcoes_na_tela()
+    assert supervisor.run(_estado("quero agendar uma visita", lead, **extra))["proximo"] == "agendador"
+    assert supervisor.run(_estado("Agendar visita", lead, **extra))["proximo"] == "agendador"
+
+
+def test_consultor_detalha_o_imovel_citado_sem_buscar_nem_mostrar_horarios(monkeypatch):
+    from langchain_core.messages import AIMessage
+    from sdr_shared.models import Imovel
+    from agent.nodes import consultor
+    lead, extra = _lead_com_opcoes_na_tela()
+    monkeypatch.setattr(consultor, "buscar_com_contexto", lambda *a, **k: pytest.fail("não busca de novo"))
+    vistos = []
+
+    class Repo:
+        def get(self, imovel_id):
+            vistos.append(imovel_id)
+            return Imovel(id=imovel_id, tipo="apartamento", operacao="aluguel", cidade="São Paulo",
+                          regiao="zona_oeste", bairro="Pinheiros", quartos=1, area_m2=42, preco=3800.0,
+                          condominio=650, descricao="Mobiliado, varanda.")
+    monkeypatch.setattr(consultor, "ImovelRepository", Repo)
+    prompts = []
+
+    class Modelo:
+        def invoke(self, msgs):
+            prompts.append(msgs[0].content)
+            return AIMessage(content="O de 42 m² é mobiliado e tem varanda. Quer agendar uma visita?")
+    monkeypatch.setattr(consultor, "llm_conversa", lambda: Modelo())
+    out = consultor.run(_estado_consultor(lead, "mais detalhes da segunda opção?", **extra))
+    r = out["resposta"]
+    assert vistos == ["SP-2"] and "Mobiliado, varanda." in prompts[0]
+    assert not r.imoveis and not any(o.startswith("slot:") for o in r.opcoes)
+    assert r.opcoes == ["Agendar visita", "Ver outros", "Falar com corretor"]
+    assert out["imovel_escolhido"] == "SP-2"     # "Agendar visita" em seguida já vai para a grade dele

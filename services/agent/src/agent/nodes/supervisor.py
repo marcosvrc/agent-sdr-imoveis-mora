@@ -98,6 +98,18 @@ PEDE_VISITA = re.compile(r"\b(visitar|visita|(re)?agendar|(re|des)?marcar|conhec
                          r"outro hor[aá]rio|hor[aá]rios|tem hor[aá]rio)\b", re.I)
 ESCOLHE_HORARIO = re.compile(r"(\b\d{1,2}\s*(h|hs|hrs|horas|:\d{2})\b|\b(seg|ter|qua|qui|sex|segunda|ter[çc]a|quarta|quinta|sexta|amanh[ãa]|primeir[oa]|segund[oa]|terceir[oa]|[úu]ltim[oa])\b|\b\d{1,2}/\d{1,2}\b)", re.I)
 PEDE_OPCOES = re.compile(r"\b(op[çc][õo]es|me mostra|mostrar|o que (voc[eê]s? )?tem|outros? im[oó]ve(l|is)|ver outros)\b", re.I)
+# Pergunta sobre um imóvel que já está na tela ("mais detalhes da segunda opção", "tem mais
+# fotos dele?"). Não é pedido de visita, mesmo quando cita a visita ("antes de agendar…"): ia para o
+# agendador, que respondia a pergunta no texto e ainda assim mandava a grade de horários embaixo.
+PEDE_DETALHES = re.compile(
+    r"\b(mais\s+)?detalhes?\b|\bmais\s+(fotos?|informa[çc][õo]es|infos?)\b"
+    r"|\b(me\s+)?(fala|conta|diz|explica)\s+mais\b|\bfotos?\s+d[oaei]s?\b"
+    r"|\b(como|qual)\s+[ée]\s+(o|a)\s+(primeir|segund|terceir|[úu]ltim)[oa]\b", re.I)
+# Quem adia a visita não está pedindo visita: "antes de agendar", "ainda não quero marcar".
+ADIA_VISITA = re.compile(
+    r"\bantes\s+de\s+(agendar|marcar|visitar)\b"
+    r"|\b(ainda\s+)?n[ãa]o\s+(quero|vou|preciso|pretendo)\s+(agendar|marcar|visitar)\b"
+    r"|\bdepois\s+(eu\s+)?(agendo|marco)\b|\bsem\s+(agendar|marcar)\b", re.I)
 
 # Pergunta sobre COMO A IMOBILIÁRIA TRABALHA — vai para o RAG institucional.
 #
@@ -247,6 +259,12 @@ def _decidir(state: AgentState, lead, txt: str, saltos: int) -> dict:
     if (lead.cartao.intencao not in (Intencao.INDEFINIDA, Intencao.INVESTIMENTO)
             and (citada := intencao_citada(txt)) and citada != lead.cartao.intencao):
         return {"proximo": "qualificador", "saltos": saltos}
+    # Detalhe de um imóvel já mostrado vai ao consultor, que responde sobre ele sem buscar de novo
+    # e sem grade. Antes da escolha de horário porque "segunda opção" casa ESCOLHE_HORARIO
+    # ("segunda" = dia da semana) quando a grade está na tela.
+    if (state.get("imoveis_sugeridos") and not txt.startswith("slot:") and txt != "Agendar visita"
+            and PEDE_DETALHES.search(txt)):
+        return {"proximo": "consultor", "saltos": saltos}
     if txt.startswith("slot:") or (state.get("horarios_oferecidos") and ESCOLHE_HORARIO.search(txt)):
         return {"proximo": "agendador", "saltos": saltos}       # escolha de horário (botão ou texto)
     # `pediu_visita` fica ligado para sempre depois do primeiro pedido — é assim que o agendador
@@ -254,13 +272,14 @@ def _decidir(state: AgentState, lead, txt: str, saltos: int) -> dict:
     # intenção e vira uma rota grudada: o cliente manda o telefone que a Mora acabou de pedir, cai
     # no agendador de novo, e recebe a grade de horários outra vez — sobre uma visita que já está
     # reservada. Quem quiser remarcar diz isso, e aí cai nas duas condições explícitas acima.
-    if txt == "Agendar visita" or PEDE_VISITA.search(txt):
+    adia = bool(ADIA_VISITA.search(txt))
+    if txt == "Agendar visita" or (PEDE_VISITA.search(txt) and not adia):
         return {"proximo": "agendador", "saltos": saltos}
     # Pedir outros imóveis vem ANTES da rota grudada: com `pediu_visita` ligado, o botão "Ver
     # outros" ia para o agendador e o cliente recebia a grade de horários no lugar dos imóveis.
     if txt == "Ver outros" or PEDE_OPCOES.search(txt):
         return {"proximo": "consultor", "saltos": saltos}
-    if lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO:
+    if lead.cartao.pediu_visita and lead.estagio != Estagio.AGENDADO and not adia:
         return {"proximo": "agendador", "saltos": saltos}
     # Resposta ao pedido de contato. A Mora pede o telefone ao reservar a visita (ou ao mostrar as
     # opções); o número chegava ao modelo de rota, que via cartão completo e mandava para o
