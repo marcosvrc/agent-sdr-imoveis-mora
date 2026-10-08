@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1760 960" width="1760" height="960" role="img" aria-label="Matriz das transições de estágio do lead, com o nó do grafo responsável por cada mudança.">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1760 990" width="1760" height="990" role="img" aria-label="Matriz das transições de estágio do lead, com o nó do grafo responsável por cada mudança." xmlns:c2pa="http://c2pa.org/manifest"><metadata><c2pa:manifest>AAAWgmp1bWIAAAAeanVtZGMycGEAEQAQgAAAqgA4m3EDYzJwYQAAABZcanVtYgAAAEdqdW1kYzJtYQARABCAAACqADibcQN1cm46YzJwYTo1NWUxMzg0Ny1iY2QxLTRmZDMtYjMzOC1kNjNhNTE1NzliNjgAAAADl2p1bWIAAAApanVtZGMyYXMAEQAQgAAAqgA4m3EDYzJwYS5hc3NlcnRpb25zAAAAALxqdW1iAAAARGp1bWRjYm9yABEAEIAAAKoAOJtxE2MycGEuaW5ncmVkaWVudC52MwAAAAAYYzJzaHbwr9+yQlW4hYbnKSgoHWQAAABwY2JvcqNpZGM6Zm9ybWF0bWltYWdlL3N2Zyt4bWxqaW5zdGFuY2VJRHgseG1wOmlpZDpjYmYwNDQ3YS03NzczLTQ3MTItOTA2OC00MGMyNTExZWUwNzFscmVsYXRpb25zaGlwaHBhcmVudE9mAAAB4mp1bWIAAABBanVtZGNib3IAEQAQgAAAqgA4m3ETYzJwYS5hY3Rpb25zLnYyAAAAABhjMnNoRk/LzRDxvOzYuP+pUSE6rAAAAZljYm9yomdhY3Rpb25zgqJmYWN0aW9ua2MycGEub3BlbmVkanBhcmFtZXRlcnOha2luZ3JlZGllbnRzgaJjdXJseC1zZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmluZ3JlZGllbnQudjNkaGFzaFgglA03nJ66VhB2bzrInV/4lMco9i5iRZkTcMKiDVTIUpikZmFjdGlvbngdY29tLmFudGhyb3BpYy5jbGF1ZGUucHJvdmlkZWRqcGFyYW1ldGVyc6F4H2NvbS5hbnRocm9waWMub3JpZ2luLWNvbmZpZGVuY2VndW5rbm93bmtkZXNjcmlwdGlvbnhmQ2xhdWRlIHByb3ZpZGVkIHRoaXMgZmlsZSBhdCB0aGUgcmVxdWVzdCBvZiBhIHVzZXIgYW5kIG1heSBoYXZlIGNyZWF0ZWQgb3IgbW9kaWZpZWQgdGhlIGZpbGUgY29udGVudHMubXNvZnR3YXJlQWdlbnShZG5hbWVmQ2xhdWRlcmFsbEFjdGlvbnNJbmNsdWRlZPUAAADIanVtYgAAAEBqdW1kY2JvcgARABCAAACqADibcRNjMnBhLmhhc2guZGF0YQAAAAAYYzJzaBCuIXbtpdmo1Z4AhV4zFNIAAACAY2JvcqVjYWxnZnNoYTI1NmNwYWRMAAAAAAAAAAAAAAAAZGhhc2hYILXO767s06V2Dfo7+ZDToWEim2BCgPafHv/CL65GarjCZG5hbWVuanVtYmYgbWFuaWZlc3RqZXhjbHVzaW9uc4GiZXN0YXJ0GQEQZmxlbmd0aBkeBAAAAj5qdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACD2Nib3KlY2FsZ2ZzaGEyNTZpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjU1ZTEzODQ3LWJjZDEtNGZkMy1iMzM4LWQ2M2E1MTU3OWI2OC9jMnBhLnNpZ25hdHVyZWppbnN0YW5jZUlEeCx4bXA6aWlkOmNhM2VjYjNiLTU3MTQtNDM0YS05Mjg4LTA5ZTNmMjVhNmQzMHJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4LXNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaW5ncmVkaWVudC52M2RoYXNoWCCUDTecnrpWEHZvOsidX/iUxyj2LmJFmRNwwqINVMhSmKJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggA9QIYCXis2GwSaYEt8z8Khw20CZMQRYZXge9XoWoIseiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggzJN/UAK4XvtsV0ZnZy3hKuAT6BILE3svWTXJaEzP9ox0Y2xhaW1fZ2VuZXJhdG9yX2luZm+jZG5hbWVvQW50aHJvcGljIEZpbGVzZ3ZlcnNpb25lMS4wLjBrc3BlY1ZlcnNpb25lMi40LjAAABA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAABAIY2JvctKEWQISogEmGCFZAgowggIGMIIBjaADAgECAhRA5aAK7sI50L64g/oGQgU9Z1UTADAKBggqhkjOPQQDAzBJMRcwFQYDVQQKEw5BbnRocm9waWMsIFBCQzEuMCwGA1UEAxMlQW50aHJvcGljIENvbnRlbnQgQ3JlZGVudGlhbHMgUm9vdCBDQTAeFw0yNjA4MDcxODQzNTZaFw0yODA4MDYxOTQzNTZaMEQxFzAVBgNVBAoTDkFudGhyb3BpYywgUEJDMSkwJwYDVQQDEyBBbnRocm9waWMgQ2xhdWRlIENvbnRlbnQgU2lnbmluZzBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABJh6CmvLUBgFFNU0vUKlOVtE6djd17L5SuwX0LemFisBM3dkd/3cyjxFA3Qo5S46fX0/ihY0VZ7mfb9KF703t5OjWDBWMA4GA1UdDwEB/wQEAwIHgDAVBgNVHSUEDjAMBgorBgEEAYPoXgIBMAwGA1UdEwEB/wQCMAAwHwYDVR0jBBgwFoAUzlHiBIFOZFsj+OPEz5o+nMHXXMIwCgYIKoZIzj0EAwMDZwAwZAIwMXMdFJ4BetLLVY7ORuE9noqbbAZOZn/aArXyTwFAZfKrPzxF2vPoJNf1+UCdg1XGAjBwX1zd9WGqYkqmL5SFqw1QySjr1zJfpJM9+1rdDwSPLMOPOjKuiXjoU/pUUeG9RwmhY3BhZFkNngAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPZYQGBF2oJuxVUeSb+QZYh6Rfz2NX7q4jjKI7OFlnt5B0+G6gWxYCfjUa2uDMkt0mkR3KfDz7AsqyXv2ryIoK2tJL8=</c2pa:manifest></metadata>
 <style>
   text{font-family:Inter,'Segoe UI',system-ui,-apple-system,'Helvetica Neue',Arial,sans-serif;dominant-baseline:middle}
   .t-tit{font-size:17px;font-weight:600;fill:#12293C}
@@ -27,7 +27,7 @@
   .aresta{fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 </style>
 <defs><marker id="p-azul" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-azul"/></marker><marker id="p-verde" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-verde"/></marker><marker id="p-roxo" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-roxo"/></marker><marker id="p-cinza" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-cinza"/></marker><marker id="p-ambar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-ambar"/></marker><marker id="p-vermelho" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-vermelho"/></marker><marker id="p-tinta2" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0.5 1.2 9 5 0.5 8.8 2.6 5z" class="f-tinta2"/></marker></defs>
-<rect width="1760" height="960" fill="#F4F7FA"/>
+<rect width="1760" height="990" fill="#F4F7FA"/>
 <rect width="1760" height="92" fill="#0E2433"/>
 <rect x="40" y="26" width="5" height="40" rx="2.5" fill="#3FC7B4"/>
 <text x="60" y="35.0" class="t-cab">Transições de Estagio, uma a uma</text>
@@ -55,7 +55,8 @@
 <text x="582.0" y="253.0" class="t-mini x-azul" text-anchor="middle" style="font-weight:600">qualificador</text>
 <rect x="686" y="224" width="184" height="58" rx="8" fill="#E4EFF9"/>
 <text x="778.0" y="253.0" class="t-mini x-azul" text-anchor="middle" style="font-weight:600">consultor</text>
-<circle cx="974.0" cy="253.0" r="2" fill="#DCE4EC"/>
+<rect x="882" y="224" width="184" height="58" rx="8" fill="#E4EFF9"/>
+<text x="974.0" y="253.0" class="t-mini x-azul" text-anchor="middle" style="font-weight:600">agendador</text>
 <rect x="1078" y="224" width="184" height="58" rx="8" fill="#FBF1DF"/>
 <text x="1170.0" y="253.0" class="t-mini x-ambar" text-anchor="middle" style="font-weight:600">followup</text>
 <circle cx="1366.0" cy="253.0" r="2" fill="#DCE4EC"/>
@@ -102,14 +103,14 @@
 <circle cx="1170.0" cy="487.0" r="2" fill="#DCE4EC"/>
 <circle cx="1366.0" cy="487.0" r="2" fill="#DCE4EC"/>
 <rect x="1470" y="458" width="184" height="58" rx="8" fill="#DDF0EC"/>
-<text x="1562.0" y="480.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">handoff</text>
-<text x="1562.0" y="494.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">(pedido do cliente)</text>
+<text x="1562.0" y="473.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">handoff</text>
+<text x="1562.0" y="487.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">fallback</text>
+<text x="1562.0" y="501.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">orçamento</text>
 <rect x="56" y="530" width="224" height="70" rx="8" fill="#E9F1F8"/>
 <text x="74" y="565.0" class="t-sub" style="font-weight:700;font-size:12.5px">INATIVO</text>
 <circle cx="386.0" cy="565.0" r="2" fill="#DCE4EC"/>
-<rect x="490" y="536" width="184" height="58" rx="8" fill="none" stroke="#B04437" stroke-width="1.1" stroke-dasharray="5 4"/>
-<text x="582.0" y="557.0" class="t-mini x-vermelho" text-anchor="middle" style="font-weight:700">não existe</text>
-<text x="582.0" y="573.0" class="t-mini" text-anchor="middle">o retorno é turno novo</text>
+<rect x="490" y="536" width="184" height="58" rx="8" fill="#E8EDF2"/>
+<text x="582.0" y="565.0" class="t-mini x-cinza" text-anchor="middle" style="font-weight:600">nova oportunidade</text>
 <circle cx="778.0" cy="565.0" r="2" fill="#DCE4EC"/>
 <rect x="882" y="536" width="184" height="58" rx="8" fill="#E4EFF9"/>
 <text x="974.0" y="565.0" class="t-mini x-azul" text-anchor="middle" style="font-weight:600">agendador</text>
@@ -120,39 +121,51 @@
 <text x="1366.0" y="558.0" class="t-mini x-ambar" text-anchor="middle" style="font-weight:600">followup</text>
 <text x="1366.0" y="572.0" class="t-mini x-ambar" text-anchor="middle" style="font-weight:600">(esgotou)</text>
 <rect x="1470" y="536" width="184" height="58" rx="8" fill="#DDF0EC"/>
-<text x="1562.0" y="565.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">handoff</text>
+<text x="1562.0" y="551.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">handoff</text>
+<text x="1562.0" y="565.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">fallback</text>
+<text x="1562.0" y="579.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">orçamento</text>
 <rect x="56" y="608" width="224" height="70" rx="8" fill="#E9F1F8"/>
 <text x="74" y="643.0" class="t-sub" style="font-weight:700;font-size:12.5px">FRIO</text>
 <circle cx="386.0" cy="643.0" r="2" fill="#DCE4EC"/>
 <rect x="490" y="614" width="184" height="58" rx="8" fill="#E8EDF2"/>
 <text x="582.0" y="643.0" class="t-mini x-cinza" text-anchor="middle" style="font-weight:600">nova oportunidade</text>
 <circle cx="778.0" cy="643.0" r="2" fill="#DCE4EC"/>
-<circle cx="974.0" cy="643.0" r="2" fill="#DCE4EC"/>
+<rect x="882" y="614" width="184" height="58" rx="8" fill="#E4EFF9"/>
+<text x="974.0" y="643.0" class="t-mini x-azul" text-anchor="middle" style="font-weight:600">agendador</text>
 <circle cx="1170.0" cy="643.0" r="2" fill="#DCE4EC"/>
 <circle cx="1366.0" cy="643.0" r="2" fill="#DCE4EC"/>
-<circle cx="1562.0" cy="643.0" r="2" fill="#DCE4EC"/>
+<rect x="1470" y="614" width="184" height="58" rx="8" fill="#DDF0EC"/>
+<text x="1562.0" y="629.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">handoff</text>
+<text x="1562.0" y="643.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">fallback</text>
+<text x="1562.0" y="657.0" class="t-mini x-verde" text-anchor="middle" style="font-weight:600">orçamento</text>
 <rect x="56" y="686" width="224" height="70" rx="8" fill="#E9F1F8"/>
 <text x="74" y="721.0" class="t-sub" style="font-weight:700;font-size:12.5px">HANDOFF</text>
 <circle cx="386.0" cy="721.0" r="2" fill="#DCE4EC"/>
-<rect x="490" y="692" width="184" height="58" rx="8" fill="#E8EDF2"/>
-<text x="582.0" y="721.0" class="t-mini x-cinza" text-anchor="middle" style="font-weight:600">nova oportunidade</text>
-<circle cx="778.0" cy="721.0" r="2" fill="#DCE4EC"/>
+<rect x="490" y="692" width="184" height="58" rx="8" fill="#EDE6F9"/>
+<text x="582.0" y="714.0" class="t-mini x-roxo" text-anchor="middle" style="font-weight:600">devolução</text>
+<text x="582.0" y="728.0" class="t-mini x-roxo" text-anchor="middle" style="font-weight:600">ou nova oportunidade</text>
+<rect x="686" y="692" width="184" height="58" rx="8" fill="#EDE6F9"/>
+<text x="778.0" y="721.0" class="t-mini x-roxo" text-anchor="middle" style="font-weight:600">devolução</text>
 <circle cx="974.0" cy="721.0" r="2" fill="#DCE4EC"/>
 <circle cx="1170.0" cy="721.0" r="2" fill="#DCE4EC"/>
 <circle cx="1366.0" cy="721.0" r="2" fill="#DCE4EC"/>
 <circle cx="1562.0" cy="721.0" r="2" fill="#DCE4EC"/>
-<rect x="50.0" y="790" width="1660" height="62" rx="7" class="cartao"/>
-<text x="880" y="805" class="t-sub-s" text-anchor="middle">HANDOFF sai do fluxo automatizado: o agente silencia, registra a mensagem e notifica o corretor — a linha HANDOFF só tem saída por nova oportunidade.</text>
-<text x="880" y="821" class="t-sub-s" text-anchor="middle">“Nova oportunidade” não é uma volta: nova_oportunidade_se_mudou_intencao cria um lead sucessor em QUALIFICANDO e encerra o anterior; vale nos</text>
-<text x="880" y="837" class="t-sub-s" text-anchor="middle">estágios AGENDADO, HANDOFF, INATIVO e FRIO. O resumidor não muda estágio nenhum, e nenhum nó volta de INATIVO ou FRIO para QUALIFICANDO sozinho.</text>
-<line x1="40" y1="884" x2="1720" y2="884" class="linha"/>
-<path d="M42.0 910h34" class="aresta s-azul" marker-end="url(#p-azul)"/>
-<text x="88.0" y="910" class="t-leg">Avanço do atendimento</text>
-<path d="M452.0 910h34" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
-<text x="498.0" y="910" class="t-leg">Silêncio do cliente</text>
-<path d="M862.0 910h34" class="aresta s-verde" marker-end="url(#p-verde)"/>
-<text x="908.0" y="910" class="t-leg">Passagem ao humano</text>
-<path d="M1272.0 910h34" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
-<text x="1318.0" y="910" class="t-leg">Lead sucessor</text>
-<text x="40" y="940" class="t-rod">TRANSIÇÕES DE ESTÁGIO</text>
+<rect x="50.0" y="790" width="1660" height="94" rx="7" class="cartao"/>
+<text x="880" y="805" class="t-sub-s" text-anchor="middle">HANDOFF sai do fluxo automatizado: o agente silencia, registra a mensagem e notifica o corretor. Volta por devolução — o cliente pede a Mora de volta</text>
+<text x="880" y="821" class="t-sub-s" text-anchor="middle">(handler._devolver_a_mora) ou o corretor usa POST /handoff/{id}/devolver — para QUALIFICADO com o cartão completo, ou QUALIFICANDO sem ele.</text>
+<text x="880" y="837" class="t-sub-s" text-anchor="middle">“Nova oportunidade” não é uma volta: nova_oportunidade_se_mudou_intencao cria um lead sucessor em QUALIFICANDO e encerra o anterior; vale nos estágios</text>
+<text x="880" y="853" class="t-sub-s" text-anchor="middle">AGENDADO, HANDOFF, INATIVO e FRIO. O agendador grava AGENDADO venha o lead de onde vier; fallback e orçamento valem em qualquer estágio fora de HANDOFF.</text>
+<text x="880" y="869" class="t-sub-s" text-anchor="middle">O resumidor não muda estágio nenhum, e nenhum nó leva o próprio lead de INATIVO ou FRIO de volta a QUALIFICANDO.</text>
+<line x1="40" y1="914" x2="1720" y2="914" class="linha"/>
+<path d="M42.0 940h34" class="aresta s-azul" marker-end="url(#p-azul)"/>
+<text x="88.0" y="940" class="t-leg">Avanço do atendimento</text>
+<path d="M370.0 940h34" class="aresta s-ambar" marker-end="url(#p-ambar)"/>
+<text x="416.0" y="940" class="t-leg">Silêncio do cliente</text>
+<path d="M698.0 940h34" class="aresta s-verde" marker-end="url(#p-verde)"/>
+<text x="744.0" y="940" class="t-leg">Passagem ao humano</text>
+<path d="M1026.0 940h34" class="aresta s-roxo" marker-end="url(#p-roxo)"/>
+<text x="1072.0" y="940" class="t-leg">Devolução à Mora</text>
+<path d="M1354.0 940h34" class="aresta s-cinza" marker-end="url(#p-cinza)"/>
+<text x="1400.0" y="940" class="t-leg">Lead sucessor</text>
+<text x="40" y="970" class="t-rod">TRANSIÇÕES DE ESTÁGIO</text>
 </svg>

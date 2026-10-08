@@ -196,7 +196,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   depende de conta, cota ou crédito em provedor nenhum.</p>
   <ul class="chips">
     <li><b>1</b> ambiente: docker compose</li>
-    <li><b>14</b> ADRs</li>
+    <li><b>16</b> ADRs</li>
     <li><b>7</b> suítes de teste</li>
     <li><b>3</b> canais de atendimento</li>
     <li><b>0</b> serviços implantados</li>
@@ -217,7 +217,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   <figure class="fig">
     <div class="fig-scroll">
       <svg class="dg" viewBox="0 0 900 370" role="img"
-           aria-label="Diagrama de contexto: cliente e corretor usam a Mora, que consome um modelo de linguagem da Anthropic, da OpenAI ou do Ollama local, a API do Telegram e o Google Agenda.">
+           aria-label="Diagrama de contexto: cliente e corretor usam a Mora, que consome um modelo de linguagem da Anthropic, da OpenAI, do OpenRouter ou do Ollama local, a API do Telegram e o Google Agenda.">
         <defs>
 <marker id="c-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
 <g id="c-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
@@ -245,7 +245,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <circle class="ic-svc" cx="380" cy="238" r="15"/><use href="#c-svc" x="380" y="238"/><text class="tl" x="380" y="269" text-anchor="middle">agente</text>
         <circle class="ic-infra" cx="460" cy="238" r="15"/><use href="#c-mon" x="460" y="238"/><text class="tl" x="460" y="269" text-anchor="middle">painel</text>
 
-        <circle class="ic-ai" cx="760" cy="80" r="22"/><use href="#c-ai" x="760" y="80"/><text class="tl" x="760" y="118" text-anchor="middle">Anthropic · OpenAI · Ollama</text><text class="ts" x="760" y="133" text-anchor="middle">modelo da conversa</text>
+        <circle class="ic-ai" cx="760" cy="80" r="22"/><use href="#c-ai" x="760" y="80"/><text class="tl" x="760" y="118" text-anchor="middle">Anthropic · OpenAI ·</text><text class="tl" x="760" y="133" text-anchor="middle">OpenRouter · Ollama</text><text class="ts" x="760" y="148" text-anchor="middle">um modelo por papel</text>
         <circle class="ic-infra" cx="760" cy="190" r="22"/><use href="#c-msg" x="760" y="190"/><text class="tl" x="760" y="228" text-anchor="middle">Telegram Bot API</text><text class="ts" x="760" y="243" text-anchor="middle">canal de mensagem</text>
         <circle class="ic-infra" cx="760" cy="300" r="22"/><use href="#c-clk" x="760" y="300"/><text class="tl" x="760" y="338" text-anchor="middle">Google Agenda</text><text class="ts" x="760" y="353" text-anchor="middle">opcional por corretor</text>
 
@@ -279,12 +279,13 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   governança de custo, os modelos — <strong>não sabe com que infraestrutura está falando</strong>.
   Ele fala com portas; <code>ports/factory.py</code> resolve cada uma na primeira chamada. Houve aqui
   uma escolha entre dois conjuntos de adaptadores, um local e um hospedado; o hospedado foi removido
-  do projeto, e hoje broker, scheduler e embeddings têm <strong>uma implementação cada</strong>.</p>
+  do projeto, e hoje broker e scheduler têm <strong>uma implementação cada</strong>.</p>
 
   <p>As portas ficam, e não por simetria: são o ponto onde o teste substitui a infraestrutura, são o
   contrato escrito de cada dependência, e são onde uma segunda implementação entraria sem tocar em
-  quem chama. <code>Calendario</code> e <code>CRM</code> continuam com duas de verdade — e escolhem
-  por <em>configuração presente</em>, não por perfil.</p>
+  quem chama. <code>ChatModel</code> e <code>Embedder</code> têm vários provedores, escolhidos por
+  variável de ambiente; <code>Calendario</code> e <code>CRM</code> continuam com duas implementações de
+  verdade — e escolhem por <em>configuração presente</em>, não por perfil.</p>
 
   <ul class="key">
     <li><i class="k-core"></i> núcleo e portas</li>
@@ -294,7 +295,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   <figure class="fig">
     <div class="fig-scroll">
       <svg class="dg" viewBox="0 0 900 470" role="img"
-           aria-label="Diagrama de portas: o núcleo do agente expõe seis portas — broker, scheduler, modelo de chat, embedder, calendário e CRM — e cada uma é resolvida por uma implementação concreta: Redis Streams, scheduler em Postgres, Anthropic ou OpenAI ou Ollama, embeddings bge-m3 no Ollama, Google Agenda ou a agenda do banco, e o CRM por MCP ou o adaptador ausente.">
+           aria-label="Diagrama de portas: o núcleo do agente expõe seis portas — broker, scheduler, modelo de chat, embedder, calendário e CRM — e cada uma é resolvida por uma implementação concreta: Redis Streams, scheduler em Postgres, Anthropic, OpenAI, OpenRouter ou Ollama, embeddings pelo Ollama, pela OpenAI ou pelo OpenRouter, Google Agenda ou a agenda do banco, e o CRM por MCP ou o adaptador ausente.">
         <defs>
           <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -326,9 +327,9 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <rect class="box-local" x="510" y="142" width="330" height="38" rx="3"/>
         <text class="m" x="675" y="166" text-anchor="middle">Postgres + worker do scheduler</text>
         <rect class="box-local" x="510" y="188" width="330" height="38" rx="3"/>
-        <text class="m" x="675" y="212" text-anchor="middle">Anthropic · OpenAI · Ollama</text>
+        <text class="m" x="675" y="212" text-anchor="middle">Anthropic · OpenAI · OpenRouter · Ollama</text>
         <rect class="box-local" x="510" y="234" width="330" height="38" rx="3"/>
-        <text class="m" x="675" y="258" text-anchor="middle">Ollama bge-m3 (1024 dims)</text>
+        <text class="m" x="675" y="258" text-anchor="middle">Ollama · OpenAI · OpenRouter (1024 dims)</text>
         <rect class="box-local" x="510" y="280" width="330" height="38" rx="3"/>
         <text class="m" x="675" y="304" text-anchor="middle">Google Agenda · agenda no banco</text>
         <rect class="box-local" x="510" y="326" width="330" height="38" rx="3"/>
@@ -345,9 +346,11 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <text class="edge" x="450" y="440" text-anchor="middle">ports/factory.py resolve cada porta na primeira chamada — nenhum nó do grafo consulta SDR_PROFILE</text>
       </svg>
     </div>
-    <figcaption><b>Figura 2.</b> As quatro primeiras portas têm hoje uma implementação só — a troca
-    seria escrever um adaptador, não redesenhar o sistema. As duas últimas decidem em tempo de
-    execução, e pela configuração presente: <code>Calendario</code> usa o Google quando há credencial
+    <figcaption><b>Figura 2.</b> Broker e scheduler têm hoje uma implementação só — a troca seria
+    escrever um adaptador, não redesenhar o sistema. <code>ChatModel</code> e <code>Embedder</code>
+    escolhem o provedor por variável (<code>SDR_LLM_PROVIDER</code>, com reserva opcional, e
+    <code>SDR_EMBEDDINGS_PROVIDER</code>); todos os embedders entregam as 1024 dimensões do schema.
+    As duas últimas decidem em tempo de execução, e pela configuração presente: <code>Calendario</code> usa o Google quando há credencial
     de aplicativo e a agenda do próprio banco quando não há; <code>CRM</code> entra quando
     <code>CRM_MCP_TOKEN</code> está configurado e, sem ele, devolve o adaptador ausente — rodar sem
     CRM é um caso normal, não uma falha.</figcaption>
@@ -376,7 +379,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   <figure class="fig">
     <div class="fig-scroll">
       <svg class="dg" viewBox="0 0 960 920" role="img"
-           aria-label="Topologia do docker compose: o navegador usa os front-ends Vite (site, painel e painel do CRM) e o Telegram entra por long polling no telegram-in; channels, api e telegram-in publicam no Redis, que é o barramento; os workers agent, resumidor, reativador, scheduler e telegram-out consomem dele; Postgres com pgvector e Ollama formam a camada de dados; o CRM tem API e servidor MCP próprios; a API do modelo é o único serviço externo pago.">
+           aria-label="Topologia do docker compose: o navegador usa os front-ends Vite (site, painel e painel do CRM) e o Telegram entra por long polling no telegram-in; channels, api e telegram-in publicam no Redis, que é o barramento; os workers agent, resumidor, reativador, scheduler e telegram-out consomem dele; Postgres com pgvector, o db-init que aplica os schemas a cada subida e o Ollama formam a camada de dados; o CRM tem API e servidor MCP próprios; a API do modelo (Anthropic, OpenAI ou OpenRouter) é o único serviço externo pago.">
         <defs>
 <marker id="l-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
 <g id="l-svc" class="glyph"><circle r="2.6"/><path d="M0-2.6V-7"/><path d="M2.3 1.6l3.3 3.3"/><path d="M-2.3 1.6l-3.3 3.3"/><circle cx="0" cy="-8.4" r="1.5"/><circle cx="6.6" cy="5.8" r="1.5"/><circle cx="-6.6" cy="5.8" r="1.5"/></g>
@@ -412,9 +415,10 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <circle class="ic-svc" cx="665" cy="300" r="22"/><use href="#l-svc" x="665" y="300"/><text class="tl" x="665" y="338" text-anchor="middle">reativador</text><text class="ts" x="665" y="353" text-anchor="middle">imóvel novo</text>
         <circle class="ic-svc" cx="605" cy="420" r="22"/><use href="#l-svc" x="605" y="420"/><text class="tl" x="605" y="458" text-anchor="middle">telegram-out</text><text class="ts" x="605" y="473" text-anchor="middle">envio</text>
 
-        <rect class="grp" x="750" y="110" width="170" height="250" rx="4"/><text class="grp-t" x="835" y="132" text-anchor="middle">DADOS</text>
+        <rect class="grp" x="750" y="110" width="170" height="360" rx="4"/><text class="grp-t" x="835" y="132" text-anchor="middle">DADOS</text>
         <circle class="ic-data" cx="835" cy="180" r="22"/><use href="#l-db" x="835" y="180"/><text class="tl" x="835" y="218" text-anchor="middle">Postgres 16</text><text class="ts" x="835" y="233" text-anchor="middle">+ pgvector · sdr e crm</text>
-        <circle class="ic-ai" cx="835" cy="290" r="22"/><use href="#l-ai" x="835" y="290"/><text class="tl" x="835" y="328" text-anchor="middle">ollama</text><text class="ts" x="835" y="343" text-anchor="middle">embeddings bge-m3</text>
+        <circle class="ic-ai" cx="835" cy="290" r="22"/><use href="#l-ai" x="835" y="290"/><text class="tl" x="835" y="328" text-anchor="middle">ollama</text><text class="ts" x="835" y="343" text-anchor="middle">LLM e embeddings locais</text>
+        <circle class="ic-data" cx="835" cy="400" r="22"/><use href="#l-st" x="835" y="400"/><text class="tl" x="835" y="438" text-anchor="middle">db-init</text><text class="ts" x="835" y="453" text-anchor="middle">schemas a cada up</text>
 
         <rect class="grp" x="170" y="500" width="310" height="150" rx="4"/><text class="grp-t" x="325" y="522" text-anchor="middle">FRONT-ENDS (VITE)</text>
         <circle class="ic-infra" cx="240" cy="570" r="20"/><use href="#l-mon" x="240" y="570"/><text class="tl" x="240" y="606" text-anchor="middle">web</text><text class="ts" x="240" y="621" text-anchor="middle">:5173</text>
@@ -423,10 +427,10 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 
         <rect class="grp" x="490" y="500" width="430" height="150" rx="4"/><text class="grp-t" x="705" y="522" text-anchor="middle">CRM · SISTEMA À PARTE</text>
         <circle class="ic-svc" cx="590" cy="570" r="22"/><use href="#l-svc" x="590" y="570"/><text class="tl" x="590" y="608" text-anchor="middle">crm-api</text><text class="ts" x="590" y="623" text-anchor="middle">:8100 · REST</text>
-        <circle class="ic-infra" cx="790" cy="570" r="22"/><use href="#l-gate" x="790" y="570"/><text class="tl" x="790" y="608" text-anchor="middle">crm-mcp</text><text class="ts" x="790" y="623" text-anchor="middle">:8200 · MCP sobre HTTP</text>
+        <circle class="ic-infra" cx="790" cy="570" r="22"/><use href="#l-gate" x="790" y="570"/><text class="tl" x="790" y="608" text-anchor="middle">crm-mcp</text><text class="ts" x="790" y="623" text-anchor="middle">:8200 · MCP sobre HTTP</text><text class="ts" x="790" y="638" text-anchor="middle">+ crm-mcp-stdio (perfil mcp)</text>
 
         <rect class="grp" x="290" y="700" width="400" height="150" rx="4"/><text class="grp-t" x="490" y="722" text-anchor="middle">SERVIÇO EXTERNO · pago por uso</text>
-        <circle class="ic-ai" cx="490" cy="770" r="22"/><use href="#l-ai" x="490" y="770"/><text class="tl" x="490" y="808" text-anchor="middle">Anthropic · OpenAI</text><text class="ts" x="490" y="823" text-anchor="middle">único custo variável — ou Ollama, e nenhum</text>
+        <circle class="ic-ai" cx="490" cy="770" r="22"/><use href="#l-ai" x="490" y="770"/><text class="tl" x="490" y="808" text-anchor="middle">Anthropic · OpenAI · OpenRouter</text><text class="ts" x="490" y="823" text-anchor="middle">único custo variável — ou Ollama, e nenhum</text>
 
         <path class="flow" d="M106,420 L224,420" marker-end="url(#l-ar)"/>
         <path class="flow" d="M106,560 L170,560" marker-end="url(#l-ar)"/>
@@ -438,7 +442,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <text class="edge" x="458" y="236" text-anchor="middle">fila</text>
         <path class="flow" d="M720,200 L750,200" marker-end="url(#l-ar)"/>
         <path class="flow" d="M720,290 L750,290" marker-end="url(#l-ar)"/>
-        <path class="flow" d="M272,300 L330,300 L330,492 L835,492 L835,364" marker-end="url(#l-ar)"/>
+        <path class="flow" d="M272,300 L330,300 L330,492 L835,492 L835,474" marker-end="url(#l-ar)"/>
         <text class="edge" x="560" y="486" text-anchor="middle">api → banco</text>
         <path class="flow" d="M705,480 L790,480 L790,544" marker-end="url(#l-ar)"/>
         <path class="flow" d="M768,570 L616,570" marker-end="url(#l-ar)"/>
@@ -453,8 +457,10 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     polling</em>, não por webhook — sem túnel público e sem conta de negócio verificada (ADR-0007).
     O CRM é sistema à parte com banco próprio (<code>crm</code>, no mesmo Postgres) e a Mora só fala
     com ele pelo servidor MCP. A conexão WebSocket do painel é somente leitura: o corretor responde
-    ao cliente pelo <code>/handoff</code> da API, que é auditado (ADR-0008). O Ollama e o Langfuse
-    ficam atrás de <em>profiles</em> do compose, e por isso não sobem no <code>up</code> padrão.</figcaption>
+    ao cliente pelo <code>/handoff</code> da API, que é auditado (ADR-0008). O <code>db-init</code> roda a
+    cada <code>up</code>, antes dos serviços Python, e cria os bancos e aplica os schemas. O Ollama, o
+    Langfuse e o <code>crm-mcp-stdio</code> ficam atrás de <em>profiles</em> do compose, e por isso não
+    sobem no <code>up</code> padrão.</figcaption>
   </figure>
 </section>
 
@@ -464,72 +470,85 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <span class="lvl">C4 · Nível 3 — Componentes do agente</span>
     <h2>Supervisor e especialistas sobre um estado único</h2>
   </div>
-  <p>O agente é um grafo LangGraph com um supervisor que roteia e sete especialistas. Só três deles
-  falam com o lead. O supervisor decide por <strong>regra determinística primeiro</strong> — o modelo
+  <p>O agente é um grafo LangGraph com um supervisor que roteia e nove especialistas. Oito voltam ao
+  supervisor depois de rodar; o resumidor, acionado fora da conversa, encerra direto. O supervisor decide por <strong>regra determinística primeiro</strong> — o modelo
   só é chamado na ambiguidade real, o que corta custo e torna o roteamento testável sem LLM.</p>
 
   <figure class="fig">
     <div class="fig-scroll">
-      <svg class="dg" viewBox="0 0 900 400" role="img"
-           aria-label="Grafo do agente: o supervisor roteia para qualificador, consultor, agendador, follow-up, handoff e recusa, e todos retornam ao supervisor; o resumidor encerra direto.">
+      <svg class="dg" viewBox="0 0 900 470" role="img"
+           aria-label="Grafo do agente: o supervisor roteia para qualificador, consultor, agendador, informacoes, followup, reativador, handoff e recusa, e todos retornam ao supervisor; o resumidor, acionado fora da conversa, encerra direto.">
         <defs>
           <marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
           </marker>
         </defs>
 
-        <rect class="box-core" x="30" y="150" width="150" height="70" rx="3"/>
-        <text class="m" x="105" y="180" text-anchor="middle">supervisor</text>
-        <text class="sub" x="105" y="200" text-anchor="middle">regra → LLM só se ambíguo</text>
+        <rect class="box-core" x="30" y="190" width="150" height="70" rx="3"/>
+        <text class="m" x="105" y="220" text-anchor="middle">supervisor</text>
+        <text class="sub" x="105" y="240" text-anchor="middle">regra → LLM só se ambíguo</text>
 
-        <!-- especialistas que falam com o lead -->
-        <rect class="box" x="330" y="30" width="180" height="46" rx="3"/>
-        <text class="m" x="420" y="52" text-anchor="middle">qualificador</text>
-        <text class="sub" x="420" y="68" text-anchor="middle">extrai o cartão · pergunta</text>
-
-        <rect class="box" x="330" y="96" width="180" height="46" rx="3"/>
-        <text class="m" x="420" y="118" text-anchor="middle">consultor</text>
-        <text class="sub" x="420" y="134" text-anchor="middle">RAG híbrido · recomenda</text>
-
-        <rect class="box" x="330" y="162" width="180" height="46" rx="3"/>
-        <text class="m" x="420" y="184" text-anchor="middle">agendador</text>
-        <text class="sub" x="420" y="200" text-anchor="middle">oferece e confirma horário</text>
-
-        <!-- demais -->
-        <rect class="box" x="330" y="228" width="180" height="46" rx="3"/>
-        <text class="m" x="420" y="250" text-anchor="middle">followup</text>
-        <text class="sub" x="420" y="266" text-anchor="middle">retoma quem sumiu</text>
-
-        <rect class="box" x="330" y="294" width="180" height="46" rx="3"/>
-        <text class="m" x="420" y="316" text-anchor="middle">handoff</text>
-        <text class="sub" x="420" y="332" text-anchor="middle">entrega ao corretor</text>
-
-        <rect class="box" x="330" y="352" width="180" height="40" rx="3"/>
-        <text class="m" x="420" y="377" text-anchor="middle">recusa</text>
+        <!-- especialistas que voltam ao supervisor -->
+        <rect class="box" x="330" y="40" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="55" text-anchor="middle">qualificador</text>
+        <text class="sub" x="430" y="70" text-anchor="middle">extrai o cartão · pergunta</text>
+        <rect class="box" x="330" y="86" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="101" text-anchor="middle">consultor</text>
+        <text class="sub" x="430" y="116" text-anchor="middle">RAG híbrido · recomenda</text>
+        <rect class="box" x="330" y="132" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="147" text-anchor="middle">agendador</text>
+        <text class="sub" x="430" y="162" text-anchor="middle">oferece e reserva horário</text>
+        <rect class="box" x="330" y="178" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="193" text-anchor="middle">informacoes</text>
+        <text class="sub" x="430" y="208" text-anchor="middle">política da imobiliária, com fonte</text>
+        <rect class="box" x="330" y="224" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="239" text-anchor="middle">followup</text>
+        <text class="sub" x="430" y="254" text-anchor="middle">retoma quem sumiu</text>
+        <rect class="box" x="330" y="270" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="285" text-anchor="middle">reativador</text>
+        <text class="sub" x="430" y="300" text-anchor="middle">aviso de imóvel novo · opt-out</text>
+        <rect class="box" x="330" y="316" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="331" text-anchor="middle">handoff</text>
+        <text class="sub" x="430" y="346" text-anchor="middle">entrega ao corretor</text>
+        <rect class="box" x="330" y="362" width="200" height="38" rx="3"/>
+        <text class="m" x="430" y="377" text-anchor="middle">recusa</text>
+        <text class="sub" x="430" y="392" text-anchor="middle">fora de escopo · sem token</text>
 
         <!-- resumidor -->
-        <rect class="box" x="620" y="150" width="160" height="46" rx="3"/>
-        <text class="m" x="700" y="172" text-anchor="middle">resumidor</text>
-        <text class="sub" x="700" y="188" text-anchor="middle">briefing do corretor</text>
-        <rect class="box-ext" x="812" y="150" width="60" height="46" rx="3"/>
-        <text class="m" x="842" y="178" text-anchor="middle">END</text>
+        <rect class="box" x="650" y="206" width="150" height="46" rx="3"/>
+        <text class="m" x="725" y="228" text-anchor="middle">resumidor</text>
+        <text class="sub" x="725" y="244" text-anchor="middle">briefing do corretor</text>
+        <rect class="box-ext" x="822" y="206" width="60" height="46" rx="3"/>
+        <text class="m" x="852" y="234" text-anchor="middle">END</text>
 
         <!-- fan-out -->
-        <path class="flow" d="M180,185 L250,185 L250,53 L330,53" marker-end="url(#a5)"/>
-        <path class="flow" d="M250,185 L250,119 L330,119" marker-end="url(#a5)"/>
-        <path class="flow" d="M250,185 L330,185" marker-end="url(#a5)"/>
-        <path class="flow" d="M250,185 L250,251 L330,251" marker-end="url(#a5)"/>
-        <path class="flow" d="M250,185 L250,317 L330,317" marker-end="url(#a5)"/>
-        <path class="flow" d="M250,185 L250,372 L330,372" marker-end="url(#a5)"/>
+        <path class="flow" d="M180,225 L250,225"/>
+        <path class="flow" d="M250,59 L250,381"/>
+        <path class="flow" d="M250,59 L330,59" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,105 L330,105" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,151 L330,151" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,197 L330,197" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,243 L330,243" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,289 L330,289" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,335 L330,335" marker-end="url(#a5)"/>
+        <path class="flow" d="M250,381 L330,381" marker-end="url(#a5)"/>
 
         <!-- retorno -->
-        <path class="flow-core" d="M510,372 L560,372 L560,240 L105,240 L105,220" marker-end="url(#a5)"/>
-        <text class="edge" x="330" y="234" text-anchor="middle">todos voltam ao supervisor — ele encerra ao ver resposta (máx. 4 saltos)</text>
+        <path class="flow-core" d="M530,59 L570,59"/>
+        <path class="flow-core" d="M530,105 L570,105"/>
+        <path class="flow-core" d="M530,151 L570,151"/>
+        <path class="flow-core" d="M530,197 L570,197"/>
+        <path class="flow-core" d="M530,243 L570,243"/>
+        <path class="flow-core" d="M530,289 L570,289"/>
+        <path class="flow-core" d="M530,335 L570,335"/>
+        <path class="flow-core" d="M530,381 L570,381"/>
+        <path class="flow-core" d="M570,59 L570,430 L105,430 L105,260" marker-end="url(#a5)"/>
+        <text class="edge" x="337" y="450" text-anchor="middle">todos voltam ao supervisor — ele encerra ao ver resposta (máx. 4 saltos)</text>
 
-        <!-- resumidor -->
-        <path class="flow" d="M180,168 L620,168" marker-end="url(#a5)" opacity=".55"/>
-        <text class="edge" x="400" y="162" text-anchor="middle">fora da conversa</text>
-        <path class="flow" d="M780,173 L812,173" marker-end="url(#a5)"/>
+        <!-- resumidor: fora da conversa -->
+        <path class="flow" d="M105,190 L105,22 L725,22 L725,206" marker-end="url(#a5)" opacity=".55"/>
+        <text class="edge" x="415" y="14" text-anchor="middle">fora da conversa · canal SISTEMA</text>
+        <path class="flow" d="M800,229 L822,229" marker-end="url(#a5)"/>
       </svg>
     </div>
     <figcaption><b>Figura 4.</b> O estado do grafo é persistido em checkpoint no Postgres com
@@ -546,12 +565,13 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
   </div>
   <p>Toda mensagem atravessa a mesma sequência de guardas antes de chegar ao modelo, e a resposta
   atravessa mais uma antes de chegar ao cliente. As guardas são <strong>determinísticas e baratas</strong>:
-  recusar custa zero token, e é por isso que elas vêm antes do grafo.</p>
+  vazão e orçamento ficam no handler, antes do grafo; o porteiro de escopo é avaliado pelo supervisor,
+  antes de qualquer especialista chamar o modelo. Recusar custa zero token.</p>
 
   <figure class="fig">
     <div class="fig-scroll">
-      <svg class="dg" viewBox="0 0 1010 250" role="img"
-           aria-label="Pipeline de um turno: a mensagem do cliente entra na fila inbound, passa pelas guardas de escopo, vazão e orçamento, depois pelo grafo do agente e pela sanitização de saída, e volta pela fila outbound até o cliente.">
+      <svg class="dg" viewBox="0 0 1010 270" role="img"
+           aria-label="Pipeline de um turno: a mensagem do cliente entra na fila inbound, passa pelas guardas de vazão e de orçamento no handler, entra no grafo, onde o supervisor aplica o porteiro de escopo antes do especialista chamar o modelo, passa pela sanitização de saída e volta pela fila outbound até o cliente.">
         <defs>
           <marker id="a6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
             <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -565,23 +585,26 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <rect class="bus" x="128" y="94" width="86" height="40" rx="3"/>
         <text class="m" x="171" y="119" text-anchor="middle">inbound</text>
 
-        <rect class="box-core" x="236" y="52" width="560" height="124" rx="4"/>
-        <text class="hd" x="516" y="76" text-anchor="middle" fill="var(--core)">UM TURNO DO AGENTE</text>
+        <rect class="box-core" x="236" y="52" width="560" height="150" rx="4"/>
+        <text class="hd" x="252" y="74" fill="var(--core)">UM TURNO DO AGENTE</text>
+
+        <rect class="box-ext" x="462" y="86" width="218" height="62" rx="3"/>
+        <text class="edge" x="571" y="78" text-anchor="middle">grafo LangGraph</text>
 
         <rect class="box" x="247" y="94" width="98" height="46" rx="3"/>
-        <text class="m" x="296" y="115" text-anchor="middle">escopo</text>
-        <text class="sub" x="296" y="131" text-anchor="middle">injeção · off-topic</text>
+        <text class="m" x="296" y="115" text-anchor="middle">vazão</text>
+        <text class="sub" x="296" y="131" text-anchor="middle">rajada · hora</text>
 
         <rect class="box" x="357" y="94" width="98" height="46" rx="3"/>
-        <text class="m" x="406" y="115" text-anchor="middle">vazão</text>
-        <text class="sub" x="406" y="131" text-anchor="middle">rajada · hora</text>
+        <text class="m" x="406" y="115" text-anchor="middle">orçamento</text>
+        <text class="sub" x="406" y="131" text-anchor="middle">degrada · bloqueia</text>
 
         <rect class="box" x="467" y="94" width="98" height="46" rx="3"/>
-        <text class="m" x="516" y="115" text-anchor="middle">orçamento</text>
-        <text class="sub" x="516" y="131" text-anchor="middle">degrada · bloqueia</text>
+        <text class="m" x="516" y="115" text-anchor="middle">supervisor</text>
+        <text class="sub" x="516" y="131" text-anchor="middle">escopo · regras</text>
 
         <rect class="box-core" x="577" y="94" width="98" height="46" rx="3"/>
-        <text class="m" x="626" y="115" text-anchor="middle">grafo</text>
+        <text class="m" x="626" y="115" text-anchor="middle">especialista</text>
         <text class="sub" x="626" y="131" text-anchor="middle">LLM aqui</text>
 
         <rect class="box" x="687" y="94" width="98" height="46" rx="3"/>
@@ -604,11 +627,12 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <path class="flow-core" d="M796,114 L818,114" marker-end="url(#a6)"/>
         <path class="flow" d="M904,114 L926,114" marker-end="url(#a6)"/>
 
-        <text class="edge" x="296" y="168" text-anchor="middle">recusa sem gastar token</text>
-        <text class="edge" x="516" y="168" text-anchor="middle">troca de modelo ou entrega a humano</text>
+        <text class="edge" x="296" y="168" text-anchor="middle">excesso: avisa e para</text>
+        <text class="edge" x="516" y="168" text-anchor="middle">recusa sem gastar token</text>
         <text class="edge" x="736" y="168" text-anchor="middle">descarta resposta que vazar prompt</text>
+        <text class="edge" x="406" y="188" text-anchor="middle">troca de modelo ou entrega a humano</text>
 
-        <text class="edge" x="516" y="216" text-anchor="middle">falha em qualquer ponto → o cliente recebe uma resposta de contorno; o turno nunca termina em silêncio</text>
+        <text class="edge" x="516" y="236" text-anchor="middle">falha em qualquer ponto → o cliente recebe uma resposta de contorno; o turno nunca termina em silêncio</text>
       </svg>
     </div>
     <figcaption><b>Figura 5.</b> A guarda de orçamento é a única que muda o comportamento em vez de
@@ -621,7 +645,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Correspondência</span>
-    <h2>Cada papel, uma implementação — e onde a troca entraria</h2>
+    <h2>Cada papel, sua implementação — e onde a troca entraria</h2>
   </div>
   <div class="tbl-scroll">
     <table>
@@ -631,8 +655,8 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
       <tbody>
         <tr><td>Fila de mensagens</td><td>Redis Streams + lock por lead</td><td class="m">ports/factory.get_broker</td></tr>
         <tr><td>Agendamento de follow-up</td><td>Postgres + worker do scheduler</td><td class="m">ports/factory.get_scheduler</td></tr>
-        <tr><td>Modelo de linguagem</td><td>Anthropic (padrão), OpenAI ou Ollama, com reserva</td><td class="m">ports/factory.get_chat_model</td></tr>
-        <tr><td>Embeddings</td><td>Ollama bge-m3 — as 1024 dimensões que o schema espera</td><td class="m">ports/factory.get_embedder</td></tr>
+        <tr><td>Modelo de linguagem</td><td>Anthropic (padrão), OpenAI, OpenRouter ou Ollama, com reserva; um modelo por papel (conversa, roteamento, extração, informações, análise)</td><td class="m">ports/factory.get_chat_model</td></tr>
+        <tr><td>Embeddings</td><td>Ollama bge-m3 (padrão), OpenAI ou OpenRouter — sempre as 1024 dimensões que o schema espera</td><td class="m">ports/factory.get_embedder</td></tr>
         <tr><td>Busca semântica</td><td>pgvector, no mesmo banco que o painel consulta</td><td class="m">tools/buscar_imoveis</td></tr>
         <tr><td>Banco de dados</td><td>Postgres 16 + pgvector em container</td><td class="m">SDR_DATABASE_DSN</td></tr>
         <tr><td>Transcrição de voz</td><td>faster-whisper, no próprio processo</td><td class="m">SDR_TRANSCRICAO_PROVIDER</td></tr>
@@ -652,7 +676,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Registro de decisões</span>
-    <h2>Catorze ADRs, incluindo as revertidas</h2>
+    <h2>Dezesseis ADRs, incluindo as revertidas</h2>
   </div>
   <p>Decisões revogadas foram mantidas com o motivo da reversão em vez de apagadas: o caminho percorrido
   explica o estado final.</p>
@@ -668,12 +692,14 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
         <tr><td class="num">0006</td><td>Site vitrine com o agente embutido, ao lado do Telegram</td><td>aceita</td></tr>
         <tr><td class="num">0007</td><td>Telegram substitui WhatsApp como canal externo</td><td>aceita — sem verificação de negócio, sem webhook e sem túnel</td></tr>
         <tr><td class="num">0008</td><td>Cada porta privada carrega o seu próprio portão</td><td>aceita — fechou WebSocket que expunha todas as conversas</td></tr>
-        <tr><td class="num">0009</td><td>Gateway de LLM: LiteLLM, OpenRouter ou a camada própria</td><td>aceita — nenhum dos dois; o fallback entre provedores ficou na camada existente</td></tr>
-        <tr><td class="num">0010</td><td>Modelo por nível, editável no painel</td><td>aceita</td></tr>
+        <tr><td class="num">0009</td><td>Gateway de LLM: LiteLLM, OpenRouter ou a camada própria</td><td>aceita — nenhum gateway; o fallback entre provedores ficou na camada existente. A parte do OpenRouter foi revista pela ADR-0016</td></tr>
+        <tr><td class="num">0010</td><td>Modelo por nível, editável no painel</td><td>aceita — os níveis foram revistos pela ADR-0016</td></tr>
         <tr><td class="num">0011</td><td>Observabilidade leve: três tabelas no Postgres</td><td>aceita — substituiu a ADR-0005</td></tr>
         <tr><td class="num">0012</td><td>Vitrine encontrável, pesquisável e acessível</td><td>aceita</td></tr>
         <tr><td class="num">0013</td><td>Reativação proativa de leads adormecidos</td><td>aceita — com motivo verificável, cadência e opt-out</td></tr>
         <tr><td class="num">0014</td><td>Tema claro e escuro no painel</td><td>aceita</td></tr>
+        <tr><td class="num">0015</td><td>Quem manda nas fotos do imóvel</td><td>aceita — a ordem é painel &gt; CRM &gt; arquivo, e é determinística</td></tr>
+        <tr><td class="num">0016</td><td>OpenRouter como provedor e um modelo por função do agente</td><td>aceita — revisa a ADR-0009 (OpenRouter, com retenção zero obrigatória) e a ADR-0010 (cinco papéis no lugar dos níveis)</td></tr>
       </tbody>
     </table>
   </div>

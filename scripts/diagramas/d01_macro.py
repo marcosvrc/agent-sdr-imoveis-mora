@@ -8,7 +8,7 @@ def montar() -> Diagrama:
         largura=2000, altura=1470,
         alt=("Diagrama macro: site e Telegram entram pelos canais, que publicam no Redis; o agente "
              "consome a fila, fala com os modelos, grava no Postgres e espelha no CRM por MCP; "
-             "painel e API leem o mesmo banco."))
+             "painel e API leem o mesmo banco; a API também publica na fila (resumir e outbound-*)."))
 
     # ---------------------------------------------------------------- 01 entrada
     d.grupo(40, 250, 330, 450, "01", "Porta de entrada", "Experiência e aquisição")
@@ -49,7 +49,7 @@ def montar() -> Diagrama:
 
     d.aresta([(1040, 440), (1090, 440)], "azul", "inbound", rot_xy=(1065, 424))
     d.aresta([(1090, 510), (1060, 510), (1060, 548), (920, 548)], "verde",
-             rot_xy=(1000, 586), rot_linhas=["resposta", "neutra"])
+             rot_xy=(988, 586), ancora="end", rot_linhas=["resposta", "neutra"])
 
     # fila → canais (saída)
     d.aresta([(860, 548), (860, 744), (560, 744), (560, 700)], "verde",
@@ -57,8 +57,8 @@ def montar() -> Diagrama:
 
     # ---------------------------------------------------------------- 05 modelos
     d.grupo(1590, 236, 370, 372, "05", "Modelos", "Um por papel, trocável pelo painel")
-    d.cartao(1614, 296, 322, 128, "LLMs", ["Anthropic · OpenAI · Ollama", "Conversa, roteamento e análise", "Um modelo por papel"], "faisca", "roxo")
-    d.cartao(1614, 448, 322, 128, "Embeddings", ["Ollama bge-m3 ou OpenAI", "text-embedding-3-small", "1024 dimensões"], "caixas", "roxo")
+    d.cartao(1614, 296, 322, 128, "LLMs", ["Anthropic · OpenAI · OpenRouter", "ou Ollama · reserva opcional", "Papéis: conversa, roteamento,", "extração, informações, análise"], "faisca", "roxo")
+    d.cartao(1614, 448, 322, 128, "Embeddings", ["Ollama, OpenAI ou OpenRouter", "bge-m3 ou text-embedding-3-small", "1024 dimensões"], "caixas", "roxo")
     d.aresta([(1540, 330), (1614, 330)], "roxo", "Inferência", rot_xy=(1577, 314))
     d.aresta([(1540, 500), (1614, 500)], "roxo", "Embedding", rot_xy=(1577, 484))
 
@@ -88,6 +88,8 @@ def montar() -> Diagrama:
 
     d.aresta([(370, 1148), (440, 1148)], "cinza", "HTTP", rot_xy=(405, 1132))
     d.aresta([(750, 1148), (1090, 1148)], "cinza", "Leitura / escrita", rot_xy=(920, 1132))
+    d.aresta([(720, 1096), (720, 1010), (1000, 1010), (1000, 548)], "azul", raio=10,
+             rot_xy=(1012, 900), ancora="start", rot_linhas=["resumir ·", "outbound-*"])
     d.aresta([(595, 1244), (595, 1200)], "cinza", "/fotos", rot_xy=(609, 1224), ancora="start")
     d.aresta([(1315, 856), (1315, 1096)], "cinza", rot_xy=(1329, 950), ancora="start",
              rot_linhas=["Leitura /", "escrita"])

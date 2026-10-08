@@ -6,7 +6,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="busca-cascata", titulo="Cascata da busca de imóveis",
         subtitulo="Do bairro pedido até a cidade, dizendo sempre até onde precisou ir",
-        largura=1960, altura=820,
+        largura=1960, altura=880,
         alt=("A busca tenta o bairro pedido, depois os vizinhos, a região e a cidade; o nível "
              "alcançado vai para o prompt e o agente não afirma indisponibilidade fora dele."))
 
@@ -35,7 +35,7 @@ def montar() -> Diagrama:
              ["operação · região · bairros · preço (+15 %) · quartos mínimos — ou área mínima e os tipos",
               "do segmento, quando o imóvel é comercial — ImovelRepository.buscar_hibrido"],
              "banco", "cinza", pequeno=True)
-    d.cartao(380, 588, 740, 110, "Imóveis recomendados", ["Até 3 por turno, sem repetir o que já foi visto", "ou descartado (tabela interesses)"], "certo", "verde", pequeno=True)
+    d.cartao(380, 588, 740, 110, "Imóveis recomendados", ["Até 3 por turno, nunca o que foi descartado (tabela interesses);", "o já visto só se repete quando acabam as novidades"], "certo", "verde", pequeno=True)
     d.cartao(1150, 588, 740, 110, "Alternativa no bairro pedido", ["Relaxa o tamanho (quartos ou área) e depois o preço:", "“de 2 quartos não tenho aí, mas tenho este de 1”"], "mao", "verde", pequeno=True)
 
     d.aresta([(296, 291), (380, 291)], "azul")
@@ -43,11 +43,13 @@ def montar() -> Diagrama:
     d.aresta([(750, 526), (750, 588)], "verde")
     d.aresta([(1520, 526), (1520, 588)], "verde")
 
-    d.nota(980, 720, 1300, [
+    d.nota(980, 720, 1500, [
+        "Cidade fora da cobertura vira o nível \"fora_de_cobertura\": a busca tenta a região mais próxima dela e, sem resultado, a cidade inteira.",
+        "Quando nem a cidade devolve nada, o nível é \"vazio\". O nível alcançado vai para o prompt e limita o que o agente pode afirmar sobre disponibilidade.",
         "Sem embedder no ar (Ollama fora, provedor sem chave) a busca cai para os filtros SQL puros e devolve sem_embedding — "
         "pior que a semântica, melhor que derrubar o turno."])
     d.legenda([("azul", "Descida da cascata"), ("roxo", "Vetor"), ("verde", "Saída para o cliente"),
-               ("cinza", "Consulta ao índice")], y=800)
+               ("cinza", "Consulta ao índice")], y=850)
     return d
 
 

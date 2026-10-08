@@ -31,8 +31,9 @@ def montar() -> Diagrama:
     d.passo(R, H, 386, ['consume("inbound") · lock por lead'], 2, "azul")
     d.passo_proprio(H, 452, ["transcrever se áudio · PING no broker · vazão",
                              "sem barramento o turno é recusado antes do modelo"], 3, "azul")
-    d.passo(H, P, 530, ["carregar/criar lead · registrar msg \"in\" · marcar atividade"], 4, "azul")
-    d.passo(H, K, 596, ["reconhecer(lead) — só com contato e ainda não procurado"], 5, "verde")
+    d.passo(H, P, 542, ["carregar/criar lead · registrar msg \"in\" · marcar atividade",
+                        "lead em HANDOFF ou orçamento bloqueado: o turno para aqui, sem grafo"], 4, "azul")
+    d.passo(H, K, 606, ["reconhecer(lead) — só com contato e ainda não procurado"], 5, "verde")
 
     d.faixa(660, 420, "02 Raciocínio e resposta", "roxo")
     d.passo(H, G, 746, ["invoke(entrada_grafo, thread_id=lead.id)"], 6, "roxo")

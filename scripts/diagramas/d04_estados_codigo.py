@@ -8,6 +8,7 @@ ESTAGIOS = ["NOVO", "QUALIFICANDO", "QUALIFICADO", "AGENDADO", "INATIVO", "FRIO"
 T = {
     ("NOVO", "QUALIFICANDO"): ("qualificador", "azul"),
     ("NOVO", "QUALIFICADO"): ("consultor", "azul"),
+    ("NOVO", "AGENDADO"): ("agendador", "azul"),
     ("NOVO", "INATIVO"): ("followup", "ambar"),
     ("NOVO", "HANDOFF"): ("handoff · fallback · orçamento", "verde"),
     ("QUALIFICANDO", "QUALIFICADO"): ("consultor", "azul"),
@@ -18,14 +19,17 @@ T = {
     ("QUALIFICADO", "INATIVO"): ("followup", "ambar"),
     ("QUALIFICADO", "HANDOFF"): ("handoff · fallback · orçamento", "verde"),
     ("AGENDADO", "QUALIFICANDO"): ("nova oportunidade", "cinza"),
-    ("AGENDADO", "HANDOFF"): ("handoff (pedido do cliente)", "verde"),
-    ("INATIVO", "QUALIFICANDO"): ("—", None),
+    ("AGENDADO", "HANDOFF"): ("handoff · fallback · orçamento", "verde"),
+    ("INATIVO", "QUALIFICANDO"): ("nova oportunidade", "cinza"),
     ("INATIVO", "AGENDADO"): ("agendador", "azul"),
     ("INATIVO", "INATIVO"): ("followup (nova tentativa)", "ambar"),
     ("INATIVO", "FRIO"): ("followup (esgotou)", "ambar"),
-    ("INATIVO", "HANDOFF"): ("handoff", "verde"),
+    ("INATIVO", "HANDOFF"): ("handoff · fallback · orçamento", "verde"),
     ("FRIO", "QUALIFICANDO"): ("nova oportunidade", "cinza"),
-    ("HANDOFF", "QUALIFICANDO"): ("nova oportunidade", "cinza"),
+    ("FRIO", "AGENDADO"): ("agendador", "azul"),
+    ("FRIO", "HANDOFF"): ("handoff · fallback · orçamento", "verde"),
+    ("HANDOFF", "QUALIFICANDO"): ("devolução · ou nova oportunidade", "roxo"),
+    ("HANDOFF", "QUALIFICADO"): ("devolução", "roxo"),
 }
 
 
@@ -33,7 +37,7 @@ def montar() -> Diagrama:
     d = Diagrama(
         nome="estados-codigo", titulo="Transições de Estagio, uma a uma",
         subtitulo="Quem escreve cada mudança — linha é de onde sai, coluna é para onde vai",
-        largura=1760, altura=960,
+        largura=1760, altura=990,
         alt=("Matriz das transições de estágio do lead, com o nó do grafo responsável por cada "
              "mudança."))
 
@@ -80,12 +84,15 @@ def montar() -> Diagrama:
                       f'text-anchor="middle" style="font-weight:600">{escape(l)}</text>')
 
     d.nota(880, 790, 1660, [
-        "HANDOFF sai do fluxo automatizado: o agente silencia, registra a mensagem e notifica o corretor — a linha HANDOFF só tem saída por nova oportunidade.",
-        "“Nova oportunidade” não é uma volta: nova_oportunidade_se_mudou_intencao cria um lead sucessor em QUALIFICANDO e encerra o anterior; vale nos",
-        "estágios AGENDADO, HANDOFF, INATIVO e FRIO. O resumidor não muda estágio nenhum, e nenhum nó volta de INATIVO ou FRIO para QUALIFICANDO sozinho."])
+        "HANDOFF sai do fluxo automatizado: o agente silencia, registra a mensagem e notifica o corretor. Volta por devolução — o cliente pede a Mora de volta",
+        "(handler._devolver_a_mora) ou o corretor usa POST /handoff/{id}/devolver — para QUALIFICADO com o cartão completo, ou QUALIFICANDO sem ele.",
+        "“Nova oportunidade” não é uma volta: nova_oportunidade_se_mudou_intencao cria um lead sucessor em QUALIFICANDO e encerra o anterior; vale nos estágios",
+        "AGENDADO, HANDOFF, INATIVO e FRIO. O agendador grava AGENDADO venha o lead de onde vier; fallback e orçamento valem em qualquer estágio fora de HANDOFF.",
+        "O resumidor não muda estágio nenhum, e nenhum nó leva o próprio lead de INATIVO ou FRIO de volta a QUALIFICANDO."])
 
     d.legenda([("azul", "Avanço do atendimento"), ("ambar", "Silêncio do cliente"),
-               ("verde", "Passagem ao humano"), ("cinza", "Lead sucessor")], y=910)
+               ("verde", "Passagem ao humano"), ("roxo", "Devolução à Mora"),
+               ("cinza", "Lead sucessor")], y=940)
     d.rodape("transições de estágio")
     return d
 

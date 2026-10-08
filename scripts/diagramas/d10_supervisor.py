@@ -7,28 +7,31 @@ REGRAS = [
     ("A mensagem é do tipo FOLLOWUP?", "followup", "ambar"),
     ("A mensagem é do tipo REATIVACAO?", "reativador", "ambar"),
     ("PEDE_SAIR — o cliente pediu para não receber avisos?", "reativador", "ambar"),
-    ("O porteiro de escopo reprovou e não houve PEDE_HUMANO?", "recusa", "vermelho"),
-    ('"Falar com corretor", PEDE_HUMANO ou estágio HANDOFF?', "handoff", "verde"),
+    ("O porteiro de escopo reprovou e não houve pedido de humano?", "recusa", "vermelho"),
+    ('"Falar com corretor", pedido de humano ou estágio HANDOFF?', "handoff", "verde"),
+    ("Horário segurado, contato já insistido; não é contato, slot:, opções nem institucional?", "agendador", "azul"),
     ("Botão “visitar este imóvel” (prefixo imovel:)?", "agendador", "azul"),
     ("Botão de ampliação da busca (prefixo ajuste:)?", "consultor", "azul"),
-    ("Horário segurado esperando contato, e chegou contato ou resposta curta?", "agendador", "azul"),
-    ("Pergunta institucional, sem prefixo slot: e sem horários oferecidos?", "informacoes", "azul"),
-    ("Era compra e citou aluguel (ou o contrário)?", "qualificador", "azul"),
+    ("Horário segurado e chegou contato, slot: ou até 4 palavras não institucionais?", "agendador", "azul"),
+    ("Pergunta institucional ou consultiva, sem slot: e sem escolher horário da grade?", "informacoes", "azul"),
+    ("Intenção já é compra ou aluguel e o cliente pediu a outra?", "qualificador", "azul"),
     ("Prefixo slot:, ou horários oferecidos + ESCOLHE_HORARIO?", "agendador", "azul"),
-    ('"Agendar visita", PEDE_VISITA ou pediu_visita — e estágio ≠ AGENDADO?', "agendador", "azul"),
+    ('"Agendar visita" ou PEDE_VISITA?', "agendador", "azul"),
+    ('"Ver outros" ou PEDE_OPCOES?', "consultor", "azul"),
+    ("pediu_visita ligado e estágio ≠ AGENDADO?", "agendador", "azul"),
     ("Cartão completo e a mensagem é só um contato?", "qualificador", "azul"),
     ("A Mora perguntou como ampliar e o cartão está completo?", "consultor", "azul"),
-    ('"Ver outros" ou PEDE_OPCOES?', "consultor", "azul"),
     ("Cartão completo e ainda sem imóveis sugeridos?", "consultor", "azul"),
     ("Cartão incompleto?", "qualificador", "azul"),
 ]
 
 
+
 def montar() -> Diagrama:
     d = Diagrama(
         nome="supervisor", titulo="Ordem de decisão do supervisor",
-        subtitulo="Dezoito regras determinísticas antes de gastar um token",
-        largura=1700, altura=2460,
+        subtitulo="Vinte e uma regras determinísticas antes de gastar um token",
+        largura=1700, altura=2650,
         alt=("Escada de decisão do supervisor: cada regra é avaliada na ordem; a primeira que "
              "casa define o especialista, e só o que sobra vai ao modelo de roteamento."))
 
@@ -53,11 +56,12 @@ def montar() -> Diagrama:
 
     d.nota(850, y + 165, 1580, [
         "A ordem importa: PEDE_SAIR vem antes do porteiro de escopo (senão “não quero mais nada” seria recusado como fora de assunto), e o pedido de humano",
-        "vence a recusa. Depois do especialista, _rotear encerra o turno quando há resposta, quando saltos chega a MAX_SALTOS = 4, ou quando o nó devolveu",
-        "sem mudar a decisão — repetição sem mudança é fim de turno, não nova tentativa."])
+        "vence a recusa. Com horário segurado, pedir outras opções (ou fazer pergunta institucional depois da insistência) solta o horário e a mensagem segue",
+        "para as regras seguintes. Depois do especialista, _rotear encerra o turno quando há resposta, quando saltos chega a MAX_SALTOS = 4, ou quando o nó",
+        "devolveu sem mudar a decisão — repetição sem mudança é fim de turno, não nova tentativa."])
 
     d.legenda([("azul", "Atendimento"), ("verde", "Passagem ao humano"),
-               ("ambar", "Iniciado pela Mora"), ("vermelho", "Fora de escopo")], y=2410)
+               ("ambar", "Iniciado pela Mora"), ("vermelho", "Fora de escopo")], y=2600)
     d.rodape("supervisor")
     return d
 

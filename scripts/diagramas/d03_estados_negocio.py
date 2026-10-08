@@ -8,7 +8,7 @@ def montar() -> Diagrama:
         subtitulo="Máquina de estados, na leitura de quem opera",
         largura=1960, altura=1180,
         alt=("Jornada do lead: novo, qualificando, qualificado, agendado e handoff, com o desvio "
-             "de inatividade e a volta por nova oportunidade."))
+             "de inatividade, a devolução do handoff à Mora e a volta por nova oportunidade."))
 
     d.add('<text x="40" y="150" class="t-grp">01 QUALIFICAÇÃO E ENCAMINHAMENTO</text>')
     d.marco(80, 305)
@@ -16,7 +16,7 @@ def montar() -> Diagrama:
     d.estado(570, 250, 320, 110, "Qualificando", "coletando as preferências", "lista", "azul")
     d.estado(1030, 250, 320, 110, "Qualificado", "cartão completo + score", "certo", "verde")
     d.estado(1490, 250, 320, 110, "Agendado", "visita reservada", "agenda", "roxo")
-    d.estado(1490, 640, 320, 110, "Handoff", "com o corretor", "pessoa", "verde")
+    d.estado(1490, 640, 320, 110, "Handoff", "com o corretor · a Mora silencia", "pessoa", "verde")
     d.marco(1650, 860, "fim do fluxo automatizado", inicio=False)
 
     d.aresta([(92, 305), (130, 305)], "tinta2")
@@ -30,6 +30,17 @@ def montar() -> Diagrama:
     d.aresta([(1190, 360), (1190, 590), (1570, 590), (1570, 640)], "tinta2", raio=14,
              rot_xy=(1204, 420), ancora="start", rot_linhas=["corretor assume,", "falha do turno ou", "teto de orçamento"])
     d.aresta([(1650, 750), (1650, 838)], "tinta2")
+
+    # -------------------------------------------------- devolução à Mora
+    # handler._devolver_a_mora (o cliente pede a Mora de volta) e POST /handoff/{id}/devolver
+    # (o corretor devolve pelo painel): QUALIFICADO com cartão completo, QUALIFICANDO sem ele.
+    volta = [(1810, 695), (1890, 695), (1890, 200)]
+    d.aresta(volta + [(1190, 200), (1190, 250)], "verde", raio=14)
+    d.aresta(volta + [(870, 200), (870, 250)], "verde", raio=14)
+    d.add('<text x="1540" y="168" class="t-seta x-verde" text-anchor="middle">devolvido à Mora: o cliente pede a Mora de volta</text>')
+    d.add('<text x="1540" y="184" class="t-seta x-verde" text-anchor="middle">ou o corretor devolve pelo painel (POST /handoff/{id}/devolver)</text>')
+    d.add('<text x="1204" y="226" class="t-seta x-verde">cartão completo</text>')
+    d.add('<text x="884" y="226" class="t-seta x-verde">cartão incompleto</text>')
 
     # -------------------------------------------------- inatividade
     d.painel(100, 500, 1050, 420, "02 Inatividade e reengajamento", "o silêncio do cliente tem cadência própria")
@@ -53,12 +64,13 @@ def montar() -> Diagrama:
         "A cadência não é fixa: 120, 1440 e 4320 minutos multiplicados pelo ritmo da",
         "temperatura (quente 0,25 · morno 1 · frio 2), sempre dentro de 08:00–20:00 em SP.",
         "Não há volta automática de Inativo para Qualificando — o retorno do cliente é um",
-        "turno novo, roteado pelo que ele disser."], ancora="middle")
+        "turno novo, roteado pelo que ele disser. A reserva de visita leva a Agendado de",
+        "qualquer estágio, inclusive Novo ou Frio (botão “visitar este imóvel”)."], ancora="middle")
 
     # -------------------------------------------------- nova oportunidade
     d.aresta([(1650, 880), (1650, 1010), (40, 1010), (40, 200), (570, 200), (570, 250)],
              "cinza", tracejada=True, raio=16, rot_xy=(300, 1036), ancora="start",
-             rot_linhas=["nova oportunidade (sucessora): o mesmo cliente volta com outra intenção — o lead antigo fica encerrado"])
+             rot_linhas=["nova oportunidade (sucessora): o cliente em Agendado, Handoff, Inativo ou Frio volta com outra intenção — o lead antigo fica encerrado"])
 
     d.legenda([("tinta2", "Transição do lead"), ("ambar", "Ausência de resposta"),
                ("verde", "Volta ao atendimento"), ("cinza", "Nova oportunidade")],

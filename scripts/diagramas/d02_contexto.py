@@ -14,7 +14,7 @@ def montar() -> Diagrama:
     d.cartao(370, 210, 280, 104, "Canais", ["channels :8001", "telegram-in / out"], "codigo", "azul")
     d.cartao(710, 210, 250, 104, "Redis", ["Streams e lock por lead"], "camadas", "vermelho")
     d.cartao(1020, 180, 320, 164, "Agente", ["services/agent", "Grafo LangGraph:", "supervisor + 9 especialistas"], "faisca", "roxo")
-    d.cartao(1420, 150, 370, 104, "Modelos", ["Anthropic · OpenAI · Ollama"], "faisca", "roxo")
+    d.cartao(1420, 150, 370, 104, "Modelos", ["Anthropic · OpenAI · OpenRouter · Ollama", "cinco papéis, um modelo por papel"], "faisca", "roxo")
     d.cartao(1420, 300, 370, 104, "Postgres + pgvector", ["Leads, imóveis, documentos"], "banco", "cinza")
     d.cartao(370, 520, 280, 104, "Painel do corretor", ["apps/dashboard :5174"], "janela", "azul")
     d.cartao(790, 520, 280, 104, "API REST", ["services/api :8000"], "raio", "cinza")

@@ -36,7 +36,8 @@ def montar() -> Diagrama:
     ], "verde")
 
     bloco(1360, 150, 560, "03", "Infraestrutura", "portas do host deslocadas", [
-        ("db  5433 → 5432", "Postgres 16 + pgvector · bancos sdr e crm"),
+        ("db  5433 → 5432", "Postgres 16 + pgvector · bancos sdr, crm e langfuse"),
+        ("db-init", "roda a cada up: cria os bancos e aplica os schemas"),
         ("redis  6380 → 6379", "Streams e locks"),
         ("ollama  11435 → 11434", "perfil ollama · modelos locais"),
     ], "cinza")
@@ -52,7 +53,7 @@ def montar() -> Diagrama:
 
     bloco(1360, 590, 560, "05", "Opcionais", "sobem por perfil", [
         ("langfuse :3001", "perfil observability · sem integração ainda"),
-        ("db-init", "aplica os schemas a cada up"),
+        ("crm-mcp-stdio", "perfil mcp · o mesmo servidor MCP, por stdio"),
     ], "ambar")
 
     d.nota(980, 920, 1840, [

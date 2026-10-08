@@ -10,16 +10,17 @@ def montar() -> Diagrama:
         alt="Tabela visual dos tópicos do Redis Streams, com quem publica e quem consome cada um.")
 
     linhas = [
-        ("channels :8001 · telegram-in", "o quadro que o cliente mandou", "sdr:inbound",
+        ("channels :8001 · telegram-in · scheduler · reativador",
+         "mensagem do cliente, follow-up vencido ou aviso de imóvel novo", "sdr:inbound",
          "agent (grafo)", "um turno por vez, com lock por lead", "azul"),
-        ("agent", "resposta pronta para o site", "sdr:outbound-web",
+        ("agent · api :8000", "resposta da Mora, ou do corretor em handoff, para o site", "sdr:outbound-web",
          "channels :8001", "empurra no WebSocket aberto", "verde"),
-        ("agent", "resposta pronta para o Telegram", "sdr:outbound-telegram",
-         "telegram-out", "envia pela Bot API", "verde"),
-        ("agent", "lead virou qualificado, agendado ou handoff", "sdr:resumir",
-         "resumidor", "briefing e análise para o corretor", "roxo"),
-        ("ingestão do acervo", "entrou imóvel que combina", "sdr:imovel-novo",
-         "reativador", "avisa quem estava adormecido", "roxo"),
+        ("agent · api :8000", "resposta da Mora, ou do corretor em handoff, para o Telegram",
+         "sdr:outbound-telegram", "telegram-out", "envia pela Bot API", "verde"),
+        ("agent · api :8000", "lead virou qualificado, agendado ou handoff; ou análise pedida no painel",
+         "sdr:resumir", "resumidor", "briefing e análise para o corretor", "roxo"),
+        ("ingestão do acervo", "todo imóvel ingerido, sem filtro", "sdr:imovel-novo",
+         "reativador", "decide quem combina e avisa quem estava adormecido", "roxo"),
         ("agent", "mudou o estágio do lead", "sdr:events",
          "— sem consumidor hoje", "gancho para webhook ou analytics", "cinza"),
     ]
@@ -37,9 +38,9 @@ def montar() -> Diagrama:
     d.add('<text x="1910" y="170" class="t-grp" text-anchor="end">QUEM CONSOME</text>')
 
     d.nota(980, 890, 1700, [
-        "O scheduler também publica em sdr:inbound: o follow-up vencido entra como um quadro comum, pelo mesmo caminho do cliente.",
-        "Cada tópico tem um consumer group; no boot o worker retoma o que ficou pendente na PEL (id 0 e XAUTOCLAIM) — a mensagem",
-        "entregue no instante de uma queda não fica sem resposta. O lock por lead vale pelo pior caso de um turno, não por um número fixo."])
+        "Follow-up vencido (scheduler) e aviso de imóvel novo (reativador, tipo REATIVACAO) entram em sdr:inbound como um quadro comum, pelo mesmo caminho do cliente.",
+        "Cada tópico tem um consumer group; no boot o worker retoma o que ficou pendente na PEL (id 0 e XAUTOCLAIM) — a mensagem entregue no instante de uma queda",
+        "não fica sem resposta. O lock por lead é fixo (LOCK_S = 60 s) e renovado a cada 20 s enquanto o turno roda; o pior caso do turno só entra como min_idle do XAUTOCLAIM."])
     d.rodape("mensageria")
     return d
 
