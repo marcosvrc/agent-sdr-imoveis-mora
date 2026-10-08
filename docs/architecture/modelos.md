@@ -91,7 +91,7 @@ está em [Configuração](../getting-started/configuracao.md)):
 | `SDR_OLLAMA_URL` | `http://localhost:11434` | Endereço do Ollama |
 | `SDR_MODEL_EXTRACAO` / `SDR_MODEL_INFORMACOES` / `SDR_MODEL_ANALISE` | vazio | Modelo do papel; vazio herda do pai |
 | `SDR_OPENROUTER_API_KEY` | vazio | Chave do OpenRouter |
-| `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição; desligar só na bancada |
+| `SDR_OPENROUTER_ZDR` | `true` | Retenção zero em toda requisição; desligar só em testes com dataset sintético |
 | `SDR_OPENROUTER_URL` | `https://openrouter.ai/api/v1` | Base da API (os testes apontam para um servidor falso) |
 
 Divergência a registrar: o ADR-0010 recomenda **Sonnet 5** (`claude-sonnet-5`, US$ 2/10) para
@@ -402,7 +402,7 @@ Resumo do que os ADRs registram (texto completo em
   container residente com Postgres e Redis próprios, ponto único de falha e histórico de segurança;
   contra o OpenRouter em produção, PII de cliente passando por um terceiro (LGPD) e mudança de
   controle recente.
-- **OpenRouter como bancada.** `_construir` aceita `provider="openrouter"` para o harness comparar
+- **OpenRouter na avaliação de modelos.** `_construir` aceita `provider="openrouter"` para o harness comparar
   modelos sobre datasets sintéticos. Hoje, porém, o harness em `services/agent/evals/` não
   referencia OpenRouter em lugar nenhum — a porta existe no factory, o uso por `evals/` não foi
   localizado.

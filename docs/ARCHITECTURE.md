@@ -1,12 +1,12 @@
 # Arquitetura — Mora, Agente SDR Imobiliário
 
-> **Diagramas para banca:** [`docs/arquitetura.html`](arquitetura.html) — dossiê visual com os
+> **Diagramas:** [`docs/arquitetura.html`](arquitetura.html) — dossiê visual com os
 > diagramas C4 do sistema, o grafo do agente, o índice de ADRs e as lacunas conhecidas entre este
 > desenho e o código. Abra no navegador. Este arquivo aqui segue sendo a referência em texto.
 
 ## 1. Princípios
 
-1. **Roda inteiro na máquina de quem avalia**: `docker compose up` sobe o sistema completo, sem
+1. **Roda inteiro na máquina local**: `docker compose up` sobe o sistema completo, sem
    conta em provedor, sem túnel e sem URL pública. Nada está implantado, e isso é escolha de escopo.
 2. **Cérebro separado dos canais**: o agente não sabe se está no Telegram ou na web.
 3. **Cada componente na sua pasta**: dependências e testes independentes; `shared/` é a única ponte.
@@ -123,7 +123,7 @@ ponto onde o teste substitui a infraestrutura, não porque haja um segundo conju
 
 | Item | Custo | Observação |
 |---|---|---|
-| Postgres, Redis, canais, workers, API, front-ends, CRM | US$ 0 | Containers na máquina de quem avalia |
+| Postgres, Redis, canais, workers, API, front-ends, CRM | US$ 0 | Containers na máquina local |
 | Modelo de conversa e roteamento | Centavos por conversa | Único custo variável; Haiku em roteamento/extração já é a otimização (ADR-0010) |
 | Embeddings | US$ 0 com `bge-m3` no Ollama; frações de centavo com `text-embedding-3-small` | Uma vez por documento indexado; o hospedado dispensa o container do Ollama |
 | Transcrição de voz (`faster-whisper`) | US$ 0 | No próprio processo, sem serviço externo nem cobrança por minuto |
@@ -136,5 +136,5 @@ bem menor — serve para desenvolver, não para demonstrar.
 
 Nada está implantado: não há URL para mandar a alguém, não há ambiente rodando fora da máquina de
 quem sobe o compose, e o que existiu de infraestrutura como código foi removido do repositório junto
-com os adaptadores que a acompanhavam (ADR-0002). É o preço aceito para que a avaliação não dependa
+com os adaptadores que a acompanhavam (ADR-0002). É o preço aceito para que a execução não dependa
 de conta, cota ou crédito em provedor nenhum.

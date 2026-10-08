@@ -8,7 +8,7 @@ mostra leads, temperatura, chamadas ao LLM, custo e tokens — dados de aplicaç
 via `RegistradorUso` (`shared/sdr_shared/governanca/uso.py`). Não existe visão de **saúde de sistema**:
 latência por rota, taxa de erro HTTP, profundidade das filas Redis, saúde do Postgres, ou duração de
 cada nó do grafo do agente. Não há nada disso em lugar nenhum: a entrega roda inteira em
-`docker compose`, na máquina de quem avalia, e nada está implantado.
+`docker compose`, na máquina local, e nada está implantado.
 
 ## Decisão
 Adotar **OpenTelemetry** como padrão de instrumentação (traces + métricas) em todos os serviços Python

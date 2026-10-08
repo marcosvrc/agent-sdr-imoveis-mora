@@ -3,7 +3,7 @@
 Havia aqui também um `handler()` de webhook, para a Bot API chamar uma URL pública. Saiu com a AWS:
 sem função hospedada não há URL pública, e o long polling não precisa de uma — basta um
 `SDR_TELEGRAM_BOT_TOKEN` no `.env` (ver ADR-0007), o que é justamente o que torna a entrega
-reproduzível na máquina de quem avalia.
+reproduzível na máquina local.
 
 A tradução do update é do `adapter.parse_inbound`, compartilhada com o resto do canal."""
 import logging

@@ -9,7 +9,7 @@ Informações que não puderam ser confirmadas apenas com o conteúdo do reposit
 
 !!! note "O que não é pendência"
     Não implantar em nuvem é **escolha declarada**, não item em aberto: a entrega é o
-    `local/docker-compose.yml` e roda inteira na máquina de quem avalia. Veja
+    `local/docker-compose.yml` e roda inteira na máquina local. Veja
     [Execução e custo](../ARCHITECTURE.md#10-execucao-e-custo).
 
 1. **Canal de suporte** oficial (a autoria está definida: Marcos Ramos).

@@ -120,5 +120,5 @@ mas o processo **não** o lê: sem os exports, a CLI usa os padrões.
     [Estrutura do repositório](../technical-reference/estrutura.md).
 
 !!! note "Não há deploy"
-    A entrega roda inteira na máquina de quem avalia. As stacks CDK e os alvos `make synth` /
+    A entrega roda inteira na máquina local. As stacks CDK e os alvos `make synth` /
     `make deploy` foram removidos junto com a AWS; nada está implantado em servidor.

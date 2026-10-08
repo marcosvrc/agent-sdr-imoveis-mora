@@ -123,7 +123,7 @@ def checar(env: dict[str, str], repetidas: list[str] | None = None) -> tuple[lis
             erros.append("Provedor openrouter exige SDR_OPENROUTER_API_KEY.")
         if env.get("SDR_OPENROUTER_ZDR", "true").strip().lower() in ("false", "0", "nao", "não", "no"):
             avisos.append("SDR_OPENROUTER_ZDR desligado: o OpenRouter pode rotear para endpoints que "
-                          "guardam o texto do cliente. Só para bancada com dataset sintético (ADR-0016).")
+                          "guardam o texto do cliente. Só para testes com dataset sintético (ADR-0016).")
     if llm == "openrouter" and reserva in ("", "openrouter"):
         avisos.append("OpenRouter como primário sem um reserva DIRETO (anthropic ou openai): se o "
                       "OpenRouter cair, todo modelo cai junto — o fallback interno dele não cobre isso.")

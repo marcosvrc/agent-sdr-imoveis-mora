@@ -19,6 +19,9 @@ site/
 # Pacotes temporários usados para mover arquivos entre máquinas
 *.tgz
 
+# Material interno (roteiro de demonstração etc.): fica só na máquina, fora do repositório
+interno/
+
 # Saídas de sessões de assistente — não fazem parte do projeto
 Claude outputs/
 .DS_Store

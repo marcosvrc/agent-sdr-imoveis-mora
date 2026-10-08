@@ -81,7 +81,7 @@ O painel não tem SDK de autenticação: a credencial é um token estático envi
 | Análise estática | ruff + pyright (modo básico) | — | `make lint` e `make tipos`; `pyrightconfig.json` |
 
 Não há infraestrutura como código: as stacks em nuvem foram removidas do repositório, e nada está
-implantado — a entrega roda na máquina de quem avalia.
+implantado — a entrega roda na máquina local.
 
 ## Observabilidade e testes
 

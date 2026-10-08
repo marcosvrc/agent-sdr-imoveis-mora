@@ -124,7 +124,7 @@ export function ModelosForm({ form, set, efetivo, catalogo: doServidor, papeis, 
       {usaOpenRouter && openrouter && !openrouter.zdr && (
         <p className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-strong">
           Retenção zero do OpenRouter está <b>desligada</b> (<code>SDR_OPENROUTER_ZDR=false</code>): ele pode
-          rotear o texto do cliente para endpoints que guardam o dado. Só para bancada com dados sintéticos.
+          rotear o texto do cliente para endpoints que guardam o dado. Só para testes com dados sintéticos.
         </p>
       )}
       {usaOpenRouter && openrouter && !openrouter.configurado && (

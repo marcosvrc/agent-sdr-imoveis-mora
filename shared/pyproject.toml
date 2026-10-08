@@ -8,7 +8,7 @@ dependencies = ["pydantic>=2.7", "pydantic-settings>=2.3", "psycopg[binary,pool]
 
 [project.optional-dependencies]
 local = ["redis>=5.0", "langchain-ollama>=0.2", "langchain-anthropic>=0.2"]
-# Reserva de LLM (ADR-0009) e bancada de avaliação usam o mesmo pacote.
+# Reserva de LLM (ADR-0009) e harness de avaliação usam o mesmo pacote.
 openai = ["langchain-openai>=0.2"]
 
 [build-system]

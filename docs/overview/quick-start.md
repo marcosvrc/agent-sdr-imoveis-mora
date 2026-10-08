@@ -44,8 +44,8 @@ make ollama-pull
 make seed && make docs-kb
 ```
 
-Para a massa do CRM, acrescente `make preparar` e `make crm-token` entre os passos 4 e 5 — o
-[roteiro de demonstração](roteiro-demonstracao.md) detalha. Sem CRM a Mora roda sozinha.
+Para a massa do CRM, acrescente `make preparar` e `make crm-token` entre os passos 4 e 5 — o passo a
+passo completo está em [Executando com Docker](../getting-started/docker.md). Sem CRM a Mora roda sozinha.
 
 ## Validar
 

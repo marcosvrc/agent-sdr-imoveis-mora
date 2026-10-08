@@ -48,9 +48,8 @@ O raciocínio completo está na [Referência completa (ARCHITECTURE.md)](../ARCH
 
 ## Estágio atual
 
-Prova de conceito (POC). Roda inteira na máquina de quem avalia, com `docker compose`; **nada está
+Prova de conceito (POC). Roda inteira na máquina local, com `docker compose`; **nada está
 implantado** em servidor. O estado item a item está em [Funcionalidades](funcionalidades.md).
 
 !!! info "Contexto acadêmico"
-    O caminho do projeto sugere um trabalho acadêmico (FIAP, fase 5). Essa informação é **inferida** e
-    não confirmada por nenhum arquivo do repositório. Veja [Pendências](../project/pendencias.md).
+    Projeto desenvolvido por Marcos Ramos como trabalho acadêmico (FIAP, fase 5).

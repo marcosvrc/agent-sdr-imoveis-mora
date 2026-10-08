@@ -5,7 +5,7 @@ Uso:
     python scripts/semear_corretores.py --vincular-crm  # tenta casar com `users` do CRM por e-mail
     python scripts/semear_corretores.py --listar         # só mostra o que existe hoje
 
-Até aqui o cadastro nascia vazio de propósito — quem avalia o projeto criava dois corretores pela
+Até aqui o cadastro nascia vazio de propósito — quem usava o projeto criava dois corretores pela
 tela e seguia. Com vinte, dá para ver o que só aparece em escala: distribuição por região no
 encaminhamento, agenda concorrida, paginação da lista, carteira ao desligar alguém.
 

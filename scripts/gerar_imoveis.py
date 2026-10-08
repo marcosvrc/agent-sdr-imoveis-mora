@@ -3,7 +3,7 @@
 Uso: python scripts/gerar_imoveis.py [residenciais=250] [comerciais=150] [seed=42]
 
 Ordem do arquivo, e por que ela importa: primeiro os CURADOS (a fixture dos testes do agente, que
-aparecem no roteiro da demo), depois os residenciais gerados e, no FIM, os comerciais. Acrescentar
+aparecem na demonstração), depois os residenciais gerados e, no FIM, os comerciais. Acrescentar
 no fim mantém os índices dos anteriores, e há seed e teste que dependem da posição — a descrição
 com injeção de prompt mora no índice 7 e o imóvel indisponível no 11 (services/crm/.../seed/gerar.py).
 

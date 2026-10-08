@@ -43,7 +43,7 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
     Rode `make seed` para popular 400 imóveis e gerar os embeddings.
 
 ??? question "O Mora está pronto para produção?"
-    Não. É uma **POC**, que roda na máquina de quem avalia e não está implantada em lugar nenhum.
+    Não. É uma **POC**, que roda na máquina local e não está implantada em lugar nenhum.
     Veja [Roadmap e limitações](../project/roadmap.md) e [Segurança](../quality/seguranca.md).
 
 ??? question "Como entro no painel?"

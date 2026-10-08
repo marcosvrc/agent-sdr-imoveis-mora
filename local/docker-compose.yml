@@ -63,7 +63,7 @@ x-py: &py
 
 # Portas publicadas no host: TODAS em `127.0.0.1` por padrão. Sem o IP, o Docker publica em
 # 0.0.0.0, e no Docker Desktop isso fura o firewall do Mac: qualquer um no mesmo Wi-Fi (o do
-# escritório, o do café, o da sala da banca) chegava à API e ao painel com o `dev-token`, que é
+# escritório, o do café, o de um evento) chegava à API e ao painel com o `dev-token`, que é
 # público porque está escrito na documentação. Os serviços de aplicação (api, channels, CRM e os
 # três Vite) leem o endereço de `HOST_BIND`: para abrir de propósito — testar o site no celular,
 # por exemplo — ponha `HOST_BIND=0.0.0.0` no local/.env e defina ANTES um `SDR_PAINEL_TOKEN` forte.

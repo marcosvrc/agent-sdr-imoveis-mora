@@ -190,9 +190,9 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <header class="top">
   <p class="eyebrow">Dossiê de arquitetura · FIAP fase 5</p>
   <h1>Arquitetura da Mora</h1>
-  <p class="lede">Agente SDR imobiliário com IA generativa. O sistema inteiro roda na máquina de
-  quem avalia, por <code>docker compose</code>: banco, fila, workers, canais, API, front-ends e o
-  CRM. <strong>Nada está implantado</strong> — é escolha de escopo, e o efeito é que a avaliação não
+  <p class="lede">Agente SDR imobiliário com IA generativa. O sistema inteiro roda na máquina
+  local, por <code>docker compose</code>: banco, fila, workers, canais, API, front-ends e o
+  CRM. <strong>Nada está implantado</strong> — é escolha de escopo, e o efeito é que a execução não
   depende de conta, cota ou crédito em provedor nenhum.</p>
   <ul class="chips">
     <li><b>1</b> ambiente: docker compose</li>
@@ -392,7 +392,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <g id="l-clk" class="glyph"><circle r="8.2"/><path d="M0-5V0l3.3 2.1"/></g>
 <g id="l-st" class="glyph"><path d="M0-8.5l8.5 4.2L0 0l-8.5-4.3z"/><path d="M-8.5 0.5L0 4.8l8.5-4.3"/><path d="M-8.5 5L0 9.3 8.5 5"/></g>
 </defs>
-        <rect class="zone" x="10" y="10" width="940" height="880" rx="4"/><text class="zone-t" x="28" y="34">MÁQUINA DE QUEM AVALIA</text>
+        <rect class="zone" x="10" y="10" width="940" height="880" rx="4"/><text class="zone-t" x="28" y="34">MÁQUINA LOCAL</text>
         <rect class="zone" x="150" y="50" width="790" height="620" rx="4"/><text class="zone-t" x="168" y="74">DOCKER COMPOSE · rede sdr-local</text>
 
         <circle class="ic-infra" cx="80" cy="420" r="22"/><use href="#l-msg" x="80" y="420"/><text class="tl" x="80" y="458" text-anchor="middle">Telegram</text><text class="ts" x="80" y="473" text-anchor="middle">nuvem pública</text>
@@ -654,8 +654,8 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <span class="lvl">Registro de decisões</span>
     <h2>Catorze ADRs, incluindo as revertidas</h2>
   </div>
-  <p>Decisões revogadas foram mantidas com o motivo da reversão em vez de apagadas — para uma banca,
-  o caminho percorrido diz mais que o estado final.</p>
+  <p>Decisões revogadas foram mantidas com o motivo da reversão em vez de apagadas: o caminho percorrido
+  explica o estado final.</p>
   <div class="tbl-scroll">
     <table>
       <thead><tr><th>#</th><th>Decisão</th><th>Situação</th></tr></thead>
@@ -685,7 +685,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
     <span class="lvl">Honestidade arquitetural</span>
     <h2>Lacunas conhecidas entre o desenho e o código</h2>
   </div>
-  <p>Estas são as lacunas que uma banca encontraria lendo o repositório. Estão listadas com o motivo
+  <p>Estas são as lacunas identificadas na leitura do repositório. Estão listadas com o motivo
   e o impacto, porque nenhuma delas é acidente de implementação — são limites de escopo assumidos.</p>
 
   <ul class="gaps">
@@ -695,14 +695,14 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
       <p>O sistema só existe rodando no <code>docker compose</code> de quem o subir: não há URL para
       mandar a alguém nem ambiente em pé fora dessa máquina. O que existiu de infraestrutura como
       código foi removido do repositório junto com os adaptadores hospedados (ADR-0002). O ganho é a
-      avaliação não depender de conta, cota ou crédito em provedor nenhum; o preço é este.</p>
+      execução não depender de conta, cota ou crédito em provedor nenhum; o preço é este.</p>
     </li>
     <li>
       <span class="tag">canal · uma porta só para fora</span>
       <h4>O único canal externo é o Telegram</h4>
       <p>O WhatsApp exigia número de negócio verificado e webhook com URL pública, e saiu do código
       (ADR-0007) — adaptador e worker foram removidos, não desativados. Voltar significa escrevê-los
-      de novo. Impacto prático: quem avalia precisa de um bot do <code>@BotFather</code> para
+      de novo. Impacto prático: quem executa precisa de um bot do <code>@BotFather</code> para
       exercitar o canal externo, ou fica com o chat do site e a CLI.</p>
     </li>
     <li>

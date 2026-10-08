@@ -52,11 +52,11 @@ inclusive a extração, que não pode furar a degradação se alguém a apontar 
 governança grava a função (`conversa`), não quem atendeu, para não misturar os papéis na comparação.
 
 ### 2. OpenRouter como provedor, com retenção zero obrigatória
-`provider="openrouter"` deixa de ser só bancada e entra no painel. As condições estão no código, não
+`provider="openrouter"` deixa de servir só à avaliação de modelos e entra no painel. As condições estão no código, não
 na configuração de quem usa:
 
 - **Toda requisição** leva `provider: {"data_collection": "deny", "zdr": true}`. Desligar o ZDR
-  (`SDR_OPENROUTER_ZDR=false`) é para a bancada com dataset sintético; o `check_env.py` e a tela avisam.
+  (`SDR_OPENROUTER_ZDR=false`) é só para testes com dataset sintético; o `check_env.py` e a tela avisam.
 - **Ordenação por papel** (`provider.sort`): latência para roteamento e extração (saída curta — o
   cliente sente o primeiro token), velocidade de geração para conversa e informações, preço para a
   análise.

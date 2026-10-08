@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # OpenRouter (ADR-0016): um intermediário que dá acesso a centenas de modelos com uma chave só.
     # É um operador a mais no caminho do texto do cliente, e por isso a retenção zero é LIGADA por
     # padrão: com ela o OpenRouter só roteia para endpoints que não guardam o dado. Desligar é para
-    # a bancada de avaliação, com dataset sintético — nunca com conversa de cliente de verdade.
+    # o harness de avaliação, com dataset sintético — nunca com conversa de cliente de verdade.
     # Exige `langchain-openai` (o extra `openai` do sdr-shared).
     openrouter_api_key: str | None = None
     openrouter_zdr: bool = True
@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     model_conversa: str = "claude-sonnet-4-5"
     model_roteamento: str = "claude-haiku-4-5"
     # Papéis que herdam (ver sdr_shared.papeis): vazio = usa o do papel pai. Existem no ambiente
-    # para a bancada poder fixar um modelo por papel sem banco; em operação, o painel é o caminho.
+    # para os testes poderem fixar um modelo por papel sem banco; em operação, o painel é o caminho.
     model_extracao: str | None = None       # vazio → model_roteamento
     model_informacoes: str | None = None    # vazio → model_conversa
     model_analise: str | None = None        # vazio → model_conversa

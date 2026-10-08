@@ -23,7 +23,7 @@ não toca em nó nenhum do grafo.
   mensagem do cliente sem deixar rastro.
 - **Runtime gerenciado de agente.** Havia aqui uma decisão por função hospedada em container, com
   a fila gerenciada por trás. A entrega passou a ser **inteiramente local** — roda com um `docker
-  compose up` na máquina de quem avalia, sem conta em nuvem, sem provisionamento e sem custo — e a
+  compose up` na máquina local, sem conta em nuvem, sem provisionamento e sem custo — e a
   decisão hospedada foi removida junto com o resto da infraestrutura. O desenho em fila continua
   sendo o que torna essa volta barata, se ela for desejada.
 

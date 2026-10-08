@@ -18,7 +18,7 @@ Um Postgres com **pgvector** serve os dois, e é o mesmo banco que o painel cons
 - **Documentos:** fatiados por seção em `sdr_shared/conhecimento.py`, com `assunto` derivado da
   subpasta — é assim que se recupera a política de visita sem trazer a tabela de taxas junto.
 - **Embeddings:** `bge-m3` pelo Ollama, 1024 dimensões, que é o que o schema espera. Roda na
-  máquina de quem avalia, sem chave e sem custo por token.
+  máquina local, sem chave e sem custo por token.
 - **Piso de similaridade** no caminho institucional (0.35). Busca vetorial sempre devolve o vizinho
   mais próximo, mesmo quando ele está longe: sem piso, "vocês fazem seguro de automóvel?" traria o
   trecho de taxas e o agente afirmaria uma política inventada. Lista vazia é resultado, não falha.
@@ -30,7 +30,7 @@ Um Postgres com **pgvector** serve os dois, e é o mesmo banco que o painel cons
   passou a ser réplica sincronizada dele (a cada 15 min pelo scheduler, ou `make seed`). A
   divergência existe e é limitada por esse intervalo; preço e status de um imóvel podem estar
   atrasados até lá.
-- (+) Roda inteiro na máquina de quem avalia — nenhum serviço a provisionar antes da primeira
+- (+) Roda inteiro na máquina local — nenhum serviço a provisionar antes da primeira
   conversa.
 - (−) Toda a qualidade da recuperação é responsabilidade do código, não de um serviço gerenciado.
   É por isso que existe `services/agent/evals/` com dataset próprio: sem medida, "melhorar o RAG"

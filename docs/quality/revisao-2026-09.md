@@ -127,8 +127,8 @@ do laço sem remover de `conexoes`. Não há `max_size`, limite de caracteres ne
 
 Conversas inteiras ficam em `mensagens.conteudo` sem retenção; `RETENCAO_DIAS=7`
 (`monitoramento.py:22`) apaga métricas, não dados pessoais. Não há rota de exclusão ou anonimização
-de lead. O `README.md:723` reconhece a lacuna, o que é o tratamento correto para uma POC — mas é a
-primeira pergunta de qualquer banca que conheça a lei.
+de lead. O `README.md:723` reconhece a lacuna, o que é o tratamento correto para uma POC — mas é o
+primeiro ponto a resolver antes de qualquer uso com dados reais (LGPD).
 
 ---
 
@@ -212,7 +212,7 @@ prompts pequenos (o maior ≈ 900 tokens) com o modelo certo por papel.
 - **Degradação desenhada**: sem CRM, sem LLM, com orçamento estourado, sem observabilidade — tudo
   cai para um comportamento explícito.
 
-### O que um avaliador rigoroso vai apontar
+### Pontos de atenção
 
 **3.1 Dupla escrita Mora→CRM sem fila de reprocessamento** [V] — *alta*
 `ports/crm.py:20-22` promete "a transcrição continua na Mora para ser publicada depois". Não existe

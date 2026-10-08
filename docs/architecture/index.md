@@ -22,7 +22,7 @@ vale.
 
 ## Princípios de arquitetura
 
-1. **Roda inteiro na máquina de quem avalia** — `docker compose up` sobe o sistema completo, sem
+1. **Roda inteiro na máquina local** — `docker compose up` sobe o sistema completo, sem
    conta em provedor, sem túnel e sem URL pública.
 2. **Cérebro separado dos canais** — o agente não sabe se está no Telegram ou na web.
 3. **Cada componente na sua pasta** — dependências e testes independentes; `shared/` é a única ponte.

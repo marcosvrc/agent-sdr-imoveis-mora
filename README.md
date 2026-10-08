@@ -31,7 +31,7 @@ procura, recomenda imóveis do catálogo, agenda visitas e entrega o lead qualif
 a um corretor humano. Um **CRM** à parte, com banco e login próprios, é onde a equipe opera; a Mora
 escreve nele por **MCP**, com credencial de serviço e limites explícitos.
 
-**Status:** POC. A entrega inteira roda na máquina de quem avalia, por `docker compose`; nada está
+**Status:** POC. A entrega inteira roda na máquina local, por `docker compose`; nada está
 implantado, e isso é escolha (ver [Roadmap](docs/project/roadmap.md)).
 
 > **Este README é o guia de entrada.** Cada seção resume o assunto e aponta para a página
@@ -319,9 +319,6 @@ aplica (rótulos copiados do código):
 | **Painel da Mora** | [Painel administrativo](docs/user-guide/painel.md) | Login e tempo real; Visão geral, Leads (ficha, handoff, cartão, análise), Conversas, Imóveis (fotos), Corretores (carteira, Google Calendar), Governança de IA, Auditoria, Saúde, Configurações (persona, follow-up, agenda, cobertura, handoff, modelos, operação, canais) |
 | **CRM** | [CRM](docs/user-guide/crm.md) | Login por usuário, Visão geral, Funil, Clientes e Oportunidades, Imóveis (situação, cadastro com fotos, agenda), Visitas (confirmar, cancelar, remarcar), Encaminhamentos, Auditoria; papéis e permissões; como as coisas entram; erros e o que fazer |
 | Dúvidas | [FAQ](docs/user-guide/faq.md) | Perguntas frequentes |
-
-Roteiro de demonstração ponta a ponta (site → conversa → CRM → painel), em cinco momentos:
-[Roteiro](docs/overview/roteiro-demonstracao.md).
 
 ## 10. Regras de negócio
 

@@ -44,7 +44,7 @@ As features que interessam (fallback entre provedores, cache, custo unificado) v
 não no SDK — o SDK entrega abstração de provedor, que já temos. E o Proxy é um serviço sempre ligado,
 com Postgres e Redis próprios, no caminho de toda chamada:
 
-- Tudo aqui roda em `docker compose` na máquina de quem avalia: o proxy seria mais um container
+- Tudo aqui roda em `docker compose` na máquina local: o proxy seria mais um container
   residente, com Postgres e Redis próprios, logo depois de termos removido sete containers de
   observabilidade (ADR-0005) porque a máquina de desenvolvimento não aguentava.
 - E seria ponto único de falha na frente de cada conversa, no caminho de toda chamada.
@@ -75,7 +75,7 @@ Mesmo assim:
 - E acrescentaria um intermediário exatamente onde hoje não há nenhum, sem resolver nada que a
   camada própria já não resolva.
 
-**Mas ele entra como bancada.** `_construir` aceita `provider="openrouter"` (dependência opcional,
+**Mas ele entra na avaliação de modelos.** `_construir` aceita `provider="openrouter"` (dependência opcional,
 import tardio) para o harness de `evals/` comparar modelos alternativos sobre os datasets sintéticos.
 Ali os dados são casos de teste, não PII, o que anula a objeção — e responder "por que Claude e não
 outro?" com número medido vale mais que opinião.

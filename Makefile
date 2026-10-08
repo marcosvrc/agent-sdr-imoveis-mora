@@ -30,8 +30,7 @@ ajuda:
 	@echo
 	@echo "Verificar:  make lint · make test · make eval-fake · make segredos (antes do push)"
 	@echo "Medir RAG:  make eval-rag  (e SDR_RAG_LEXICO=1 make eval-rag para comparar)"
-	@echo "Demonstrar: site :5173 · painel da Mora :5174 · CRM :3000"
-	@echo "            roteiro em docs/overview/roteiro-demonstracao.md"
+	@echo "Acessar:    site :5173 · painel da Mora :5174 · CRM :3000"
 	@echo
 	@echo "Sem CRM a Mora roda sozinha: pule 4, 5 e a parte de CRM. Os alvos avisam."
 

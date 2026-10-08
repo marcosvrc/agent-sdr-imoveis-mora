@@ -14,7 +14,7 @@ o caminho prático.
 !!! warning "Ele fica no caminho do texto do cliente"
     O OpenRouter é um intermediário: a mensagem do lead passa por ele antes de chegar ao modelo. Por
     isso toda requisição sai com **retenção zero** (`zdr: true`) e `data_collection: deny`. Não desligue
-    `SDR_OPENROUTER_ZDR` fora da bancada com dataset sintético.
+    `SDR_OPENROUTER_ZDR` fora de testes com dataset sintético.
 
 ## 1. Criar a chave
 
@@ -55,7 +55,7 @@ Os IDs acima são exemplos (vêm de `services/agent/evals/matriz.json`). Os vál
 têm **algum endpoint com ZDR**.
 
 Em operação, o caminho preferido é escolher os modelos pelo painel (seção 4); as variáveis servem para
-fixar um padrão sem banco ou na bancada.
+fixar um padrão sem banco ou em testes.
 
 ### Embeddings pelo OpenRouter (opcional)
 

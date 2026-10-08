@@ -72,7 +72,7 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
   `docker compose ps` (unhealthy), a tela de saúde (serviço em vermelho) e o p95 do período.
 - O p95 do turno é medido de ponta a ponta, do jeito que o cliente sente — não por componente.
 - Nada aqui é específico de ambiente: as tabelas, o `/health` e a tela funcionam onde o compose
-  subir, que hoje é a máquina de quem avalia — nada está implantado.
+  subir, que hoje é a máquina local — nada está implantado.
 - Sobrevive à revogação do ADR-0005: nada aqui depende de OTel, e nada aqui impede adotá-lo depois.
 
 **Contra, e assumido**

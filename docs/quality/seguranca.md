@@ -34,7 +34,7 @@ Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 | Upload de foto | Implementado | Assinatura JPEG/PNG/WebP conferida nos bytes; `/fotos` e `/acervo` com `X-Content-Type-Options: nosniff` |
 | Login do CRM sem oráculo de tempo | Implementado | E-mail inexistente também passa pelo Argon2 (hash fictício) |
 | CORS | Implementado | `SDR_CORS_ORIGINS`; vazio = só os front-ends locais no perfil local, nenhuma origem fora dele |
-| Gerenciamento de secrets | Parcial | Só `.env` (`local/.env`, fora do versionamento). Não há cofre de segredos — a entrega roda na máquina de quem avalia |
+| Gerenciamento de secrets | Parcial | Só `.env` (`local/.env`, fora do versionamento). Não há cofre de segredos — a entrega roda na máquina local |
 | Exposição de portas | Implementado | Toda porta do compose publicada só em `127.0.0.1`. `HOST_BIND=0.0.0.0` abre API, canais, CRM e front-ends de propósito; Postgres, Redis, Ollama e Langfuse ficam no loopback sempre |
 | Containers sem root | Implementado | A imagem Python roda como `mora` (UID 1000); `CONTAINER_USER=root` é só válvula de escape para bind mount |
 | Isolamento do ambiente do CRM | Implementado | `crm-api`, `crm-mcp` e `crm-mcp-stdio` não leem o `local/.env`: recebem, nomeadas, só as variáveis `CRM_*` que usam — nada de chave de LLM, token do Telegram ou segredo de sessão da Mora |
