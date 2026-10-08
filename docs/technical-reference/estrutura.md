@@ -33,6 +33,21 @@ agent-sdr-morai/
 Não há diretório de infraestrutura como código: as stacks em nuvem foram removidas do repositório
 quando a entrega passou a ser só o `docker compose` de `local/`.
 
+## Scripts (`scripts/`)
+
+| Script | Alvo do `make` | Opções |
+| --- | --- | --- |
+| `check_env.py` | `check-env`; `local` e `local-ollama` com `--gerar-segredo` | `[arquivo]` (padrão `local/.env`); `--gerar-segredo` grava um `SDR_SESSAO_SECRET` quando falta ou é o de exemplo |
+| `checar_segredos.py` | `segredos` | `--env` (arquivo com os segredos reais, padrão `local/.env`), `--desde` (de onde varrer os commits, padrão `origin/master`) |
+| `gerar_imoveis.py` | — | posicionais `[residenciais=250] [comerciais=150] [seed=42]`; determinístico |
+| `indexar_fotos.py` | — | `--largura` (padrão 1200 px) e `--qualidade` (JPEG, padrão 78) das fotos do acervo |
+| `semear_corretores.py` | `corretores` (com `--vincular-crm`) | `--vincular-crm` casa cada corretor com o usuário do CRM pelo e-mail; `--listar` só mostra o cadastro |
+| `gerar_openapi.py` | `openapi` | `--verificar` falha se `docs/assets/openapi.json` estiver desatualizado (é o que a CI roda) |
+
+Outros alvos úteis: `make docs` (instala `docs-requirements.txt` e sobe o portal com `mkdocs serve`),
+`make docs-secos` (lista os documentos que o `make docs-kb` indexaria, com `--seco`, sem tocar no
+banco), `make test-db` (só prepara os bancos de teste) e `make diagramas` (regera os SVG).
+
 ## Regras de dependência
 
 - `shared/` é a **única ponte** entre serviços.

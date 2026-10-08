@@ -10,8 +10,10 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
     local, sem custo. Anthropic, OpenAI e OpenRouter são alternativas que exigem uma chave de API.
 
 ??? question "Como rodar sem gastar tokens de LLM?"
-    Suba com `--profile ollama` (`make local-ollama`) e baixe o modelo de embeddings `bge-m3`
-    (`make ollama-pull`). Os testes de backend usam um LLM falso e não gastam token; `make eval-fake`
+    No `local/.env`, ponha `SDR_LLM_PROVIDER=ollama` (com `SDR_MODEL_CONVERSA` e
+    `SDR_MODEL_ROTEAMENTO` apontando para modelos que você baixou) e `SDR_EMBEDDINGS_PROVIDER=ollama` —
+    o `.env.example` vem com provedores pagos. Suba com `--profile ollama` (`make local-ollama`) e baixe
+    o modelo de embeddings `bge-m3` (`make ollama-pull`). Os testes de backend usam um LLM falso e não gastam token; `make eval-fake`
     também não.
 
 ??? question "Dá para usar o OpenRouter?"

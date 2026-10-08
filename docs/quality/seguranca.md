@@ -28,9 +28,9 @@ Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 | Blindagem de prompt | Implementado | Persona + cabeçalho de regras; texto do cliente em bloco com sentinela aleatória |
 | Saneamento de saída | Implementado | `guardrails/saida.py`: descarta vazamento de instrução, mascara PII (CPF / cartão), remove tags / código / links |
 | Injeção indireta via RAG | Implementado | Descrição de imóvel neutralizada antes de entrar no prompt |
-| Rate limiting | Implementado | Por lead (rajada e hora) — `guardrails/vazao.py` |
+| Rate limiting | Implementado | Por lead no agente (rajada e hora) — `guardrails/vazao.py`. Canal web: 20 sessões por hora por IP (429), 15 mensagens por minuto por sessão, 200 por hora por IP e quadro de até 8 KiB ([API](../technical-reference/api.md#canal-web-porta-8001)). CRM: 120 requisições por minuto por credencial e 10 tentativas de login por minuto (`CRM_RATE_LIMIT_POR_MINUTO`, `CRM_LOGIN_TENTATIVAS_POR_MINUTO`) |
 | Auditoria | Implementado | Middleware registra tudo que altera o sistema; recusa 401/403/404 a quem não se autenticou e o `/eventos` público ficam fora (não dá para poluir a trilha); exportação CSV neutraliza fórmula (`=`, `+`, `-`, `@`) |
-| Teto de corpo | Implementado | 256 KB na API e no CRM, pelo `Content-Length` e contando os bytes recebidos (`Transfer-Encoding: chunked`) — `limite_corpo.py` nos dois serviços |
+| Teto de corpo | Implementado | 256 KB na API e no CRM (`CRM_CORPO_MAXIMO_BYTES` ajusta o do CRM); 2,2 MB só no upload de foto (`POST /imoveis/{id}/fotos`, imagem em base64), pelo `Content-Length` e contando os bytes recebidos (`Transfer-Encoding: chunked`) — `limite_corpo.py` nos dois serviços |
 | Upload de foto | Implementado | Assinatura JPEG/PNG/WebP conferida nos bytes; `/fotos` e `/acervo` com `X-Content-Type-Options: nosniff` |
 | Login do CRM sem oráculo de tempo | Implementado | E-mail inexistente também passa pelo Argon2 (hash fictício) |
 | CORS | Implementado | `SDR_CORS_ORIGINS`; vazio = só os front-ends locais no perfil local, nenhuma origem fora dele |

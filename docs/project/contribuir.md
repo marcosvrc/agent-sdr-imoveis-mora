@@ -39,8 +39,8 @@ São os mesmos passos dos dois jobs do CI (`python` e `frontend`) — veja
 Este portal é feito em Markdown, sob `docs/`. Para editar:
 
 ```bash
-pip install mkdocs-material
-mkdocs serve                     # pré-visualização em http://127.0.0.1:8000
+make docs                        # instala docs-requirements.txt e sobe em http://127.0.0.1:8000
+mkdocs build --strict            # o que a CI confere: aviso (link quebrado, por exemplo) vira erro
 ```
 
 Cada página tem um link **"Editar"** no topo (aponta para o GitHub). A publicação é automática ao

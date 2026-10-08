@@ -18,16 +18,58 @@ não só combinada (ver [decisões](../decisions.md) D-02).
 
 ## Schema e migrations
 
-O schema vive em `shared/sdr_shared/db/schema.sql` e é idempotente
-(`CREATE`/`ALTER ... IF NOT EXISTS`).
+São dois schemas, um por banco, ambos idempotentes (`CREATE`/`ALTER ... IF NOT EXISTS`):
+`shared/sdr_shared/db/schema.sql` (banco `sdr`, da Mora) e `services/crm/sdr_crm/db/schema.sql`
+(banco `crm`). Não há ferramenta de migration: coluna nova entra como `ALTER TABLE ... ADD COLUMN IF NOT
+EXISTS` no próprio arquivo.
 
 ```bash
-# Aplicado automaticamente na PRIMEIRA subida do container db (initdb.d); para reaplicar:
-make migrate
+# No compose, o serviço db-init cria os bancos e aplica os dois schemas a CADA `up`,
+# antes de qualquer serviço Python. Para reaplicar com tudo no ar:
+make migrate        # banco sdr
+make crm-migrate    # banco crm
 
 # Execução manual:
 psql "$SDR_DATABASE_DSN" -f shared/sdr_shared/db/schema.sql
 ```
+
+## Tabelas da Mora (banco `sdr`)
+
+| Tabela | O que guarda |
+| --- | --- |
+| `clientes` | A **pessoa**: uma por telefone/e-mail, a mesma no Telegram e na web. |
+| `leads` | A **oportunidade** de um cliente: cartão de qualificação, estágio, corretor, resumo e análise. Um cliente pode ter várias ao longo do tempo. |
+| `canais` | Identificadores de canal (`web`, `telegram`) de cada lead — um histórico só para vários canais (ADR-0003). |
+| `mensagens` | Histórico da conversa, por lead e direção. |
+| `imoveis` | Catálogo indexado, com `embedding vector(1024)`; `retirado_em` marca o que saiu da oferta sem apagar o histórico. |
+| `interesses` | Lead × imóvel, N:N e fraco: interesse não é reserva. |
+| `visitas` | Visitas marcadas, com corretor e status. |
+| `followups_agendados` | Um follow-up pendente por lead; o scheduler dispara. |
+| `eventos_navegacao` | O que a sessão do site viu (imóveis vistos), usado pelo turno do chat. |
+| `corretores` | Equipe: nome, contato, foto, ativo; vínculo com o usuário do CRM pelo e-mail. |
+| `notificacoes` | Avisos para o corretor (lead quente, handoff, visita). |
+| `configuracoes` | Configurações editáveis pelo painel (chave → JSON); os padrões ficam no código. |
+| `uso_llm` | Uma linha por chamada de modelo: papel, modelo, tokens, cache, custo e latência. |
+| `auditoria` | Quem fez o quê, no painel e no agente. |
+| `documentos` | Base institucional fatiada para o RAG: `assunto`, `titulo` (vira a citação), `embedding` e `busca` (`tsvector`). |
+| `crm_vinculo` | Lead da Mora ↔ lead e oportunidade no CRM, com a versão para o `If-Match`. |
+| `crm_pendencias` | Turnos a publicar no CRM que falharam; o scheduler drena. |
+| `crm_reconhecimento` | Cache da busca do cliente no CRM por contato (hash), para não procurar a cada turno. |
+| `turnos`, `saude`, `batimentos` | Observabilidade leve (ADR-0011), ver abaixo. |
+
+## Tabelas do CRM (banco `crm`)
+
+| Tabela | O que guarda |
+| --- | --- |
+| `users`, `sessions` | Usuários humanos do painel do CRM (login por e-mail) e as sessões abertas. |
+| `service_credentials` | Credenciais de serviço — a da Mora, emitida por `make crm-token` (só o hash). |
+| `leads`, `opportunities`, `preferences` | A pessoa, cada intenção dela e as exigências de cada intenção (1:1 com a oportunidade). |
+| `properties`, `property_photos`, `property_interests` | Catálogo da imobiliária, fotos (com `alt`) e interesse por imóvel. |
+| `interactions` | Histórico de interações publicado pela Mora e pelos corretores. |
+| `availability_slots`, `visits` | Agenda por imóvel e visitas (remarcação aponta para a substituta). |
+| `tasks`, `handoffs` | Trabalho do corretor: tarefas e passagens de bastão do agente. |
+| `audit_events` | Auditoria **somente append**: não há `UPDATE` nem `DELETE` nela no código. |
+| `idempotency_records` | Respostas já dadas a uma `Idempotency-Key`, gravadas na mesma transação da mutação (validade: `CRM_IDEMPOTENCIA_HORAS`). |
 
 ## Restrições e índices que a aplicação usa como regra
 
@@ -54,8 +96,8 @@ com o tráfego do site, e o índice por sessão é o que mantém a consulta do t
 
 ## Banco de testes
 
-Os testes usam um banco separado, **`sdr_test`**. As suítes apagam tabelas e uma trava recusa rodar
-contra um banco sem "test" no nome. Veja [Testes](../quality/testes.md).
+Os testes usam bancos separados: **`sdr_test`** para a Mora e **`crm_test`** para o CRM. As suítes
+apagam tabelas e uma trava recusa rodar contra um banco sem "test" no nome. Veja [Testes](../quality/testes.md).
 
 ## Tabelas de observabilidade
 
@@ -66,8 +108,10 @@ A observabilidade leve grava três tabelas no próprio Postgres — `turnos`, `s
 
 Os embeddings ficam no pgvector, em duas tabelas: `imoveis.embedding` (catálogo, com cascata por
 localidade) e `documentos.embedding` (documentos institucionais fatiados, com a coluna gerada `busca`
-em `tsvector` para a fusão léxica). Ambas são `vector(1024)` — a dimensão do `bge-m3`, o único modelo
-de embeddings do projeto, servido pelo Ollama. Reindexe o catálogo com `make seed` após alterar
+em `tsvector` para a fusão léxica). Ambas são `vector(1024)`: é a dimensão nativa do `bge-m3`
+(Ollama), e o `text-embedding-3-small` (OpenAI ou OpenRouter, o que vem no `local/.env.example`) é
+pedido reduzido a 1024. Os dois modelos não se misturam no mesmo índice: trocar de um para o outro
+exige reindexar tudo. Reindexe o catálogo com `make seed` após alterar
 bairros ou descrições, e os documentos com `make docs-kb`. Veja
 [Dados e persistência](../architecture/dados.md).
 

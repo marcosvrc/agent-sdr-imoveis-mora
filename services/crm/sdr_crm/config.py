@@ -25,7 +25,6 @@ class Settings(BaseSettings):
     # Limite por credencial, por minuto (seção 11). Contador em memória, de uma instância só — está
     # documentado como tal para ninguém confundir com proteção distribuída.
     rate_limit_por_minuto: int = 120
-    rate_limit_burst: int = 20
     # Login é a única rota que se atinge sem credencial; o teto dela é à parte e bem menor.
     login_tentativas_por_minuto: int = 10
     corpo_maximo_bytes: int = 256 * 1024

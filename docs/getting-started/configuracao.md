@@ -5,7 +5,10 @@ description: Todas as variáveis SDR_ do Mora, com exemplos seguros e valores pa
 
 # Configuração e variáveis de ambiente
 
-Todas as variáveis usam o prefixo `SDR_`. Os arquivos de referência são
+As variáveis da Mora usam o prefixo `SDR_`. As exceções são as chaves que as bibliotecas procuram com
+o próprio nome (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`), as do CRM (`CRM_*`, um sistema à parte), as dos
+front-ends (`VITE_*`) e as do próprio compose (`HOST_BIND`, `*_HOST_PORT`, `CONTAINER_USER`). Os
+arquivos de referência são
 [`.env.example`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/.env.example) (execução
 manual, fora do compose) e `local/.env.example` (perfil local, o caminho da entrega).
 
@@ -19,6 +22,10 @@ Crie seu arquivo a partir do exemplo:
 cp -n local/.env.example local/.env   # perfil local (docker compose) — `-n` não sobrescreve
 cp -n .env.example .env               # execução manual, fora do compose
 ```
+
+Na execução manual, copiar não basta: cada processo procura o `.env` no diretório em que roda, e
+algumas chaves são lidas só do ambiente. Exporte as variáveis no terminal antes de subir — o passo a
+passo está em [Executando manualmente](manual.md#carregar-o-ambiente-em-todo-terminal).
 
 ## Referência de variáveis
 
@@ -35,7 +42,7 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `SDR_MODEL_EXTRACAO` | Não | *(vazio → roteamento)* | Modelo da extração do cartão (ADR-0016). |
 | `SDR_MODEL_INFORMACOES` | Não | *(vazio → conversa)* | Modelo do RAG institucional. |
 | `SDR_MODEL_ANALISE` | Não | *(vazio → conversa)* | Modelo do briefing e da análise. |
-| `SDR_EMBEDDINGS_PROVIDER` | Não | `ollama` | `ollama` (bge-m3), `openai` ou `openrouter` (text-embedding-3-small reduzido a 1024). O schema espera 1024 dimensões. Trocar de modelo exige reindexar; trocar só o caminho do mesmo modelo (OpenAI ↔ OpenRouter), não. |
+| `SDR_EMBEDDINGS_PROVIDER` | Não | `openai` | Padrão do código: `ollama`, o único que roda sem chave; o `local/.env.example` já vem com `openai`. Opções: `ollama` (bge-m3), `openai` ou `openrouter` (text-embedding-3-small reduzido a 1024). O schema espera 1024 dimensões. Trocar de modelo exige reindexar; trocar só o caminho do mesmo modelo (OpenAI ↔ OpenRouter), não. |
 | `SDR_EMBEDDINGS_MODEL` | Não | `text-embedding-3-small` | Modelo de embedding para `openai` e `openrouter`. Pelo OpenRouter, sem fornecedor no ID vira `openai/…`. |
 | `OPENAI_API_KEY` | Se usar `openai` | `sk-…` | Chave da OpenAI. **Sem o prefixo `SDR_`** — é o nome que a biblioteca procura no ambiente, igual à `ANTHROPIC_API_KEY`. Instale o extra: `pip install -e "shared[openai]"`. |
 | `SDR_TRANSCRICAO_PROVIDER` | Não | `auto` | Motor de transcrição de áudio: `auto`, `whisper_local` ou `off`. |
@@ -74,7 +81,8 @@ cp -n .env.example .env               # execução manual, fora do compose
 | `HOST_BIND` | `127.0.0.1` | Endereço do host em que o compose publica API, canais, CRM e os três Vite. `0.0.0.0` abre para a rede — defina antes um `SDR_PAINEL_TOKEN` forte. Postgres, Redis, Ollama e Langfuse ficam no loopback sempre. Ver [Executando com Docker](docker.md#acesso-de-outro-aparelho-da-rede). |
 | `CONTAINER_USER` | `mora` | Usuário dos containers Python. `root` é a válvula de escape se um bind mount recusar escrita (ver [Executando com Docker](docker.md#usuario-dos-containers-python)). |
 | `LANGFUSE_HOST_PORT` / `LANGFUSE_NEXTAUTH_SECRET` / `LANGFUSE_SALT` | `3001` / padrão de dev / padrão de dev | Só com `--profile observability`. Nenhum código envia trace ao Langfuse ainda. |
-| `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local. |
+| `SDR_LOG_JSON` | *(automático)* | Força log estruturado em JSON (`1`) ou legível (`0`). Sem valor, é JSON fora do perfil local — e o log considera "fora do local" também a **ausência** de `SDR_PROFILE` (ao contrário da configuração, cujo padrão é `local`). No compose o perfil vem preenchido; na execução manual, exporte `SDR_PROFILE=local` para ter log legível. |
+| `SDR_ACERVO_ARQUIVO` | `/app/data/imoveis/imoveis.json` | Arquivo do acervo que o scheduler reindexa no refresh. O padrão é o caminho dentro do container; na execução manual aponte para `data/imoveis/imoveis.json`. |
 | `SDR_TEST_ALLOW_WIPE` | *(vazio)* | Ignora a trava que impede as suítes de apagar um banco sem "test" no nome. Último recurso. |
 
 ### Ponte com o CRM (sistema à parte)
@@ -90,6 +98,26 @@ diferentes, e trocá-los um pelo outro dá 401 sem explicação.
 | `CRM_API_TOKEN` | servidor MCP | Credencial dele na API REST do CRM. Emita com `make crm-token` — aparece uma vez só. |
 | `CRM_FOTOS_BASE_URL` | seed do CRM | Base para transformar a foto relativa do acervo (`/acervo/...`) em URL absoluta, que é o que a coluna `property_photos.url` aceita. Padrão: `SDR_PUBLIC_API_URL` ou `http://localhost:8000`. |
 
+### CRM (serviço `crm-api`)
+
+O CRM não lê o `local/.env` inteiro: o compose repassa ao `crm-api` só as variáveis nomeadas no
+`environment` dele. As marcadas com ✓ podem ser ajustadas no `local/.env`; as demais estão fixas no
+compose.
+
+| Variável | Padrão | No `.env` | Para quê |
+| --- | --- | :---: | --- |
+| `CRM_DATABASE_DSN` | `postgresql://sdr:sdr@localhost:5432/crm` | — | Banco próprio do CRM (no compose, `db:5432/crm`). |
+| `CRM_APP_ENV` | `development` | — | `development`, `test` ou `production`. Seed e reset só rodam em `development` e `test`. |
+| `CRM_ALLOWED_ORIGINS` | `["http://localhost:3000","http://127.0.0.1:3000"]` | ✓ | Origens do CORS, em JSON. |
+| `CRM_RATE_LIMIT_POR_MINUTO` | `120` | ✓ | Requisições por credencial por minuto (contador em memória, uma instância). |
+| `CRM_LOGIN_TENTATIVAS_POR_MINUTO` | `10` | ✓ | Teto à parte para o login. |
+| `CRM_CORPO_MAXIMO_BYTES` | `262144` (256 KiB) | ✓ | Corpo acima disso recebe 413. |
+| `CRM_IDEMPOTENCIA_HORAS` | `24` | ✓ | Por quanto tempo uma `Idempotency-Key` devolve a mesma resposta. |
+| `CRM_FOTOS_BASE_URL` | `SDR_PUBLIC_API_URL` | ✓ | Ver a tabela da ponte acima. |
+| `CRM_SESSION_SECRET` | *(vazio)* | — | Existe na configuração e não é usado (o cookie é token aleatório). |
+| `CRM_API_BASE_URL` | `http://localhost:8100` | — | Do **servidor MCP**: onde fica a REST do CRM (no compose, `http://crm-api:8100`). |
+| `CRM_EQUIPE_JSON` / `CRM_ACERVO_JSON` | arquivos de `data/` | — | Do **seed**: trocam a equipe e o acervo semeados por outros arquivos. |
+
 ## Variáveis dos front-ends (`VITE_*`)
 
 Vite injeta estas variáveis **no momento do build** — não em tempo de execução. Trocar uma delas exige
@@ -100,7 +128,8 @@ reconstruir (`npm run build`); num `.env` lido pelos serviços Python elas não 
 | `VITE_API_URL` | site e painel | `http://localhost:8000` | Base da API REST. |
 | `VITE_WS_URL` | site e painel | `ws://localhost:8001/ws` | WebSocket do chat e do tempo real do painel. |
 | `VITE_CANAL_URL` | site | `http://localhost:8001` | Serviço de canais (HTTP). |
-| `VITE_TELEGRAM_BOT_USERNAME` | site | `mora_vertice_bot` | Monta o link `t.me/<usuario>` do CTA "continuar no Telegram". |
+| `VITE_TELEGRAM_BOT_USERNAME` | site | `mora_vertice_bot` | Monta o link `t.me/<usuario>` do CTA "continuar no Telegram". No compose vem de `SDR_TELEGRAM_BOT_USERNAME`; vazio usa o padrão. |
+| `VITE_CHAT_NOVA_CONVERSA` | site | `false` | `true` liga o modo de teste do chat. No compose vem de `SDR_CHAT_NOVA_CONVERSA`. |
 | `VITE_SITE_URL` | site | `https://www.verticeimoveis.exemplo.br` | URL canônica usada no SEO e no JSON-LD das páginas geradas. |
 | `VITE_CRM_API` | CRM | `http://localhost:8100` | Base da API REST do CRM, para o painel próprio dele. |
 

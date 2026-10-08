@@ -35,7 +35,9 @@ export const IMOBILIARIA = {
   responsavelTecnico: ph("Nome do corretor responsável — CRECI-SP 00000-F"),
 } as const;
 
-export const TELEGRAM_USUARIO = import.meta.env.VITE_TELEGRAM_BOT_USERNAME ?? "mora_vertice_bot";
+// `||` e não `??`: o compose repassa a variável mesmo quando o local/.env a deixa vazia, e um usuário
+// vazio virava o link `https://t.me/` — que abre o Telegram sem conversa nenhuma.
+export const TELEGRAM_USUARIO = import.meta.env.VITE_TELEGRAM_BOT_USERNAME || "mora_vertice_bot";
 
 /** Identidade da organização para o buscador. Só entram campos preenchidos de verdade: publicar um
  *  CRECI inventado em dado estruturado seria declarar credencial falsa em formato legível por máquina. */

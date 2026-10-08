@@ -38,6 +38,8 @@ description: Referência dos endpoints essenciais da API REST do Mora, autentica
 | POST | `/config/modelos/openrouter/sincronizar` | admin | Traz do catálogo do OpenRouter o preço dos modelos informados (`{"modelos": ["google/…"]}`, até 50, formato `fornecedor/modelo`); devolve `gravados` e `nao_encontrados` (502 se nenhum preço veio). |
 | POST | `/config/modelos/testar` | admin | Testa um modelo antes de salvá-lo. |
 | GET | `/auditoria` | admin | Registro de auditoria. |
+| GET | `/fotos/{imovel_id}/{nome}` | público | Foto enviada pelo painel, servida de `SDR_FOTOS_DIR`. Fora do Swagger (`include_in_schema=False`). |
+| GET | `/acervo/{categoria}/{nome}` | público | Foto do acervo de demonstração, servida de `SDR_FOTOS_ACERVO_DIR`. Fora do Swagger. Nome fora do padrão do indexador dá 404. |
 
 ## Canal web (porta 8001)
 
@@ -95,9 +97,16 @@ Os valores acima são ilustrativos.
 
 ## Códigos de status
 
-A API usa os padrões do FastAPI:
+A API usa os padrões do FastAPI. O corpo de erro é `{"detail": ...}` — texto, ou um objeto quando a
+tela precisa de mais que a mensagem (como a carteira pendente ao apagar corretor).
 
 - `200 / 201 / 202 / 204` — sucesso.
 - `401` — não autenticado.
 - `404` — recurso inexistente.
+- `409` — conflito com o estado atual: lead já assumido por outro corretor, responder sem ter
+  assumido, lead sem canal, corretor com nome repetido ou com carteira aberta (sem `destino`),
+  limite de fotos do imóvel.
+- `413` — corpo acima do teto: 256 KB em geral, 2,2 MB no `POST /imoveis/{id}/fotos`.
+- `422` — validação: parâmetro fora da faixa, campo inválido, modelo sem preço cadastrado.
+- `502` — o serviço externo não respondeu o esperado (ex.: sincronização de preços do OpenRouter).
 - `503` — no `/health`, quando degradado.

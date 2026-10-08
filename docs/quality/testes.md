@@ -19,13 +19,24 @@ description: Tipos de teste do Mora, como executar backend e front-ends, CI e o 
 ## Executar backend
 
 ```bash
-make test            # host, Python 3.12 (cria e usa o banco sdr_test)
+make test            # host, Python 3.12 (cria e usa os bancos sdr_test e crm_test)
 make test-docker     # as mesmas sete suítes, dentro do container do agente
 ```
 
+O `make test` começa pelo `make test-db`, que cria os bancos de teste se faltarem e aplica os dois
+schemas. Por padrão ele faz isso **pelo Postgres do compose** (`docker compose exec db`), então o
+compose precisa estar no ar — ao menos `cd local && docker compose up -d db`. As variáveis que mudam
+isso, passadas na linha do `make`:
+
+| Variável | Padrão | Para quê |
+| --- | --- | --- |
+| `PREPARO_DB` | `compose` | `psql` cria os bancos com o `psql` do host, direto no servidor do `TEST_DSN` (é o caminho da CI). |
+| `TEST_DSN` | `postgresql://sdr:sdr@localhost:5433/sdr_test` | Banco de teste da Mora (a porta segue `DB_HOST_PORT`). |
+| `CRM_TEST_DSN` | `postgresql://sdr:sdr@localhost:5433/crm_test` | Banco de teste do CRM. |
+
 !!! warning "Trava de segurança"
-    Ambos usam o banco **`sdr_test`**: as suítes apagam tabelas e uma trava recusa rodar contra um banco
-    sem "test" no nome (`SDR_TEST_ALLOW_WIPE=1` ignora a trava). A suíte roda em Python 3.12 sem avisos
+    As suítes da Mora usam o **`sdr_test`** e a do CRM o **`crm_test`**: elas apagam tabelas e uma
+    trava recusa rodar contra um banco sem "test" no nome (`SDR_TEST_ALLOW_WIPE=1` ignora a trava). A suíte roda em Python 3.12 sem avisos
     de depreciação.
 
 ## Análise estática e cobertura
@@ -47,6 +58,7 @@ motivo escrito ao lado dela em `ruff.toml`.
 ```bash
 cd apps/web && npm run build
 cd apps/dashboard && npm run build
+cd apps/crm && npm run build
 npm run a11y         # (apps/web) verificação de acessibilidade
 
 # lint: as dependências ficam fora do package.json (o container `web` do compose roda
@@ -79,7 +91,9 @@ e `analise` (o briefing do corretor sai inteiro).
 `services/agent/evals/matriz.json` papel a papel, cada candidato num processo próprio, sem reserva e
 sem degradação por orçamento, juntando qualidade, custo, latência, chamadas com erro e quem de fato
 atendeu. `EVAL_EM=docker` roda o harness dentro do container do agente quando a máquina não tem as
-dependências. Os resultados ficam em `services/agent/evals/resultados/`, **fora do git**. Detalhe de cada uma em
+dependências — vale para os alvos `eval*`, menos o `make eval-embeddings`, que roda sempre no host
+(precisa do Ollama e da `OPENAI_API_KEY` no ambiente, e deixa o índice com o provedor da última
+passada: rode `make docs-kb` depois). Os resultados ficam em `services/agent/evals/resultados/`, **fora do git**. Detalhe de cada uma em
 [`services/agent/evals/README.md`](https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/services/agent/evals/README.md).
 
 ## Integração contínua

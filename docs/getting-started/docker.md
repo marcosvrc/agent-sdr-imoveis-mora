@@ -49,9 +49,13 @@ cd local && docker compose down          # use down -v para apagar também os vo
 
 Sem CRM a Mora roda sozinha: pule os passos 5 e 6 e a parte de CRM — os alvos avisam.
 
-O `make local` e o `make local-ollama` executam `scripts/check_env.py` antes de subir. O schema do
-banco também é aplicado na inicialização do container `db` (`shared/sdr_shared/db/schema.sql`), mas
-só quando o volume é novo; `make preparar` cuida do caso de um volume que já existia.
+O `make local` e o `make local-ollama` executam `scripts/check_env.py --gerar-segredo` antes de
+subir: confere o `.env` e, se `SDR_SESSAO_SECRET` estiver vazio ou com o valor de exemplo, gera um.
+
+Os bancos e os schemas ficam a cargo do serviço **`db-init`**: a cada `up`, antes de qualquer serviço
+Python, ele cria os bancos `sdr`, `crm` e `langfuse` se faltarem e aplica `shared/sdr_shared/db/schema.sql`
+e `services/crm/sdr_crm/db/schema.sql`. Os arquivos são idempotentes, então volume novo e volume antigo
+dão no mesmo. `make migrate` e `make crm-migrate` reaplicam sem reiniciar nada.
 
 ## Reaplicar schema e reindexar
 
@@ -133,10 +137,16 @@ lá. Rota nova que responde `{"detail":"Not Found"}` é rota que não existe no 
 | API | <http://localhost:8000> | 8000 | `GET /health` (503 quando degradado) |
 | API (OpenAPI) | <http://localhost:8000/docs> | 8000 | — |
 | Canais (HTTP / WS) | <http://localhost:8001> · `ws://localhost:8001/ws` | 8001 | `GET /health` (503 se o Redis cair) |
-| Agente | worker (sem HTTP) | — | via tabela de saúde no Postgres (ADR-0011) |
+| Agente (`agent`) | worker do turno (sem HTTP) | — | via tabela de saúde no Postgres (ADR-0011) |
+| `resumidor` | worker: resumo do lead fora do turno (tópico `resumir`) | — | — |
+| `reativador` | worker: reativa leads quando entra imóvel que combina (tópico `imovel-novo`) | — | — |
+| `scheduler` | worker: follow-up, amostra de saúde, drenagem do CRM e refresh do acervo | — | batimento na aba Saúde do painel |
+| `telegram-in` / `telegram-out` | workers do Telegram (long polling e entrega) | — | — |
+| `db-init` | roda uma vez a cada `up`: cria bancos e aplica schemas, depois sai | — | `service_completed_successfully` |
 | Painel do CRM | <http://localhost:3000> | 3000 | — (Vite dev server) |
 | API do CRM | <http://localhost:8100> | 8100 | `GET /health/ready` |
 | Servidor MCP do CRM | <http://localhost:8200/mcp> | 8200 | `GET /saude` |
+| Servidor MCP do CRM por stdio (`crm-mcp-stdio`, perfil `mcp`) | para cliente MCP externo (`make crm-mcp` explica) | — | — |
 | Langfuse (opcional, sem integração) | <http://localhost:3001> | 3001 | — |
 | Postgres / Redis / Ollama | host: 5433 / 6380 / 11435 | — | `pg_isready` (db) |
 
@@ -167,6 +177,10 @@ Docker Desktop isso fura o firewall do Mac: qualquer um no mesmo Wi-Fi chegaria 
 `HOST_BIND` vale para API, canais, CRM e os três Vite. Postgres, Redis, Ollama e Langfuse ficam no
 loopback sempre — dois deles não têm senha nenhuma. Volte a `127.0.0.1` (ou apague a linha) quando
 terminar.
+
+Perfis do compose: sem perfil sobe tudo acima menos Ollama, Langfuse e `crm-mcp-stdio`;
+`--profile ollama` acrescenta o Ollama, `--profile observability` o Langfuse e `--profile mcp` o
+servidor MCP por stdio.
 
 ## LLM 100% local com Ollama
 

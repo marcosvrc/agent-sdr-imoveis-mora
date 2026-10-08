@@ -11,6 +11,7 @@ O Mora usa **PostgreSQL com a extensão pgvector** para dados relacionais e veto
 registro transacional (leads, visitas, imóveis), a busca vetorial, a agregação que o painel consulta
 e o checkpointer do grafo cabem no mesmo banco (ADR-0004). É o container `db`
 (`pgvector/pgvector:pg16`), publicado no host em `5433` para não colidir com um Postgres nativo.
+O catálogo das tabelas dos dois bancos está em [Banco de dados](../technical-reference/banco-de-dados.md).
 
 O CRM é sistema à parte e tem **banco próprio** (`crm`) no mesmo servidor — a separação é o que
 impede uma consulta cruzada de aparecer sem querer um dia.
