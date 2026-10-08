@@ -13,11 +13,8 @@ site_url: https://marcosvrc.github.io/agent-sdr-imoveis-mora/
 docs_dir: docs
 site_dir: site
 
-# O .txt é material interno de referência — não construir.
 # O arquivo arquitetura.html é o dossiê visual C4: copiado como asset estático (acessível
 # por link direto), sem virar página de navegação.
-exclude_docs: |
-  Agente SDR Imobiliário com Inteligência Artificial.txt
 not_in_nav: |
   /arquitetura.html
 
