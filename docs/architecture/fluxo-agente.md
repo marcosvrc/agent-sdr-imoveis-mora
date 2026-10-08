@@ -168,11 +168,14 @@ e o único nó com arestas condicionais.
    alguém" valem sozinhos; "corretor" só com verbo de pedido ("falar com", "quero", "me passa",
    "chama", "cadê") e sem negação ("não quero falar com corretor"). "Quando o corretor vai me
    ligar?" não é handoff.
-6a. **Soltar o horário segurado** (em `run`, antes de `_decidir`): há `horario_pendente`, a mensagem
-   não é `so_contato` nem `slot:`, e `contato_insistido` está ligado **ou** a mensagem pede outras
-   opções ("Ver outros", `PEDE_OPCOES`) → o supervisor devolve `horario_pendente=None`,
-   `contato_insistido=False`, `horarios_oferecidos=[]`, `slots_crm={}` junto com a decisão, e as
-   regras abaixo rodam sobre o estado já solto. É o que limita a insistência no contato a uma vez.
+6a. **Horário segurado** (em `run`, antes de `_decidir`), quando há `horario_pendente` e a mensagem
+   não é `so_contato` nem `slot:`:
+   - se ela pede outras opções ("Ver outros", `PEDE_OPCOES`), ou se a Mora já insistiu no contato
+     (`contato_insistido`) e chegou uma pergunta institucional, o supervisor **solta** o horário
+     (`pediu_visita=False`, `horario_pendente=None`, `contato_insistido=False`,
+     `horarios_oferecidos=[]`, `slots_crm={}`) e as regras abaixo rodam sobre o estado já solto;
+   - senão, se a Mora já insistiu, vai ao `agendador`, que solta o horário e diz que soltou ("Sem
+     problema, deixei o horário livre…"). É o que limita a insistência no contato a uma vez.
    Daqui em diante as regras moram em `_decidir(state, lead, txt, saltos)`.
 7. `txt.startswith(ESCOLHA)` (`"imovel:"`, botão "visitar este imóvel") → `agendador`.
 8. `txt.startswith("ajuste:")` (como ampliar a busca sem imóvel exato) → `consultor`.
