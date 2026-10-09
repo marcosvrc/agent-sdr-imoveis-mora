@@ -140,8 +140,9 @@ Detalhe de implementação do [ADR-0016](../adr/0016-openrouter-e-modelo-por-fun
   OpenAI nos dois sentidos (`claude-haiku-4-5` ↔ `anthropic/claude-haiku-4.5`); outro fornecedor
   indo para um reserva direto usa o equivalente do papel.
 - **Preferências em toda requisição** (`preferencias_openrouter`): `data_collection: "deny"`,
-  `zdr: true` (salvo `SDR_OPENROUTER_ZDR=false`) e `sort` por papel — `latency` em roteamento e
-  extração, `throughput` em conversa e informações, `price` na análise.
+  `zdr: true` (salvo `SDR_OPENROUTER_ZDR=false`) e `sort` por papel — `latency` em roteamento,
+  extração e conversa (respostas curtas: pesa o primeiro token), `throughput` em informações,
+  `price` na análise.
 - **Dois clientes.** `ModeloOpenRouter.invoke` usa o livre; `with_structured_output` usa o estrito,
   que liga `require_parameters` para cair só em endpoint que respeita o schema.
 - **Catálogo** (`GET /models`, público, cache de 6 h por processo): decide se `temperature` e

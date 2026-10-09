@@ -71,6 +71,9 @@ def ciclo(sch, broker, proxima_sincronia: float) -> float:
     for i, (lead_id, payload) in enumerate(vencidos):
         try:
             broker.publish("inbound", payload, key=lead_id)
+            # Disparo bem-sucedido era silencioso: o log do scheduler só mostrava falha, e quem
+            # testava o follow-up não tinha como saber se ele tinha saído daqui ou nem chegado.
+            log.info("follow-up disparado para o lead %s", lead_id)
         except Exception:
             # `vencidos()` já tirou da tabela: sem devolver, o follow-up deste e dos seguintes
             # sumiria com o Redis fora. Volta para daqui a 1 minuto e o erro sobe para o log.

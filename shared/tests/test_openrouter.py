@@ -173,7 +173,7 @@ def test_zdr_so_sai_quando_desligado_de_proposito(monkeypatch):
     m = _openrouter(monkeypatch, "google/gemini-3.5-flash-lite", "conversa", SDR_OPENROUTER_ZDR="false")
     assert "zdr" not in m._livre.extra_body["provider"]
     assert m._livre.extra_body["provider"]["data_collection"] == "deny", "coleta continua negada"
-    assert m._livre.extra_body["provider"]["sort"] == "throughput"
+    assert m._livre.extra_body["provider"]["sort"] == "latency", "conversa: resposta curta, pesa o primeiro token"
 
 
 def test_raciocinio_e_temperatura_seguem_o_catalogo(monkeypatch):

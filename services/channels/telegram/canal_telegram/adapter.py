@@ -89,12 +89,19 @@ def render(chat_id: str, r: RespostaAgente) -> list[dict]:
     """RespostaAgente → chamadas da Bot API: um `sendPhoto` por card de imóvel, depois o texto
     (com teclado inline se houver opções)."""
     msgs = []
-    for card in r.imoveis:
-        legenda = f"{card.titulo}\nR$ {card.preco:,.0f}".replace(",", ".") + f"\n{card.motivo}"
+    varios = len(r.imoveis) > 1
+    for n, card in enumerate(r.imoveis, 1):
+        # Número na legenda: é o que a Mora entende em "o segundo" e o que os botões de escolha
+        # repetem. O botão em cada foto leva direto aos horários DESTE imóvel (`imovel:<id>`, o
+        # mesmo do site), sem o passo "Agendar visita" → "Qual deles?".
+        titulo = f"{n}. {card.titulo}" if varios else card.titulo
+        legenda = f"{titulo}\nR$ {card.preco:,.0f}".replace(",", ".") + f"\n{card.motivo}"
+        visitar = {"inline_keyboard": [[{"text": "Quero visitar", "callback_data": f"imovel:{card.id}"[:CALLBACK_MAX]}]]}
         if card.foto:
-            msgs.append({"_method": "sendPhoto", "chat_id": chat_id, "photo": card.foto, "caption": legenda[:1024]})
+            msgs.append({"_method": "sendPhoto", "chat_id": chat_id, "photo": card.foto, "caption": legenda[:1024],
+                         "reply_markup": visitar})
         else:
-            msgs.append({"_method": "sendMessage", "chat_id": chat_id, "text": legenda})
+            msgs.append({"_method": "sendMessage", "chat_id": chat_id, "text": legenda, "reply_markup": visitar})
 
     corpo = {"_method": "sendMessage", "chat_id": chat_id, "text": r.texto}
     linhas = [[{"text": t[:64], "callback_data": i[:CALLBACK_MAX]}] for i, t in (_opcao(o) for o in r.opcoes)]

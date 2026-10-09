@@ -17,6 +17,7 @@ from .graph import build_graph, build_checkpointer, caminho_atual, novo_caminho
 from .guardrails import vazao
 from .dispatch import cancelar_followup, despachar, publicar_eventos, reagendar_followup
 from .scoring import calcular, respondeu_rapido
+from .nodes.followup import SAIDA as SAIDA_FOLLOWUP
 
 configurar_log("agent")           # JSON fora do local: dá para consultar campo a campo
 log = logging.getLogger("agent")
@@ -143,6 +144,8 @@ def processar(entrada: MensagemNormalizada) -> None:
         return
 
     lead, novo = _carregar_lead(entrada)
+    if not iniciada_pelo_agente:
+        lead.followups_enviados = 0            # respondeu: a cadência recomeça da primeira tentativa
     estagio_antes = lead.estagio
     # medido ANTES de marcar a atividade: depois disso o carimbo antigo se perde
     rapido = not iniciada_pelo_agente and respondeu_rapido(lead.ultima_mensagem_em)
@@ -197,6 +200,8 @@ def processar(entrada: MensagemNormalizada) -> None:
         return
 
     lead = out["lead"]
+    if not iniciada_pelo_agente and not (entrada.conteudo or "").startswith(SAIDA_FOLLOWUP):
+        _voltou_a_conversar(lead)
     lead.score, lead.temperatura = calcular(lead, respondeu_rapido=rapido)
     # preservar_handoff: se o corretor clicou "Assumir" enquanto o turno rodava, o estágio e o
     # corretor que ele gravou valem mais que os que este turno leu lá no começo.
@@ -227,6 +232,24 @@ def processar(entrada: MensagemNormalizada) -> None:
         "duracao_ms": int((time.perf_counter() - t0) * 1000), "estagio": str(lead.estagio.value),
         "nos": caminho_atual(), "cartao_faltam": lead.cartao.campos_faltantes(),
         "temperatura": str(lead.temperatura), "score": lead.score}})
+
+
+def _voltou_a_conversar(lead: Lead) -> None:
+    """Cliente que respondeu depois de um follow-up está de volta à conversa.
+
+    O follow-up marca `inativo` (ou `frio`, na última tentativa) e conta a tentativa. Nada desfazia
+    isso quando ele respondia: o lead seguia `inativo` no painel com a conversa andando, e o contador
+    não zerava — se ele sumisse de novo, a cadência recomeçava da SEGUNDA tentativa (24 h no padrão)
+    em vez da primeira (2 h).
+
+    Chamado DEPOIS do grafo, e não antes: `inativo`/`frio` é o que faz o qualificador abrir uma
+    oportunidade nova quando o cliente volta com outra intenção (`clientes.ENCERRAVEIS`). Restaurar
+    antes apagaria esse sinal. O contador zera antes do turno (no `processar`); o estágio, aqui.
+    """
+    if lead.estagio not in (Estagio.INATIVO, Estagio.FRIO):
+        return
+    lead.estagio = Estagio.QUALIFICADO if lead.cartao.completo() else Estagio.QUALIFICANDO
+    lead.followups_enviados = 0
 
 
 def _barramento_responde() -> bool:

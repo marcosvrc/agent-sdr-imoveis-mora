@@ -58,6 +58,19 @@ def test_render_card_de_imovel_vira_sendphoto_antes_do_texto():
     assert m[1]["_method"] == "sendMessage" and m[1]["reply_markup"]["inline_keyboard"][0][0]["text"] == "Agendar visita"
 
 
+def test_cada_card_tem_botao_de_visitar_e_numero_quando_ha_varios():
+    """Escolher pelo card: o botão manda `imovel:<id>`, que o agendador já entende de qualquer
+    ponto da conversa. Com mais de um card, o número na legenda casa com "o segundo" e com os
+    botões de "Qual deles?"."""
+    cards = [ImovelCard(id=f"SP-000{i}", titulo="Kitnet 1q · Tatuapé", preco=p, foto=f"https://x/{i}.jpg", motivo="")
+             for i, p in ((1, 770), (2, 1220))]
+    m = render("555", RespostaAgente(lead_id="l", texto="Olha estes", imoveis=cards))
+    assert m[0]["caption"].startswith("1. Kitnet") and m[1]["caption"].startswith("2. Kitnet")
+    assert [x["reply_markup"]["inline_keyboard"][0][0]["callback_data"] for x in m[:2]] == ["imovel:SP-0001", "imovel:SP-0002"]
+    um = render("555", RespostaAgente(lead_id="l", texto="Olha este", imoveis=cards[:1]))
+    assert um[0]["caption"].startswith("Kitnet"), "um card só não precisa de número"
+
+
 # ------------------------------------------------- os três jeitos de mandar voz no Telegram
 
 def _update(**campos):

@@ -27,6 +27,7 @@ def telegram(monkeypatch, tmp_path):
 
     real = httpx.Client
     monkeypatch.setattr(outbound.httpx, "Client", lambda **kw: real(transport=httpx.MockTransport(tratar)))
+    monkeypatch.setattr(outbound, "_http", None)          # o cliente é do processo: cada teste, o seu
     s = get_settings()
     monkeypatch.setattr(s, "telegram_bot_token", TOKEN)
     monkeypatch.setattr(s, "public_api_url", "http://localhost:8000")
@@ -48,6 +49,8 @@ def test_foto_do_acervo_vai_como_arquivo_e_o_texto_chega(telegram):
     chamadas, _ = telegram
     outbound.enviar(_corpo("http://localhost:8000/acervo/apartamento/apartamento-01.jpg"))
     assert [(m, t) for m, t, _ in chamadas] == [("sendPhoto", "multipart"), ("sendMessage", "json")]
+    assert b'name="reply_markup"' in chamadas[0][2] and b"imovel:SP-1" in chamadas[0][2], \
+        "o botão Quero visitar vai junto também no upload"
 
 
 def test_foto_recusada_vira_card_em_texto_e_a_resposta_segue(telegram, caplog):
@@ -56,6 +59,7 @@ def test_foto_recusada_vira_card_em_texto_e_a_resposta_segue(telegram, caplog):
     outbound.enviar(_corpo("https://exemplo.com.br/foto.jpg"))
     assert [m for m, _, _ in chamadas] == ["sendPhoto", "sendMessage", "sendMessage"]
     assert b"Apartamento 1q" in chamadas[1][2]                 # o card, como texto
+    assert b"imovel:SP-1" in chamadas[1][2], "o card em texto mantém o botão Quero visitar"
     assert "wrong file identifier" in caplog.text and TOKEN not in caplog.text
 
 
@@ -78,3 +82,14 @@ def test_log_mascara_token_de_bot_em_qualquer_mensagem():
                                  "falhou em https://api.telegram.org/bot%s/sendPhoto", (TOKEN,), None)
     saida = _Mascarar(logging.Formatter("%(message)s")).format(registro)
     assert TOKEN not in saida and "<token-do-bot>" in saida
+
+
+def test_a_conexao_e_reaproveitada_entre_respostas(telegram, monkeypatch):
+    """Um cliente HTTP por resposta pagava o aperto de mão TLS a cada mensagem."""
+    criados = []
+    real = outbound.httpx.Client
+    monkeypatch.setattr(outbound.httpx, "Client", lambda **kw: criados.append(1) or real(**kw))
+    texto = json.dumps({"identificador": "555", "resposta": {"lead_id": "tg_555", "texto": "oi"}})
+    outbound.enviar(texto)
+    outbound.enviar(texto)
+    assert len(criados) == 1

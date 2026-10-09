@@ -219,6 +219,15 @@ def _imovel_da_visita(state: AgentState, lead, txt: str) -> tuple[str | None, li
     return _escolher_pelo_texto(txt, candidatos), candidatos
 
 
+def rotulo_do_imovel(c, posicao: int) -> str:
+    """Rótulo do botão de escolha: número do card, título e preço.
+
+    Só o título não distingue: um lead viu dois botões iguais, "Kitnet 1q · Tatuapé", e escolheu
+    sem saber qual era qual. O número é o mesmo do card na tela, e o preço desempata o resto.
+    """
+    return f"{posicao}. {c.titulo} · R$ {c.preco:,.0f}".replace(",", ".")
+
+
 def _perguntar_imovel(state: AgentState, lead, candidatos: list) -> dict:
     """Pergunta qual imóvel antes de mostrar horário. Texto fixo: os botões dizem o resto."""
     lead.cartao.pediu_visita = True
@@ -226,7 +235,8 @@ def _perguntar_imovel(state: AgentState, lead, candidatos: list) -> dict:
     return {"lead": lead, "horarios_oferecidos": [], "slots_crm": {}, "imovel_escolhido": None,
             "messages": [AIMessage(content=texto)],
             "resposta": RespostaAgente(lead_id=lead.id, texto=texto,
-                                       opcoes=[f"{ESCOLHA}{c.id}|{c.titulo}" for c in candidatos])}
+                                       opcoes=[f"{ESCOLHA}{c.id}|{rotulo_do_imovel(c, n)}"
+                                               for n, c in enumerate(candidatos, 1)])}
 
 
 def _tem_contato(lead, canal) -> bool:
@@ -376,6 +386,15 @@ def run(state: AgentState) -> dict:
     return _oferecer(state, lead, imovel_id, txt)
 
 
+def texto_da_grade(nome: str | None, imovel: str) -> str:
+    """A frase que acompanha os botões de horário. Não lista horário nenhum: eles são os botões."""
+    saudacao = f"Ótima escolha, {nome}!" if nome else "Ótima escolha!"
+    # O título do card ("Kitnet 1q · Tatuapé") não aceita artigo na frente; entre parênteses, cabe.
+    qual = "o imóvel" if imovel == "o imóvel" else f"o imóvel ({imovel})"
+    return (f"{saudacao} Estes são os horários livres para visitar {qual}.\n\n"
+            "É só tocar em um deles ou me responder por escrito, tipo \u201cterça às 14h\u201d.")
+
+
 def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool = False) -> dict:
     """Monta a oferta de horários.
 
@@ -397,10 +416,19 @@ def _oferecer(state: AgentState, lead, imovel_id, txt: str, ocupado_agora: bool 
             "em excesso, e ofereça os disponíveis do mesmo dia ou o mais próximo." if pediu_hora else "")
     contexto = ("O horário que ele escolheu acabou de ser ocupado por outra pessoa. Diga isso em meia frase, "
                 "sem culpar ninguém, e ofereça os que restam." if ocupado_agora else "")
-    msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente",
-                                          imovel=descrever_imovel(imovel_id, state.get("imoveis_sugeridos") or []),
-                                          horarios=[formatar(h) for h in horarios], nota=nota,
-                                          contexto_contato=contexto), *state["messages"]])
+    imovel = descrever_imovel(imovel_id, state.get("imoveis_sugeridos") or [])
+    if horarios and not nota and not contexto:
+        # O caso comum — o cliente escolheu o imóvel e a grade vai aparecer — é uma frase só, sempre
+        # a mesma: "estes são os horários, escolha um". Pedir isso ao modelo custava a chamada
+        # inteira (1 a 7 s medidos em `uso_llm`) entre o clique em "Quero visitar" e os botões, para
+        # escrever o que o prompt já ditava palavra por palavra. Texto fixo, como o "Qual deles?".
+        # O modelo fica para quando há algo a explicar: horário pedido que não existe, horário que
+        # acabou de ser ocupado, agenda vazia.
+        msg = AIMessage(content=texto_da_grade(lead.nome, imovel))
+    else:
+        msg = llm_conversa().invoke([carregar("agendador", nome=lead.nome or "cliente", imovel=imovel,
+                                              horarios=[formatar(h) for h in horarios], nota=nota,
+                                              contexto_contato=contexto), *state["messages"]])
     # opcoes carregam o id `slot:<iso>` e o rótulo legível — o canal renderiza como lista.
     # Grade nova na tela: nenhum horário fica segurado. Com o pendente intacto, o horário que outra
     # pessoa acabou de pegar continuava "esperando o contato", a mensagem seguinte tentava reservá-lo

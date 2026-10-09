@@ -11,6 +11,7 @@ from ..prompts import texto
 from ..state import AgentState
 from . import reativador
 from .agendador import ESCOLHA
+from . import followup
 from .qualificador import so_contato
 
 log = logging.getLogger(__name__)
@@ -190,6 +191,10 @@ def run(state: AgentState) -> dict:
         return {"proximo": "followup", "saltos": saltos}
     if entrada.tipo == TipoMensagem.REATIVACAO:
         return {"proximo": "reativador", "saltos": saltos}
+    # "Já encontrei" / "Agora não" do follow-up: quem encerra a cadência é o próprio nó de follow-up,
+    # que sabe o que cancelar. Antes do porteiro: "followup:encontrei" não é assunto fora do escopo.
+    if txt.startswith(followup.SAIDA):
+        return {"proximo": "followup", "saltos": saltos}
 
     # Pedir para não receber avisos tem precedência sobre tudo — inclusive sobre o porteiro de
     # escopo, que leria "não quero mais nada" como assunto fora do escopo e responderia recusa.

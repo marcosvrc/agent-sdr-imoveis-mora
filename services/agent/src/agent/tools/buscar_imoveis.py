@@ -10,7 +10,7 @@ import logging
 
 from sdr_shared.config import get_settings
 from sdr_shared.db import ImovelRepository
-from sdr_shared.geo import Local, resolver, resolver_varios, vizinhos
+from sdr_shared.geo import BAIRROS, Local, resolver, resolver_varios, vizinhos
 from sdr_shared.models import (CartaoQualificacao, ImovelCard, Imovel, Intencao, Segmento,
                                TIPOS_COMERCIAIS, TIPOS_RESIDENCIAIS)
 
@@ -24,8 +24,16 @@ def _filtros(cartao: CartaoQualificacao, bairros: list[str] | None = None, regia
     Comercial não é residencial sem quartos: quem procura sala decide por metro quadrado, e o
     `quartos` do cartão (que nesse caso não existe) não pode virar `quartos >= None` em silêncio
     nem, pior, restar de uma conversa anterior e esconder o acervo comercial inteiro.
+
+    Bairro pedido dispensa a região: o bairro já é o recorte mais fino, e somar os dois filtros
+    descartava em silêncio todo bairro que não fosse da região do PRIMEIRO. Um lead pediu "Tatuapé
+    ou Tucuruvi"; o cartão guardou `zona_leste` (a do Tatuapé), o SQL virou `bairro IN (Tatuapé,
+    Tucuruvi) AND regiao = 'zona_leste'`, e quatro imóveis do Tucuruvi (zona norte) sumiram — com a
+    Mora dizendo "achei duas opções" como se fosse tudo.
     """
     comercial = cartao.segmento_efetivo() == Segmento.COMERCIAL
+    if bairros:
+        regiao = None
     return {"operacao": "aluguel" if cartao.intencao == Intencao.ALUGUEL else "venda",
             "regiao": cartao.regiao if regiao == "=" else regiao,
             "bairros": bairros or None,
@@ -140,11 +148,40 @@ def local_do_cartao(cartao: CartaoQualificacao) -> Local | None:
     return None
 
 
+def _intercalar(listas: list[list[ImovelCard]], limite: int) -> list[ImovelCard]:
+    """Um de cada lista por vez, sem repetir: com dois bairros pedidos, os três primeiros cards não
+    podem sair todos do mesmo só porque o ranking semântico favoreceu um deles."""
+    vistos, saida = set(), []
+    for rodada in range(max((len(l) for l in listas), default=0)):
+        for lista in listas:
+            if rodada < len(lista) and lista[rodada].id not in vistos:
+                vistos.add(lista[rodada].id)
+                saida.append(lista[rodada])
+    return saida[:limite]
+
+
+def _regioes_dos_bairros(bairros: list[str]) -> list[str]:
+    """As regiões de TODOS os bairros pedidos, na ordem em que foram citados."""
+    return list(dict.fromkeys(BAIRROS[b]["regiao"] for b in bairros if b in BAIRROS))
+
+
+def _por_bairro(vetor, cartao: CartaoQualificacao, bairros: list[str], limite: int,
+                fichas: dict) -> dict[str, list[ImovelCard]]:
+    """Uma busca por bairro. Uma só, com `bairro IN (...)`, deixava o ranking decidir a proporção —
+    e quem pediu dois lugares quer ver os dois."""
+    if len(bairros) == 1:
+        return {bairros[0]: _executar(vetor, _filtros(cartao, bairros), limite, cartao, fichas)}
+    return {b: _executar(vetor, _filtros(cartao, [b]), limite, cartao, fichas) for b in bairros}
+
+
 def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limite: int = 5) -> dict:
     """Cascata bairro → vizinhos → região → cidade.
 
-    Retorna {cards, nivel, local, bairros_pedidos, bairros_encontrados, ampliou, alternativa_no_bairro}.
-    `nivel` diz onde a busca parou — é o que autoriza (ou não) o agente a falar de indisponibilidade.
+    Retorna {cards, nivel, local, bairros_pedidos, bairros_encontrados, bairros_sem_resultado,
+    ampliou, alternativa_no_bairro}. `nivel` diz onde a busca parou — é o que autoriza (ou não) o
+    agente a falar de indisponibilidade. Com mais de um bairro pedido, cada um é buscado à parte e os
+    cards se intercalam; `bairros_sem_resultado` lista os pedidos que ficaram vazios, para o agente
+    dizer isso em vez de apresentar o que achou como se fosse tudo.
     """
     local = local_do_cartao(cartao)
     fichas: dict[str, dict] = {}
@@ -158,26 +195,31 @@ def buscar_com_contexto(cartao: CartaoQualificacao, preferencia: str = "", limit
             cards = _executar(vetor, _filtros(cartao, None, None), limite, cartao, fichas)
         return {"cards": cards, "nivel": "fora_de_cobertura", "local": local, "bairros_pedidos": [], "fichas": fichas,
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
-                "ampliou": True, "alternativa_no_bairro": []}
+                "bairros_sem_resultado": [], "ampliou": True, "alternativa_no_bairro": []}
 
-    def resposta(cards: list[ImovelCard], nivel: str, alternativa: list[ImovelCard] | None = None) -> dict:
+    def resposta(cards: list[ImovelCard], nivel: str, alternativa: list[ImovelCard] | None = None,
+                 sem_resultado: list[str] | None = None) -> dict:
         return {"cards": cards, "nivel": nivel, "local": local, "bairros_pedidos": pedidos, "sem_embedding": vetor is None, "fichas": fichas,
                 "bairros_encontrados": sorted({c.titulo.split("·")[-1].strip() for c in cards}),
+                "bairros_sem_resultado": sem_resultado or [],
                 "ampliou": bool(pedidos) and nivel not in ("bairro", "vazio"),
                 "alternativa_no_bairro": alternativa or []}
 
-    # 1. o bairro que o cliente pediu
+    # 1. o(s) bairro(s) que o cliente pediu — cada um à parte, intercalados
     if pedidos:
-        if cards := _executar(vetor, _filtros(cartao, pedidos), limite, cartao, fichas):
-            return resposta(cards, "bairro")
+        achados = _por_bairro(vetor, cartao, pedidos, limite, fichas)
+        if cards := _intercalar(list(achados.values()), limite):
+            return resposta(cards, "bairro", sem_resultado=[b for b, l in achados.items() if not l])
         # 2. vizinhos do bairro (mesma região, os mais próximos primeiro)
         proximos = [v for b in pedidos for v in vizinhos(b)]
         if proximos and (cards := _executar(vetor, _filtros(cartao, list(dict.fromkeys(proximos))), limite, cartao, fichas)):
             return resposta(cards, "vizinhos", _alternativa(cartao, pedidos, vetor, fichas))
 
-    # 3. a região (a do local resolvido vence a do cartão, que o LLM pode ter errado)
-    regiao = (local.regiao if local else None) or cartao.regiao
-    if regiao and (cards := _executar(vetor, _filtros(cartao, None, regiao), limite, cartao, fichas)):
+    # 3. a região — de CADA bairro pedido; sem bairro, a do local resolvido vence a do cartão,
+    #    que o LLM pode ter errado
+    regioes = _regioes_dos_bairros(pedidos) or [r for r in [(local.regiao if local else None) or cartao.regiao] if r]
+    if regioes and (cards := _intercalar([_executar(vetor, _filtros(cartao, None, r), limite, cartao, fichas)
+                                          for r in regioes], limite)):
         return resposta(cards, "regiao", _alternativa(cartao, pedidos, vetor, fichas))
 
     # 4. a cidade inteira — melhor mostrar algo bom fora da área pedida do que dizer "não temos nada"

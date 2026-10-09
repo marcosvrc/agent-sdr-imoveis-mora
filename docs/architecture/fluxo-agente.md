@@ -538,9 +538,22 @@ cancelamento da anterior pelo agente — não localizado.
 ### 5.7 Follow-up (`nodes/followup.py`)
 
 - `tentativa = followups_enviados + 1`; `total = len(politica_cacheada()["tempos_min"])`.
-- LLM: `carregar("followup", nome, tentativa, total, ultima="sim"/"não", cartao)` + histórico.
+- **Sem LLM.** `_plano` escolhe um texto fixo pela situação e pela tentativa:
+  - última tentativa → despedida sem pergunta, botões **Quero continuar** e **Já encontrei**;
+  - falta campo no cartão → tentativa 1 retoma a pergunta daquele campo (`_FALTA`, "Ficou faltando só a
+    região para eu te mostrar…"); tentativa 2 convida a tocar num botão. Botões do campo
+    (`_opcoes_do_campo`: zonas, faixas de preço por mês ou total, quartos, prazo, perfil) + **Já encontrei**;
+  - já viu imóveis → tentativa 1 pergunta se algum chamou a atenção; tentativa 2 manda um imóvel do perfil
+    que ele ainda não viu (`_imovel_novo`, busca no bairro ou na região, como card) ou oferece outras
+    opções/corretor;
+  - perfil completo sem imóveis vistos → "Já separei algumas opções… Quer ver?".
+- Botões `followup:encontrei|Já encontrei` e `followup:depois|Agora não`: o supervisor os manda ao nó, que
+  responde com texto fixo, põe o lead em `FRIO` (o handler cancela a fila) e audita `lead.followup_encerrado`.
 - Grava `followups_enviados = tentativa`; `estagio = FRIO` se `tentativa >= total`, senão `INATIVO`.
   Auditoria `lead.followup_enviado`.
+- Cliente que responde: o handler zera `followups_enviados` antes do turno e, depois dele, devolve o lead
+  de `INATIVO`/`FRIO` a `QUALIFICANDO`/`QUALIFICADO` (`_voltou_a_conversar`) — depois, para não apagar o
+  sinal que abre oportunidade nova quando ele volta com outra intenção.
 
 ### 5.8 Reativador (`nodes/reativador.py`)
 
@@ -707,7 +720,6 @@ template, inclusive as vazias (`nota=""`, `contexto_contato=""`).
 | agendador (oferta) | `agendador.md` | `nome`, `imovel`, `horarios`, `nota`, `contexto_contato` | sim |
 | agendador (reserva) | `agendador_reserva.md` | `nome`, `imovel`, `escolhido`, `contexto_contato` | sim |
 | informacoes | `informacoes.md` / `informacoes_sem_base.md` | `mensagem`, `trechos`, `exemplo_fonte` / `mensagem` | sim |
-| followup | `followup.md` | `nome`, `tentativa`, `total`, `ultima`, `cartao` | sim |
 | reativador | `reativacao.md` | `nome`, `cartao`, `imovel`, `motivos`, `dias` | **não** |
 | resumidor | `resumidor.md`, `analise.md` | `cartao` / `nome`, `estagio`, `cartao` | sim |
 | supervisor | `supervisor.md` (via `texto`) | `estagio`, `intencao`, `completo`, `faltantes`, `mensagem` | não |

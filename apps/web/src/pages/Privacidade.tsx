@@ -106,7 +106,7 @@ export function Privacidade() {
 
       <p className="mt-10 rounded-lg border border-dashed border-amber-400 bg-amber-50 p-4 text-xs text-estado-alerta">
         Aviso: este é um projeto acadêmico de demonstração. Os dados de contato, CNPJ e registro
-        profissional exibidos no site são exemplos, e não correspondem a uma empresa real.
+        profissional exibidos no site são fictícios, e não correspondem a uma empresa real.
       </p>
     </div>
   );

@@ -29,7 +29,36 @@ def _resolver_lead(chat_id: str, nome: str | None) -> str:
     return lead.id
 
 
-def processar_lote(updates: list[dict], offset: int | None) -> tuple[int | None, bool]:
+# Modo de teste, o equivalente do botão "Nova conversa" do site: o chat do Telegram passa a apontar
+# para um lead NOVO, e a conversa recomeça do zero (cartão, memória do grafo, follow-ups). O lead
+# antigo continua no painel com o histórico — nada é apagado. Só no perfil local: em produção, um
+# cliente que digitasse /novo jogaria fora o próprio atendimento sem o corretor saber.
+NOVA_CONVERSA = frozenset({"/novo", "/nova", "/reset"})
+
+
+def _pede_nova_conversa(u: dict) -> bool:
+    texto = ((u.get("message") or {}).get("text") or "").strip().lower()
+    comando = texto.split("@", 1)[0].split(maxsplit=1)[0] if texto else ""     # "/novo@mora_bot" em grupo
+    return comando in NOVA_CONVERSA and get_settings().profile == "local"
+
+
+def _nova_conversa(u: dict) -> dict:
+    """Desvincula o chat do lead atual e devolve o update como um "Olá!" do lead novo.
+
+    O id ganha o instante: `tg_<chat>` já existe, e reaproveitá-lo traria de volta o mesmo lead
+    (e o mesmo `thread_id` do grafo, que é o lead_id) — justamente o que se quer zerar."""
+    m = u["message"]
+    chat_id = str(m["chat"]["id"])
+    de = m.get("from", {})
+    lead = LeadRepository().upsert(Lead(id=f"tg_{chat_id}_{int(time.time())}",
+                                        nome=de.get("first_name") or de.get("username")))
+    CanalRepository().vincular(lead.id, "telegram", chat_id)       # ON CONFLICT: o chat muda de dono
+    log.info("chat %s: nova conversa de teste no lead %s", chat_id, lead.id)
+    return {**u, "message": {**m, "text": "Olá!"}}
+
+
+def processar_lote(updates: list[dict], offset: int | None,
+                   ao_publicar=None) -> tuple[int | None, bool]:
     """Publica os updates em ordem e devolve (próximo offset, lote inteiro publicado?).
 
     O offset só anda DEPOIS que o update foi publicado. Antes ele andava primeiro: com o Redis fora,
@@ -43,6 +72,8 @@ def processar_lote(updates: list[dict], offset: int | None) -> tuple[int | None,
     """
     for u in updates:
         try:
+            if _pede_nova_conversa(u):
+                u = _nova_conversa(u)
             msgs = parse_inbound(u, resolver_lead=_resolver_lead)
         except Exception:
             log.exception("update %s do Telegram não pôde ser traduzido — pulando", u.get("update_id"))
@@ -51,6 +82,8 @@ def processar_lote(updates: list[dict], offset: int | None) -> tuple[int | None,
         try:
             for msg in msgs:
                 get_broker().publish("inbound", msg.model_dump_json(), key=msg.lead_id)   # ordem por lead garantida
+                if ao_publicar is not None:
+                    ao_publicar(msg)
         except Exception:
             log.exception("não consegui publicar o update %s — fica para o próximo getUpdates", u.get("update_id"))
             return offset, False
@@ -92,12 +125,26 @@ def local_worker():
                                 r.status_code, _motivo(r))
                     time.sleep(5)
                     continue
-                offset, completo = processar_lote(r.json().get("result", []), offset)
+                offset, completo = processar_lote(r.json().get("result", []), offset,
+                                                  ao_publicar=lambda msg: _digitando(base, msg))
                 if not completo:
                     time.sleep(5)              # broker fora: espera antes de pedir o mesmo update de novo
             except Exception as e:
                 log.warning("getUpdates falhou (%s) — tentando de novo em 5s", type(e).__name__)
                 time.sleep(5)
+
+
+def _digitando(base: str, msg) -> None:
+    """"digitando…" enquanto o turno roda — só quando a Mora vai mesmo responder. Em handoff quem
+    responde é o corretor, sem prazo: o indicador prometeria uma resposta que não vem."""
+    try:
+        from .digitando import iniciar
+        lead = LeadRepository().get(msg.lead_id)
+        if lead is not None and str(getattr(lead.estagio, "value", lead.estagio)) == "handoff":
+            return
+        iniciar(base, msg.identificador_canal, msg.lead_id)
+    except Exception:
+        log.debug("não consegui ligar o indicador de digitação", exc_info=True)
 
 
 def _motivo(r: httpx.Response) -> str:

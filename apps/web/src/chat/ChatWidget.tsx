@@ -290,7 +290,10 @@ export function ChatWidget({ imovelOrigem, imovelResumo, altura = "h-[70vh]", ao
             return (
               <div key={i} className={`space-y-2 ${novoGrupo ? "pt-2" : ""}`}>
                 {b.r?.imoveis?.length ? (
-                  <div className="space-y-2 pl-8">{b.r.imoveis.map((c) => <CardImovelChat key={c.id} card={c} />)}</div>
+                  <div className="space-y-2 pl-8">{b.r.imoveis.map((c, n) => (
+                    <CardImovelChat key={c.id} card={c} numero={b.r!.imoveis.length > 1 ? n + 1 : undefined}
+                                    onVisitar={(card) => enviar(`imovel:${card.id}`, `Quero visitar: ${card.titulo}`, true)} />
+                  ))}</div>
                 ) : null}
                 <MensagemBolha de={b.de} texto={b.texto} aviso={b.aviso}
                                avatar={b.de === "Mora" && fimDoGrupo} hora={fimDoGrupo ? horaCurta(b.em) : undefined}>

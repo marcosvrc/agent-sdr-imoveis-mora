@@ -54,6 +54,16 @@ def _contexto_da_busca(busca: dict, cards: list) -> str:
         return (f"Estes imóveis são da região que o cliente pediu ({achados}). Cite o bairro de cada um "
                 "e nunca diga que não há opções.")
     if nivel == "bairro":
+        vazios = busca.get("bairros_sem_resultado") or []
+        if vazios:
+            # Dois bairros pedidos, um sem nada no perfil: apresentar só o outro como "achei duas
+            # opções" deixava o cliente achando que o segundo nem tinha sido procurado.
+            return (f"O cliente pediu {pedidos}. Os imóveis abaixo são em {achados}, no perfil pedido. "
+                    f"Em {', '.join(vazios)} NÃO há imóvel nesse perfil agora — diga isso em meia frase, "
+                    "logo no começo, sem inventar motivo. Cite o bairro de cada um.")
+        if len(busca["bairros_pedidos"]) > 1:
+            return (f"O cliente pediu {pedidos}, e há imóveis no perfil em cada um. Os abaixo estão "
+                    "intercalados entre os bairros: cite o bairro de cada um e nunca diga que não há opções.")
         return (f"Estes imóveis são exatamente em {pedidos}, no perfil pedido. Cite o bairro de cada um "
                 "e nunca diga que não há opções.")
     if nivel == "vizinhos":

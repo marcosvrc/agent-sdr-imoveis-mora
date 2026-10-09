@@ -52,10 +52,14 @@ ESFORCO: dict[str, str] = {"conversa": "low", "roteamento": "none", "extracao": 
 
 # Critério de escolha do provedor no OpenRouter (campo `provider.sort`). O mesmo modelo é servido por
 # vários provedores com velocidades diferentes; o papel diz qual número importa.
-# - roteamento/extração: saída curta, então o que o cliente sente é o tempo até o primeiro token.
-# - conversa/informações: 150–300 tokens de saída, então pesa a velocidade de geração.
+# - roteamento/extração/conversa: saída curta, então o que o cliente sente é o tempo até o primeiro
+#   token. A conversa estava em `throughput` supondo 150–300 tokens; medido (`uso_llm`, out/2026),
+#   o qualificador devolve ~80 e o agendador ~190 — e num dia de provedor lento a mesma chamada foi de
+#   ~1 s para 5–12 s, com o turno inteiro esperando por ela. Com saída curta, ordenar por velocidade
+#   de geração escolhe o provedor que gera rápido DEPOIS de demorar a começar.
+# - informações: resposta mais longa, com trechos do RAG — aí a velocidade de geração ainda pesa.
 # - análise: ninguém está esperando.
-ORDENACAO_OPENROUTER: dict[str, str] = {"conversa": "throughput", "roteamento": "latency",
+ORDENACAO_OPENROUTER: dict[str, str] = {"conversa": "latency", "roteamento": "latency",
                                         "extracao": "latency", "informacoes": "throughput",
                                         "analise": "price"}
 

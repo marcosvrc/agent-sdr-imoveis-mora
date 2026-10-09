@@ -228,7 +228,7 @@ intenção +15, região +10, preço ou ticket +15, quartos ou perfil +10, urgên
 - Padrão `tempos_min = [120, 1440, 4320]` (2h, 24h, 72h) — o tamanho da lista é o número de tentativas; `ritmo = {quente: 0.25, morno: 1.0, frio: 2.0}` multiplica o tempo; janela `08:00–20:00` em `America/Sao_Paulo`; `dias_uteis` desligado; `MIN_DELAY = 5` min. Tudo editável no painel (chave `followup` de `configuracoes`), com cache de 60 s e migração do formato antigo (`primeiro_min`, `segundo_h`, `terceiro_h`, `maximo`).
 - Fora da janela, `proximo_horario_valido` empurra para a próxima abertura (até 8 dias à frente).
 - `dispatch.reagendar_followup` roda ao fim de cada turno; leads em `HANDOFF`, `FRIO` ou `AGENDADO` (`ENCERRADOS`) têm o agendamento cancelado. O scheduler entrega uma `MensagemNormalizada` de tipo `FOLLOWUP`.
-- O nó escreve com o prompt `followup.md` (tentativa N de T, se é a última), incrementa `followups_enviados` e move para `INATIVO`, ou `FRIO` quando esgotou.
+- O nó escreve **texto fixo**, sem modelo, conforme onde a conversa parou: retoma a pergunta que faltava ("Ficou faltando só a região para eu te mostrar…"), pergunta pelos imóveis já vistos ou traz um novo do perfil, e na última tentativa se despede sem perguntar. Sai com botões de resposta e **Já encontrei**, que encerra a cadência. Incrementa `followups_enviados` e move para `INATIVO`, ou `FRIO` quando esgotou; quando o cliente responde, o contador zera e o lead volta ao estágio da conversa.
 
 **Reativação proativa** (ADR-0013). Duas metades:
 

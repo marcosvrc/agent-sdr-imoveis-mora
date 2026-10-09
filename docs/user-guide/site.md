@@ -240,6 +240,14 @@ daquele imóvel; com `?start=humano`, a primeira mensagem já aciona o handoff. 
 
 > Nota técnica: `apps/web/src/components/CtaTelegram.tsx`, `services/channels/telegram/canal_telegram/adapter.py`.
 
+**Recomeçar a conversa no Telegram (modo de teste):** com `SDR_PROFILE=local`, mandar **`/novo`**
+(ou `/nova`, `/reset`) ao bot liga o chat a um lead novo (`tg_<chat>_<instante>`) e a Mora responde
+como a um cliente que acabou de chegar — o equivalente do botão **Nova conversa** do site. O lead
+antigo continua no painel com o histórico. Fora do perfil local, o comando é uma mensagem comum.
+
+> Nota técnica: `services/channels/telegram/canal_telegram/inbound.py::_nova_conversa`
+> (`test_inbound.py::test_novo_no_perfil_local_comeca_lead_novo_com_ola`).
+
 ## PWA
 
 O site pode ser instalado como aplicativo (`vite-plugin-pwa`, atualização automática): nome

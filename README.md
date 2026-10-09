@@ -46,7 +46,7 @@ implantado, e isso é escolha (ver [Roadmap](docs/project/roadmap.md)).
 2. [Tecnologias utilizadas](#2-tecnologias-utilizadas)
 3. [Pré-requisitos](#3-pré-requisitos)
 4. [Como executar](#4-como-executar)
-5. [Arquitetura](#5-arquitetura) · [5.1 Componentes](#51-componentes-da-arquitetura)
+5. [Arquitetura](#5-arquitetura) · [5.1 Componentes](#51-componentes-da-arquitetura) · [5.2 Servidor MCP](#52-servidor-mcp-do-crm)
 6. [Funcionalidades do agente](#6-funcionalidades-implementadas-no-agente)
 7. [Modelos utilizados](#7-modelos-utilizados-decisões-e-comparativos)
 8. [Agente e subagentes por dentro](#8-detalhes-do-agente-e-subagentes)
@@ -206,6 +206,28 @@ tópicos, ferramentas, limites, o que acontece em falha):
 
 Decisões e alternativas descartadas: [ADRs](docs/architecture/decisoes.md) (15) e
 [Registro de decisões](docs/decisions.md) (D-01 … D-19).
+
+### 5.2 Servidor MCP do CRM
+
+Um servidor MCP (`services/crm/sdr_crm/mcp/`), com **18 ferramentas**, cada uma traduzida numa
+chamada à REST do CRM. Sobe por HTTP em `crm-mcp` (`http://localhost:8200/mcp`, `Bearer
+CRM_MCP_TOKEN`), que é por onde a Mora entra, e por stdio em `crm-mcp-stdio`, para um cliente MCP
+externo. Toda mutação exige `operation_id` (idempotência); as que alteram registro versionado
+exigem também `expected_version`. Confirmar visita, SQL, reset e gerência de tokens ficam **fora**
+do catálogo de propósito.
+
+| Grupo | Ferramentas | Mora usa |
+|---|---|---|
+| Clientes | `buscar_leads`, `consultar_lead`, `criar_lead`, `atualizar_lead` | as três primeiras |
+| Oportunidades | `criar_oportunidade`, `consultar_oportunidade`, `atualizar_preferencias`, `mover_oportunidade` | todas |
+| Catálogo e interesse | `buscar_imoveis`, `registrar_interesse` | todas |
+| Histórico | `registrar_interacao`, `consultar_historico` | só `registrar_interacao` |
+| Agenda e visitas | `consultar_horarios`, `solicitar_visita`, `consultar_visita`, `cancelar_visita` | as duas primeiras |
+| Corretor | `criar_tarefa`, `encaminhar_para_corretor` | só `encaminhar_para_corretor` |
+
+A Mora usa 13 das 18; as outras cinco ficam disponíveis a clientes MCP externos. O que cada uma
+faz, a rota REST, os parâmetros obrigatórios e opcionais e qual módulo da Mora a chama:
+[Referência das ferramentas MCP](docs/architecture/componentes.md#referência-das-ferramentas-mcp).
 
 ## 6. Funcionalidades implementadas no agente
 

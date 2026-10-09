@@ -60,7 +60,7 @@ export function Footer() {
 
       <div className="border-t border-line px-4 py-4 text-center text-xs text-ink-muted">
         Mora é o assistente virtual da {IMOBILIARIA.nome.valor} · projeto de demonstração acadêmica —
-        os dados de contato e de registro acima são exemplos.
+        os dados de contato e de registro acima são fictícios.
       </div>
     </footer>
   );

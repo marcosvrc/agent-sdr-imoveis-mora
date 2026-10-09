@@ -224,6 +224,13 @@ class MensagemRepository:
                               (lead_id, canal, direcao, conteudo, json.dumps(meta or {}))).fetchone()
         return linha["id"]
 
+    def houve_saida_desde(self, lead_id: str, desde: datetime) -> bool:
+        """A Mora já respondeu este lead depois de `desde`? É o sinal para o "digitando…" do
+        Telegram parar: o turno registra a saída antes de despachá-la."""
+        with _conn() as c:
+            return c.execute("SELECT EXISTS (SELECT 1 FROM mensagens WHERE lead_id = %s AND direcao = 'out' "
+                             "AND em >= %s) AS sim", (lead_id, desde)).fetchone()["sim"]
+
     def historico(self, lead_id: str, limite: int = 100) -> list[dict]:
         with _conn() as c:
             rows = c.execute("""SELECT id, canal, direcao, conteudo, meta, em FROM mensagens

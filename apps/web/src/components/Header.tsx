@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useChat } from "../store/chat";
-import { IMOBILIARIA } from "../lib/imobiliaria";
+import { IMOBILIARIA, verdadeiro } from "../lib/imobiliaria";
 import { Botao, BotaoIcone, cx } from "../lib/ui";
 import { Ic } from "./Icones";
 
@@ -56,8 +56,8 @@ export function Header() {
 
         <div className="hidden items-center gap-2 md:flex">
           {/* Telefone visível é sinal de confiança: um site imobiliário sem telefone parece fachada.
-              Enquanto o número for placeholder, ele aparece mas não vira link clicável. */}
-          {!IMOBILIARIA.telefone.placeholder && (
+              Enquanto o número for placeholder ou fictício, ele não vira link clicável. */}
+          {verdadeiro(IMOBILIARIA.telefone) && (
             <a href={`tel:${IMOBILIARIA.telefoneLink.valor}`} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-ink-muted hover:text-ink">
               <Ic.telefone size={16} />{IMOBILIARIA.telefone.valor}
             </a>
