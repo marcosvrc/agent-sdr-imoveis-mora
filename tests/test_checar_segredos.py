@@ -132,6 +132,21 @@ def test_padrao_de_token_na_arvore_e_achado(repo):
     assert cs.checar_padroes("HEAD") == 1
 
 
+@pytest.mark.parametrize("nome,amostra", [
+    ("token de bot do Telegram", "123456789:" + "A" * 35),
+    ("chave da AWS", "AKIA" + "ABCDEFGHIJKLMNOP"),
+    ("token do GitHub", "ghp_" + "a" * 36),
+])
+def test_padroes_nao_dependem_do_dialeto_de_regex(nome, amostra):
+    """`\\b` só é limite de palavra na regex do glibc; no macOS o `git grep -E` não o entende, e o
+    padrão nunca casava. Os padrões têm de ser ERE puro — e continuar sem pegar o meio de uma palavra."""
+    import re
+    padrao = cs.PADROES[nome]
+    assert "\\b" not in padrao
+    assert re.search(padrao, f"token: {amostra} fim") and re.search(padrao, amostra)
+    assert not re.search(padrao, f"x{amostra}"), "colado a outra palavra não é token"
+
+
 def test_arvore_limpa_nao_tem_achado(repo):
     repo("README.md", "nada para ver aqui\n")
     assert cs.checar_padroes("HEAD") == 0

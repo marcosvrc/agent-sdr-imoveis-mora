@@ -253,7 +253,17 @@ def test_embedder_sem_piso_calibrado_usa_o_original(monkeypatch):
 
 @pytest.fixture
 def base(limpo=None):
-    from sdr_shared.db import DocumentoRepository
+    """Só os dois arquivos daqui, num `documentos` vazio.
+
+    Os testes desta seção afirmam POSIÇÃO no ranking ("está entre os 3 primeiros", "o denso não o
+    alcança"), e posição só tem sentido contra um corpus conhecido. O harness de avaliação
+    (`make eval-*`) indexa `data/documentos/` inteiro neste mesmo `sdr_test`: depois de uma rodada
+    dele, dezenas de trechos com "precisa apresentar" empurravam o trecho do teste para fora do
+    top 3, e a suíte falhava na máquina e passava na CI, que começa com o banco vazio.
+    """
+    from sdr_shared.db import DocumentoRepository, get_pool
+    with get_pool().connection() as c:
+        c.execute("DELETE FROM documentos")          # banco de teste: a trava do nome já garantiu isso
     repo = DocumentoRepository()
     for arquivo, assunto, conteudo in [
         ("garantias.md", "locacao", FAQ),

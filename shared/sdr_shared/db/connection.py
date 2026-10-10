@@ -1,3 +1,4 @@
+import atexit
 from functools import lru_cache
 from typing import cast
 
@@ -19,4 +20,16 @@ def get_pool() -> PoolDeDicionarios:
     # Cada processo tem o seu pool; a soma é o que conta contra o `max_connections` do Postgres.
     pool = ConnectionPool(get_settings().database_dsn, min_size=1, max_size=get_settings().db_pool_max, open=True,
                           kwargs={"row_factory": dict_row, "autocommit": True})
+    # Fechar na saída, com o interpretador ainda inteiro. Sem isto o pool morria no coletor de lixo
+    # do encerramento, e o `__del__` dele tenta esperar as threads de manutenção — o que o Python
+    # 3.14 passou a recusar ("PythonFinalizationError: cannot join thread at interpreter shutdown").
+    # Não quebrava nada, mas sujava o fim de toda suíte e de todo worker com um traceback.
+    atexit.register(_fechar, pool)
     return cast(PoolDeDicionarios, pool)
+
+
+def _fechar(pool: ConnectionPool) -> None:
+    try:
+        pool.close(timeout=2)
+    except Exception:
+        pass                    # saindo do processo: nada a fazer com a falha além de não fazer barulho

@@ -42,12 +42,18 @@ ARQUIVOS_SUSPEITOS = re.compile(
 # Formatos públicos e estáveis o bastante para valer uma regra. Deixei de fora `sk-[A-Za-z0-9]{20,}`
 # genérico: casa com hash de lock file e enche a saída de falso positivo, que é o jeito mais rápido
 # de fazer alguém parar de ler o relatório.
+#
+# Sem `\b`: os padrões rodam no `git grep -E`, que usa a regex do SISTEMA. No Linux (glibc) `\b` é
+# limite de palavra; no macOS (regex BSD) não é, e o padrão simplesmente nunca casava — o token do
+# Telegram passava pelo verificador no Mac e só era pego na CI. `INICIO` faz o papel do `\b` da
+# esquerda com ERE puro; o da direita sobra, porque `{33,}`/`{30,}` já engolem o resto da palavra.
+INICIO = r"(^|[^A-Za-z0-9_])"
 PADROES = {
     "chave da Anthropic": r"sk-ant-api[0-9]{2}-[A-Za-z0-9_\-]{80,}",
     "chave da OpenAI": r"sk-(proj-)?[A-Za-z0-9_\-]{40,}",
-    "token de bot do Telegram": r"\b[0-9]{8,10}:[A-Za-z0-9_-]{33,}\b",
-    "chave da AWS": r"\bAKIA[0-9A-Z]{16}\b",
-    "token do GitHub": r"\bgh[pousr]_[A-Za-z0-9]{30,}\b",
+    "token de bot do Telegram": INICIO + r"[0-9]{8,10}:[A-Za-z0-9_-]{33,}",
+    "chave da AWS": INICIO + r"AKIA[0-9A-Z]{16}([^A-Za-z0-9_]|$)",
+    "token do GitHub": INICIO + r"gh[pousr]_[A-Za-z0-9]{30,}",
     "token do Slack": r"\bxox[baprs]-[A-Za-z0-9-]{10,}",
     "chave privada": r"BEGIN [A-Z ]*PRIVATE KEY",
 }

@@ -202,6 +202,9 @@ cli: check-env
 TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/sdr_test
 # O CRM tem banco próprio também nos testes — a separação de D-01 vale na suíte.
 CRM_TEST_DSN ?= postgresql://sdr:sdr@localhost:$${DB_HOST_PORT:-5433}/crm_test
+# Vai para o AMBIENTE de toda suíte, não só a do CRM: os testes de `shared` que sobem a API do CRM
+# leem `CRM_TEST_DSN` e, sem ele, caem em 127.0.0.1:5432 — a porta da CI. Na CI a variável é global
+# e a falta não aparecia; na máquina, com o Postgres do compose na 5433, era "Connection refused".
 # Onde o banco de teste é preparado. `compose` usa o Postgres do docker compose (padrão, na máquina
 # do desenvolvedor); `psql` fala direto com o TEST_DSN — é o caminho da CI, onde o Postgres é um
 # service container do runner e não existe compose nenhum para dar `exec`.
@@ -234,14 +237,14 @@ endif
 
 test: test-db
 	@echo "🧪 Rodando as sete suítes…"
-	export SDR_DATABASE_DSN=$(TEST_DSN); \
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); \
 	python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd shared && PYTHONPATH=. python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/api && PYTHONPATH=../../shared:src python3 -m pytest -q tests
-	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/telegram && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
-	export SDR_DATABASE_DSN=$(TEST_DSN); cd services/channels/local && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd shared && PYTHONPATH=. python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/api && PYTHONPATH=../../shared:src python3 -m pytest -q tests
+	export CRM_DATABASE_DSN=$(CRM_TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/channels/telegram && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
+	export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/channels/local && PYTHONPATH=../../../shared:. python3 -m pytest -q tests
 
 lint:          # análise estática do Python; a régua e os porquês estão em ruff.toml
 	ruff check .
@@ -252,7 +255,7 @@ tipos:         # pyright em modo básico (pyrightconfig.json): nome errado, atri
 # Cobertura combinada das sete suítes. `set -e` porque as chamadas estão encadeadas num shell só:
 # sem isso uma suíte quebrada seguiria em frente e o relatório sairia como se estivesse tudo bem.
 cobertura: test-db
-	set -e; export SDR_DATABASE_DSN=$(TEST_DSN); export COVERAGE_FILE=$(CURDIR)/.coverage; \
+	set -e; export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); export COVERAGE_FILE=$(CURDIR)/.coverage; \
 	export COVERAGE_RCFILE=$(CURDIR)/.coveragerc; \
 	coverage erase; \
 	coverage run -m pytest -q tests; \
@@ -261,7 +264,7 @@ cobertura: test-db
 	cd services/api && PYTHONPATH=../../shared:src coverage run -m pytest -q tests; cd ../..; \
 	cd services/channels/telegram && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
 	cd services/channels/local && PYTHONPATH=../../../shared:. coverage run -m pytest -q tests; cd ../../..; \
-	export CRM_DATABASE_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. coverage run -m pytest -q tests; cd ../..; \
+	export CRM_DATABASE_DSN=$(CRM_TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/crm && PYTHONPATH=. coverage run -m pytest -q tests; cd ../..; \
 	coverage combine -q && coverage report && coverage xml -o coverage.xml
 
 # Harness de avaliação: mede o MODELO (chama a API de verdade), enquanto `test` mede o encanamento
@@ -277,7 +280,7 @@ EVAL = cd local && docker compose exec -T -w /app/services/agent \
          -e SDR_DATABASE_DSN=postgresql://sdr:sdr@db:5432/sdr_test \
          -e PYTHONPATH=/app/shared:/app/services/agent/src:. agent python -m evals
 else
-EVAL = export SDR_DATABASE_DSN=$(TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals
+EVAL = export SDR_DATABASE_DSN=$(TEST_DSN) CRM_TEST_DSN=$(CRM_TEST_DSN); cd services/agent && PYTHONPATH=../../shared:src:. python3 -m evals
 endif
 eval: test-db
 	$(EVAL) $(ARGS)
