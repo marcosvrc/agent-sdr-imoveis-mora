@@ -27,7 +27,7 @@ NAO_AUTORIZADO = {401: {"description": "Credencial ausente ou inválida."}}
 def corretor_atual(request: Request,
                    credencial: HTTPAuthorizationCredentials | None = Depends(bearer)) -> dict:
     if credencial and painel.valido(credencial.credentials.strip()):
-        return _registrar_ator(request, {"id": "corretor-dev", "email": "corretor@local"})
+        return _registrar_ator(request, {"id": "equipe", "email": "equipe@verticeimoveis.com.br"})
     raise HTTPException(401, "credencial do painel ausente ou inválida")
 
 

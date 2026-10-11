@@ -33,7 +33,7 @@ export function Imoveis() {
 
   return (
     <div className="space-y-4">
-      <PageHeader titulo="Imóveis" descricao="Catálogo indexado para o RAG da Mora — o que o agente pode oferecer aos leads"
+      <PageHeader titulo="Imóveis" descricao="Catálogo que a Mora pode oferecer aos clientes"
         acoes={<div className="inline-flex rounded-lg border border-line bg-surface p-0.5 text-xs">{(["tabela", "cards"] as const).map((v) => <button key={v} onClick={() => setVisao(v)} className={cx("rounded-md px-2.5 py-1.5 font-medium capitalize", visao === v ? "bg-brand text-brand-ink" : "text-ink-muted")}>{v}</button>)}</div>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <StatTile label="Imóveis no filtro" valor={num(resumo.total)} icone="building"
@@ -56,7 +56,7 @@ export function Imoveis() {
           <Select aria-label="Filtrar por número de quartos" className="w-36" value={f.quartos ?? ""} onChange={(e) => { setF({ ...f, quartos: e.target.value ? Number(e.target.value) : undefined }); pag.setPagina(1); }}><option value="">Quartos</option>{[1, 2, 3, 4].map((q) => <option key={q} value={q}>{q}+ quartos</option>)}</Select>
           {(busca || Object.values(f).some(Boolean)) && <Button variante="fantasma" tamanho="sm" onClick={limpar}>Limpar</Button>}
         </div>
-        {isLoading ? <div className="p-4"><Skeleton className="h-64" /></div> : lista.length === 0 ? <EmptyState icone="building" titulo="Nenhum imóvel nesse recorte" descricao="Rode `make seed` para carregar a base simulada ou ajuste os filtros." /> :
+        {isLoading ? <div className="p-4"><Skeleton className="h-64" /></div> : lista.length === 0 ? <EmptyState icone="building" titulo="Nenhum imóvel nesse recorte" descricao="Ajuste os filtros ou sincronize o catálogo com o CRM." /> :
           visao === "tabela" ? (<>
             <Table colunas={[{ h: "Código", cls: "text-center" }, { h: "Imóvel", cls: "text-center" }, { h: "Operação", cls: "text-center" }, { h: "Região", cls: "text-center" }, { h: "Quartos", cls: "text-center" }, { h: "Área", cls: "text-center" }, { h: "Preço", cls: "text-center" }, { h: "Cond.", cls: "text-center" }, { h: "Detalhes", cls: "text-center" }]}>
               {pag.fatia.map((i) => (
@@ -142,7 +142,7 @@ function DetalheImovel({ imovel, onFechar, onAtualizar }: { imovel: Imovel | nul
           <dl className="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
             {[...(ehComercial(sel.tipo) ? [] : [["Quartos", String(sel.quartos)], ["Suítes", String(sel.suites)]]), ["Vagas", String(sel.vagas)], ["Área", `${num(sel.area_m2)} m²`], ["R$/m²", brl(sel.preco / sel.area_m2)], ["Cidade", sel.cidade]].map(([k, v]) => <div key={k}><dt className="text-xs text-ink-muted">{k}</dt><dd className="font-medium">{v}</dd></div>)}
           </dl>
-          <div><p className="mb-1 text-xs font-medium text-ink-muted">Descrição (texto que alimenta o embedding)</p><p className="rounded-lg bg-canvas p-3 text-sm">{sel.descricao}</p></div>
+          <div><p className="mb-1 text-xs font-medium text-ink-muted">Descrição (é o texto que a Mora usa na busca)</p><p className="rounded-lg bg-canvas p-3 text-sm">{sel.descricao}</p></div>
           {/* A pergunta que o corretor faz olhando um imóvel é "com quem eu falo sobre ele". */}
           <div>
             <p className="mb-1 text-xs font-medium text-ink-muted">Quem está de olho</p>

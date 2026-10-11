@@ -169,11 +169,11 @@ export function LeadDetalhe() {
               <Bloco titulo="Qualificação"><CartaoLead c={lead.cartao} /></Bloco>
               <Bloco titulo="Briefing da Mora" acao={<Button tamanho="sm" variante="fantasma" onClick={() => analisar.mutate()} disabled={analisando || briefing === "processando"} icone={<Ic.refresh size={13} />}>{analisando || briefing === "processando" ? "Gerando…" : lead.resumo ? "Atualizar" : "Gerar"}</Button>}>
                 {lead.resumo && <p className="whitespace-pre-wrap text-sm text-ink">{lead.resumo}</p>}
-                {briefing === "processando" && <p className="mt-1 text-xs text-ink-muted">Gerando o briefing… (o worker `resumidor` está processando)</p>}
+                {briefing === "processando" && <p className="mt-1 text-xs text-ink-muted">Gerando o briefing… leva alguns segundos.</p>}
                 {briefing === "sem_resposta" && (
                   <p className="mt-1 flex items-start gap-1.5 rounded-lg bg-warn-soft px-2.5 py-2 text-xs text-warn-strong">
                     <Ic.info size={13} className="mt-0.5 shrink-0" />
-                    <span>O pedido foi enviado há {relativo(lead.analise_solicitada_em)} e não houve resposta. O serviço que gera o briefing (worker <b>resumidor</b>) provavelmente está parado — reinicie-o e peça de novo.</span>
+                    <span>O pedido foi enviado há {relativo(lead.analise_solicitada_em)} e não houve resposta. O serviço que gera o briefing não respondeu. Peça de novo; se continuar, avise o suporte.</span>
                   </p>)}
                 {briefing === "vazio" && <p className="text-sm text-ink-muted">Gerado quando o lead fica qualificado, agenda visita ou é encaminhado ao corretor — ou ao pedir aqui.</p>}
               </Bloco>

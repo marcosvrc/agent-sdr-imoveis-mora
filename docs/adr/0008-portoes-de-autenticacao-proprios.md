@@ -69,7 +69,7 @@ linha ali faz o texto do cliente parecer uma instrução nova.
 A varredura também mostrou que **não existe separação entre corretores**: qualquer corretor
 autenticado lê e altera os leads, clientes, visitas e configurações de todos, e `/config`,
 `/governanca` e `/corretores` não distinguem admin de corretor comum. Isso é uma decisão de modelo
-de permissão, não um bug pontual, e continua em aberto — aceitável enquanto a POC representa uma
+de permissão, não um bug pontual, e continua em aberto — aceitável enquanto o sistema atende uma
 imobiliária de escritório único, mas é o próximo passo antes de qualquer uso real com mais de uma
 equipe. Também segue em aberto: o token da sessão do chat trafega na querystring do WebSocket (vai
 para log de proxy), e `POST /sessao` não tem limite por IP (o teto de gasto hoje é o guardrail de

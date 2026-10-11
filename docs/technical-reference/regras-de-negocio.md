@@ -552,7 +552,7 @@ A reserva leva um link do Google Maps para **bairro + cidade**
 exato com o corretor na confirmação.
 
 **Endereço não existe neste sistema.** Nem o acervo da Mora nem `properties` no CRM guardam
-logradouro — o seed do CRM chega a escrever "(endereço fictício)" no título. Um link de rua e número
+logradouro — o seed do CRM não guarda logradouro no título. Um link de rua e número
 seria endereço inventado chegando ao cliente com cara de confirmado, e ele iria até lá. Por isso o
 rótulo no chat é "Ver a região no mapa", e não "ver endereço": o botão promete a precisão que o dado
 tem.

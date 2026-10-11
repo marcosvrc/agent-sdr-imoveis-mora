@@ -14,7 +14,7 @@ const SECOES: { k: Secao; r: string; d: string }[] = [
   { k: "agenda", r: "Agenda de visitas", d: "Slots oferecidos e duração" },
   { k: "cobertura", r: "Área de cobertura", d: "Regiões que a Mora oferece" },
   { k: "handoff", r: "Handoff para corretor", d: "Quando passar a conversa" },
-  { k: "modelos", r: "Modelos de IA", d: "Qual modelo cada função do agente usa (ADR-0010, ADR-0016)" },
+  { k: "modelos", r: "Modelos de IA", d: "Qual modelo cada função do agente usa" },
   { k: "operacao", r: "Operação", d: "Timeout, transcrição e refresh do acervo" },
   { k: "canais", r: "Canais e modelos", d: "Status da integração (somente leitura)" },
 ];
@@ -84,7 +84,7 @@ export function Configuracoes() {
                 </Field>
                 {Number(form.acervo_refresh_s) === 0 && form.acervo_refresh_s !== "" && (
                   <p className="rounded-lg bg-warn-soft px-3 py-2 text-xs text-warn-strong">
-                    Refresh desligado: preço e status mudados no CRM só chegam ao índice com <code>make seed</code>.
+                    Refresh desligado: preço e status mudados no CRM só chegam ao índice na próxima sincronização do catálogo.
                     Até lá, a Mora pode oferecer um imóvel já vendido.
                   </p>
                 )}
@@ -113,9 +113,9 @@ function Canais({ c }: { c: Config["canais"] }) {
   return (
     <ul className="divide-y divide-line">
       <Linha icone={<Ic.globe size={16} />} nome="Chat do site" ok={c.web.configurado} detalhe="WebSocket · widget na landing e nas páginas de imóvel" />
-      <Linha icone={<Ic.telegram size={16} />} nome="Telegram" ok={c.telegram.configurado} detalhe={c.telegram.configurado ? `bot @${c.telegram.usuario ?? "?"}` : "preencha SDR_TELEGRAM_BOT_TOKEN no local/.env — criado na hora com o @BotFather, sem aprovação"} />
+      <Linha icone={<Ic.telegram size={16} />} nome="Telegram" ok={c.telegram.configurado} detalhe={c.telegram.configurado ? `bot @${c.telegram.usuario ?? "?"}` : "não configurado — informe o token do bot do Telegram nas variáveis de ambiente"} />
       <Linha icone={<Ic.spark size={16} />} nome={`LLM · ${c.llm.provider}`} ok detalhe={`conversa: ${c.llm.modelo_conversa} · roteamento: ${c.llm.modelo_roteamento}`} />
-      <Linha icone={<Ic.bolt size={16} />} nome={`Embeddings · ${c.embeddings.provider}`} ok detalhe="RAG híbrido: filtros SQL + similaridade no pgvector" />
+      <Linha icone={<Ic.bolt size={16} />} nome={`Embeddings · ${c.embeddings.provider}`} ok detalhe="busca híbrida: filtros do cartão + similaridade semântica" />
     </ul>
   );
 }

@@ -580,11 +580,12 @@
   },
   "info": {
     "contact": {
-      "name": "Projeto Mora — Vértice Imóveis (POC acadêmica)"
+      "name": "Mora — Vértice Imóveis"
     },
-    "description": "\nAPI do **Mora**, o agente SDR imobiliário da Vértice Imóveis.\n\nA etiqueta de cada rota diz quem a usa e o que ela exige:\n\n| Etiqueta | Quem usa | Autenticação |\n|---|---|---|\n| `público` | site vitrine e chat | nenhuma |\n| `corretor` | painel do corretor | `Authorization: Bearer …` |\n| `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |\n| `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |\n\n**Como autenticar:** clique em **Authorize** e informe o valor de `SDR_PAINEL_TOKEN` (no\nambiente de desenvolvimento, `dev-token`).\n\nToda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).\n",
+    "description": "\nAPI do **Mora**, o agente SDR imobiliário da Vértice Imóveis.\n\nA etiqueta de cada rota diz quem a usa e o que ela exige:\n\n| Etiqueta | Quem usa | Autenticação |\n|---|---|---|\n| `público` | site vitrine e chat | nenhuma |\n| `corretor` | painel do corretor | `Authorization: Bearer …` |\n| `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |\n| `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |\n\n**Como autenticar:** clique em **Authorize** e informe o token do painel (`SDR_PAINEL_TOKEN`).\n\nToda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).\n",
     "license": {
-      "name": "Uso acadêmico — licença a confirmar"
+      "name": "MIT",
+      "url": "https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/LICENSE"
     },
     "title": "Mora — SDR Imobiliário API",
     "version": "0.1.0"
@@ -2168,7 +2169,7 @@
     },
     "/handoff/{lead_id}/assumir": {
       "post": {
-        "description": "Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento\npor região → ninguém (fila da equipe).\n\nO último caso já foi \"o usuário logado\", e isso gravava no lead um id que não existe no cadastro\nde corretores: hoje o literal `corretor-dev`, vindo do token do painel. Quem está\nlogado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead\nficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é\ndeixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).",
+        "description": "Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento\npor região → ninguém (fila da equipe, `corretor_id IS NULL`).\n\nQuem está logado é um ator de auditoria, não necessariamente um corretor cadastrado; por isso\no lead nunca é atribuído ao usuário do painel.",
         "operationId": "assumir_handoff__lead_id__assumir_post",
         "parameters": [
           {

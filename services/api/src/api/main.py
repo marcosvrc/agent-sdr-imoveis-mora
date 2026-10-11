@@ -25,8 +25,7 @@ A etiqueta de cada rota diz quem a usa e o que ela exige:
 | `operacao` | rotinas de atendimento no painel | `Authorization: Bearer …` |
 | `admin` | configuração, governança de IA e auditoria | `Authorization: Bearer …` |
 
-**Como autenticar:** clique em **Authorize** e informe o valor de `SDR_PAINEL_TOKEN` (no
-ambiente de desenvolvimento, `dev-token`).
+**Como autenticar:** clique em **Authorize** e informe o token do painel (`SDR_PAINEL_TOKEN`).
 
 Toda alteração feita por estas rotas é registrada em auditoria (ver `GET /auditoria`).
 """
@@ -50,8 +49,8 @@ app = FastAPI(
     version="0.1.0",
     description=DESCRICAO,
     openapi_tags=ETIQUETAS,
-    contact={"name": "Projeto Mora — Vértice Imóveis (POC acadêmica)"},
-    license_info={"name": "Uso acadêmico — licença a confirmar"},
+    contact={"name": "Mora — Vértice Imóveis"},
+    license_info={"name": "MIT", "url": "https://github.com/marcosvrc/agent-sdr-imoveis-mora/blob/master/LICENSE"},
     docs_url="/docs",                  # Swagger UI
     redoc_url="/redoc",                # mesma especificação, leitura contínua
     openapi_url="/openapi.json",

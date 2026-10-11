@@ -503,8 +503,8 @@ def test_aviso_nao_atropela_o_corretor_que_ja_respondeu(infra):
 def test_reserva_manda_o_mapa_da_regiao_e_nao_promete_endereco(infra):
     """Quem vai visitar precisa saber para onde ir — e o cadastro não tem logradouro.
 
-    Nem o acervo da Mora nem o CRM guardam endereço (o seed do CRM escreve "endereço fictício" no
-    próprio título). O link é do BAIRRO, e o texto diz isso: região agora, endereço exato com o
+    Nem o acervo da Mora nem o CRM guardam endereço (o seed do CRM não guarda logradouro no
+    título). O link é do BAIRRO, e o texto diz isso: região agora, endereço exato com o
     corretor na confirmação. Um link de rua e número seria endereço inventado chegando ao cliente
     com cara de confirmado — e ele iria até lá.
     """

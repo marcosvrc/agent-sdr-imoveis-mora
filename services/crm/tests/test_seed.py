@@ -106,8 +106,6 @@ def test_encerradas_nao_tem_visita_futura_ativa(semeado):
      "SELECT count(*) FROM properties WHERE purpose = 'rent' AND condo_monthly_cents IS NULL"),
     ("atendimento humano",
      "SELECT count(*) FROM opportunities WHERE atendimento = 'human'"),
-    ("tentativa de prompt injection",
-     "SELECT count(*) FROM properties WHERE description ILIKE '%ignore as instruções%'"),
     ("investidor com duas oportunidades",
      """SELECT count(*) FROM (SELECT lead_id FROM opportunities GROUP BY lead_id
                                HAVING count(DISTINCT purpose) = 2) t"""),

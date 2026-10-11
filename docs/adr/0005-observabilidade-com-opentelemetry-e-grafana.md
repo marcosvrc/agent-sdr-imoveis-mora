@@ -26,7 +26,7 @@ observabilidade de **sistema** (o serviço está no ar? está lento? a fila est�
 complementares, não concorrentes — ficam como dois perfis opcionais do compose.
 
 ## Alternativas consideradas
-- **Um serviço gerenciado de observabilidade, nada em local:** mais simples, mas o hackathon precisa
+- **Um serviço gerenciado de observabilidade, nada em local:** mais simples, mas o projeto precisa
   demonstrar saúde do sistema justamente no ambiente local/demo, que é onde ele roda. (Esta
   alternativa supunha um ambiente hospedado que o projeto nunca teve e hoje não pretende ter.)
 - **Prometheus + Grafana sem OpenTelemetry (client libs nativas por linguagem):** mais simples de
@@ -51,7 +51,7 @@ containers extras da stack de observabilidade competem por CPU/RAM com o Ollama 
 locais, ADR de LLM) na mesma máquina — e é justamente o Ollama que mais sofre com isso, criando
 turnos do agente de 40-50s que pareciam travados, atrapalhando o próprio objetivo de demonstrar o
 sistema funcionando bem. Em uma máquina de desenvolvedor rodando tudo junto (não um ambiente de
-homologação com mais recursos), o custo superou o benefício para esta fase da POC.
+homologação com mais recursos), o custo superou o benefício para esta fase do projeto.
 
 Fica revertido por ora: o código instrumentado, os serviços no `docker-compose.yml` e os arquivos de
 configuração do coletor, do Tempo, do Prometheus e do Grafana saíram do repositório. O Langfuse

@@ -6,9 +6,9 @@
 
 site_name: Mora — Documentação
 site_description: >-
-  Documentação técnica do Mora, uma POC de SDR imobiliário com IA generativa:
+  Documentação técnica do Mora, agente SDR imobiliário com IA generativa:
   arquitetura, manuais do agente, site e painel, referência da API, segurança e operação.
-site_author: Marcos Ramos
+site_author: Equipe Mora
 site_url: https://marcosvrc.github.io/agent-sdr-imoveis-mora/
 docs_dir: docs
 site_dir: site
@@ -23,7 +23,7 @@ repo_url: https://github.com/marcosvrc/agent-sdr-imoveis-mora
 edit_uri: edit/master/docs/
 
 copyright: >-
-  Documentação do projeto Mora — POC acadêmica de Marcos Ramos. Código sob licença MIT.
+  Documentação do Mora — Agente SDR Imobiliário. Código sob licença MIT.
 
 theme:
   name: material

@@ -39,7 +39,7 @@ ninguém ia exercer.
   processo (`SDR_TRANSCRICAO_PROVIDER` ∈ `auto` | `whisper_local` | `off`), sem serviço externo e sem
   custo por minuto. Continua falhando graciosamente quando desligado: o `handler.py` pede texto.
 - **Long polling não escala como webhook** (um processo, uma conexão longa por vez) — aceitável para
-  demo e para o volume de uma POC. Voltar a webhook (o Telegram suporta os dois) exigiria uma URL
+  demonstração e para o volume desta versão. Voltar a webhook (o Telegram suporta os dois) exigiria uma URL
   pública, e hoje nada está implantado: a entrega roda inteira em `docker compose`.
 
 ## Alternativas consideradas

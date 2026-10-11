@@ -59,6 +59,6 @@ portal e o README no GitHub.
 
 **Tema único, de propósito.** O desenho é claro nos dois temas do portal. Manter uma versão escura
 significaria dois arquivos por diagrama e duas chances de eles divergirem; o ganho não paga isso
-numa POC. O `verificar.mjs` abre cada SVG no navegador e reprova texto que transborde da caixa que o
+neste projeto. O `verificar.mjs` abre cada SVG no navegador e reprova texto que transborde da caixa que o
 contém — um diagrama desenhado por coordenada erra em silêncio, e esse teste é o que impede o erro
 de chegar ao portal.

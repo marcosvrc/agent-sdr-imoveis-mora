@@ -12,8 +12,8 @@ arquitetural) em `docs/adr`. Os ADRs completos estão disponíveis neste portal,
 ## Principais decisões
 
 ### RAG sobre Postgres + pgvector, com fusão de ranking
-- **Problema.** RAG confiável sem depender de um serviço gerenciado que não roda na máquina de quem
-  avalia.
+- **Problema.** RAG confiável sem depender de um serviço gerenciado que não roda no ambiente do
+  cliente.
 - **Decisão.** Um Postgres com pgvector serve imóvel e documento institucional, no mesmo banco que o
   painel consulta, com piso de similaridade e reescrita de consulta.
 - **Trade-off.** A fusão léxica (RRF) está implementada mas desligada por padrão

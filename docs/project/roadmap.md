@@ -11,7 +11,7 @@ a ordem sugerida de execução; nenhum item abaixo tem código escrito.
 
 ## Atividades futuras
 
-### Curto prazo — fechar o que a POC deixou aberto
+### Curto prazo — fechar o que ficou em aberto
 
 | # | Atividade | Por que | Onde mexe |
 |---|---|---|---|
@@ -33,7 +33,7 @@ a ordem sugerida de execução; nenhum item abaixo tem código escrito.
 | 11 | **Testes de comportamento dos front-ends no CI** | O CI faz build estrito, eslint e acessibilidade; os roteiros Playwright usados na verificação manual não rodam automaticamente | `apps/*/scripts`, `.github/workflows/ci.yml` |
 | 12 | **Pacote de UI compartilhado** | `ui.tsx`, `formato.ts` e ícones existem em duplicata entre painel e CRM (com identidades visuais distintas de propósito) | `apps/` |
 
-### Longo prazo — além da POC
+### Longo prazo — além desta versão
 
 | # | Atividade | Por que |
 |---|---|---|

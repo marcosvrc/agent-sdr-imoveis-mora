@@ -356,5 +356,5 @@ diagramas:     # regera os SVG dos diagramas (tema único) a partir de scripts/d
 	@echo "✅ diagramas em docs/assets/diagramas/."
 	@echo "💡 Confira o resultado antes de commitar."
 
-docs:          # portal de documentação em http://127.0.0.1:8000 (MkDocs Material)
-	pip install -r docs-requirements.txt && mkdocs serve
+docs:          # portal de documentação em http://127.0.0.1:8002 (MkDocs Material; 8000 e 8001 são da API e do canal web)
+	python3 -m pip install -r docs-requirements.txt && mkdocs serve -a 127.0.0.1:8002

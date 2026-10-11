@@ -25,14 +25,13 @@
 ![ruff](https://img.shields.io/badge/lint-ruff%20%C2%B7%20eslint-261230?logo=ruff&logoColor=white)
 ![pyright](https://img.shields.io/badge/tipos-pyright%20b%C3%A1sico-3776AB)
 
-Prova de conceito (POC) de um **SDR (Sales Development Representative) imobiliário com IA
-generativa**. A agente virtual **Mora** atende o cliente pelo site e pelo Telegram, entende o que ele
+Agente **SDR (Sales Development Representative) imobiliário com IA generativa**. A agente virtual **Mora** atende o cliente pelo site e pelo Telegram, entende o que ele
 procura, recomenda imóveis do catálogo, agenda visitas e entrega o lead qualificado — com briefing —
 a um corretor humano. Um **CRM** à parte, com banco e login próprios, é onde a equipe opera; a Mora
 escreve nele por **MCP**, com credencial de serviço e limites explícitos.
 
-**Status:** POC. A entrega inteira roda na máquina local, por `docker compose`; nada está
-implantado, e isso é escolha (ver [Roadmap](docs/project/roadmap.md)).
+**Status:** versão 1.0. A entrega roda inteira por `docker compose`, em um servidor ou máquina
+local; a implantação hospedada está no [Roadmap](docs/project/roadmap.md).
 
 > **Este README é o guia de entrada.** Cada seção resume o assunto e aponta para a página
 > detalhada em [`docs/`](docs), publicada como portal em
@@ -436,6 +435,6 @@ o que muda entre containers é o comando. Mais em [Estrutura](docs/technical-ref
 
 ## 14. Licença e autoria
 
-Código sob licença [MIT](LICENSE). POC acadêmica de **Marcos Ramos** (FIAP, fase 5). A Vértice
-Imóveis é fictícia; imóveis, corretores e documentos institucionais são sintéticos e marcados como
-tal. Como contribuir: [Contribuir](docs/project/contribuir.md).
+Código sob licença [MIT](LICENSE). Desenvolvido por **Fernanda Maria Batista Valdevino** e
+**Marcos Vinicio Ramos Câmara**. A Vértice Imóveis é a marca de demonstração desta entrega;
+imóveis, corretores e documentos institucionais são sintéticos e marcados como tal. Como contribuir: [Contribuir](docs/project/contribuir.md).

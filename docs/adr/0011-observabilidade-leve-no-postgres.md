@@ -36,7 +36,7 @@ do painel que já existe. Sem coletor, sem exporter, sem container adicional.
 | `batimentos` | 1 UPSERT a cada 30s por serviço | 6 linhas, fixo | quem está de pé |
 
 Retenção de **7 dias**, aparada pelo próprio `amostrar()` uma vez por hora — sem cron, sem job.
-Em uma semana de operação de POC isso é da ordem de 20 mil linhas: irrelevante para o Postgres.
+Em uma semana de operação isso é da ordem de 20 mil linhas: irrelevante para o Postgres.
 
 **Toda escrita é best-effort.** `registrar_turno`, `amostrar` e `bater` engolem a própria exceção:
 observar nunca pode derrubar o atendimento. Um `/health` que mente é ruim; um monitoramento que
@@ -93,7 +93,7 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
   pool. Medido, é ruído diante de uma chamada de LLM; mas é uma dependência a mais no caminho
   quente — mitigada por ser best-effort.
 - **Sem alerta ativo.** Ninguém é avisado; alguém precisa olhar (a tela, ou o `docker compose ps`).
-  Para a POC é aceitável, e o `/health` já é o gancho pronto para um alarme externo.
+  Nesta versão é aceitável, e o `/health` já é o gancho pronto para um alarme externo.
 - **Sem retenção longa.** 7 dias. Análise de tendência mensal não é possível — e não é o objetivo.
 
 ## Alternativas consideradas
@@ -101,7 +101,7 @@ serviços vivos ou mortos. Mesma autenticação do resto do painel — dado de o
 **Voltar ao ADR-0005 com menos componentes** (só Prometheus + Grafana, sem Tempo/Collector/
 exporters). Ainda são dois containers residentes, ainda concorrendo com o Ollama, e ainda exigindo
 que o corretor abra uma segunda ferramenta para ver o estado do sistema. O ganho sobre o que está
-aqui — cardinalidade e retenção — não é o que a POC precisa.
+aqui — cardinalidade e retenção — não é o que esta versão precisa.
 
 **Um SaaS de observabilidade** (Grafana Cloud, Datadog, Better Stack). Zero peso local, mas
 introduz credencial, egress de dados de conversa para terceiro e uma dependência externa em um

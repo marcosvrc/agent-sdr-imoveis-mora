@@ -7,8 +7,9 @@ description: Controles de segurança do Mora classificados por estado, riscos co
 
 Legenda de estado: **Implementado**, **Parcial**, **Recomendado**.
 
-!!! danger "Isto é uma POC"
-    A existência de um controle não implica que o sistema seja seguro para produção.
+!!! warning "Antes de ir para produção"
+    A existência de um controle não implica que o sistema esteja pronto para produção; os itens
+    marcados como **Recomendado** fazem parte da implantação.
 
 ## Controles
 

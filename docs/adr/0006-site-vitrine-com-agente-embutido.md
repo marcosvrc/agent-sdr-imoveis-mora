@@ -39,7 +39,7 @@ zero lógica de negócio nova, o mesmo agente responde. Na entrega de hoje ele �
 `web` do `docker compose`, ao lado dos demais serviços — nada está implantado fora da máquina.
 
 ## Motivos
-- **Reforça requisitos do hackathon que o canal de mensageria sozinho não cobre bem:** "integrar com base
+- **Reforça requisitos do produto que o canal de mensageria sozinho não cobre bem:** "integrar com base
   simulada de imóveis" fica concreto quando o lead navega o catálogo de verdade (`Imoveis`,
   `ImovelDetalhe`), não só quando o agente descreve um imóvel em texto.
 - **Navegação é sinal de qualificação de graça.** `EventoNavegacaoRepository` já registra

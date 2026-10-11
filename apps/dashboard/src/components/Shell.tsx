@@ -93,8 +93,8 @@ export function Shell() {
             <Notificacoes />
             <button onClick={() => qc.invalidateQueries()} className="rounded-md p-1.5 text-ink-muted hover:bg-surface-2" title="Atualizar dados"><Ic.refresh size={16} /></button>
             <div className="ml-1 flex items-center gap-2 border-l border-line pl-3">
-              <Avatar nome="Corretor Dev" tamanho={28} />
-              <div className="hidden leading-tight lg:block"><div className="text-xs font-medium">Corretor</div><div className="text-[11px] text-ink-muted">corretor@local</div></div>
+              <Avatar nome="Equipe Vértice" tamanho={28} />
+              <div className="hidden leading-tight lg:block"><div className="text-xs font-medium">Equipe</div><div className="text-[11px] text-ink-muted">Vértice Imóveis</div></div>
               <button onClick={sair} className="rounded-md p-1.5 text-ink-muted hover:bg-surface-2 hover:text-ink" title="Sair"><Ic.logout size={16} /></button>
             </div>
           </div>

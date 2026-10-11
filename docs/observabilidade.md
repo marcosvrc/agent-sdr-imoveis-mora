@@ -68,7 +68,7 @@ lê a métrica agregada e linka de volta para o painel de negócio para o detalh
 | `db` (Postgres) | `postgres_exporter` (sidecar) | conexões ativas/máx, duração de query (`pg_stat_statements`), tamanho de tabelas, locks. |
 | `redis` (streams = fila) | `redis_exporter` (sidecar) | memória usada, clientes conectados, ops/seg, **profundidade de cada stream** (equivalente a "mensagens na fila SQS") e consumer lag — é o sinal mais direto de "o agente está atrasado processando leads". |
 | Todos os containers | `cAdvisor` | CPU/memória/disco por container — base do dashboard de saúde geral. |
-| `apps/web`, `apps/dashboard` (frontend) | fora do escopo desta fase | Core Web Vitals via OTel JS ficaria numa fase 2, sem prioridade — o público do hackathon é a demo de sistema, não UX de frontend. |
+| `apps/web`, `apps/dashboard` (frontend) | fora do escopo desta fase | Core Web Vitals via OTel JS ficaria numa fase 2, sem prioridade — o foco desta versão é a saúde do sistema, não a UX do frontend. |
 
 **Cuidado com dado sensível em trace** (isso conecta direto com o trabalho de guardrails já feito): span
 nunca leva o conteúdo da mensagem do cliente nem PII — só `lead_id` (idealmente um hash, não o valor

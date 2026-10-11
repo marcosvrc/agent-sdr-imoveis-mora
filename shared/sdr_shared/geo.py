@@ -174,7 +174,7 @@ def link_do_mapa(bairro: str | None, cidade: str | None = None) -> str | None:
     """Mapa do BAIRRO, nunca do endereço — porque endereço não existe neste sistema.
 
     Nem o acervo da Mora nem `properties` no CRM guardam logradouro: o cadastro tem cidade, região e
-    bairro, e o próprio seed do CRM escreve "(endereço fictício)" no título. Um link apontando para
+    bairro, e o seed do CRM não guarda logradouro no título. Um link apontando para
     uma rua e um número seria endereço inventado chegando ao cliente com cara de confirmado — e ele
     iria até lá. O que sabemos é o bairro; é o que o link mostra, e quem manda o endereço exato é o
     corretor, na confirmação da visita.

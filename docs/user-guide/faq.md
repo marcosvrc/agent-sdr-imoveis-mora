@@ -31,8 +31,8 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
 
 ??? question "E o WhatsApp?"
     Não existe mais. O canal pela Cloud API da Meta foi removido do repositório: o webhook exige URL
-    pública e conta de negócio verificada, o que não cabe numa entrega que roda na máquina de quem
-    avalia (ADR-0007). O canal externo é o Telegram; há também o chat do site e a CLI.
+    pública e conta de negócio verificada, o que não cabe numa entrega que roda sem URL pública
+    (ADR-0007). O canal externo é o Telegram; há também o chat do site e a CLI.
 
 ??? question "O que acontece se o provedor de LLM cair?"
     Há um provedor de fallback (`SDR_LLM_PROVIDER_FALLBACK`) e um timeout por turno
@@ -43,8 +43,9 @@ description: Dúvidas comuns sobre o Mora — provedor de LLM, custo, canais, da
     Rode `make seed` para popular 400 imóveis e gerar os embeddings.
 
 ??? question "O Mora está pronto para produção?"
-    Não. É uma **POC**, que roda na máquina local e não está implantada em lugar nenhum.
-    Veja [Roadmap e limitações](../project/roadmap.md) e [Segurança](../quality/seguranca.md).
+    Esta versão roda por `docker compose` em um servidor ou máquina local; a implantação hospedada,
+    com TLS e segredos gerenciados, está no [Roadmap e limitações](../project/roadmap.md). Os
+    controles já implementados estão em [Segurança](../quality/seguranca.md).
 
 ??? question "Como entro no painel?"
     A tela de login pede o **token do painel** — o `SDR_PAINEL_TOKEN` do `local/.env`. Com ele em

@@ -77,7 +77,7 @@ def test_corretor_auth_e_handoff():
     assert c.get("/dashboard/funil", headers=H).json()["estagios"]["novo"] == 1
     r = c.post("/handoff/l1/assumir", headers=H).json()
     # Sem nenhum corretor no cadastro, o lead fica na fila da equipe. Antes gravava aqui o id do
-    # usuário logado ("corretor-dev"), que não existe em `corretores` — lead atribuído a um fantasma.
+    # usuário logado ("equipe"), que não existe em `corretores` — lead atribuído a um fantasma.
     assert r["estagio"] == "handoff" and r["corretor_id"] is None
     r = c.post("/handoff/l1/responder", headers=H, json={"texto": "Oi Marcos, aqui é o corretor"})
     assert r.json()["canais"] == ["telegram"] and MemBroker.msgs[-1][0] == "outbound-telegram"

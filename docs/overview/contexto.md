@@ -29,7 +29,7 @@ usam o painel administrativo. O cliente final conversa com a Mora pelo site ou p
 Resposta imediata 24 horas por dia, qualificação consistente e um painel que mostra o funil e a
 governança de consumo de LLM (Large Language Model, modelo de linguagem).
 
-## Escopo atual (POC)
+## Escopo desta versão
 
 Agente multiagente, site vitrine com chat, painel do corretor, canal Telegram, API REST, RAG híbrido,
 follow-up automático, governança de IA e uma camada de segurança determinística contra abuso de prompt.
@@ -41,15 +41,12 @@ follow-up automático, governança de IA e uma camada de segurança determiníst
 - Voice AI em tempo real.
 - Multi-tenant.
 - WhatsApp. Chegou a existir um canal pela Cloud API da Meta e foi removido: o webhook exige URL
-  pública e conta de negócio verificada, o que não cabe numa entrega que roda na máquina de quem
-  avalia. O Telegram cobre o mesmo papel com um bot criado na hora pelo `@BotFather`.
+  pública e conta de negócio verificada, o que não cabe numa entrega que roda sem URL pública. O Telegram cobre o mesmo papel com um bot criado na hora pelo `@BotFather`.
 
 O raciocínio completo está na [Referência completa (ARCHITECTURE.md)](../ARCHITECTURE.md).
 
 ## Estágio atual
 
-Prova de conceito (POC). Roda inteira na máquina local, com `docker compose`; **nada está
-implantado** em servidor. O estado item a item está em [Funcionalidades](funcionalidades.md).
-
-!!! info "Contexto acadêmico"
-    Projeto desenvolvido por Marcos Ramos como trabalho acadêmico (FIAP, fase 5).
+Versão 1.0. Roda inteira com `docker compose`, em um servidor ou máquina local; a implantação
+hospedada está no [Roadmap](../project/roadmap.md). O estado item a item está em
+[Funcionalidades](funcionalidades.md).

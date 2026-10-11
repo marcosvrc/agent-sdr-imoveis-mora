@@ -1,6 +1,6 @@
 ---
 title: Visão geral
-description: Mora é uma POC de SDR imobiliário com IA generativa — atende, qualifica, recomenda imóveis, agenda visitas e faz handoff ao corretor.
+description: Mora é um agente SDR imobiliário com IA generativa — atende, qualifica, recomenda imóveis, agenda visitas e faz handoff ao corretor.
 hide:
   - navigation
 ---
@@ -10,13 +10,13 @@ hide:
 <span class="mora-hero__title" markdown>**Mora** — Agente SDR Imobiliário</span>
 
 <p class="mora-hero__sub" markdown>
-Prova de conceito de um SDR (Sales Development Representative) imobiliário com IA generativa.
+Agente SDR (Sales Development Representative) imobiliário com IA generativa.
 A agente virtual **Mora** atende o cliente, entende o que ele procura, recomenda imóveis do
 catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
 </p>
 
 <div class="mora-badges" markdown>
-<span class="mora-badge">Status: POC</span>
+<span class="mora-badge">Versão 1.0</span>
 <span class="mora-badge">PT-BR</span>
 <span class="mora-badge">Roda 100% local (docker compose)</span>
 <span class="mora-badge">Licença: MIT</span>
@@ -82,8 +82,8 @@ canal a mensagem chegou: cada canal traduz o evento do provedor para um formato 
 
 ![Mora em uma olhada](assets/diagramas/contexto.svg)
 
-Tudo isso são containers de um único `docker compose`: o sistema roda inteiro na máquina de quem
-avalia, e **nada está implantado** — é escolha de escopo, não pendência. Detalhes em
+Tudo isso são containers de um único `docker compose`: o sistema roda inteiro em um servidor ou
+máquina local, sem depender de nuvem — a implantação hospedada é item do roadmap. Detalhes em
 [Arquitetura](architecture/index.md).
 
 ## Links rápidos
@@ -99,7 +99,7 @@ avalia, e **nada está implantado** — é escolha de escopo, não pendência. D
 - :material-api: [Consultar a API](technical-reference/api.md)
 - :material-source-pull: [Contribuir](project/contribuir.md)
 
-!!! note "Sobre esta POC"
-    O Mora é uma prova de conceito. A entrega roda inteira por `docker compose` na máquina de quem
-    avalia, sem conta em provedor nenhum e sem nada implantado. Veja o estado real em
-    [Funcionalidades](overview/funcionalidades.md).
+!!! note "Sobre esta versão"
+    Esta versão roda inteira por `docker compose`, em um servidor ou máquina local, sem depender de
+    nuvem. A implantação hospedada está no [Roadmap](project/roadmap.md). O que está entregue, item
+    a item, está em [Funcionalidades](overview/funcionalidades.md).

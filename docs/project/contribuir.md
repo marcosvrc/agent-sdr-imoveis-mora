@@ -39,7 +39,7 @@ São os mesmos passos dos dois jobs do CI (`python` e `frontend`) — veja
 Este portal é feito em Markdown, sob `docs/`. Para editar:
 
 ```bash
-make docs                        # instala docs-requirements.txt e sobe em http://127.0.0.1:8000
+make docs                        # instala docs-requirements.txt e sobe em http://127.0.0.1:8002
 mkdocs build --strict            # o que a CI confere: aviso (link quebrado, por exemplo) vira erro
 ```
 

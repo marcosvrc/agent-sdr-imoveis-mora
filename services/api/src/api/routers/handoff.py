@@ -28,13 +28,10 @@ def _lead(lead_id: str):
 @router.post("/{lead_id}/assumir")
 def assumir(lead_id: str, body: AssumirIn | None = None, corretor=Depends(corretor_atual)):
     """Corretor assume a conversa. Responsável: o informado no body → o já vinculado → roteamento
-    por região → ninguém (fila da equipe).
+    por região → ninguém (fila da equipe, `corretor_id IS NULL`).
 
-    O último caso já foi "o usuário logado", e isso gravava no lead um id que não existe no cadastro
-    de corretores: hoje o literal `corretor-dev`, vindo do token do painel. Quem está
-    logado é um ATOR (serve para auditoria), não necessariamente um corretor cadastrado — e o lead
-    ficava atribuído a alguém que a tela de corretores não conhece. Sem corretor apto, o certo é
-    deixar na fila da equipe, estado que o sistema já entende (`corretor_id IS NULL`).
+    Quem está logado é um ator de auditoria, não necessariamente um corretor cadastrado; por isso
+    o lead nunca é atribuído ao usuário do painel.
     """
     lead = _lead(lead_id)
     repo = CorretorRepository()

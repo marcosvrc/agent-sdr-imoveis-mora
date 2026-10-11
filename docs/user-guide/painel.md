@@ -20,12 +20,12 @@ Endereço local: <http://localhost:5174>. A tela de login tem dois campos:
 | Campo | O que fazer |
 | --- | --- |
 | **E-mail** | Só rótulo. Vem preenchido com `corretor@verticeimoveis.com.br`; o valor não é conferido. |
-| **Token do painel** | O valor de `SDR_PAINEL_TOKEN` do `local/.env`. Placeholder: *em branco usa o dev-token*. |
+| **Token do painel** | O valor de `SDR_PAINEL_TOKEN` do `local/.env`. No perfil local, em branco vale o `dev-token` (a tela não anuncia isso). |
 
 Regras:
 
 - O painel valida o token contra a API (`GET /config`) **antes** de guardá-lo. Token errado mostra
-  **"Token do painel inválido"** ali mesmo, em vez de abrir o painel e cair em 401 na primeira tela.
+  **"Token inválido"** ali mesmo, em vez de abrir o painel e cair em 401 na primeira tela.
 - **Perfil local** (`SDR_PROFILE=local`) com `SDR_PAINEL_TOKEN` vazio: vale `dev-token`, que é o
   que o campo em branco envia.
 - **Fora do perfil local**: sem segredo configurado, ninguém entra. O `dev-token` não é aceito.
@@ -37,7 +37,7 @@ Regras:
   salvo e o painel abria e caía de novo em seguida.
 - **Sair** (ícone no canto superior direito) apaga o token do navegador.
 
-Toda ação autenticada é registrada com o ator `corretor-dev` / `corretor@local` — o painel tem um
+Toda ação autenticada é registrada com o ator `equipe` / `equipe@verticeimoveis.com.br` — o painel tem um
 login único de equipe, não um por corretor.
 
 > Nota técnica: `apps/dashboard/src/lib/auth.ts`, `services/api/src/api/auth.py`.
@@ -213,9 +213,9 @@ Fora do handoff o campo de resposta é substituído por *"Assuma a conversa para
   intenção, região, orçamento, quartos e prazo; para investimento, intenção, perfil de investidor,
   ticket e retorno esperado. Também lista **Imóveis que viu no site** e **Pediu para visitar um imóvel**.
 - **Briefing da Mora** — texto do resumo. Botão **Gerar** / **Atualizar**; enquanto processa, **Gerando…**
-  e a nota *"o worker `resumidor` está processando"*. Se passar de 90 s sem resposta:
-  *"O pedido foi enviado há X e não houve resposta. O serviço que gera o briefing (worker resumidor)
-  provavelmente está parado — reinicie-o e peça de novo."* O briefing também é gerado sozinho quando o
+  e a nota *"Gerando o briefing… leva alguns segundos."* Se passar de 90 s sem resposta:
+  *"O pedido foi enviado há X e não houve resposta. O serviço que gera o briefing não respondeu.
+  Peça de novo; se continuar, avise o suporte."* O briefing também é gerado sozinho quando o
   lead fica qualificado, agenda visita ou é encaminhado.
 
 **Imóveis** — *"Imóveis desta conversa"*: cada vínculo lead↔imóvel com preço, motivo da sugestão e o
@@ -256,15 +256,15 @@ por nome); à direita a transcrição do selecionado, renovada a cada 5 s, com *
 
 ## Imóveis (`/imoveis`)
 
-Descrição: *"Catálogo indexado para o RAG da Mora — o que o agente pode oferecer aos leads"*. Alternância
+Descrição: *"Catálogo que a Mora pode oferecer aos clientes"*. Alternância
 **tabela** / **cards**. Indicadores sobre o recorte atual: **Imóveis no filtro**, **À venda**,
-**Para alugar**, **Mediana venda**, **Mediana aluguel** (a base carrega até 400 imóveis por vez, teto do endpoint — é exatamente o tamanho do acervo da POC).
+**Para alugar**, **Mediana venda**, **Mediana aluguel** (a base carrega até 400 imóveis por vez, teto do endpoint — é exatamente o tamanho da base de demonstração).
 
 Filtros: busca *Buscar por código, bairro, descrição…*, **Venda e aluguel** (Venda / Aluguel),
 **Todas as regiões**, **Todos os tipos** (residenciais: Apartamento, Casa, Sobrado, Studio, Kitnet, Cobertura; comerciais: Sala comercial, Conjunto comercial, Loja, Galpão, Laje corporativa), **Quartos** (1+ a 4+), **Limpar**.
 Colunas da tabela: **Código**, **Imóvel**, **Operação**, **Região**, **Quartos** (`Nq · Ns · Nv`),
-**Área**, **Preço**, **Cond.**, **Detalhes**. Vazio: *"Rode `make seed` para carregar a base simulada
-ou ajuste os filtros."*
+**Área**, **Preço**, **Cond.**, **Detalhes**. Vazio: *"Ajuste os filtros ou sincronize o catálogo com o
+CRM."*
 
 ### Cadastro e edição
 
@@ -275,7 +275,7 @@ CRM ou pelo arquivo do acervo (ver [CRM](crm.md)).
 ### Ficha e fotos
 
 O botão **Ver detalhes** abre a ficha: carrossel, preço (com **+ R$ cond.**), Quartos, Suítes, Vagas,
-Área, R$/m², Cidade, **Descrição (texto que alimenta o embedding)**, **Quem está de olho** (interessados,
+Área, R$/m², Cidade, **Descrição (é o texto que a Mora usa na busca)**, **Quem está de olho** (interessados,
 do mais quente ao mais frio, 5 por página, descartados fora) e **Quem a Mora avisaria** (ver Reativação).
 
 Gestão de fotos:

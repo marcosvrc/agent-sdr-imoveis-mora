@@ -26,7 +26,7 @@ def test_mutacao_pela_api_vira_registro():
     assert r.status_code == 201
     regs = AuditoriaRepository().listar(dias=1, acao="corretor.criado")
     assert len(regs) == 1
-    assert regs[0]["ator_tipo"] == "corretor" and regs[0]["ator_nome"] == "corretor@local"
+    assert regs[0]["ator_tipo"] == "corretor" and regs[0]["ator_nome"] == "equipe@verticeimoveis.com.br"
     assert regs[0]["dados"]["enviado"]["nome"] == "Teste Auditoria"
 
 
@@ -85,7 +85,7 @@ def test_exportacao_csv_se_autoregistra():
 
 
 def test_filtros_e_resumo():
-    auditar(acao="lead.exportado_crm", entidade="lead", ator_tipo="corretor", ator_nome="corretor@local",
+    auditar(acao="lead.exportado_crm", entidade="lead", ator_tipo="corretor", ator_nome="equipe@verticeimoveis.com.br",
             dados={"exportados": 3})
     auditar(acao="lead.followup_enviado", entidade="lead", entidade_id="lead-1", ator_tipo="agente", ator_nome="Mora")
     repo = AuditoriaRepository()
