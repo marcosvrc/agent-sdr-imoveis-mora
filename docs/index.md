@@ -25,6 +25,7 @@ catálogo, agenda visitas e passa o lead qualificado para um corretor humano.
 <div class="mora-actions" markdown>
 [Começar agora](overview/quick-start.md){ .md-button .md-button--primary }
 [Ver no GitHub](https://github.com/marcosvrc/agent-sdr-imoveis-mora){ .md-button }
+[Apresentação (PDF)](assets/apresentacao-mora.pdf){ .md-button }
 </div>
 
 </div>

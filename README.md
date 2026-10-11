@@ -39,6 +39,8 @@ local; a implantação hospedada está no [Roadmap](docs/project/roadmap.md).
 > [`docs.yml`](.github/workflows/docs.yml)). Os documentos longos foram separados de propósito: o
 > manual do CRM sozinho tem mais de 600 linhas.
 
+> **Apresentação do produto:** [`docs/assets/apresentacao-mora.pdf`](docs/assets/apresentacao-mora.pdf) — 16 slides com problema, solução, arquitetura, agente, tecnologias e números, para enviar a quem não vai ver a demo ao vivo.
+
 ## Sumário
 
 1. [Contexto do projeto](#1-contexto-do-projeto)
