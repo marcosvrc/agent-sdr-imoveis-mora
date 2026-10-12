@@ -81,7 +81,7 @@ cartão + sinais de comportamento (tempo de resposta, pediu visita, abriu imóve
 ## 6. Multiagente (LangGraph)
 
 Um estado único (`services/agent/src/agent/state.py`) compartilhado por todos os nós.
-Supervisor (Haiku) roteia; só Qualificador, Consultor e Agendador falam com o lead, com a
+Supervisor (modelo de roteamento, pequeno e rápido) roteia; só Qualificador, Consultor e Agendador falam com o lead, com a
 mesma persona. Máximo de 4 saltos por turno para evitar pingue-pongue. Checkpointer em
 Postgres = memória conversacional. Follow-up e Resumidor rodam fora do turno do lead.
 
@@ -123,7 +123,7 @@ ponto onde o teste substitui a infraestrutura, não porque haja um segundo conju
 | Item | Custo | Observação |
 |---|---|---|
 | Postgres, Redis, canais, workers, API, front-ends, CRM | US$ 0 | Containers na máquina local |
-| Modelo de conversa e roteamento | Centavos por conversa | Único custo variável; Haiku em roteamento/extração já é a otimização (ADR-0010) |
+| Modelos de linguagem | Centavos por conversa | Único custo variável; um modelo por função, barato no roteamento e na extração (ADR-0010, ADR-0016; ver [Escolha dos modelos](architecture/escolha-de-modelos.md)) |
 | Embeddings | US$ 0 com `bge-m3` no Ollama; frações de centavo com `text-embedding-3-small` | Uma vez por documento indexado; o hospedado dispensa o container do Ollama |
 | Transcrição de voz (`faster-whisper`) | US$ 0 | No próprio processo, sem serviço externo nem cobrança por minuto |
 | Bot do Telegram | US$ 0 | Criado no @BotFather, sem verificação |

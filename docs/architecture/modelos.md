@@ -392,21 +392,20 @@ in-process, sem serviço externo e sem custo por minuto. Verificado no código:
 
 ## Decisões e trade-offs
 
+Qual modelo atende cada função e por quê está em [Escolha dos modelos](escolha-de-modelos.md).
 Resumo do que os ADRs registram (texto completo em
-[ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md) e
-[ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md)):
+[ADR-0009](../adr/0009-gateway-de-llm-litellm-openrouter-ou-nada.md),
+[ADR-0010](../adr/0010-modelo-por-nivel-e-troca-pelo-painel.md) e
+[ADR-0016](../adr/0016-openrouter-e-modelo-por-funcao.md)):
 
-- **Sem gateway de LLM.** LiteLLM e OpenRouter foram avaliados e recusados: a camada que eles
+- **Sem gateway de LLM; OpenRouter como provedor.** O LiteLLM foi avaliado e recusado: a camada que ele
   ofereceriam (ponto único, registro de uso, teto de orçamento, fallback) já existe em
   `factory.py` + `governanca/`, e a parte que mais valeria terceirizar — o que fazer ao estourar o
   teto — é regra de negócio (degradar ou encaminhar ao corretor). Contra o LiteLLM pesaram mais um
-  container residente com Postgres e Redis próprios, ponto único de falha e histórico de segurança;
-  contra o OpenRouter em produção, PII de cliente passando por um terceiro (LGPD) e mudança de
-  controle recente.
-- **OpenRouter na avaliação de modelos.** `_construir` aceita `provider="openrouter"` para o harness comparar
-  modelos sobre datasets sintéticos. Hoje, porém, o harness em `services/agent/evals/` não
-  referencia OpenRouter em lugar nenhum — a porta existe no factory, o uso por `evals/` não foi
-  localizado.
+  container residente com Postgres e Redis próprios, ponto único de falha e histórico de segurança.
+  O OpenRouter foi recusado no ADR-0009 por privacidade e aceito no ADR-0016 como provedor, com
+  retenção zero obrigatória em toda requisição; é por ele que a matriz de avaliação
+  (`make eval-matriz`) compara os candidatos de cada papel.
 - **OpenAI como reserva de produção**, sem intermediário. Consequências registradas: a tabela
   `_EQUIVALENTE`, a exigência de preço para todo modelo equivalente e mais um subprocessador a
   documentar na política de privacidade (pendente, segundo o ADR).

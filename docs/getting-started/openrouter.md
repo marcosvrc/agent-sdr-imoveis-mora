@@ -42,10 +42,11 @@ Sem `SDR_MODEL_*`, os papéis usam os modelos padrão (`claude-sonnet-4-5` na co
 `fornecedor/modelo`:
 
 ```bash
-SDR_MODEL_CONVERSA=openai/gpt-6-sol
+# Configuração de demonstração (motivos em Arquitetura → Escolha dos modelos)
+SDR_MODEL_CONVERSA=deepseek/deepseek-v4.1-flash
 SDR_MODEL_ROTEAMENTO=openai/gpt-oss-120b
+SDR_MODEL_EXTRACAO=openai/gpt-6-luna
 # vazios herdam: extração → roteamento; informações e análise → conversa
-# SDR_MODEL_EXTRACAO=
 # SDR_MODEL_INFORMACOES=
 # SDR_MODEL_ANALISE=
 ```
@@ -107,7 +108,7 @@ A sincronização também existe na API, para scripts:
 ```bash
 curl -s -X POST http://localhost:8000/config/modelos/openrouter/sincronizar \
   -H "Authorization: Bearer $SDR_PAINEL_TOKEN" -H "Content-Type: application/json" \
-  -d '{"modelos": ["openai/gpt-6-sol", "deepseek/deepseek-v4.1-flash"]}'
+  -d '{"modelos": ["openai/gpt-6-luna", "openai/gpt-oss-120b", "deepseek/deepseek-v4.1-flash"]}'
 # → {"gravados": {...}, "nao_encontrados": [...]}
 ```
 

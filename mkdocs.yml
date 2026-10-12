@@ -17,6 +17,7 @@ site_dir: site
 # por link direto), sem virar página de navegação.
 not_in_nav: |
   /arquitetura.html
+  /architecture/avaliacao-modelos-2026-09-29.md
 
 repo_name: marcosvrc/agent-sdr-imoveis-mora
 repo_url: https://github.com/marcosvrc/agent-sdr-imoveis-mora
@@ -138,6 +139,7 @@ nav:
       - Componentes: architecture/componentes.md
       - Fluxo do agente e LLM: architecture/fluxo-agente.md
       - Modelos de linguagem: architecture/modelos.md
+      - Escolha dos modelos: architecture/escolha-de-modelos.md
       - Dados e persistência: architecture/dados.md
       - Diagramas: architecture/diagramas.md
       - Referência completa (ARCHITECTURE.md): ARCHITECTURE.md

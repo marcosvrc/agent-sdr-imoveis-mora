@@ -7,7 +7,8 @@ description: Estratégias de performance observadas no código do Mora e um proc
 
 Estratégias observadas no código e na configuração:
 
-- **Roteamento econômico.** Roteamento e extração usam Haiku; a conversa usa Sonnet (ADR-0010) — reduz
+- **Modelo por função.** Roteamento e extração usam modelos pequenos e rápidos; só a conversa usa o
+  modelo de melhor texto (ADR-0010, ADR-0016; os modelos em [Escolha dos modelos](../architecture/escolha-de-modelos.md)) — reduz
   custo e latência por turno.
 - **Roteamento determinístico primeiro.** O supervisor decide por regra e só chama o LLM na ambiguidade.
 - **RAG híbrido com cascata por localidade.** Evita buscas amplas desnecessárias.
