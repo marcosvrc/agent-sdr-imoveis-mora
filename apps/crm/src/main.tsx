@@ -6,6 +6,7 @@ import { App } from "./App";
 import { ErroApi } from "./lib/api";
 import { marcarSessaoExpirada } from "./lib/sessao";
 import "./index.css";
+import "./lib/modoDemo";
 
 // `retry: false` de propósito: a API devolve erro de NEGÓCIO com código estável (contato
 // bloqueado, versão vencida, qualificação incompleta). Repetir isso não muda nada e só atrasa a
