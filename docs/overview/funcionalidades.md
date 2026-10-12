@@ -71,7 +71,7 @@ troca por `consultor` (ou `qualificador`) — a regra determinística já conclu
 não pede visita, e o modelo não pode reoferecer a grade sobre uma visita reservada.
 
 **Em falha.** Se o LLM de roteamento levantar exceção, o turno inteiro cai no fallback do handler
-(ver [Resiliência](#resiliencia)). Não há retry específico no supervisor.
+(ver [Resiliência](#resiliência)). Não há retry específico no supervisor.
 
 ### Qualificação conversacional e cartão estruturado
 

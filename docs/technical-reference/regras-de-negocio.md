@@ -19,7 +19,7 @@ que a prende — ou a marca "sem teste", que é um convite.
       está certo e este documento está velho** — corrija-o.
     - **Se violada** diz o efeito observável: código HTTP, texto fixo, recusa silenciosa.
     - **Teste** é o arquivo/função que quebraria. Caminhos são relativos à raiz do repositório.
-    - A seção [Divergências conhecidas](#20-divergencias-conhecidas) lista pontos onde o
+    - A seção [Divergências conhecidas](#20-divergências-conhecidas) lista pontos onde o
       comportamento surpreende, e a seção [Regras removidas ou alteradas](#21-regras-removidas-ou-alteradas)
       diz o que esta versão tirou ou mudou em relação à anterior — nada foi apagado em silêncio.
 
@@ -195,7 +195,7 @@ esperando uma mensagem que nunca vinha
 - canal web, com nome, **sem contato e com cartão completo** → pede **um** contato, de preferência
   telefone (`::test_pede_um_contato_so_quando_ha_compromisso`);
 - **ao escolher horário no site sem contato**, o agendador **segura o horário e pede o telefone
-  antes de reservar** (ver [7.4](#74-no-site-o-horario-espera-o-telefone));
+  antes de reservar** (ver [7.4](#74-no-site-o-horário-espera-o-telefone));
 - quando o cliente responde **só com o contato** (telefone ou e-mail e no máximo seis palavras,
   `qualificador.py::so_contato`), o qualificador agradece e fecha — não lista imóveis de novo nem
   repete o número; com visita reservada, diz que o corretor vai confirmar por esse contato
@@ -224,7 +224,7 @@ O supervisor decide por regra determinística; o modelo só entra no último cas
 | 8a | há horário segurado (`horario_pendente`), a mensagem **não** é contato nem `slot:`, e a Mora **já insistiu uma vez** no contato (`contato_insistido`) **ou** o cliente pede outras opções ("Ver outros", `PEDE_OPCOES`) | **solta o horário** (zera `horario_pendente`, `contato_insistido`, `horarios_oferecidos` e `slots_crm`) e a mensagem segue pelas linhas abaixo como se não houvesse pendente |
 | 9 | há **horário segurado esperando contato** e a mensagem é só contato, outro `slot:` ou tem até 4 palavras **que não são pergunta institucional** | agendador (fecha a reserva ou insiste uma vez) |
 | 10 | pergunta institucional (`INSTITUCIONAL_FORTE` — inclui "horário de atendimento/funcionamento" —, `INSTITUCIONAL_FRACO` + marca de pergunta) ou **consultiva** (`CONSULTIVA`, qualidade de lugar), **sem** `slot:` e, havendo horários oferecidos, **sem cara de escolha de horário** (`ESCOLHE_HORARIO`) | informações (RAG institucional); um horário segurado continua segurado |
-| 11 | intenção já é compra ou aluguel e o cliente **cita a outra** com todas as letras (`intencao_citada`; "comprar para alugar" cita as duas e não decide; **negação** — "não quero comprar agora" — e **pergunta sobre o outro uso sem verbo de desejo** — "quanto rende o aluguel desse?", "dá pra alugar depois?" — não contam) | qualificador (abre a oportunidade nova ou refaz o cartão sem o teto antigo — ver [3.2](#32-extracao-o-que-ela-pode-e-nao-pode-fazer)) |
+| 11 | intenção já é compra ou aluguel e o cliente **cita a outra** com todas as letras (`intencao_citada`; "comprar para alugar" cita as duas e não decide; **negação** — "não quero comprar agora" — e **pergunta sobre o outro uso sem verbo de desejo** — "quanto rende o aluguel desse?", "dá pra alugar depois?" — não contam) | qualificador (abre a oportunidade nova ou refaz o cartão sem o teto antigo — ver [3.2](#32-extração--o-que-ela-pode-e-não-pode-fazer)) |
 | 12 | escolheu horário (botão `slot:` ou texto após oferta) | agendador |
 | 13 | pede visita (`PEDE_VISITA`: visita, visitar, (re)agendar, (re/des)marcar, "outro horário", "horários", "tem horário" — **"horário" sozinho não**) ou botão "Agendar visita" | agendador |
 | 13a | pede outras opções ("Ver outros", `PEDE_OPCOES`) | consultor — **antes** da rota grudada da linha 13b |

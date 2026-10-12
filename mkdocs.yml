@@ -95,6 +95,10 @@ markdown_extensions:
   - toc:
       permalink: true
       permalink_title: Link permanente para esta seção
+      # Âncoras iguais às do GitHub (mantêm acentos): os links #secao funcionam no portal e no repositório.
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
   - pymdownx.details
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji

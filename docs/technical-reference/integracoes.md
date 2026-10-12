@@ -89,7 +89,7 @@ servidor MCP e da API REST. Veja [decisões](../decisions.md) D-01 e D-02.
     `criar_lead` do CRM deduplica por e-mail/telefone e devolveria a ficha existente — com uma
     interação `internal` pedindo que o corretor confirme a identidade antes de juntar as fichas. Só
     contato verificado pelo canal vincularia (nenhum canal entrega isso hoje). Ver
-    [regras de negócio §18](regras-de-negocio.md#18-a-ponte-mora-crm).
+    [regras de negócio §18](regras-de-negocio.md#18-a-ponte-mora--crm).
 
 ## Transcrição de áudio (agente multimodal)
 
@@ -107,7 +107,7 @@ qualquer outra mensagem (`services/agent/src/agent/tools/transcricao.py`). São 
 
 Controle por `SDR_TRANSCRICAO_PROVIDER` (`auto | whisper_local | off`) e `SDR_WHISPER_MODEL`. Não há
 serviço externo de transcrição nem cobrança por minuto: o modelo roda no próprio processo. Veja
-[Configuração](../getting-started/configuracao.md#transcricao-de-audio) e o
+[Configuração](../getting-started/configuracao.md#transcrição-de-áudio) e o
 [manual do agente](../user-guide/agente.md#mensagens-de-voz).
 
 !!! note "Entrada de voz tratada como dado não confiável"

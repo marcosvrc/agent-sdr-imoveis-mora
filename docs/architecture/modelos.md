@@ -10,7 +10,7 @@ a tabela de preços, o registro de uso, a comparação que o painel mostra e os 
 timeout e reserva. Tudo foi conferido no código; onde há divergência entre uma recomendação de
 ADR e o padrão configurado, a divergência está apontada. Não há aqui benchmark de qualidade —
 o repositório não versiona resultado de avaliação com modelo real (ver
-[Harness de avaliação](#harness-de-avaliacao)).
+[Harness de avaliação](#harness-de-avaliação)).
 
 ## Papéis de modelo
 
@@ -320,7 +320,7 @@ por papel de verdade. O teste com tabela inventada (`caro-na-entrada` × `caro-n
 que a conta reage ao mix se um dia entrar um modelo com razão extrema.
 
 Esta tabela é sobre **preço**, não sobre qualidade. Nada aqui diz qual modelo responde melhor;
-ver [Harness de avaliação](#harness-de-avaliacao).
+ver [Harness de avaliação](#harness-de-avaliação).
 
 ## Timeout, retries e provedor de reserva
 

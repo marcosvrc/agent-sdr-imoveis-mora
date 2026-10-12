@@ -47,7 +47,7 @@ a ordem sugerida de execução; nenhum item abaixo tem código escrito.
 
 - **Um canal externo só: o Telegram.** O WhatsApp foi removido do código (ADR-0007).
 - **Nada está implantado.** A entrega inteira é o `local/docker-compose.yml`, rodando na máquina
-  local — escolha, não pendência (ver [Execução e custo](../ARCHITECTURE.md#10-execucao-e-custo)).
+  local — escolha, não pendência (ver [Execução e custo](../ARCHITECTURE.md#10-execução-e-custo)).
 - **Fusão léxica do RAG desligada por padrão** (`SDR_RAG_LEXICO`), pelo resultado do A/B.
 - **Rate limiting por processo**, não distribuído.
 - **Sem benchmarks** de performance nem de qualidade com modelo real versionados.

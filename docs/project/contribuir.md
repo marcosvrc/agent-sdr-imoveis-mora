@@ -16,7 +16,7 @@ description: Fluxo de contribuição inferido do CI e das convenções do Mora, 
 2. **Commits e Pull Requests (inferido).** Descreva o que muda e por quê; mantenha PRs focados.
 3. **Antes de tocar em um serviço.** Leia a
    [Referência completa (ARCHITECTURE.md)](../ARCHITECTURE.md)
-   e respeite as [regras de dependência](../technical-reference/estrutura.md#regras-de-dependencia)
+   e respeite as [regras de dependência](../technical-reference/estrutura.md#regras-de-dependência)
    entre camadas.
 
 ## Validações obrigatórias
@@ -32,7 +32,7 @@ cd apps/dashboard && npm run build   # front-end painel
 ```
 
 São os mesmos passos dos dois jobs do CI (`python` e `frontend`) — veja
-[Testes](../quality/testes.md#integracao-continua).
+[Testes](../quality/testes.md#integração-contínua).
 
 ## Contribuir com a documentação
 
