@@ -13,7 +13,10 @@ dependencies = [
 [project.optional-dependencies]
 # faster-whisper: transcrição de áudio in-process, sem serviço externo. Opcional de propósito —
 # o CI usa o extra [dev], que não o instala; os testes de transcrição mockam o motor.
-local = ["sdr-shared[local]", "faster-whisper>=1.0"]
+# `av<14`: o PyAV 14 tirou o parâmetro `metadata_errors` que o faster-whisper passa ao abrir o áudio,
+# e toda mensagem de voz falhava com TypeError ("Não consegui ouvir seu áudio"). Sem o teto, um
+# `--build` qualquer trazia a versão nova e quebrava a transcrição em silêncio.
+local = ["sdr-shared[local]", "faster-whisper>=1.0", "av>=11,<14"]
 dev = ["pytest", "pytest-asyncio"]
 
 [tool.uv.sources]
