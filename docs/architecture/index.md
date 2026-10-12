@@ -59,4 +59,4 @@ vale.
 !!! note "Referência completa"
     A [Referência completa (ARCHITECTURE.md)](../ARCHITECTURE.md) traz o desenho detalhado, os
     contratos entre camadas e o que o sistema custa para rodar. Há também um dossiê visual C4 em
-    [`arquitetura.html`](../arquitetura.html){ target=_blank } (abra no navegador).
+    [Abrir o dossiê de arquitetura](../arquitetura.html), página única que abre no navegador.

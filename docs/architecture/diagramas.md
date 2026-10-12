@@ -36,9 +36,9 @@ Postgres, Redis e Ollama, e podem ser ajustadas por `DB_HOST_PORT`, `REDIS_HOST_
 ## Dossiê visual C4
 
 O portal inclui um dossiê visual com os diagramas C4 do sistema, o grafo do agente, o índice de ADRs
-e as lacunas conhecidas entre o desenho e o código:
+e os limites desta versão:
 
-- [`arquitetura.html`](../arquitetura.html){ target=_blank } — abra no navegador.
+- [Abrir o dossiê de arquitetura](../arquitetura.html) — página única, abre no navegador.
 
 ## Como estes diagramas são feitos
 

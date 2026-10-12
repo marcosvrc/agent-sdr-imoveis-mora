@@ -1,8 +1,7 @@
 # Arquitetura — Mora, Agente SDR Imobiliário
 
 > **Diagramas:** [`docs/arquitetura.html`](arquitetura.html) — dossiê visual com os
-> diagramas C4 do sistema, o grafo do agente, o índice de ADRs e as lacunas conhecidas entre este
-> desenho e o código. Abra no navegador. Este arquivo aqui segue sendo a referência em texto.
+> diagramas C4 do sistema, o grafo do agente, o índice de ADRs e os limites desta versão. Abra no navegador. Este arquivo aqui segue sendo a referência em texto.
 
 ## 1. Princípios
 

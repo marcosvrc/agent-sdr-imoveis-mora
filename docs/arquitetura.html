@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Dossiê de arquitetura do agente SDR imobiliário Mora: diagramas C4 do sistema em docker compose, decisões e lacunas conhecidas.">
+<meta name="description" content="Dossiê de arquitetura do agente SDR imobiliário Mora: diagramas C4 do sistema em docker compose, decisões e limites desta versão.">
 <title>Arquitetura da Mora</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -709,17 +709,17 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
 <section>
   <div class="sec-head">
     <span class="lvl">Honestidade arquitetural</span>
-    <h2>Lacunas conhecidas entre o desenho e o código</h2>
+    <h2>Limites desta versão</h2>
   </div>
-  <p>Estas são as lacunas identificadas na leitura do repositório. Estão listadas com o motivo
-  e o impacto, porque nenhuma delas é acidente de implementação — são limites de escopo assumidos.</p>
+  <p>Estes são os limites assumidos nesta versão. Estão listados com o motivo
+  e o impacto, porque nenhum deles é acidente de implementação — são escolhas de escopo.</p>
 
   <ul class="gaps">
     <li>
       <span class="tag">implantação · escolha de escopo</span>
-      <h4>Não há ambiente implantado</h4>
-      <p>O sistema só existe rodando no <code>docker compose</code> de quem o subir: não há URL para
-      mandar a alguém nem ambiente em pé fora dessa máquina. O que existiu de infraestrutura como
+      <h4>Implantação hospedada fica para o roadmap</h4>
+      <p>O sistema roda por <code>docker compose</code> em um servidor ou máquina local: ainda não há URL
+      pública nem ambiente em nuvem. O que existiu de infraestrutura como
       código foi removido do repositório junto com os adaptadores hospedados (ADR-0002). O ganho é a
       execução não depender de conta, cota ou crédito em provedor nenhum; o preço é este.</p>
     </li>
@@ -750,7 +750,7 @@ td .m,th .m{font-family:var(--mono); font-size:12.5px}
       uma equipe.</p>
     </li>
     <li>
-      <span class="tag">observabilidade · lacuna aceita</span>
+      <span class="tag">observabilidade · limite aceito</span>
       <h4>Métrica de sistema, só o que cabe no Postgres</h4>
       <p>Com a ADR-0005 revogada, não há stack de métricas nem tracing distribuído: o que existe são
       as três tabelas do Postgres (<code>turnos</code>, <code>saude</code>, <code>batimentos</code>),
